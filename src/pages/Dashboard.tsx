@@ -7,9 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Paperclip, LogOut, Users, Clock } from "lucide-react";
+import { MessageSquare, Send, Paperclip, LogOut, Users, Clock, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
+interface Template {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category: string;
+  components: Array<{
+    type: string;
+    text?: string;
+    format?: string;
+  }>;
+}
 
 interface Customer {
   id: string;
@@ -53,10 +67,13 @@ const Dashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchConversations();
+    fetchTemplates();
   }, []);
 
   useEffect(() => {
@@ -164,6 +181,30 @@ const Dashboard = () => {
     }
   };
 
+  const fetchTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-templates');
+      
+      if (error) throw error;
+      
+      setTemplates(data.templates || []);
+      toast({
+        title: "Templates loaded",
+        description: `Found ${data.templates?.length || 0} templates`,
+      });
+    } catch (error: any) {
+      console.error('Error fetching templates:', error);
+      toast({
+        title: "Error loading templates",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
   const handleBack = () => {
     navigate('/');
   };
@@ -179,9 +220,65 @@ const Dashboard = () => {
               <MessageSquare className="w-6 h-6 text-primary" />
               <h1 className="font-semibold">Customer Service</h1>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Templates
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>WhatsApp Message Templates</SheetTitle>
+                  </SheetHeader>
+                  <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+                    {loadingTemplates ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading templates...
+                      </div>
+                    ) : templates.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No templates found
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {templates.map((template) => (
+                          <Card key={template.id}>
+                            <CardHeader>
+                              <CardTitle className="text-sm flex items-center justify-between">
+                                <span>{template.name}</span>
+                                <Badge variant={template.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                  {template.status}
+                                </Badge>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                  <Badge variant="outline">{template.language}</Badge>
+                                  <Badge variant="outline">{template.category}</Badge>
+                                </div>
+                                {template.components.map((component, idx) => (
+                                  component.type === 'BODY' && component.text && (
+                                    <p key={idx} className="text-sm bg-muted p-2 rounded">
+                                      {component.text}
+                                    </p>
+                                  )
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </SheetContent>
+              </Sheet>
+              <Button variant="ghost" size="sm" onClick={handleBack}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
