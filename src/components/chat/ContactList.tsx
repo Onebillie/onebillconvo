@@ -76,11 +76,23 @@ export const ContactList = ({
                     Assigned
                   </Badge>
                 )}
-                {conversation.status_tag_id && (
-                  <Badge variant="outline" className="text-xs flex-shrink-0">
-                    {conversation.status}
+              </div>
+              {/* Status tags row */}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {conversation.status_tags?.map((tag: any) => (
+                  <Badge 
+                    key={tag.id} 
+                    variant="outline" 
+                    className="text-[10px] px-1.5 py-0 h-4"
+                    style={{ 
+                      backgroundColor: `${tag.color}20`,
+                      borderColor: tag.color,
+                      color: tag.color 
+                    }}
+                  >
+                    {tag.name}
                   </Badge>
-                )}
+                ))}
               </div>
             </div>
           </div>

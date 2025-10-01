@@ -20,7 +20,7 @@ import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { TaskNotifications } from "@/components/tasks/TaskNotifications";
 import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
 import { AssignDialog } from "@/components/conversations/AssignDialog";
-import { StatusDialog } from "@/components/conversations/StatusDialog";
+import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 
 const Dashboard = () => {
@@ -50,6 +50,14 @@ const Dashboard = () => {
           avatar,
           last_active,
           notes
+        ),
+        conversation_statuses (
+          status_tag_id,
+          conversation_status_tags (
+            id,
+            name,
+            color
+          )
         )
       `)
       .eq('is_archived', false)
@@ -63,7 +71,8 @@ const Dashboard = () => {
     // Transform data to match interface
     const conversations = (data || []).map(conv => ({
       ...conv,
-      customer: conv.customers
+      customer: conv.customers,
+      status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || []
     }));
     
     setConversations(conversations);
@@ -355,11 +364,12 @@ const Dashboard = () => {
               }
             }}
           />
-          <StatusDialog
+          {/* Multi Status Dialog */}
+          <MultiStatusDialog
             open={statusDialogOpen}
             onOpenChange={setStatusDialogOpen}
             conversationId={contextMenuConversation.id}
-            currentStatusId={contextMenuConversation.status_tag_id || undefined}
+            currentStatuses={contextMenuConversation.status_tags?.map(t => t.id) || []}
             onStatusChange={fetchConversations}
           />
         </>

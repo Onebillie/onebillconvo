@@ -1,7 +1,7 @@
 import { Check, CheckCheck, Clock, XCircle } from 'lucide-react';
 
 interface MessageStatusIndicatorProps {
-  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  status?: string;
   className?: string;
 }
 

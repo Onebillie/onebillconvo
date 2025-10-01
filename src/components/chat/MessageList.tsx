@@ -74,27 +74,27 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
                   key={message.id}
                   className={`flex ${
                     message.direction === "outbound" ? "justify-end" : "justify-start"
-                  }`}
+                  } mb-2 group`}
+                  onContextMenu={(e) => {
+                    if (onCreateTask) {
+                      e.preventDefault();
+                      onCreateTask(message);
+                    }
+                  }}
                 >
-                  <div
-                    className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm transition-all cursor-pointer ${
-                      message.direction === "outbound"
-                        ? "bg-primary text-primary-foreground rounded-tr-sm hover:shadow-md"
-                        : "bg-muted rounded-tl-sm hover:shadow-md"
-                    }`}
-                    onContextMenu={(e) => {
-                      if (onCreateTask) {
-                        e.preventDefault();
-                        onCreateTask(message);
-                      }
-                    }}
-                  >
-                    {/* Channel indicator */}
-                    {(message as any).channel && (
-                      <div className="absolute -top-2 -right-2">
-                        <ChannelIndicator channel={(message as any).channel} />
+                  <div className="flex items-start gap-2">
+                    {message.direction === "inbound" && (
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold mt-1">
+                        {message.platform === 'email' ? '@' : 'W'}
                       </div>
                     )}
+                    <div
+                      className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                        message.direction === "outbound"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     
                     {/* Attachments */}
@@ -103,18 +103,25 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
                         renderAttachment(attachment)
                       )}
                     
-                    <div className="flex items-center justify-end gap-1 mt-1">
+                    <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs opacity-70">
-                        {format(new Date(message.created_at), "HH:mm")}
+                        {new Date(message.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                       {message.direction === "outbound" && (
-                        <MessageStatusIndicator 
-                          status={(message as any).status || 'sent'} 
-                        />
+                        <MessageStatusIndicator status={message.status} />
                       )}
                     </div>
                   </div>
+                  {message.direction === "outbound" && (
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold mt-1">
+                      {message.platform === 'email' ? '@' : 'W'}
+                    </div>
+                  )}
                 </div>
+              </div>
               ))}
             </div>
           </div>

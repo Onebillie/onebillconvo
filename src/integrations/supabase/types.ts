@@ -365,6 +365,42 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_statuses: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          status_tag_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          status_tag_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          status_tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_statuses_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_statuses_status_tag_id_fkey"
+            columns: ["status_tag_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_status_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           assigned_to: string | null

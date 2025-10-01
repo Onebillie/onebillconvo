@@ -19,6 +19,11 @@ export interface Conversation {
   updated_at: string;
   customer: Customer;
   unread_count?: number;
+  status_tags?: Array<{
+    id: string;
+    name: string;
+    color: string;
+  }>;
 }
 
 export interface Message {
@@ -29,6 +34,7 @@ export interface Message {
   customer_id: string;
   is_read: boolean;
   platform: string;
+  status?: string;
   message_attachments?: Array<{
     id: string;
     filename: string;
