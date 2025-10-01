@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { formatIrishPhone, formatPhoneForDisplay } from "@/lib/phoneUtils";
 
 interface CreateContactDialogProps {
   onContactCreated: () => void;
@@ -28,6 +29,12 @@ export const CreateContactDialog = ({
     email: "",
   });
 
+  const handlePhoneChange = (value: string) => {
+    // Auto-format as user types
+    const formatted = formatIrishPhone(value);
+    setFormData(prev => ({ ...prev, phone: formatted }));
+  };
+
   const handleCreate = async () => {
     if (!formData.name || !formData.phone) {
       toast({
@@ -40,8 +47,8 @@ export const CreateContactDialog = ({
 
     setCreating(true);
     try {
-      // Normalize phone number (remove + and 00 prefix)
-      const normalizedPhone = formData.phone.replace(/^\+/, '').replace(/^00/, '');
+      // Format phone number to Irish format
+      const normalizedPhone = formatIrishPhone(formData.phone);
       
       // Create customer
       const { data: customer, error: customerError } = await (supabase as any)
@@ -113,12 +120,13 @@ export const CreateContactDialog = ({
             <Label htmlFor="phone">Phone *</Label>
             <Input
               id="phone"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              placeholder="+353..."
+              value={formatPhoneForDisplay(formData.phone)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="087 123 4567"
             />
+            <p className="text-xs text-muted-foreground">
+              Auto-formatted to Irish format (+353)
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
