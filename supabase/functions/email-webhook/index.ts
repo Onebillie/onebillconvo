@@ -22,6 +22,58 @@ serve(async (req) => {
     // Resend webhook format
     const { type, data } = body;
 
+    // Handle delivery and read status updates
+    if (type === 'email.delivered') {
+      const messageId = data.email_id;
+      if (messageId) {
+        await supabase
+          .from('messages')
+          .update({ status: 'delivered' })
+          .eq('external_message_id', messageId)
+          .eq('platform', 'email');
+        
+        console.log('Email marked as delivered:', messageId);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (type === 'email.opened') {
+      const messageId = data.email_id;
+      if (messageId) {
+        await supabase
+          .from('messages')
+          .update({ status: 'read', is_read: true })
+          .eq('external_message_id', messageId)
+          .eq('platform', 'email');
+        
+        console.log('Email marked as read:', messageId);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (type === 'email.bounced' || type === 'email.complained') {
+      const messageId = data.email_id;
+      if (messageId) {
+        await supabase
+          .from('messages')
+          .update({ status: 'failed' })
+          .eq('external_message_id', messageId)
+          .eq('platform', 'email');
+        
+        console.log('Email marked as failed:', messageId);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (type === 'email.received') {
       const { from, to, subject, html, text } = data;
       const fromEmail = from.email || from;

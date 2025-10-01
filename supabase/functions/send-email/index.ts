@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully:", emailResponse);
 
-    // Create message record in database
+    // Create message record in database with Resend message ID for tracking
     const { error: messageError } = await supabase
       .from("messages")
       .insert({
@@ -80,7 +80,9 @@ const handler = async (req: Request): Promise<Response> => {
         content: content,
         direction: "outbound",
         channel: "email",
+        platform: "email",
         status: "sent",
+        external_message_id: emailResponse.data?.id || emailResponse.id,
       });
 
     if (messageError) {
