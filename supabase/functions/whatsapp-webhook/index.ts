@@ -69,12 +69,15 @@ async function processMessages(messageData: any, supabase: any) {
     try {
       const contact = contacts?.find((c: any) => c.wa_id === message.from);
       const customerName = contact?.profile?.name || message.from;
+      
+      // Normalize phone number (remove + and leading 00)
+      const normalizedPhone = message.from.replace(/^\+/, '').replace(/^00/, '');
 
       // Create or get customer
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .upsert({
-          phone: message.from,
+          phone: normalizedPhone,
           name: customerName,
           last_active: new Date().toISOString(),
         }, {

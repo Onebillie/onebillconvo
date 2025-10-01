@@ -482,7 +482,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      normalize_phone: {
+        Args: { phone_num: string }
+        Returns: string
+      }
     }
     Enums: {
       user_role: "admin" | "agent" | "viewer"

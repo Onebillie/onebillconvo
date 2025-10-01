@@ -40,12 +40,15 @@ export const CreateContactDialog = ({
 
     setCreating(true);
     try {
+      // Normalize phone number (remove + and 00 prefix)
+      const normalizedPhone = formData.phone.replace(/^\+/, '').replace(/^00/, '');
+      
       // Create customer
       const { data: customer, error: customerError } = await (supabase as any)
         .from("customers")
         .insert({
           name: formData.name,
-          phone: formData.phone,
+          phone: normalizedPhone,
           email: formData.email || null,
         })
         .select()
