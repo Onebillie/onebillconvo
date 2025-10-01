@@ -33,8 +33,8 @@ serve(async (req) => {
       );
     }
 
-    // Clean phone number (remove + if present)
-    const cleanPhoneNumber = to.replace(/^\+/, '');
+    // Clean phone number (remove + and leading zeros)
+    const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
 
     let whatsappPayload: any = {
       messaging_product: 'whatsapp',
