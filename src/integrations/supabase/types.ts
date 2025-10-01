@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_settings: {
+        Row: {
+          company_logo: string | null
+          company_name: string | null
+          id: string
+          support_email: string | null
+          updated_at: string
+          updated_by: string | null
+          whatsapp_about: string | null
+          whatsapp_status: string | null
+        }
+        Insert: {
+          company_logo?: string | null
+          company_name?: string | null
+          id?: string
+          support_email?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_about?: string | null
+          whatsapp_status?: string | null
+        }
+        Update: {
+          company_logo?: string | null
+          company_name?: string | null
+          id?: string
+          support_email?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_about?: string | null
+          whatsapp_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_tags: {
         Row: {
           color: string | null
@@ -243,6 +284,7 @@ export type Database = {
           id: string
           is_blocked: boolean | null
           last_active: string | null
+          last_contact_method: string | null
           metadata: Json | null
           name: string
           notes: string | null
@@ -255,6 +297,7 @@ export type Database = {
           id?: string
           is_blocked?: boolean | null
           last_active?: string | null
+          last_contact_method?: string | null
           metadata?: Json | null
           name: string
           notes?: string | null
@@ -267,6 +310,7 @@ export type Database = {
           id?: string
           is_blocked?: boolean | null
           last_active?: string | null
+          last_contact_method?: string | null
           metadata?: Json | null
           name?: string
           notes?: string | null
@@ -397,6 +441,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          channel: string | null
           content: string
           conversation_id: string | null
           created_at: string | null
@@ -413,6 +458,7 @@ export type Database = {
           thread_id: string | null
         }
         Insert: {
+          channel?: string | null
           content: string
           conversation_id?: string | null
           created_at?: string | null
@@ -429,6 +475,7 @@ export type Database = {
           thread_id?: string | null
         }
         Update: {
+          channel?: string | null
           content?: string
           conversation_id?: string | null
           created_at?: string | null
@@ -474,6 +521,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       task_notifications: {
         Row: {
@@ -640,6 +720,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -681,12 +790,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       normalize_phone: {
         Args: { phone_num: string }
         Returns: string
       }
     }
     Enums: {
+      app_role: "superadmin" | "admin" | "agent"
       user_role: "admin" | "agent" | "viewer"
     }
     CompositeTypes: {
@@ -815,6 +932,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["superadmin", "admin", "agent"],
       user_role: ["admin", "agent", "viewer"],
     },
   },
