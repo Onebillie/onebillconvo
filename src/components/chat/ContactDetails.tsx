@@ -70,18 +70,18 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Private Notes</Label>
+        <Label htmlFor="notes" className="text-sm font-semibold">Private Notes</Label>
         <Textarea
           id="notes"
           placeholder="Add private notes about this customer..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          rows={6}
-          className="resize-none"
+          rows={8}
+          className="resize-none text-sm"
         />
-        <Button onClick={saveNotes} disabled={saving} className="w-full">
+        <Button onClick={saveNotes} disabled={saving} className="w-full" size="sm">
           <Save className="w-4 h-4 mr-2" />
-          Save Notes
+          {saving ? "Saving..." : "Save Notes"}
         </Button>
       </div>
     </div>

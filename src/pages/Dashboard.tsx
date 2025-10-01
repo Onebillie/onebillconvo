@@ -13,6 +13,7 @@ import { MessageInput } from "@/components/chat/MessageInput";
 import { ContactDetails } from "@/components/chat/ContactDetails";
 import { CreateContactDialog } from "@/components/chat/CreateContactDialog";
 import { TemplateSelector } from "@/components/chat/TemplateSelector";
+import { AdminAssignment } from "@/components/chat/AdminAssignment";
 
 const Dashboard = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -166,24 +167,34 @@ const Dashboard = () => {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div
-              className="p-4 border-b border-border cursor-pointer hover:bg-muted/50"
-              onClick={() => setShowContactDetails(!showContactDetails)}
-            >
-              <div className="flex items-center space-x-3">
-                <Avatar>
-                  <AvatarImage src={selectedConversation.customer.avatar} />
-                  <AvatarFallback>
-                    {selectedConversation.customer.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="font-semibold">
-                    {selectedConversation.customer.name}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedConversation.customer.phone}
-                  </p>
+            <div className="p-4 border-b border-border bg-background">
+              <div className="flex items-center justify-between">
+                <div 
+                  className="flex items-center space-x-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors flex-1"
+                  onClick={() => setShowContactDetails(!showContactDetails)}
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={selectedConversation.customer.avatar} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {selectedConversation.customer.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="font-semibold text-base">
+                      {selectedConversation.customer.name}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedConversation.customer.phone}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="w-48">
+                  <AdminAssignment
+                    conversationId={selectedConversation.id}
+                    currentAssignee={selectedConversation.assigned_to}
+                    onAssignmentChange={fetchConversations}
+                  />
                 </div>
               </div>
             </div>
