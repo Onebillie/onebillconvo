@@ -41,7 +41,7 @@ export const AssignDialog = ({
   onAssignmentChange,
 }: AssignDialogProps) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [selectedMember, setSelectedMember] = useState<string>(currentAssignedTo || "");
+  const [selectedMember, setSelectedMember] = useState<string>(currentAssignedTo || "unassigned");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -70,16 +70,19 @@ export const AssignDialog = ({
     try {
       const { error } = await supabase
         .from("conversations")
-        .update({ assigned_to: selectedMember || null })
+        .update({ 
+          assigned_to: selectedMember === "unassigned" ? null : selectedMember,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", conversationId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: selectedMember 
-          ? "Conversation assigned successfully"
-          : "Assignment removed",
+        description: selectedMember === "unassigned"
+          ? "Assignment removed"
+          : "Conversation assigned successfully",
       });
 
       onAssignmentChange();
@@ -112,7 +115,7 @@ export const AssignDialog = ({
               <SelectValue placeholder="Select team member" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
               {teamMembers.map((member) => (
                 <SelectItem key={member.id} value={member.id}>
                   <div className="flex items-center gap-2">

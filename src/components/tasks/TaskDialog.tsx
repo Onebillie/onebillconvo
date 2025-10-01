@@ -54,7 +54,7 @@ export const TaskDialog = ({
   const [formData, setFormData] = useState({
     title: "",
     description: messageContent || "",
-    assignedTo: "",
+    assignedTo: "unassigned",
     dueDate: new Date(),
     priority: "medium",
   });
@@ -105,7 +105,7 @@ export const TaskDialog = ({
         message_id: messageId,
         conversation_id: conversationId,
         customer_id: customerId,
-        assigned_to: formData.assignedTo || null,
+        assigned_to: formData.assignedTo === "unassigned" ? null : formData.assignedTo,
         due_date: formData.dueDate.toISOString(),
         priority: formData.priority,
         status: "pending",
@@ -125,7 +125,7 @@ export const TaskDialog = ({
       setFormData({
         title: "",
         description: "",
-        assignedTo: "",
+        assignedTo: "unassigned",
         dueDate: new Date(),
         priority: "medium",
       });
@@ -222,7 +222,7 @@ export const TaskDialog = ({
                 <SelectValue placeholder="Select team member" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.full_name}
