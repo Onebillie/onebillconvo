@@ -1,7 +1,9 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Paperclip, FileIcon, ImageIcon } from "lucide-react";
-import { format, isToday, isYesterday, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import { Message } from "@/types/chat";
+import { VoicePlayer } from "./VoicePlayer";
+import { FilePreview } from "./FilePreview";
+import { MessageStatusIndicator } from "./MessageStatusIndicator";
 
 interface MessageListProps {
   messages: Message[];
@@ -9,31 +11,30 @@ interface MessageListProps {
 
 export const MessageList = ({ messages }: MessageListProps) => {
   const renderAttachment = (attachment: any) => {
-    const isImage = attachment.type?.startsWith("image/");
+    const isVoiceNote = attachment.type?.startsWith("audio/");
 
-    return (
-      <div key={attachment.id} className="mt-2">
-        {isImage ? (
-          <img
-            src={attachment.url}
-            alt={attachment.filename}
-            className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => window.open(attachment.url, "_blank")}
+    if (isVoiceNote) {
+      return (
+        <div key={attachment.id} className="mt-2">
+          <VoicePlayer 
+            audioUrl={attachment.url} 
+            duration={attachment.duration_seconds}
           />
-        ) : (
-          <div className="p-2 bg-background/10 rounded text-xs flex items-center space-x-2 cursor-pointer hover:bg-background/20">
-            <FileIcon className="w-4 h-4" />
-            <span>{attachment.filename}</span>
-          </div>
-        )}
-      </div>
-    );
+        </div>
+      );
+    }
+
+    return <FilePreview key={attachment.id} attachment={attachment} />;
   };
 
   const formatDateSeparator = (date: Date) => {
-    if (isToday(date)) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
       return "Today";
-    } else if (isYesterday(date)) {
+    } else if (date.toDateString() === yesterday.toDateString()) {
       return "Yesterday";
     } else {
       return format(date, "EEE dd MMM");
@@ -88,9 +89,16 @@ export const MessageList = ({ messages }: MessageListProps) => {
                         renderAttachment(attachment)
                       )}
                     
-                    <p className="text-xs opacity-70 mt-1 text-right">
-                      {format(new Date(message.created_at), "HH:mm")}
-                    </p>
+                    <div className="flex items-center justify-end gap-1 mt-1">
+                      <span className="text-xs opacity-70">
+                        {format(new Date(message.created_at), "HH:mm")}
+                      </span>
+                      {message.direction === "outbound" && (
+                        <MessageStatusIndicator 
+                          status={(message as any).status || 'sent'} 
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

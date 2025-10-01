@@ -14,12 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_tags: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      conversation_analytics: {
+        Row: {
+          agent_messages: number | null
+          avg_response_time_seconds: number | null
+          conversation_id: string | null
+          created_at: string | null
+          customer_messages: number | null
+          date: string | null
+          first_response_time_seconds: number | null
+          id: string
+          total_messages: number | null
+        }
+        Insert: {
+          agent_messages?: number | null
+          avg_response_time_seconds?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_messages?: number | null
+          date?: string | null
+          first_response_time_seconds?: number | null
+          id?: string
+          total_messages?: number | null
+        }
+        Update: {
+          agent_messages?: number | null
+          avg_response_time_seconds?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_messages?: number | null
+          date?: string | null
+          first_response_time_seconds?: number | null
+          id?: string
+          total_messages?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_analytics_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_notes: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_private: boolean | null
+          note: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_private?: boolean | null
+          note: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_private?: boolean | null
+          note?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           assigned_to: string | null
           created_at: string | null
           customer_id: string | null
           id: string
+          is_archived: boolean | null
+          labels: string[] | null
+          last_message_at: string | null
           status: string | null
           updated_at: string | null
         }
@@ -28,6 +141,9 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          is_archived?: boolean | null
+          labels?: string[] | null
+          last_message_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -36,6 +152,9 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          is_archived?: boolean | null
+          labels?: string[] | null
+          last_message_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -49,13 +168,48 @@ export type Database = {
           },
         ]
       }
+      customer_tags: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tags_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "contact_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           avatar: string | null
           created_at: string | null
           email: string | null
           id: string
+          is_blocked: boolean | null
           last_active: string | null
+          metadata: Json | null
           name: string
           notes: string | null
           phone: string
@@ -65,7 +219,9 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_blocked?: boolean | null
           last_active?: string | null
+          metadata?: Json | null
           name: string
           notes?: string | null
           phone: string
@@ -75,7 +231,9 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_blocked?: boolean | null
           last_active?: string | null
+          metadata?: Json | null
           name?: string
           notes?: string | null
           phone?: string
@@ -85,30 +243,39 @@ export type Database = {
       message_attachments: {
         Row: {
           created_at: string | null
+          duration_seconds: number | null
           filename: string
           id: string
           message_id: string | null
           size: number | null
+          transcription: string | null
           type: string
           url: string
+          waveform_data: Json | null
         }
         Insert: {
           created_at?: string | null
+          duration_seconds?: number | null
           filename: string
           id?: string
           message_id?: string | null
           size?: number | null
+          transcription?: string | null
           type: string
           url: string
+          waveform_data?: Json | null
         }
         Update: {
           created_at?: string | null
+          duration_seconds?: number | null
           filename?: string
           id?: string
           message_id?: string | null
           size?: number | null
+          transcription?: string | null
           type?: string
           url?: string
+          waveform_data?: Json | null
         }
         Relationships: [
           {
@@ -120,6 +287,80 @@ export type Database = {
           },
         ]
       }
+      message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          media_type: string | null
+          media_url: string | null
+          name: string
+          updated_at: string | null
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          name: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -128,9 +369,13 @@ export type Database = {
           customer_id: string | null
           direction: string
           external_message_id: string | null
+          forwarded_from_message_id: string | null
           id: string
           is_read: boolean | null
           platform: string | null
+          replied_to_message_id: string | null
+          scheduled_at: string | null
+          status: string | null
           thread_id: string | null
         }
         Insert: {
@@ -140,9 +385,13 @@ export type Database = {
           customer_id?: string | null
           direction: string
           external_message_id?: string | null
+          forwarded_from_message_id?: string | null
           id?: string
           is_read?: boolean | null
           platform?: string | null
+          replied_to_message_id?: string | null
+          scheduled_at?: string | null
+          status?: string | null
           thread_id?: string | null
         }
         Update: {
@@ -152,9 +401,13 @@ export type Database = {
           customer_id?: string | null
           direction?: string
           external_message_id?: string | null
+          forwarded_from_message_id?: string | null
           id?: string
           is_read?: boolean | null
           platform?: string | null
+          replied_to_message_id?: string | null
+          scheduled_at?: string | null
+          status?: string | null
           thread_id?: string | null
         }
         Relationships: [
@@ -172,7 +425,57 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_forwarded_from_message_id_fkey"
+            columns: ["forwarded_from_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_replied_to_message_id_fkey"
+            columns: ["replied_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          last_seen: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -182,7 +485,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "agent" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -309,6 +612,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "agent", "viewer"],
+    },
   },
 } as const

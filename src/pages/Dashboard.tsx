@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { ContactDetails } from "@/components/chat/ContactDetails";
 import { CreateContactDialog } from "@/components/chat/CreateContactDialog";
 import { TemplateSelector } from "@/components/chat/TemplateSelector";
 import { AdminAssignment } from "@/components/chat/AdminAssignment";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 
 const Dashboard = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -22,19 +24,6 @@ const Dashboard = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [showContactDetails, setShowContactDetails] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchConversations();
-    fetchTemplates();
-  }, []);
-
-  useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation.id);
-      markAsRead(selectedConversation.id);
-    }
-  }, [selectedConversation]);
-
 
   const fetchConversations = async () => {
     const { data, error } = await (supabase as any)
@@ -77,7 +66,8 @@ const Dashboard = () => {
           filename,
           url,
           type,
-          size
+          size,
+          duration_seconds
         )
       `)
       .eq('conversation_id', conversationId)
@@ -114,6 +104,41 @@ const Dashboard = () => {
       console.error("Error fetching templates:", error);
     }
   };
+
+  // Real-time message handlers
+  const handleNewMessage = useCallback((newMessage: Message) => {
+    setMessages(prev => [...prev, newMessage]);
+    if (newMessage.direction === 'inbound' && selectedConversation) {
+      markAsRead(selectedConversation.id);
+    }
+  }, [selectedConversation]);
+
+  const handleMessageUpdate = useCallback((updatedMessage: Message) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === updatedMessage.id ? updatedMessage : msg
+    ));
+  }, []);
+
+  // Set up real-time subscriptions
+  useRealtimeMessages(
+    selectedConversation?.id || null,
+    handleNewMessage,
+    handleMessageUpdate
+  );
+
+  useRealtimeConversations(fetchConversations);
+
+  useEffect(() => {
+    fetchConversations();
+    fetchTemplates();
+  }, []);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+      markAsRead(selectedConversation.id);
+    }
+  }, [selectedConversation]);
 
   const handleBack = () => {
     navigate('/');
