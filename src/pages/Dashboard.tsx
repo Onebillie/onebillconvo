@@ -280,6 +280,7 @@ const Dashboard = () => {
                 />
                 <MessageInput
                   conversationId={selectedConversation.id}
+                  customerId={selectedConversation.customer.id}
                   customerPhone={selectedConversation.customer.phone || ""}
                   customerEmail={selectedConversation.customer.email}
                   lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}

@@ -18,7 +18,10 @@ export type Database = {
         Row: {
           company_logo: string | null
           company_name: string | null
+          email_subject_template: string | null
+          from_email: string | null
           id: string
+          reply_to_email: string | null
           support_email: string | null
           updated_at: string
           updated_by: string | null
@@ -28,7 +31,10 @@ export type Database = {
         Insert: {
           company_logo?: string | null
           company_name?: string | null
+          email_subject_template?: string | null
+          from_email?: string | null
           id?: string
+          reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -38,7 +44,10 @@ export type Database = {
         Update: {
           company_logo?: string | null
           company_name?: string | null
+          email_subject_template?: string | null
+          from_email?: string | null
           id?: string
+          reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
           updated_by?: string | null

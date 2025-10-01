@@ -14,6 +14,9 @@ interface BusinessInfo {
   whatsapp_status?: string;
   whatsapp_about?: string;
   support_email?: string;
+  from_email?: string;
+  reply_to_email?: string;
+  email_subject_template?: string;
 }
 
 export const BusinessSettings = () => {
@@ -25,6 +28,9 @@ export const BusinessSettings = () => {
     whatsapp_status: "",
     whatsapp_about: "",
     support_email: "",
+    from_email: "",
+    reply_to_email: "",
+    email_subject_template: "",
   });
 
   useEffect(() => {
@@ -60,6 +66,9 @@ export const BusinessSettings = () => {
           whatsapp_status: formData.whatsapp_status,
           whatsapp_about: formData.whatsapp_about,
           support_email: formData.support_email,
+          from_email: formData.from_email,
+          reply_to_email: formData.reply_to_email,
+          email_subject_template: formData.email_subject_template,
         })
         .eq("id", formData.id);
 
@@ -104,7 +113,7 @@ export const BusinessSettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Support Email (for Resend)</Label>
+            <Label>Support Email (for Resend verification)</Label>
             <Input
               type="email"
               value={formData.support_email || ""}
@@ -112,7 +121,45 @@ export const BusinessSettings = () => {
               placeholder="support@yourcompany.com"
             />
             <p className="text-sm text-muted-foreground">
-              This email will be used as the "from" address for email messages
+              Verify this domain at resend.com/domains
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>From Email</Label>
+            <Input
+              type="email"
+              value={formData.from_email || ""}
+              onChange={(e) => setFormData({ ...formData, from_email: e.target.value })}
+              placeholder="noreply@yourcompany.com"
+            />
+            <p className="text-sm text-muted-foreground">
+              Email address shown in the "From" field
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Reply-To Email</Label>
+            <Input
+              type="email"
+              value={formData.reply_to_email || ""}
+              onChange={(e) => setFormData({ ...formData, reply_to_email: e.target.value })}
+              placeholder="support@yourcompany.com"
+            />
+            <p className="text-sm text-muted-foreground">
+              Email address where customer replies will be sent
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Email Subject Template</Label>
+            <Input
+              value={formData.email_subject_template || ""}
+              onChange={(e) => setFormData({ ...formData, email_subject_template: e.target.value })}
+              placeholder="Message from {{company_name}}"
+            />
+            <p className="text-sm text-muted-foreground">
+              Use {'{{company_name}}'} as placeholder
             </p>
           </div>
 

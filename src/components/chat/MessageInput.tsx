@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
   conversationId: string;
+  customerId: string;
   customerPhone: string;
   customerEmail?: string;
   lastContactMethod?: "whatsapp" | "email";
@@ -17,6 +18,7 @@ interface MessageInputProps {
 
 export const MessageInput = ({
   conversationId,
+  customerId,
   customerPhone,
   customerEmail,
   lastContactMethod = "whatsapp",
@@ -54,7 +56,7 @@ export const MessageInput = ({
             to: customerEmail,
             content: newMessage,
             conversationId,
-            customerId: conversationId, // You may need to pass actual customerId
+            customerId,
           },
         });
 

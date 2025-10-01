@@ -32,19 +32,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending email to:", to);
 
-    // Get business settings for from email
+    // Get business settings for email configuration
     const { data: settings } = await supabase
       .from("business_settings")
-      .select("company_name, support_email")
+      .select("company_name, support_email, from_email, reply_to_email, email_subject_template")
       .single();
 
-    const fromEmail = settings?.support_email || "onboarding@resend.dev";
+    const fromEmail = settings?.from_email || settings?.support_email || "onboarding@resend.dev";
+    const replyToEmail = settings?.reply_to_email || settings?.support_email;
     const companyName = settings?.company_name || "Customer Service";
+    
+    // Parse subject template
+    let emailSubject = subject || settings?.email_subject_template || "Message from {{company_name}}";
+    emailSubject = emailSubject.replace(/\{\{company_name\}\}/g, companyName);
 
-    const emailResponse = await resend.emails.send({
+    const emailConfig: any = {
       from: `${companyName} <${fromEmail}>`,
       to: [to],
-      subject: subject || "Message from Customer Service",
+      subject: emailSubject,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <p>${content.replace(/\n/g, '<br>')}</p>
@@ -55,7 +60,14 @@ const handler = async (req: Request): Promise<Response> => {
           </p>
         </div>
       `,
-    });
+    };
+
+    // Add reply-to if configured
+    if (replyToEmail) {
+      emailConfig.reply_to = replyToEmail;
+    }
+
+    const emailResponse = await resend.emails.send(emailConfig);
 
     console.log("Email sent successfully:", emailResponse);
 
