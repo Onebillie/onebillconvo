@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_assistant_config: {
+        Row: {
+          business_hours_end: string | null
+          business_hours_start: string | null
+          id: string
+          is_enabled: boolean | null
+          max_tokens: number | null
+          model: string | null
+          out_of_hours_only: boolean | null
+          system_prompt: string | null
+          temperature: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_tokens?: number | null
+          model?: string | null
+          out_of_hours_only?: boolean | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_tokens?: number | null
+          model?: string | null
+          out_of_hours_only?: boolean | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_rag_documents: {
+        Row: {
+          content: string
+          created_at: string | null
+          document_type: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          document_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          document_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_training_data: {
+        Row: {
+          answer: string
+          category: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string | null
@@ -123,6 +222,35 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      conversation_ai_settings: {
+        Row: {
+          ai_enabled: boolean | null
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          ai_enabled?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          ai_enabled?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_ai_settings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversation_analytics: {
         Row: {

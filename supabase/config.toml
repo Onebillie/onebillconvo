@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.api-send-message]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = true
