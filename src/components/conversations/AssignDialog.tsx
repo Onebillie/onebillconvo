@@ -118,15 +118,7 @@ export const AssignDialog = ({
               <SelectItem value="unassigned">Unassigned</SelectItem>
               {teamMembers.map((member) => (
                 <SelectItem key={member.id} value={member.id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={member.avatar_url} />
-                      <AvatarFallback>
-                        {member.full_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{member.full_name}</span>
-                  </div>
+                  {member.full_name} ({member.email})
                 </SelectItem>
               ))}
             </SelectContent>

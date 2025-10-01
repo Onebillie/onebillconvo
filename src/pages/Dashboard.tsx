@@ -22,11 +22,17 @@ import { ConversationContextMenu } from "@/components/conversations/Conversation
 import { AssignDialog } from "@/components/conversations/AssignDialog";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
+import { ConversationFilters } from "@/components/chat/ConversationFilters";
 
 const Dashboard = () => {
   const { profile, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [filters, setFilters] = useState<{ unread: boolean; statusIds: string[] }>({
+    unread: false,
+    statusIds: [],
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [showContactDetails, setShowContactDetails] = useState(false);
@@ -76,6 +82,32 @@ const Dashboard = () => {
     }));
     
     setConversations(conversations);
+    applyFilters(conversations, filters);
+  };
+
+  const applyFilters = (convs: Conversation[], currentFilters: typeof filters) => {
+    let filtered = [...convs];
+
+    // Filter by unread
+    if (currentFilters.unread) {
+      filtered = filtered.filter(conv => 
+        conv.unread_count && conv.unread_count > 0
+      );
+    }
+
+    // Filter by status
+    if (currentFilters.statusIds.length > 0) {
+      filtered = filtered.filter(conv =>
+        conv.status_tags?.some(tag => currentFilters.statusIds.includes(tag.id))
+      );
+    }
+
+    setFilteredConversations(filtered);
+  };
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    applyFilters(conversations, newFilters);
   };
 
   const fetchMessages = async (conversationId: string) => {
@@ -239,10 +271,13 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Filters */}
+        <ConversationFilters onFilterChange={handleFilterChange} />
+
         {/* Conversations List */}
         <ScrollArea className="flex-1">
           <ContactList
-            conversations={conversations}
+            conversations={filteredConversations}
             selectedConversation={selectedConversation}
             onSelectConversation={(conv) => {
               setSelectedConversation(conv);

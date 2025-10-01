@@ -30,7 +30,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { to, subject, content, conversationId, customerId }: EmailRequest = await req.json();
 
+    console.log("=== SEND EMAIL FUNCTION CALLED ===");
     console.log("Sending email to:", to);
+    console.log("Subject:", subject);
+    console.log("Content length:", content?.length);
+    console.log("Conversation ID:", conversationId);
+    console.log("Customer ID:", customerId);
 
     // Get business settings for email configuration
     const { data: settings } = await supabase
@@ -67,9 +72,10 @@ const handler = async (req: Request): Promise<Response> => {
       emailConfig.reply_to = replyToEmail;
     }
 
+    console.log("Attempting to send via Resend...");
     const emailResponse = await resend.emails.send(emailConfig);
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("✅ Email sent successfully:", emailResponse);
 
     // Create message record in database with Resend message ID for tracking
     const { error: messageError } = await supabase
