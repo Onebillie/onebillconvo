@@ -36,7 +36,8 @@ const Dashboard = () => {
 
 
   const fetchConversations = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
+      .schema('api')
       .from('conversations')
       .select(`
         *,
@@ -46,7 +47,8 @@ const Dashboard = () => {
           phone,
           email,
           avatar,
-          last_active
+          last_active,
+          notes
         )
       `)
       .order('updated_at', { ascending: false });
@@ -66,7 +68,8 @@ const Dashboard = () => {
   };
 
   const fetchMessages = async (conversationId: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
+      .schema('api')
       .from('messages')
       .select(`
         *,
@@ -96,7 +99,8 @@ const Dashboard = () => {
   };
 
   const markAsRead = async (conversationId: string) => {
-    await supabase
+    await (supabase as any)
+      .schema('api')
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
