@@ -20,8 +20,7 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
   const saveNotes = async () => {
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
-        .schema('api')
+      const { error } = await supabase
         .from("customers")
         .update({ notes })
         .eq("id", customer.id);

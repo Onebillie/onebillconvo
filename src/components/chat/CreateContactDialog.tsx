@@ -41,8 +41,7 @@ export const CreateContactDialog = ({
     setCreating(true);
     try {
       // Create customer
-      const { data: customer, error: customerError } = await (supabase as any)
-        .schema('api')
+      const { data: customer, error: customerError } = await supabase
         .from("customers")
         .insert({
           name: formData.name,
@@ -55,8 +54,7 @@ export const CreateContactDialog = ({
       if (customerError) throw customerError;
 
       // Create conversation
-      const { error: conversationError } = await (supabase as any)
-        .schema('api')
+      const { error: conversationError } = await supabase
         .from("conversations")
         .insert({
           customer_id: customer.id,
