@@ -40,6 +40,7 @@ const Dashboard = () => {
           notes
         )
       `)
+      .eq('is_archived', false)
       .order('updated_at', { ascending: false });
 
     if (error) {
