@@ -1,4 +1,4 @@
-import { MoreVertical, UserPlus, Tag, Calendar } from "lucide-react";
+import { MoreVertical, UserPlus, Tag, Calendar, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +12,14 @@ interface ConversationContextMenuProps {
   onAssign: () => void;
   onChangeStatus: () => void;
   onCreateTask: () => void;
+  onDelete: () => void;
 }
 
 export const ConversationContextMenu = ({
   onAssign,
   onChangeStatus,
   onCreateTask,
+  onDelete,
 }: ConversationContextMenuProps) => {
   return (
     <DropdownMenu>
@@ -39,6 +41,14 @@ export const ConversationContextMenu = ({
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateTask(); }}>
           <Calendar className="mr-2 h-4 w-4" />
           Create Task
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete Conversation
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -5,6 +5,7 @@ import { Send, Paperclip, X, Image as ImageIcon, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
@@ -232,6 +233,11 @@ export const MessageInput = ({
         >
           <Paperclip className="w-4 h-4" />
         </Button>
+        
+        <EmojiPicker 
+          onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
+          disabled={uploading}
+        />
         
         {sendVia === "whatsapp" && (
           <VoiceRecorder 

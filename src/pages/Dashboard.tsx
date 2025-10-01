@@ -153,6 +153,34 @@ const Dashboard = () => {
     }
   }, [selectedConversation]);
 
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been deleted successfully",
+      });
+
+      if (selectedConversation?.id === conversationId) {
+        setSelectedConversation(null);
+      }
+
+      fetchConversations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete conversation",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBack = () => {
     navigate('/settings');
   };
@@ -225,6 +253,7 @@ const Dashboard = () => {
                   setContextMenuConversation(conversation);
                   setTaskDialogOpen(true);
                 }}
+                onDelete={() => handleDeleteConversation(conversation.id)}
               />
             )}
           />

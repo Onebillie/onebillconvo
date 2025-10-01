@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+import { Save, Pencil } from "lucide-react";
+import { EditContactDialog } from "./EditContactDialog";
 
 interface ContactDetailsProps {
   customer: Customer;
@@ -16,6 +17,7 @@ interface ContactDetailsProps {
 export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
   const [notes, setNotes] = useState(customer.notes || "");
   const [saving, setSaving] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const saveNotes = async () => {
     setSaving(true);
@@ -52,7 +54,17 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
             {customer.name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <h2 className="font-semibold text-lg">{customer.name}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-semibold text-lg">{customer.name}</h2>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setEditDialogOpen(true)}
+            className="h-6 w-6"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -83,6 +95,13 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
           {saving ? "Saving..." : "Save Notes"}
         </Button>
       </div>
+
+      <EditContactDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        customer={customer}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 };

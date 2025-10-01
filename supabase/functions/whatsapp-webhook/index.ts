@@ -131,6 +131,10 @@ async function processMessages(messageData: any, supabase: any) {
         messageContent = 'Image received';
       } else if (message.type === 'document') {
         messageContent = `Document: ${message.document.filename || 'Unknown'}`;
+      } else if (message.type === 'video') {
+        messageContent = 'Video received';
+      } else if (message.type === 'audio' || message.type === 'voice') {
+        messageContent = 'Voice note received';
       } else {
         messageContent = `${message.type} message received`;
       }
@@ -156,7 +160,7 @@ async function processMessages(messageData: any, supabase: any) {
       }
 
       // Handle attachments
-      if (message.type === 'image' || message.type === 'document') {
+      if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
         await handleAttachment(message, newMessage.id, supabase);
       }
 
@@ -169,7 +173,7 @@ async function processMessages(messageData: any, supabase: any) {
 
 async function handleAttachment(message: any, messageId: string, supabase: any) {
   try {
-    let mediaId, filename, mimeType;
+    let mediaId, filename, mimeType, duration;
     
     if (message.type === 'image') {
       mediaId = message.image.id;
@@ -179,6 +183,16 @@ async function handleAttachment(message: any, messageId: string, supabase: any) 
       mediaId = message.document.id;
       filename = message.document.filename || `document_${Date.now()}`;
       mimeType = message.document.mime_type || 'application/octet-stream';
+    } else if (message.type === 'video') {
+      mediaId = message.video.id;
+      filename = `video_${Date.now()}.mp4`;
+      mimeType = message.video.mime_type || 'video/mp4';
+    } else if (message.type === 'audio' || message.type === 'voice') {
+      const audioData = message.audio || message.voice;
+      mediaId = audioData.id;
+      filename = `audio_${Date.now()}.${message.type === 'voice' ? 'ogg' : 'mp3'}`;
+      mimeType = audioData.mime_type || 'audio/ogg';
+      duration = Math.floor(audioData.duration || 0);
     }
 
     if (!mediaId) return;
@@ -245,6 +259,7 @@ async function handleAttachment(message: any, messageId: string, supabase: any) 
         url: publicUrl ?? filePath,
         type: mimeType,
         size: file.length,
+        duration_seconds: duration || null,
       });
 
     if (attachmentError) {
