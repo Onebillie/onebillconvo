@@ -36,7 +36,6 @@ export const AdminAssignment = ({
     setUpdating(true);
     try {
       const { error } = await (supabase as any)
-        .schema('api')
         .from("conversations")
         .update({ 
           assigned_to: value === "unassigned" ? null : value 

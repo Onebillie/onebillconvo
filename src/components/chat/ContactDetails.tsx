@@ -21,7 +21,6 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
     setSaving(true);
     try {
       const { error } = await (supabase as any)
-        .schema('api')
         .from("customers")
         .update({ notes })
         .eq("id", customer.id);
