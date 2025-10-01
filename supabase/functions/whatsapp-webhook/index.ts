@@ -92,15 +92,21 @@ async function processMessages(messageData: any, supabase: any) {
         continue;
       }
 
-      // Create or get conversation
-      let { data: conversation, error: conversationError } = await supabase
+      // Create or get conversation (reuse latest active if exists)
+      let { data: conversation, error: conversationSelectError } = await supabase
         .from('conversations')
         .select('*')
         .eq('customer_id', customer.id)
         .eq('status', 'active')
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (conversationError || !conversation) {
+      if (conversationSelectError) {
+        console.error('Error selecting conversation:', conversationSelectError);
+      }
+
+      if (!conversation) {
         const { data: newConversation, error: newConversationError } = await supabase
           .from('conversations')
           .insert({
@@ -224,13 +230,19 @@ async function handleAttachment(message: any, messageId: string, supabase: any) 
       return;
     }
 
-    // Create attachment record
+    // Create attachment record with public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('customer_bills')
+      .getPublicUrl(filePath);
+
+    const publicUrl = publicUrlData?.publicUrl || null;
+
     const { error: attachmentError } = await supabase
       .from('message_attachments')
       .insert({
         message_id: messageId,
         filename,
-        url: filePath,
+        url: publicUrl ?? filePath,
         type: mimeType,
         size: file.length,
       });

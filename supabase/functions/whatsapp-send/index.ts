@@ -105,12 +105,31 @@ serve(async (req) => {
       .single();
 
     if (customer) {
-      const { data: conversation } = await supabase
+      let { data: conversation, error: conversationSelectError } = await supabase
         .from('conversations')
-        .select('id')
+        .select('*')
         .eq('customer_id', customer.id)
         .eq('status', 'active')
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (conversationSelectError) {
+        console.error('Select conversation error:', conversationSelectError);
+      }
+
+      if (!conversation) {
+        const { data: newConv, error: newConvError } = await supabase
+          .from('conversations')
+          .insert({ customer_id: customer.id, status: 'active' })
+          .select()
+          .single();
+        if (newConvError) {
+          console.error('Create conversation error:', newConvError);
+        } else {
+          conversation = newConv;
+        }
+      }
 
       if (conversation) {
         // Store outbound message in database
