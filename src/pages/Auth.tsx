@@ -17,15 +17,15 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"auth" | "forgot" | "reset">("auth");
-  const { signIn, signUp, session, loading: authLoading } = useAuth();
+  const { signIn, signUp, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // If already authenticated, redirect away from /auth
   useEffect(() => {
-    if (!authLoading && session && mode === "auth") {
+    if (!authLoading && profile && mode === "auth") {
       navigate("/dashboard", { replace: true });
     }
-  }, [authLoading, session, mode, navigate]);
+  }, [authLoading, profile, mode, navigate]);
 
   // Detect password recovery redirects and show "set new password" form
   useEffect(() => {
