@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Paperclip, LogOut, Users, Clock, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Template {
   id: string;
@@ -221,18 +221,18 @@ const Dashboard = () => {
               <h1 className="font-semibold">Customer Service</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <Sheet>
-                <SheetTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <FileText className="w-4 h-4 mr-2" />
                     Templates
                   </Button>
-                </SheetTrigger>
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle>WhatsApp Message Templates</SheetTitle>
-                  </SheetHeader>
-                  <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>WhatsApp Message Templates</DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="h-[calc(100vh-12rem)] mt-4">
                     {loadingTemplates ? (
                       <div className="text-center py-8 text-muted-foreground">
                         Loading templates...
@@ -273,8 +273,8 @@ const Dashboard = () => {
                       </div>
                     )}
                   </ScrollArea>
-                </SheetContent>
-              </Sheet>
+                </DialogContent>
+              </Dialog>
               <Button variant="ghost" size="sm" onClick={handleBack}>
                 <LogOut className="w-4 h-4" />
               </Button>
