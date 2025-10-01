@@ -4,6 +4,7 @@ import { Message } from "@/types/chat";
 import { VoicePlayer } from "./VoicePlayer";
 import { FilePreview } from "./FilePreview";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
+import { ChannelIndicator } from "./ChannelIndicator";
 
 interface MessageListProps {
   messages: Message[];
@@ -76,7 +77,7 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
                   }`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm transition-all cursor-pointer ${
+                    className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm transition-all cursor-pointer ${
                       message.direction === "outbound"
                         ? "bg-primary text-primary-foreground rounded-tr-sm hover:shadow-md"
                         : "bg-muted rounded-tl-sm hover:shadow-md"
@@ -88,6 +89,12 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
                       }
                     }}
                   >
+                    {/* Channel indicator */}
+                    {(message as any).channel && (
+                      <div className="absolute -top-2 -right-2">
+                        <ChannelIndicator channel={(message as any).channel} />
+                      </div>
+                    )}
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     
                     {/* Attachments */}

@@ -1,26 +1,32 @@
 import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
   conversationId: string;
   customerPhone: string;
+  customerEmail?: string;
+  lastContactMethod?: "whatsapp" | "email";
   onMessageSent: () => void;
 }
 
 export const MessageInput = ({
   conversationId,
   customerPhone,
+  customerEmail,
+  lastContactMethod = "whatsapp",
   onMessageSent,
 }: MessageInputProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [sendVia, setSendVia] = useState<"whatsapp" | "email">(lastContactMethod);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,41 +47,30 @@ export const MessageInput = ({
 
     setUploading(true);
     try {
-      let attachmentUrls: any[] = [];
-
-      // Upload voice note if exists
-      if (voiceNote) {
-        const fileName = `voice-${Date.now()}.webm`;
-        const filePath = `${conversationId}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("customer_bills")
-          .upload(filePath, voiceNote.blob);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
-
-        attachmentUrls.push({
-          url: publicUrl,
-          filename: fileName,
-          type: 'audio/webm',
-          duration: voiceNote.duration,
+      if (sendVia === "email" && customerEmail) {
+        // Send via email
+        const { error } = await supabase.functions.invoke("send-email", {
+          body: {
+            to: customerEmail,
+            content: newMessage,
+            conversationId,
+            customerId: conversationId, // You may need to pass actual customerId
+          },
         });
-      }
 
-      // Upload attachments if any
-      if (attachments.length > 0) {
-        for (const file of attachments) {
-          const fileExt = file.name.split(".").pop();
-          const fileName = `${Math.random()}.${fileExt}`;
+        if (error) throw error;
+      } else {
+        // Send via WhatsApp
+        let attachmentUrls: any[] = [];
+
+        // Upload voice note if exists
+        if (voiceNote) {
+          const fileName = `voice-${Date.now()}.webm`;
           const filePath = `${conversationId}/${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from("customer_bills")
-            .upload(filePath, file);
+            .upload(filePath, voiceNote.blob);
 
           if (uploadError) throw uploadError;
 
@@ -85,22 +80,48 @@ export const MessageInput = ({
 
           attachmentUrls.push({
             url: publicUrl,
-            filename: file.name,
-            type: file.type,
+            filename: fileName,
+            type: 'audio/webm',
+            duration: voiceNote.duration,
           });
         }
+
+        // Upload attachments if any
+        if (attachments.length > 0) {
+          for (const file of attachments) {
+            const fileExt = file.name.split(".").pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${conversationId}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from("customer_bills")
+              .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
+
+            attachmentUrls.push({
+              url: publicUrl,
+              filename: file.name,
+              type: file.type,
+            });
+          }
+        }
+
+        // Send message via WhatsApp API
+        const { error } = await supabase.functions.invoke("whatsapp-send", {
+          body: {
+            to: customerPhone,
+            message: newMessage,
+            attachments: attachmentUrls,
+          },
+        });
+
+        if (error) throw error;
       }
-
-      // Send message via WhatsApp API
-      const { error } = await supabase.functions.invoke("whatsapp-send", {
-        body: {
-          to: customerPhone,
-          message: newMessage,
-          attachments: attachmentUrls,
-        },
-      });
-
-      if (error) throw error;
 
       setNewMessage("");
       setAttachments([]);
@@ -109,7 +130,7 @@ export const MessageInput = ({
       
       toast({
         title: "Message sent",
-        description: "Your message has been delivered.",
+        description: `Your message has been sent via ${sendVia}.`,
       });
     } catch (error: any) {
       toast({
@@ -165,6 +186,34 @@ export const MessageInput = ({
       )}
 
       <div className="flex space-x-2">
+        {/* Channel selector */}
+        {customerEmail && (
+          <div className="flex border rounded-md">
+            <button
+              onClick={() => setSendVia("whatsapp")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors",
+                sendVia === "whatsapp"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+            >
+              <span className="text-xs font-bold">W</span>
+            </button>
+            <button
+              onClick={() => setSendVia("email")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-l",
+                sendVia === "email"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+            >
+              <Mail className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        
         <input
           ref={fileInputRef}
           type="file"
@@ -177,18 +226,20 @@ export const MessageInput = ({
           size="icon"
           variant="ghost"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || sendVia === "email"}
         >
           <Paperclip className="w-4 h-4" />
         </Button>
         
-        <VoiceRecorder 
-          onRecordingComplete={handleVoiceRecording}
-          disabled={uploading}
-        />
+        {sendVia === "whatsapp" && (
+          <VoiceRecorder 
+            onRecordingComplete={handleVoiceRecording}
+            disabled={uploading}
+          />
+        )}
         
         <Input
-          placeholder="Type your message..."
+          placeholder={sendVia === "email" ? "Type email message..." : "Type WhatsApp message..."}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && !uploading && sendMessage()}

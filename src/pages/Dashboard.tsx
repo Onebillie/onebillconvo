@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, LogOut } from "lucide-react";
+import { MessageSquare, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Conversation, Message, Template, Customer } from "@/types/chat";
 import { ContactList } from "@/components/chat/ContactList";
@@ -23,6 +24,7 @@ import { StatusDialog } from "@/components/conversations/StatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 
 const Dashboard = () => {
+  const { profile, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,8 +154,21 @@ const Dashboard = () => {
   }, [selectedConversation]);
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/settings');
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    navigate("/auth");
+    return null;
+  }
 
   return (
     <div className="h-screen flex bg-background">
@@ -168,9 +183,11 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-2">
               <TaskNotifications />
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <LogOut className="w-4 h-4" />
-              </Button>
+              {profile?.role && ['admin', 'superadmin'].includes(profile.role) && (
+                <Button variant="ghost" size="sm" onClick={handleBack}>
+                  <SettingsIcon className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -264,6 +281,8 @@ const Dashboard = () => {
                 <MessageInput
                   conversationId={selectedConversation.id}
                   customerPhone={selectedConversation.customer.phone || ""}
+                  customerEmail={selectedConversation.customer.email}
+                  lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
                   onMessageSent={() => fetchMessages(selectedConversation.id)}
                 />
               </div>

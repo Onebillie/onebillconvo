@@ -22,10 +22,10 @@ const Index = () => {
           </p>
           <Button 
             size="lg" 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/auth')}
             className="text-lg px-8 py-6"
           >
-            Access Portal
+            Sign In
           </Button>
         </div>
 

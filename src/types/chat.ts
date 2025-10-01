@@ -6,6 +6,7 @@ export interface Customer {
   avatar?: string;
   last_active?: string;
   notes?: string;
+  last_contact_method?: "whatsapp" | "email";
 }
 
 export interface Conversation {
