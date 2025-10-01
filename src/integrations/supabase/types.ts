@@ -344,7 +344,9 @@ export type Database = {
           id: string
           instagram: string | null
           last_active: string | null
+          metadata: Json | null
           name: string
+          notes: string | null
           phone: string | null
           tags: string[] | null
           twitter: string | null
@@ -359,7 +361,9 @@ export type Database = {
           id?: string
           instagram?: string | null
           last_active?: string | null
+          metadata?: Json | null
           name: string
+          notes?: string | null
           phone?: string | null
           tags?: string[] | null
           twitter?: string | null
@@ -374,7 +378,9 @@ export type Database = {
           id?: string
           instagram?: string | null
           last_active?: string | null
+          metadata?: Json | null
           name?: string
+          notes?: string | null
           phone?: string | null
           tags?: string[] | null
           twitter?: string | null

@@ -1,74 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Paperclip, LogOut, Users, Clock, FileText } from "lucide-react";
+import { MessageSquare, LogOut } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-interface Template {
-  id: string;
-  name: string;
-  language: string;
-  status: string;
-  category: string;
-  components: Array<{
-    type: string;
-    text?: string;
-    format?: string;
-  }>;
-}
-
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  avatar?: string;
-  last_active?: string;
-}
-
-interface Conversation {
-  id: string;
-  customer_id: string;
-  status: string;
-  assigned_to?: string;
-  created_at: string;
-  updated_at: string;
-  customer: Customer;
-  unread_count?: number;
-}
-
-interface Message {
-  id: string;
-  content: string;
-  direction: 'inbound' | 'outbound';
-  created_at: string;
-  customer_id: string;
-  is_read: boolean;
-  platform: string;
-  message_attachments?: Array<{
-    id: string;
-    filename: string;
-    url: string;
-    type: string;
-    size: number;
-  }>;
-}
+import { Conversation, Message, Template, Customer } from "@/types/chat";
+import { ContactList } from "@/components/chat/ContactList";
+import { MessageList } from "@/components/chat/MessageList";
+import { MessageInput } from "@/components/chat/MessageInput";
+import { ContactDetails } from "@/components/chat/ContactDetails";
+import { CreateContactDialog } from "@/components/chat/CreateContactDialog";
+import { TemplateSelector } from "@/components/chat/TemplateSelector";
 
 const Dashboard = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [showContactDetails, setShowContactDetails] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -146,62 +97,19 @@ const Dashboard = () => {
 
   const markAsRead = async (conversationId: string) => {
     await supabase
-      .from('messages')
+      .from("messages")
       .update({ is_read: true })
-      .eq('conversation_id', conversationId)
-      .eq('direction', 'inbound');
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
-
-    try {
-      // Send message via WhatsApp API
-      const { error } = await supabase.functions.invoke('whatsapp-send', {
-        body: {
-          to: selectedConversation.customer.phone,
-          message: newMessage,
-        },
-      });
-
-      if (error) throw error;
-
-      setNewMessage("");
-      fetchMessages(selectedConversation.id);
-      toast({
-        title: "Message sent",
-        description: "Your message has been delivered.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
-    }
+      .eq("conversation_id", conversationId)
+      .eq("direction", "inbound");
   };
 
   const fetchTemplates = async () => {
-    setLoadingTemplates(true);
     try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-templates');
-      
+      const { data, error } = await supabase.functions.invoke("whatsapp-templates");
       if (error) throw error;
-      
       setTemplates(data.templates || []);
-      toast({
-        title: "Templates loaded",
-        description: `Found ${data.templates?.length || 0} templates`,
-      });
     } catch (error: any) {
-      console.error('Error fetching templates:', error);
-      toast({
-        title: "Error loading templates",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingTemplates(false);
+      console.error("Error fetching templates:", error);
     }
   };
 
@@ -215,121 +123,37 @@ const Dashboard = () => {
       <div className="w-80 border-r border-border flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
               <MessageSquare className="w-6 h-6 text-primary" />
               <h1 className="font-semibold">Customer Service</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Templates
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>WhatsApp Message Templates</DialogTitle>
-                  </DialogHeader>
-                  <ScrollArea className="h-[calc(100vh-12rem)] mt-4">
-                    {loadingTemplates ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Loading templates...
-                      </div>
-                    ) : templates.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No templates found
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {templates.map((template) => (
-                          <Card key={template.id}>
-                            <CardHeader>
-                              <CardTitle className="text-sm flex items-center justify-between">
-                                <span>{template.name}</span>
-                                <Badge variant={template.status === 'APPROVED' ? 'default' : 'secondary'}>
-                                  {template.status}
-                                </Badge>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                                  <Badge variant="outline">{template.language}</Badge>
-                                  <Badge variant="outline">{template.category}</Badge>
-                                </div>
-                                {template.components.map((component, idx) => (
-                                  component.type === 'BODY' && component.text && (
-                                    <p key={idx} className="text-sm bg-muted p-2 rounded">
-                                      {component.text}
-                                    </p>
-                                  )
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={handleBack}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <CreateContactDialog onContactCreated={fetchConversations} />
+            {selectedConversation && (
+              <TemplateSelector
+                templates={templates}
+                customerPhone={selectedConversation.customer.phone || ""}
+                onTemplateSent={() => fetchMessages(selectedConversation.id)}
+              />
+            )}
           </div>
         </div>
 
         {/* Conversations List */}
         <ScrollArea className="flex-1">
-          <div className="p-2">
-            {conversations.map((conversation) => (
-              <Card 
-                key={conversation.id}
-                className={`mb-2 cursor-pointer transition-colors ${
-                  selectedConversation?.id === conversation.id 
-                    ? 'bg-accent' 
-                    : 'hover:bg-muted'
-                }`}
-                onClick={() => setSelectedConversation(conversation)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={conversation.customer.avatar} />
-                      <AvatarFallback>
-                        {conversation.customer.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium truncate">
-                          {conversation.customer.name}
-                        </p>
-                        <Badge 
-                          variant={conversation.status === 'active' ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {conversation.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {conversation.customer.phone}
-                      </p>
-                      <div className="flex items-center space-x-1 mt-1">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(conversation.updated_at), 'HH:mm')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ContactList
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            onSelectConversation={(conv) => {
+              setSelectedConversation(conv);
+              setShowContactDetails(false);
+            }}
+          />
         </ScrollArea>
       </div>
 
@@ -338,7 +162,10 @@ const Dashboard = () => {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-border">
+            <div
+              className="p-4 border-b border-border cursor-pointer hover:bg-muted/50"
+              onClick={() => setShowContactDetails(!showContactDetails)}
+            >
               <div className="flex items-center space-x-3">
                 <Avatar>
                   <AvatarImage src={selectedConversation.customer.avatar} />
@@ -347,7 +174,9 @@ const Dashboard = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="font-semibold">{selectedConversation.customer.name}</h2>
+                  <h2 className="font-semibold">
+                    {selectedConversation.customer.name}
+                  </h2>
                   <p className="text-sm text-muted-foreground">
                     {selectedConversation.customer.phone}
                   </p>
@@ -355,66 +184,32 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.direction === 'outbound' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.direction === 'outbound'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {format(new Date(message.created_at), 'HH:mm')}
-                      </p>
-                      
-                      {/* Attachments */}
-                      {message.message_attachments && message.message_attachments.map((attachment) => (
-                        <div key={attachment.id} className="mt-2 p-2 bg-background/10 rounded text-xs">
-                          <div className="flex items-center space-x-2">
-                            <Paperclip className="w-3 h-3" />
-                            <span>{attachment.filename}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-
-            {/* Message Input */}
-            <div className="p-4 border-t border-border">
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  className="flex-1"
+            <div className="flex flex-1 overflow-hidden">
+              {/* Messages */}
+              <div className="flex-1 flex flex-col">
+                <MessageList messages={messages} />
+                <MessageInput
+                  conversationId={selectedConversation.id}
+                  customerPhone={selectedConversation.customer.phone || ""}
+                  onMessageSent={() => fetchMessages(selectedConversation.id)}
                 />
-                <Button size="icon" variant="ghost">
-                  <Paperclip className="w-4 h-4" />
-                </Button>
-                <Button onClick={sendMessage} disabled={!newMessage.trim()}>
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
+
+              {/* Contact Details Panel */}
+              {showContactDetails && (
+                <div className="w-80 border-l border-border overflow-y-auto">
+                  <ContactDetails
+                    customer={selectedConversation.customer}
+                    onUpdate={fetchConversations}
+                  />
+                </div>
+              )}
             </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground">
                 Select a conversation to start messaging
               </h3>
