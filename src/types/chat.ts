@@ -12,6 +12,7 @@ export interface Conversation {
   id: string;
   customer_id: string;
   status: string;
+  status_tag_id?: string;
   assigned_to?: string;
   created_at: string;
   updated_at: string;

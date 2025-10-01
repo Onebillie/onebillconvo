@@ -7,9 +7,10 @@ import { MessageStatusIndicator } from "./MessageStatusIndicator";
 
 interface MessageListProps {
   messages: Message[];
+  onCreateTask?: (message: Message) => void;
 }
 
-export const MessageList = ({ messages }: MessageListProps) => {
+export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
   const renderAttachment = (attachment: any) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
 
@@ -75,11 +76,17 @@ export const MessageList = ({ messages }: MessageListProps) => {
                   }`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm ${
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-sm transition-all cursor-pointer ${
                       message.direction === "outbound"
-                        ? "bg-primary text-primary-foreground rounded-tr-sm"
-                        : "bg-muted rounded-tl-sm"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm hover:shadow-md"
+                        : "bg-muted rounded-tl-sm hover:shadow-md"
                     }`}
+                    onContextMenu={(e) => {
+                      if (onCreateTask) {
+                        e.preventDefault();
+                        onCreateTask(message);
+                      }
+                    }}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     

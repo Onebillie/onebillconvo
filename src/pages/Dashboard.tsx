@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [contextMenuConversation, setContextMenuConversation] = useState<Conversation | null>(null);
+  const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null);
   const navigate = useNavigate();
 
   const fetchConversations = async () => {
@@ -165,9 +166,12 @@ const Dashboard = () => {
               <MessageSquare className="w-6 h-6 text-primary" />
               <h1 className="font-semibold">Customer Service</h1>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <TaskNotifications />
+              <Button variant="ghost" size="sm" onClick={handleBack}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <CreateContactDialog onContactCreated={fetchConversations} />
@@ -190,6 +194,22 @@ const Dashboard = () => {
               setSelectedConversation(conv);
               setShowContactDetails(false);
             }}
+            contextMenu={(conversation) => (
+              <ConversationContextMenu
+                onAssign={() => {
+                  setContextMenuConversation(conversation);
+                  setAssignDialogOpen(true);
+                }}
+                onChangeStatus={() => {
+                  setContextMenuConversation(conversation);
+                  setStatusDialogOpen(true);
+                }}
+                onCreateTask={() => {
+                  setContextMenuConversation(conversation);
+                  setTaskDialogOpen(true);
+                }}
+              />
+            )}
           />
         </ScrollArea>
       </div>
@@ -234,7 +254,13 @@ const Dashboard = () => {
             <div className="flex flex-1 overflow-hidden">
               {/* Messages */}
               <div className="flex-1 flex flex-col">
-                <MessageList messages={messages} />
+                <MessageList 
+                  messages={messages}
+                  onCreateTask={(message) => {
+                    setSelectedMessageForTask(message);
+                    setTaskDialogOpen(true);
+                  }}
+                />
                 <MessageInput
                   conversationId={selectedConversation.id}
                   customerPhone={selectedConversation.customer.phone || ""}
@@ -264,6 +290,52 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Dialogs */}
+      {contextMenuConversation && (
+        <>
+          <AssignDialog
+            open={assignDialogOpen}
+            onOpenChange={setAssignDialogOpen}
+            conversationId={contextMenuConversation.id}
+            currentAssignedTo={contextMenuConversation.assigned_to || undefined}
+            onAssignmentChange={() => {
+              fetchConversations();
+              if (selectedConversation?.id === contextMenuConversation.id) {
+                setSelectedConversation({ ...contextMenuConversation });
+              }
+            }}
+          />
+          <StatusDialog
+            open={statusDialogOpen}
+            onOpenChange={setStatusDialogOpen}
+            conversationId={contextMenuConversation.id}
+            currentStatusId={contextMenuConversation.status_tag_id || undefined}
+            onStatusChange={fetchConversations}
+          />
+        </>
+      )}
+      
+      <TaskDialog
+        open={taskDialogOpen}
+        onOpenChange={(open) => {
+          setTaskDialogOpen(open);
+          if (!open) {
+            setSelectedMessageForTask(null);
+            setContextMenuConversation(null);
+          }
+        }}
+        conversationId={contextMenuConversation?.id || selectedConversation?.id}
+        customerId={contextMenuConversation?.customer_id || selectedConversation?.customer_id}
+        messageId={selectedMessageForTask?.id}
+        messageContent={selectedMessageForTask?.content}
+        onTaskCreated={() => {
+          toast({
+            title: "Task Created",
+            description: "The task has been created successfully",
+          });
+        }}
+      />
     </div>
   );
 };

@@ -8,12 +8,14 @@ interface ContactListProps {
   conversations: Conversation[];
   selectedConversation: Conversation | null;
   onSelectConversation: (conversation: Conversation) => void;
+  contextMenu?: (conversation: Conversation) => React.ReactNode;
 }
 
 export const ContactList = ({
   conversations,
   selectedConversation,
   onSelectConversation,
+  contextMenu,
 }: ContactListProps) => {
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
@@ -38,7 +40,7 @@ export const ContactList = ({
           }`}
           onClick={() => onSelectConversation(conversation)}
         >
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 flex-1">
             <div className="relative">
               <Avatar className="w-12 h-12">
                 <AvatarImage src={conversation.customer.avatar} />
@@ -65,18 +67,28 @@ export const ContactList = ({
                 </span>
               </div>
               
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground truncate flex-1">
                   {conversation.customer.phone}
                 </p>
                 {conversation.assigned_to && (
-                  <Badge variant="outline" className="text-xs ml-2">
-                    {conversation.assigned_to}
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                    Assigned
+                  </Badge>
+                )}
+                {conversation.status_tag_id && (
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                    {conversation.status}
                   </Badge>
                 )}
               </div>
             </div>
           </div>
+          {contextMenu && (
+            <div onClick={(e) => e.stopPropagation()}>
+              {contextMenu(conversation)}
+            </div>
+          )}
         </div>
       ))}
     </div>
