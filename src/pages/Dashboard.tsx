@@ -53,12 +53,9 @@ const Dashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAuth();
     fetchConversations();
   }, []);
 
@@ -69,33 +66,6 @@ const Dashboard = () => {
     }
   }, [selectedConversation]);
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-
-    const { data: adminUser } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (!adminUser) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have agent permissions.",
-        variant: "destructive",
-      });
-      await supabase.auth.signOut();
-      navigate('/auth');
-      return;
-    }
-
-    setUser(session.user);
-    setLoading(false);
-  };
 
   const fetchConversations = async () => {
     const { data, error } = await supabase
@@ -194,18 +164,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+  const handleBack = () => {
+    navigate('/');
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen flex bg-background">
@@ -218,7 +179,7 @@ const Dashboard = () => {
               <MessageSquare className="w-6 h-6 text-primary" />
               <h1 className="font-semibold">Customer Service</h1>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <Button variant="ghost" size="sm" onClick={handleBack}>
               <LogOut className="w-4 h-4" />
             </Button>
           </div>

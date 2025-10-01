@@ -1,22 +1,11 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Users, Shield } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/dashboard');
-      }
-    });
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +22,7 @@ const Index = () => {
           </p>
           <Button 
             size="lg" 
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/dashboard')}
             className="text-lg px-8 py-6"
           >
             Access Portal
