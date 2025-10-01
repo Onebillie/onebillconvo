@@ -90,6 +90,7 @@ serve(async (req) => {
 
     if (!whatsappResponse.ok) {
       console.error('WhatsApp API error:', responseData);
+      console.error('Request payload:', JSON.stringify(whatsappPayload, null, 2));
       return new Response(
         JSON.stringify({ error: 'Failed to send message', details: responseData }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
