@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Bell, Check, X, Clock, AlertCircle } from "lucide-react";
+import { Bell, Check, X, Clock, AlertCircle, Calendar } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { downloadICS } from "@/lib/icsExport";
 
 interface Task {
   id: string;
@@ -232,6 +233,19 @@ export const TaskNotifications = () => {
                     </div>
 
                     <div className="flex flex-col gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadICS(notification.tasks);
+                          toast({ title: "Calendar event exported" });
+                        }}
+                        title="Export to calendar"
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="icon"
                         variant="ghost"

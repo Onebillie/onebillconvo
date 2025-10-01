@@ -9,8 +9,20 @@ verify_jwt = true
 [functions.whatsapp-webhook]
 verify_jwt = false
 
+[functions.whatsapp-submit-template]
+verify_jwt = true
+
 [functions.send-email]
 verify_jwt = true
 
 [functions.email-webhook]
+verify_jwt = false
+
+[functions.api-conversations]
+verify_jwt = false
+
+[functions.api-customers]
+verify_jwt = false
+
+[functions.api-send-message]
 verify_jwt = false
