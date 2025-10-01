@@ -16,6 +16,11 @@ import { TemplateSelector } from "@/components/chat/TemplateSelector";
 import { AdminAssignment } from "@/components/chat/AdminAssignment";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
+import { TaskNotifications } from "@/components/tasks/TaskNotifications";
+import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
+import { AssignDialog } from "@/components/conversations/AssignDialog";
+import { StatusDialog } from "@/components/conversations/StatusDialog";
+import { TaskDialog } from "@/components/tasks/TaskDialog";
 
 const Dashboard = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -23,6 +28,10 @@ const Dashboard = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [showContactDetails, setShowContactDetails] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [contextMenuConversation, setContextMenuConversation] = useState<Conversation | null>(null);
   const navigate = useNavigate();
 
   const fetchConversations = async () => {
