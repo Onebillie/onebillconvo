@@ -12,6 +12,7 @@ import { TaskSettings } from "@/components/settings/TaskSettings";
 import { BusinessSettings } from "@/components/settings/BusinessSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { WhatsAppTemplateManagement } from "@/components/settings/WhatsAppTemplateManagement";
+import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
@@ -71,7 +72,7 @@ export default function Settings() {
       {/* Content */}
       <div className="container mx-auto p-6">
         <Tabs defaultValue="staff" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-8 lg:w-auto lg:inline-grid">
             {isSuperAdmin && <TabsTrigger value="staff">Staff</TabsTrigger>}
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
@@ -79,6 +80,7 @@ export default function Settings() {
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="api">API Access</TabsTrigger>}
           </TabsList>
 
           {isSuperAdmin && (
@@ -110,6 +112,12 @@ export default function Settings() {
           <TabsContent value="calendar">
             <CalendarSettings />
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="api">
+              <ApiAccessManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

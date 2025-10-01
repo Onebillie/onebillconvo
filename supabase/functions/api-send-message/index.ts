@@ -14,17 +14,30 @@ serve(async (req) => {
   try {
     // Verify API key
     const apiKey = req.headers.get('x-api-key');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
     
-    if (apiKey !== serviceRoleKey) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Check if it's a valid API key from our database
+    const { data: keyData, error: keyError } = await supabase
+      .from('api_keys')
+      .select('*')
+      .eq('key_hash', apiKey)
+      .eq('is_active', true)
+      .single();
+    
+    if (keyError || !keyData) {
+      return new Response(JSON.stringify({ error: 'Invalid API key' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey!);
+    // Update last used timestamp
+    await supabase
+      .from('api_keys')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('id', keyData.id);
 
     const { customerId, channel, content, subject } = await req.json();
 
