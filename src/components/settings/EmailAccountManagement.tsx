@@ -1,0 +1,469 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+interface EmailAccount {
+  id: string;
+  name: string;
+  email_address: string;
+  imap_host: string;
+  imap_port: number;
+  imap_username: string;
+  imap_password: string;
+  imap_use_ssl: boolean;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_username: string;
+  smtp_password: string;
+  smtp_use_ssl: boolean;
+  is_active: boolean;
+  sync_enabled: boolean;
+  sync_interval_minutes: number;
+  last_sync_at: string | null;
+}
+
+export function EmailAccountManagement() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email_address: "",
+    imap_host: "",
+    imap_port: 993,
+    imap_username: "",
+    imap_password: "",
+    imap_use_ssl: true,
+    smtp_host: "",
+    smtp_port: 465,
+    smtp_username: "",
+    smtp_password: "",
+    smtp_use_ssl: true,
+    sync_enabled: true,
+    sync_interval_minutes: 5,
+  });
+
+  const { data: accounts, isLoading } = useQuery({
+    queryKey: ['email-accounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as EmailAccount[];
+    }
+  });
+
+  const addAccountMutation = useMutation({
+    mutationFn: async (accountData: typeof formData) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .insert({
+          ...accountData,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+      toast({
+        title: "Email account added",
+        description: "Your email account has been configured successfully.",
+      });
+      setIsAddDialogOpen(false);
+      setFormData({
+        name: "",
+        email_address: "",
+        imap_host: "",
+        imap_port: 993,
+        imap_username: "",
+        imap_password: "",
+        imap_use_ssl: true,
+        smtp_host: "",
+        smtp_port: 465,
+        smtp_username: "",
+        smtp_password: "",
+        smtp_use_ssl: true,
+        sync_enabled: true,
+        sync_interval_minutes: 5,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error adding account",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('email_accounts')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+      toast({
+        title: "Email account deleted",
+        description: "The email account has been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting account",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const syncNowMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase.functions.invoke('email-sync', {
+        body: { account_id: accountId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+      toast({
+        title: "Email sync completed",
+        description: `Fetched ${data.fetched} emails, processed ${data.processed}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const toggleAccountMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase
+        .from('email_accounts')
+        .update({ is_active })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addAccountMutation.mutate(formData);
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8">Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Email Accounts</h2>
+          <p className="text-muted-foreground">
+            Connect your email accounts to sync emails with your CRM
+          </p>
+        </div>
+        
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Email Account
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Email Account</DialogTitle>
+              <DialogDescription>
+                Configure your cPanel or other email account for two-way sync
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Account Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Support Email"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email_address}
+                  onChange={(e) => setFormData({ ...formData, email_address: e.target.value })}
+                  placeholder="support@yourdomain.com"
+                  required
+                />
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3">IMAP Settings (Incoming Mail)</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="imap_host">IMAP Host</Label>
+                    <Input
+                      id="imap_host"
+                      value={formData.imap_host}
+                      onChange={(e) => setFormData({ ...formData, imap_host: e.target.value })}
+                      placeholder="mail.yourdomain.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="imap_port">Port</Label>
+                    <Input
+                      id="imap_port"
+                      type="number"
+                      value={formData.imap_port}
+                      onChange={(e) => setFormData({ ...formData, imap_port: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="imap_username">Username</Label>
+                    <Input
+                      id="imap_username"
+                      value={formData.imap_username}
+                      onChange={(e) => setFormData({ ...formData, imap_username: e.target.value })}
+                      placeholder="support@yourdomain.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="imap_password">Password</Label>
+                    <Input
+                      id="imap_password"
+                      type="password"
+                      value={formData.imap_password}
+                      onChange={(e) => setFormData({ ...formData, imap_password: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3">SMTP Settings (Outgoing Mail)</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_host">SMTP Host</Label>
+                    <Input
+                      id="smtp_host"
+                      value={formData.smtp_host}
+                      onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })}
+                      placeholder="mail.yourdomain.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_port">Port</Label>
+                    <Input
+                      id="smtp_port"
+                      type="number"
+                      value={formData.smtp_port}
+                      onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_username">Username</Label>
+                    <Input
+                      id="smtp_username"
+                      value={formData.smtp_username}
+                      onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })}
+                      placeholder="support@yourdomain.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_password">Password</Label>
+                    <Input
+                      id="smtp_password"
+                      type="password"
+                      value={formData.smtp_password}
+                      onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sync_enabled">Enable Email Sync</Label>
+                  <Switch
+                    id="sync_enabled"
+                    checked={formData.sync_enabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, sync_enabled: checked })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sync_interval">Sync Interval (minutes)</Label>
+                  <Input
+                    id="sync_interval"
+                    type="number"
+                    value={formData.sync_interval_minutes}
+                    onChange={(e) => setFormData({ ...formData, sync_interval_minutes: parseInt(e.target.value) })}
+                    min={1}
+                    max={60}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addAccountMutation.isPending}>
+                  {addAccountMutation.isPending ? "Adding..." : "Add Account"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {!accounts || accounts.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Mail className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center mb-4">
+              No email accounts configured yet.<br />
+              Add your first email account to start syncing.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {accounts.map((account) => (
+            <Card key={account.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                      {account.name}
+                      {account.is_active ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </CardTitle>
+                    <CardDescription>{account.email_address}</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => syncNowMutation.mutate(account.id)}
+                      disabled={!account.is_active || syncNowMutation.isPending}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Sync Now
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteAccountMutation.mutate(account.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Active</span>
+                    <Switch
+                      checked={account.is_active}
+                      onCheckedChange={(checked) =>
+                        toggleAccountMutation.mutate({ id: account.id, is_active: checked })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">IMAP Server</span>
+                    <span>{account.imap_host}:{account.imap_port}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">SMTP Server</span>
+                    <span>{account.smtp_host}:{account.smtp_port}</span>
+                  </div>
+                  {account.last_sync_at && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Last Synced</span>
+                      <span>{new Date(account.last_sync_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Note: IMAP/SMTP Integration Status</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            The email account management interface is ready, but actual IMAP/SMTP connectivity requires additional libraries.
+          </p>
+          <p>
+            <strong>Next steps to complete full integration:</strong>
+          </p>
+          <ul className="list-disc list-inside space-y-1 ml-4">
+            <li>Deploy IMAP client library for Deno edge functions</li>
+            <li>Implement SMTP sending functionality</li>
+            <li>Set up automated sync scheduling (cron jobs)</li>
+            <li>Add email parsing for attachments and threading</li>
+          </ul>
+          <p className="pt-2">
+            For now, you can continue using Resend for outgoing emails, and this system will be ready 
+            for full IMAP/SMTP integration when the backend libraries are deployed.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -14,6 +14,7 @@ import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { WhatsAppTemplateManagement } from "@/components/settings/WhatsAppTemplateManagement";
 import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
+import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
 
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
@@ -73,10 +74,11 @@ export default function Settings() {
       {/* Content */}
       <div className="container mx-auto p-6">
         <Tabs defaultValue="staff" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-10 lg:w-auto lg:inline-grid">
             {isSuperAdmin && <TabsTrigger value="staff">Staff</TabsTrigger>}
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
@@ -97,6 +99,10 @@ export default function Settings() {
 
           <TabsContent value="whatsapp">
             <WhatsAppTemplateManagement />
+          </TabsContent>
+
+          <TabsContent value="email">
+            <EmailAccountManagement />
           </TabsContent>
 
           <TabsContent value="statuses">

@@ -530,6 +530,119 @@ export type Database = {
         }
         Relationships: []
       }
+      email_accounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email_address: string
+          id: string
+          imap_host: string
+          imap_password: string
+          imap_port: number
+          imap_use_ssl: boolean
+          imap_username: string
+          is_active: boolean
+          last_sync_at: string | null
+          name: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port: number
+          smtp_use_ssl: boolean
+          smtp_username: string
+          sync_enabled: boolean
+          sync_interval_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email_address: string
+          id?: string
+          imap_host: string
+          imap_password: string
+          imap_port?: number
+          imap_use_ssl?: boolean
+          imap_username: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port?: number
+          smtp_use_ssl?: boolean
+          smtp_username: string
+          sync_enabled?: boolean
+          sync_interval_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email_address?: string
+          id?: string
+          imap_host?: string
+          imap_password?: string
+          imap_port?: number
+          imap_use_ssl?: boolean
+          imap_username?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name?: string
+          smtp_host?: string
+          smtp_password?: string
+          smtp_port?: number
+          smtp_use_ssl?: boolean
+          smtp_username?: string
+          sync_enabled?: boolean
+          sync_interval_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_sync_logs: {
+        Row: {
+          created_at: string
+          email_account_id: string
+          emails_fetched: number | null
+          emails_processed: number | null
+          error_message: string | null
+          id: string
+          status: string
+          sync_completed_at: string | null
+          sync_started_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_account_id: string
+          emails_fetched?: number | null
+          emails_processed?: number | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_account_id?: string
+          emails_fetched?: number | null
+          emails_processed?: number | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_logs_email_account_id_fkey"
+            columns: ["email_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_attachments: {
         Row: {
           created_at: string | null
