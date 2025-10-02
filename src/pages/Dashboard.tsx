@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, LogOut, Settings as SettingsIcon, Bell } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Conversation, Message, Template, Customer } from "@/types/chat";
 import { ContactList } from "@/components/chat/ContactList";
@@ -17,6 +18,7 @@ import { TemplateSelector } from "@/components/chat/TemplateSelector";
 import { AdminAssignment } from "@/components/chat/AdminAssignment";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
+import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { TaskNotifications } from "@/components/tasks/TaskNotifications";
 import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
 import { AssignDialog } from "@/components/conversations/AssignDialog";
@@ -26,6 +28,7 @@ import { ConversationFilters } from "@/components/chat/ConversationFilters";
 
 const Dashboard = () => {
   const { profile, loading: authLoading } = useAuth();
+  const { unreadCount } = useGlobalNotifications();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -249,6 +252,11 @@ const Dashboard = () => {
             <div className="flex items-center space-x-2">
               <MessageSquare className="w-6 h-6 text-primary" />
               <h1 className="font-semibold">Customer Service</h1>
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {unreadCount}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <TaskNotifications />

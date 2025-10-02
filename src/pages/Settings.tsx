@@ -4,7 +4,9 @@ import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, Settings as SettingsIcon, MessageSquare } from "lucide-react";
+import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { StaffManagement } from "@/components/settings/StaffManagement";
 import { TemplateManagement } from "@/components/settings/TemplateManagement";
 import { StatusManagement } from "@/components/settings/StatusManagement";
@@ -20,6 +22,7 @@ import { NotificationSettings } from "@/components/settings/NotificationSettings
 
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
+  const { unreadCount } = useGlobalNotifications();
 
   if (loading) {
     return (
@@ -63,8 +66,14 @@ export default function Settings() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">{profile.full_name}</span>
-            <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard'}>
-              Back to Dashboard
+            <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard'} className="relative">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Dashboard
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-xs">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4" />
