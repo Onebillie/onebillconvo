@@ -15,6 +15,7 @@ import { WhatsAppTemplateManagement } from "@/components/settings/WhatsAppTempla
 import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
+import { NotificationSettings } from "@/components/settings/NotificationSettings";
 
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
@@ -113,8 +114,9 @@ export default function Settings() {
             <TaskSettings />
           </TabsContent>
 
-          <TabsContent value="business">
+          <TabsContent value="business" className="space-y-4">
             <BusinessSettings />
+            <NotificationSettings />
           </TabsContent>
 
           <TabsContent value="calendar">

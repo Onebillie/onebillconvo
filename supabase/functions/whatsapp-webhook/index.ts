@@ -165,6 +165,31 @@ async function processMessages(messageData: any, supabase: any) {
       }
 
       console.log('Message processed successfully:', newMessage.id);
+
+      // Send push notification to all active users
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            payload: {
+              title: 'New WhatsApp Message',
+              body: `${customerName}: ${messageContent}`,
+              icon: '/favicon.ico',
+              tag: `whatsapp-${conversation.id}`,
+              data: {
+                url: '/dashboard',
+                conversationId: conversation.id
+              }
+            }
+          })
+        });
+      } catch (pushError) {
+        console.error('Error sending push notification:', pushError);
+      }
     } catch (error) {
       console.error('Error processing message:', error);
     }

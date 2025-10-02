@@ -170,6 +170,31 @@ serve(async (req) => {
       }
 
       console.log('Email message processed successfully');
+
+      // Send push notification to all active users
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            payload: {
+              title: 'New Email Message',
+              body: `From: ${fromEmail}`,
+              icon: '/favicon.ico',
+              tag: `email-${conversation.id}`,
+              data: {
+                url: '/dashboard',
+                conversationId: conversation.id
+              }
+            }
+          })
+        });
+      } catch (pushError) {
+        console.error('Error sending push notification:', pushError);
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
