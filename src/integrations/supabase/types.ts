@@ -256,6 +256,7 @@ export type Database = {
         Row: {
           access_token: string | null
           api_key: string | null
+          calendar_id: string | null
           calendar_url: string | null
           created_at: string
           created_by: string | null
@@ -265,17 +266,20 @@ export type Database = {
           include_description: boolean
           is_active: boolean
           last_sync_at: string | null
+          last_sync_error: string | null
           name: string
           provider: string
           refresh_token: string | null
           sync_completed_tasks: boolean
           sync_interval_minutes: number
           sync_tasks: boolean
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
           access_token?: string | null
           api_key?: string | null
+          calendar_id?: string | null
           calendar_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -285,17 +289,20 @@ export type Database = {
           include_description?: boolean
           is_active?: boolean
           last_sync_at?: string | null
+          last_sync_error?: string | null
           name: string
           provider: string
           refresh_token?: string | null
           sync_completed_tasks?: boolean
           sync_interval_minutes?: number
           sync_tasks?: boolean
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string | null
           api_key?: string | null
+          calendar_id?: string | null
           calendar_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -305,12 +312,14 @@ export type Database = {
           include_description?: boolean
           is_active?: boolean
           last_sync_at?: string | null
+          last_sync_error?: string | null
           name?: string
           provider?: string
           refresh_token?: string | null
           sync_completed_tasks?: boolean
           sync_interval_minutes?: number
           sync_tasks?: boolean
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
