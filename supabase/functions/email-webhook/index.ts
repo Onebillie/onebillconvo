@@ -79,11 +79,29 @@ serve(async (req) => {
       const fromEmail = from.email || from;
       const content = text || html || '';
 
-      // Find customer by email
+      // Check if message already exists (prevent duplicates)
+      const messageId = data.email_id || data.message_id;
+      if (messageId) {
+        const { data: existingMessage } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('external_message_id', messageId)
+          .maybeSingle();
+
+        if (existingMessage) {
+          console.log('Email already processed, skipping');
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Find customer by email OR phone
       let { data: customer, error: customerError } = await supabase
         .from('customers')
         .select('*')
-        .eq('email', fromEmail)
+        .or(`email.eq.${fromEmail},phone.eq.${fromEmail}`)
         .maybeSingle();
 
       if (customerError) {
@@ -161,6 +179,7 @@ serve(async (req) => {
           direction: 'inbound',
           platform: 'email',
           channel: 'email',
+          external_message_id: messageId || null,
           is_read: false,
         });
 

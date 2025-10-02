@@ -147,27 +147,32 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
   console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port}`);
   
   try {
-    const { ImapClient } = await import("https://deno.land/x/imap_client@0.5.1/mod.ts");
+    const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
     const client = new ImapClient({
-      connection: {
-        hostname: account.imap_host,
-        port: account.imap_port,
-        tls: account.imap_use_ssl,
-        auth: {
-          username: account.imap_username,
-          password: account.imap_password,
-        },
+      hostname: account.imap_host,
+      port: account.imap_port,
+      tls: account.imap_use_ssl,
+      auth: {
+        username: account.imap_username,
+        password: account.imap_password,
       },
     });
 
     await client.connect();
+    console.log('Connected to IMAP server');
     
     // Select INBOX
-    await client.select("INBOX");
+    await client.selectMailbox("INBOX");
+    console.log('Selected INBOX');
     
-    // Search for unseen emails (last 50)
-    const messageIds = await client.search(["UNSEEN"]);
+    // Calculate date 7 days ago to fetch recent emails (read or unread)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const dateStr = sevenDaysAgo.toISOString().split('T')[0].replace(/-/g, '');
+    
+    // Search for emails from last 7 days (both read and unread)
+    const messageIds = await client.search([`SINCE ${dateStr}`]);
     
     if (!messageIds || messageIds.length === 0) {
       console.log('No new emails found');
@@ -179,31 +184,30 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
     
     const emails: ParsedEmail[] = [];
     
-    // Fetch email details (limit to last 50 to avoid overload)
-    const idsToFetch = messageIds.slice(-50);
+    // Fetch email details (limit to last 100 to avoid overload)
+    const idsToFetch = messageIds.slice(-100);
+    console.log(`Fetching ${idsToFetch.length} emails`);
     
     for (const msgId of idsToFetch) {
       try {
-        const message = await client.fetch(msgId, {
-          body: true,
-          headers: true,
+        const message = await client.fetchMessage(msgId, {
+          bodyStructure: true,
           envelope: true,
+          flags: true,
         });
         
         if (!message) continue;
         
-        // Parse email body
+        // Fetch full body
+        const bodyPart = await client.fetchMessageBody(msgId);
         let bodyText = '';
         let bodyHtml = '';
         
-        if (message.body) {
-          if (typeof message.body === 'string') {
-            bodyText = message.body;
-          } else if (message.body.text) {
-            bodyText = message.body.text;
-          }
-          if (message.body.html) {
-            bodyHtml = message.body.html;
+        if (bodyPart) {
+          // Parse body - simplified approach
+          bodyText = bodyPart.toString();
+          if (bodyText.includes('<html') || bodyText.includes('<HTML')) {
+            bodyHtml = bodyText;
           }
         }
         
@@ -214,9 +218,9 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
           body: bodyText,
           html: bodyHtml,
           date: message.envelope?.date ? new Date(message.envelope.date) : new Date(),
-          messageId: message.headers?.['message-id']?.[0] || `msg-${msgId}`,
-          inReplyTo: message.headers?.['in-reply-to']?.[0],
-          references: message.headers?.['references'] || [],
+          messageId: message.envelope?.messageId || `msg-${msgId}`,
+          inReplyTo: message.envelope?.inReplyTo,
+          references: message.envelope?.references || [],
         };
         
         emails.push(parsedEmail);
@@ -225,7 +229,7 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
       }
     }
     
-    await client.close();
+    await client.logout();
     return emails;
   } catch (error: any) {
     console.error('IMAP fetch error:', error);
@@ -243,11 +247,23 @@ async function processIncomingEmail(
   // Extract email address from "Name <email@domain.com>" format
   const fromEmail = email.from.match(/<(.+)>/)?.[1] || email.from;
 
-  // Find or create customer
+  // Check if message already exists (prevent duplicates)
+  const { data: existingMessage } = await supabase
+    .from('messages')
+    .select('id')
+    .eq('external_message_id', email.messageId)
+    .maybeSingle();
+
+  if (existingMessage) {
+    console.log('Email already processed, skipping');
+    return;
+  }
+
+  // Find customer by email OR phone (normalized)
   let { data: customer } = await supabase
     .from('customers')
     .select('*')
-    .eq('email', fromEmail)
+    .or(`email.eq.${fromEmail},phone.eq.${fromEmail}`)
     .maybeSingle();
 
   if (!customer) {
