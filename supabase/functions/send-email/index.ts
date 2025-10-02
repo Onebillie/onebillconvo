@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get business settings for email configuration
     const { data: settings } = await supabase
       .from("business_settings")
-      .select("company_name, support_email, from_email, reply_to_email, email_subject_template")
+      .select("company_name, support_email, from_email, reply_to_email, email_subject_template, email_signature")
       .single();
 
     const fromEmail = settings?.from_email || settings?.support_email || "onboarding@resend.dev";
@@ -51,6 +51,10 @@ const handler = async (req: Request): Promise<Response> => {
     let emailSubject = subject || settings?.email_subject_template || "Message from {{company_name}}";
     emailSubject = emailSubject.replace(/\{\{company_name\}\}/g, companyName);
 
+    const signature = settings?.email_signature 
+      ? settings.email_signature.replace(/\n/g, '<br>')
+      : `Best regards,<br>${companyName}`;
+
     const emailConfig: any = {
       from: `${companyName} <${fromEmail}>`,
       to: [to],
@@ -60,8 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p>${content.replace(/\n/g, '<br>')}</p>
           <br>
           <p style="color: #666; font-size: 14px;">
-            Best regards,<br>
-            ${companyName}
+            ${signature}
           </p>
         </div>
       `,

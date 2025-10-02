@@ -17,6 +17,7 @@ interface BusinessInfo {
   from_email?: string;
   reply_to_email?: string;
   email_subject_template?: string;
+  email_signature?: string;
 }
 
 export const BusinessSettings = () => {
@@ -31,6 +32,7 @@ export const BusinessSettings = () => {
     from_email: "",
     reply_to_email: "",
     email_subject_template: "",
+    email_signature: "",
   });
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export const BusinessSettings = () => {
           from_email: formData.from_email,
           reply_to_email: formData.reply_to_email,
           email_subject_template: formData.email_subject_template,
+          email_signature: formData.email_signature,
         })
         .eq("id", formData.id);
 
@@ -160,6 +163,19 @@ export const BusinessSettings = () => {
             />
             <p className="text-sm text-muted-foreground">
               Use {'{{company_name}}'} as placeholder
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Email Signature</Label>
+            <Textarea
+              value={formData.email_signature || ""}
+              onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
+              placeholder="Best regards,&#10;Your Company Team&#10;support@example.com"
+              rows={4}
+            />
+            <p className="text-sm text-muted-foreground">
+              This signature will be added to all outgoing emails
             </p>
           </div>
 

@@ -156,6 +156,7 @@ export type Database = {
         Row: {
           company_logo: string | null
           company_name: string | null
+          email_signature: string | null
           email_subject_template: string | null
           from_email: string | null
           id: string
@@ -169,6 +170,7 @@ export type Database = {
         Insert: {
           company_logo?: string | null
           company_name?: string | null
+          email_signature?: string | null
           email_subject_template?: string | null
           from_email?: string | null
           id?: string
@@ -182,6 +184,7 @@ export type Database = {
         Update: {
           company_logo?: string | null
           company_name?: string | null
+          email_signature?: string | null
           email_subject_template?: string | null
           from_email?: string | null
           id?: string
