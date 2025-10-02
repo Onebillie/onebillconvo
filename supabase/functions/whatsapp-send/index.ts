@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,15 +16,64 @@ serve(async (req) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN')!;
-  const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_ID')!;
-  
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   try {
-    const { to, message, attachments } = await req.json();
+    const { to, message, attachments, whatsapp_account_id, conversation_id } = await req.json();
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+    let phoneNumberId = Deno.env.get('WHATSAPP_PHONE_ID');
+
+    // Try to get account-specific credentials
+    let accountId = whatsapp_account_id;
+
+    // If no account_id provided but conversation_id is, fetch from conversation
+    if (!accountId && conversation_id) {
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('whatsapp_account_id')
+        .eq('id', conversation_id)
+        .single();
+      
+      accountId = conversation?.whatsapp_account_id;
+    }
+
+    // If we have an account_id, fetch credentials from database
+    if (accountId) {
+      const { data: account, error: accountError } = await supabase
+        .from('whatsapp_accounts')
+        .select('access_token, phone_number_id, is_active')
+        .eq('id', accountId)
+        .single();
+
+      if (account && account.is_active) {
+        accessToken = account.access_token;
+        phoneNumberId = account.phone_number_id;
+        console.log('Using account-specific credentials');
+      }
+    } else {
+      // Fall back to default account if no specific account
+      const { data: defaultAccount } = await supabase
+        .from('whatsapp_accounts')
+        .select('access_token, phone_number_id, is_active, id')
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .single();
+
+      if (defaultAccount) {
+        accessToken = defaultAccount.access_token;
+        phoneNumberId = defaultAccount.phone_number_id;
+        accountId = defaultAccount.id;
+        console.log('Using default account credentials');
+      }
+    }
+
+    if (!accessToken || !phoneNumberId) {
+      throw new Error('WhatsApp credentials not configured');
+    }
 
     if (!to || !message) {
       return new Response(
@@ -121,7 +170,11 @@ serve(async (req) => {
       if (!conversation) {
         const { data: newConv, error: newConvError } = await supabase
           .from('conversations')
-          .insert({ customer_id: customer.id, status: 'active' })
+          .insert({ 
+            customer_id: customer.id, 
+            status: 'active',
+            whatsapp_account_id: accountId
+          })
           .select()
           .single();
         if (newConvError) {

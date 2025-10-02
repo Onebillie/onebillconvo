@@ -12,6 +12,7 @@ import { TaskSettings } from "@/components/settings/TaskSettings";
 import { BusinessSettings } from "@/components/settings/BusinessSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { WhatsAppTemplateManagement } from "@/components/settings/WhatsAppTemplateManagement";
+import { WhatsAppAccountManagement } from "@/components/settings/WhatsAppAccountManagement";
 import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
@@ -75,10 +76,11 @@ export default function Settings() {
       {/* Content */}
       <div className="container mx-auto p-6">
         <Tabs defaultValue="staff" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-11 lg:w-auto lg:inline-grid">
             {isSuperAdmin && <TabsTrigger value="staff">Staff</TabsTrigger>}
             <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="whatsapp-templates">WA Templates</TabsTrigger>
+            <TabsTrigger value="whatsapp-accounts">WA Accounts</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -98,8 +100,12 @@ export default function Settings() {
             <TemplateManagement />
           </TabsContent>
 
-          <TabsContent value="whatsapp">
+          <TabsContent value="whatsapp-templates">
             <WhatsAppTemplateManagement />
+          </TabsContent>
+
+          <TabsContent value="whatsapp-accounts">
+            <WhatsAppAccountManagement />
           </TabsContent>
 
           <TabsContent value="email">

@@ -14,17 +14,33 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const verifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!;
-  
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
+    const url = new URL(req.url);
+    const accountId = url.searchParams.get('account_id');
+
     if (req.method === 'GET') {
       // Webhook verification
-      const url = new URL(req.url);
       const mode = url.searchParams.get('hub.mode');
       const token = url.searchParams.get('hub.verify_token');
       const challenge = url.searchParams.get('hub.challenge');
+
+      let verifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN');
+
+      // If account_id is provided, fetch account-specific verify token
+      if (accountId) {
+        const { data: account } = await supabase
+          .from('whatsapp_accounts')
+          .select('verify_token')
+          .eq('id', accountId)
+          .eq('is_active', true)
+          .single();
+        
+        if (account) {
+          verifyToken = account.verify_token;
+        }
+      }
 
       if (mode === 'subscribe' && token === verifyToken) {
         console.log('Webhook verified successfully');
@@ -44,7 +60,7 @@ serve(async (req) => {
         for (const entry of body.entry) {
           for (const change of entry.changes) {
             if (change.field === 'messages') {
-              await processMessages(change.value, supabase);
+              await processMessages(change.value, supabase, accountId || undefined);
             }
           }
         }
@@ -60,10 +76,25 @@ serve(async (req) => {
   }
 });
 
-async function processMessages(messageData: any, supabase: any) {
+async function processMessages(messageData: any, supabase: any, accountId?: string) {
   const { messages, contacts } = messageData;
 
   if (!messages) return;
+
+  // Determine which WhatsApp account to use
+  let whatsappAccountId = accountId;
+  
+  // If no account_id provided, try to find default account
+  if (!whatsappAccountId) {
+    const { data: defaultAccount } = await supabase
+      .from('whatsapp_accounts')
+      .select('id')
+      .eq('is_default', true)
+      .eq('is_active', true)
+      .single();
+    
+    whatsappAccountId = defaultAccount?.id;
+  }
 
   for (const message of messages) {
     try {
@@ -112,6 +143,7 @@ async function processMessages(messageData: any, supabase: any) {
           .insert({
             customer_id: customer.id,
             status: 'active',
+            whatsapp_account_id: whatsappAccountId,
           })
           .select()
           .single();
@@ -161,7 +193,7 @@ async function processMessages(messageData: any, supabase: any) {
 
       // Handle attachments
       if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
-        await handleAttachment(message, newMessage.id, supabase);
+        await handleAttachment(message, newMessage.id, supabase, whatsappAccountId);
       }
 
       console.log('Message processed successfully:', newMessage.id);
@@ -196,7 +228,7 @@ async function processMessages(messageData: any, supabase: any) {
   }
 }
 
-async function handleAttachment(message: any, messageId: string, supabase: any) {
+async function handleAttachment(message: any, messageId: string, supabase: any, whatsappAccountId?: string) {
   try {
     let mediaId, filename, mimeType, duration;
     
@@ -222,8 +254,22 @@ async function handleAttachment(message: any, messageId: string, supabase: any) 
 
     if (!mediaId) return;
 
+    // Get access token (prefer account-specific, fallback to env)
+    let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+    
+    if (whatsappAccountId) {
+      const { data: account } = await supabase
+        .from('whatsapp_accounts')
+        .select('access_token')
+        .eq('id', whatsappAccountId)
+        .single();
+      
+      if (account) {
+        accessToken = account.access_token;
+      }
+    }
+
     // Get media URL from WhatsApp API
-    const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
     const mediaResponse = await fetch(
       `https://graph.facebook.com/v18.0/${mediaId}`,
       {

@@ -413,6 +413,7 @@ export type Database = {
           status: string | null
           status_tag_id: string | null
           updated_at: string | null
+          whatsapp_account_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -425,6 +426,7 @@ export type Database = {
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
+          whatsapp_account_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
+          whatsapp_account_id?: string | null
         }
         Relationships: [
           {
@@ -451,6 +454,13 @@ export type Database = {
             columns: ["status_tag_id"]
             isOneToOne: false
             referencedRelation: "conversation_status_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_whatsapp_account_id_fkey"
+            columns: ["whatsapp_account_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,6 +1153,51 @@ export type Database = {
           last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_accounts: {
+        Row: {
+          access_token: string
+          business_account_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          phone_number: string
+          phone_number_id: string
+          updated_at: string
+          verify_token: string
+        }
+        Insert: {
+          access_token: string
+          business_account_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          phone_number: string
+          phone_number_id: string
+          updated_at?: string
+          verify_token?: string
+        }
+        Update: {
+          access_token?: string
+          business_account_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          phone_number?: string
+          phone_number_id?: string
+          updated_at?: string
+          verify_token?: string
         }
         Relationships: []
       }
