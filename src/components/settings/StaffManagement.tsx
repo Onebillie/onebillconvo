@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Edit } from "lucide-react";
+import { UserPlus, Trash2, Edit, CheckCircle, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Staff {
@@ -17,6 +17,7 @@ interface Staff {
   email: string;
   role: string;
   is_active: boolean;
+  email_confirmed_at?: string;
 }
 
 export const StaffManagement = () => {
@@ -36,17 +37,37 @@ export const StaffManagement = () => {
   }, []);
 
   const fetchStaff = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      // First get profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (profilesError) throw profilesError;
+
+      // Get auth user data to check email confirmation status
+      const { data: usersData, error: usersError } = await supabase.functions.invoke("list-users-status");
+      
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+        setStaff(profiles || []);
+        return;
+      }
+
+      // Merge the data
+      const staffWithEmailStatus = profiles?.map(profile => {
+        const authUser = usersData?.users?.find((u: any) => u.id === profile.id);
+        return {
+          ...profile,
+          email_confirmed_at: authUser?.email_confirmed_at
+        };
+      }) || [];
+
+      setStaff(staffWithEmailStatus);
+    } catch (error) {
       console.error("Error fetching staff:", error);
-      return;
     }
-
-    setStaff(data || []);
   };
 
   const handleCreateStaff = async (e: React.FormEvent) => {
@@ -133,6 +154,32 @@ export const StaffManagement = () => {
     fetchStaff();
   };
 
+  const handleConfirmEmail = async (userId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-user-email", {
+        body: { userId },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Email confirmed successfully",
+      });
+
+      fetchStaff();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -214,7 +261,8 @@ export const StaffManagement = () => {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Email Status</TableHead>
+              <TableHead>Account Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -239,18 +287,43 @@ export const StaffManagement = () => {
                   </Select>
                 </TableCell>
                 <TableCell>
+                  {member.email_confirmed_at ? (
+                    <Badge variant="default" className="gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Confirmed
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="gap-1">
+                      <Mail className="w-3 h-3" />
+                      Pending
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Badge variant={member.is_active ? "default" : "secondary"}>
                     {member.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleActive(member.id, member.is_active)}
-                  >
-                    {member.is_active ? "Deactivate" : "Activate"}
-                  </Button>
+                  <div className="flex gap-2">
+                    {!member.email_confirmed_at && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleConfirmEmail(member.id)}
+                        disabled={loading}
+                      >
+                        Confirm Email
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleActive(member.id, member.is_active)}
+                    >
+                      {member.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
