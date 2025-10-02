@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -17,13 +17,13 @@ interface AdminAssignmentProps {
   onAssignmentChange: () => void;
 }
 
-const ADMIN_OPTIONS = [
-  { value: "unassigned", label: "Unassigned" },
-  { value: "john", label: "John" },
-  { value: "sarah", label: "Sarah" },
-  { value: "mike", label: "Mike" },
-  { value: "emma", label: "Emma" },
-];
+interface TeamMember {
+  id: string;
+  full_name: string;
+  email: string;
+  role: "agent" | "admin" | "superadmin";
+}
+
 
 export const AdminAssignment = ({
   conversationId,
@@ -31,6 +31,26 @@ export const AdminAssignment = ({
   onAssignmentChange,
 }: AdminAssignmentProps) => {
   const [updating, setUpdating] = useState(false);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, full_name, email, role, is_active")
+        .eq("is_active", true)
+        .order("role")
+        .order("full_name");
+
+      if (error) {
+        console.error("Error fetching team/admin members:", error);
+        return;
+      }
+      setMembers(data || []);
+    };
+    fetchMembers();
+  }, []);
+
 
   const handleAssignmentChange = async (value: string) => {
     setUpdating(true);
@@ -68,21 +88,23 @@ export const AdminAssignment = ({
         Assigned To
       </Label>
       <Select
-        value={currentAssignee || "unassigned"}
+        value={(currentAssignee && members.some((m) => m.id === currentAssignee)) ? (currentAssignee as string) : "unassigned"}
         onValueChange={handleAssignmentChange}
         disabled={updating}
       >
         <SelectTrigger id="admin-assignment" className="h-8 text-xs">
-          <SelectValue placeholder="Select admin" />
+          <SelectValue placeholder="Select assignee" />
         </SelectTrigger>
         <SelectContent>
-          {ADMIN_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value} className="text-xs">
-              {option.label}
+          <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+          {members.map((m) => (
+            <SelectItem key={m.id} value={m.id} className="text-xs">
+              {m.full_name} ({m.role})
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+
     </div>
   );
 };

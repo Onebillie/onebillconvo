@@ -53,8 +53,9 @@ export const AssignDialog = ({
   const fetchTeamMembers = async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, full_name, email, role, is_active")
       .eq("is_active", true)
+      .order("role")
       .order("full_name");
 
     if (error) {
