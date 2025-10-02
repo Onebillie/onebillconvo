@@ -12,7 +12,7 @@ export function NotificationBanner({ unreadCount }: NotificationBannerProps) {
   if (unreadCount === 0) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] shadow-lg">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -25,6 +25,7 @@ export function NotificationBanner({ unreadCount }: NotificationBannerProps) {
             variant="secondary"
             size="sm"
             onClick={() => navigate('/dashboard')}
+            className="bg-white text-orange-600 hover:bg-gray-100"
           >
             View Messages
           </Button>

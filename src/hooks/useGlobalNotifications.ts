@@ -67,6 +67,27 @@ export const useGlobalNotifications = () => {
               description: `${customerName}: ${messagePreview}...`,
               duration: 5000,
             });
+
+            // Show browser notification if permission granted
+            if (Notification.permission === 'granted') {
+              try {
+                const notification = new Notification('New Message', {
+                  body: `${customerName}: ${messagePreview}...`,
+                  icon: '/favicon.ico',
+                  badge: '/favicon.ico',
+                  tag: `message-${newMessage.id}`,
+                  requireInteraction: false,
+                  silent: false,
+                });
+
+                notification.onclick = () => {
+                  window.focus();
+                  notification.close();
+                };
+              } catch (error) {
+                console.error('Failed to show browser notification:', error);
+              }
+            }
           }, 300);
 
           // Update unread count immediately
