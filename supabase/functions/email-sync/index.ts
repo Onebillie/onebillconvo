@@ -154,17 +154,32 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
   try {
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
+    // Ensure all config values are properly set
+    const hostname = account.imap_host?.trim();
+    const port = account.imap_port;
+    const username = account.imap_username || account.email_address;
+    const password = account.imap_password;
+    
+    if (!hostname || !port || !username || !password) {
+      throw new Error(`Missing IMAP configuration: hostname=${hostname}, port=${port}, username=${username ? 'set' : 'missing'}, password=${password ? 'set' : 'missing'}`);
+    }
+    
     const imapConfig = {
-      hostname: String(account.imap_host),
-      port: Number(account.imap_port),
-      tls: Boolean(account.imap_use_ssl),
+      hostname,
+      port,
+      tls: account.imap_use_ssl,
       auth: {
-        username: String(account.imap_username || account.email_address),
-        password: String(account.imap_password),
+        username,
+        password,
       },
     };
     
-    console.log('Creating IMAP client with config:', { ...imapConfig, auth: { username: imapConfig.auth.username, password: '[REDACTED]' } });
+    console.log('Creating IMAP client with config:', { 
+      hostname: imapConfig.hostname, 
+      port: imapConfig.port, 
+      tls: imapConfig.tls,
+      auth: { username: imapConfig.auth.username, password: '[REDACTED]' } 
+    });
     
     const client = new ImapClient(imapConfig);
 
