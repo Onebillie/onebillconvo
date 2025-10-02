@@ -156,6 +156,8 @@ export type Database = {
         Row: {
           company_logo: string | null
           company_name: string | null
+          email_bundle_window_minutes: number | null
+          email_html_template: string | null
           email_signature: string | null
           email_subject_template: string | null
           from_email: string | null
@@ -170,6 +172,8 @@ export type Database = {
         Insert: {
           company_logo?: string | null
           company_name?: string | null
+          email_bundle_window_minutes?: number | null
+          email_html_template?: string | null
           email_signature?: string | null
           email_subject_template?: string | null
           from_email?: string | null
@@ -184,6 +188,8 @@ export type Database = {
         Update: {
           company_logo?: string | null
           company_name?: string | null
+          email_bundle_window_minutes?: number | null
+          email_html_template?: string | null
           email_signature?: string | null
           email_subject_template?: string | null
           from_email?: string | null

@@ -51,12 +51,28 @@ export const MessageInput = ({
     setUploading(true);
     try {
       if (sendVia === "email" && customerEmail) {
-        // Send via email using SMTP
+        // First, insert message as pending for bundling
+        const { error: insertError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            customer_id: customerId,
+            content: newMessage,
+            direction: 'outbound',
+            platform: 'email',
+            channel: 'email',
+            status: 'pending',
+            is_read: true
+          });
+
+        if (insertError) throw insertError;
+
+        // Send via email using SMTP (will check for bundling)
         const { error } = await supabase.functions.invoke("email-send-smtp", {
           body: {
             to: customerEmail,
             subject: "Message from Support",
-            html: `<p>${newMessage.replace(/\n/g, '<br>')}</p>`,
+            html: newMessage,
             text: newMessage,
             conversation_id: conversationId,
             customer_id: customerId,

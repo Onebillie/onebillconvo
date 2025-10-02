@@ -99,11 +99,23 @@ export const EnhancedTemplateSelector = ({
           throw new Error("Customer email not available");
         }
 
+        // Insert pending message for bundling
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          customer_id: customerId,
+          content: template.content,
+          direction: 'outbound',
+          platform: 'email',
+          channel: 'email',
+          status: 'pending',
+          is_read: true
+        });
+
         const { error } = await supabase.functions.invoke("email-send-smtp", {
           body: {
             to: customerEmail,
             subject: template.name,
-            html: `<p>${template.content.replace(/\n/g, '<br>')}</p>`,
+            html: template.content,
             text: template.content,
             conversation_id: conversationId,
             customer_id: customerId,

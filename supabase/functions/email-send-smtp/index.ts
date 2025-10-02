@@ -30,6 +30,38 @@ serve(async (req) => {
 
     console.log('Sending email via SMTP to:', emailRequest.to);
 
+    // Check for recent unsent messages within the bundling window
+    const { data: settings } = await supabase
+      .from('business_settings')
+      .select('email_html_template, email_bundle_window_minutes, company_name, email_signature')
+      .single();
+
+    const bundleWindowMinutes = settings?.email_bundle_window_minutes || 2;
+    const bundleWindowMs = bundleWindowMinutes * 60 * 1000;
+    const cutoffTime = new Date(Date.now() - bundleWindowMs).toISOString();
+
+    // Get recent messages from this conversation that haven't been emailed yet
+    const { data: pendingMessages } = await supabase
+      .from('messages')
+      .select('id, content, created_at')
+      .eq('conversation_id', emailRequest.conversation_id)
+      .eq('direction', 'outbound')
+      .eq('platform', 'email')
+      .eq('status', 'pending')
+      .gte('created_at', cutoffTime)
+      .order('created_at', { ascending: true });
+
+    // Bundle the current message with any pending messages
+    let bundledContent = emailRequest.text || emailRequest.html;
+    const messageIds: string[] = [];
+
+    if (pendingMessages && pendingMessages.length > 0) {
+      console.log(`Bundling ${pendingMessages.length} pending messages`);
+      const allMessages = [...pendingMessages.map(m => m.content), bundledContent];
+      bundledContent = allMessages.join('\n\n---\n\n');
+      messageIds.push(...pendingMessages.map(m => m.id));
+    }
+
     // Get email account to use
     let emailAccountId = emailRequest.email_account_id;
     
@@ -59,32 +91,63 @@ serve(async (req) => {
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
 
+    // Build HTML from template
+    let htmlTemplate = settings?.email_html_template || `
+<!DOCTYPE html>
+<html>
+<body>
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+    {{content}}
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+    <p style="color: #666; font-size: 12px;">{{signature}}</p>
+  </div>
+</body>
+</html>`;
+
+    // Replace template variables
+    const contentHtml = bundledContent.replace(/\n/g, '<br>');
+    const companyName = settings?.company_name || 'Customer Service';
+    const signature = settings?.email_signature?.replace(/\n/g, '<br>') || `Best regards,<br>${companyName}`;
+
+    const finalHtml = htmlTemplate
+      .replace(/\{\{content\}\}/g, contentHtml)
+      .replace(/\{\{company_name\}\}/g, companyName)
+      .replace(/\{\{signature\}\}/g, signature);
+
     // Send email via SMTP
     const emailSent = await sendViaSMTP(
       account,
       emailRequest.to,
       emailRequest.subject,
-      emailRequest.html,
-      emailRequest.text
+      finalHtml,
+      bundledContent
     );
 
     if (!emailSent) {
       throw new Error('Failed to send email via SMTP');
     }
 
-    // Insert message record
+    // Insert message record (or update if bundling)
     const { error: messageError } = await supabase
       .from('messages')
       .insert({
         conversation_id: emailRequest.conversation_id,
         customer_id: emailRequest.customer_id,
-        content: emailRequest.text || emailRequest.html,
+        content: bundledContent,
         direction: 'outbound',
         platform: 'email',
         channel: 'email',
         status: 'sent',
         is_read: true
       });
+
+    // Mark bundled messages as sent
+    if (messageIds.length > 0) {
+      await supabase
+        .from('messages')
+        .update({ status: 'sent' })
+        .in('id', messageIds);
+    }
 
     if (messageError) {
       console.error('Failed to insert message record:', messageError);

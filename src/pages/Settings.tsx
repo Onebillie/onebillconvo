@@ -19,6 +19,7 @@ import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
 
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
@@ -85,12 +86,13 @@ export default function Settings() {
       {/* Content */}
       <div className="container mx-auto p-6">
         <Tabs defaultValue="staff" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-12 lg:w-auto lg:inline-grid">
             {isSuperAdmin && <TabsTrigger value="staff">Staff</TabsTrigger>}
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="whatsapp-templates">WA Templates</TabsTrigger>
             <TabsTrigger value="whatsapp-accounts">WA Accounts</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="email-template">Email Template</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
@@ -119,6 +121,10 @@ export default function Settings() {
 
           <TabsContent value="email">
             <EmailAccountManagement />
+          </TabsContent>
+
+          <TabsContent value="email-template">
+            <EmailTemplateSettings />
           </TabsContent>
 
           <TabsContent value="statuses">
