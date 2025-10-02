@@ -77,11 +77,27 @@ const Dashboard = () => {
       return;
     }
 
+    // Fetch unread counts for all conversations
+    const conversationIds = (data || []).map(conv => conv.id);
+    const { data: unreadData } = await supabase
+      .from('messages')
+      .select('conversation_id')
+      .in('conversation_id', conversationIds)
+      .eq('direction', 'inbound')
+      .eq('is_read', false);
+
+    // Count unread messages per conversation
+    const unreadCounts = (unreadData || []).reduce((acc: Record<string, number>, msg: any) => {
+      acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
+      return acc;
+    }, {});
+
     // Transform data to match interface
     const conversations = (data || []).map(conv => ({
       ...conv,
       customer: conv.customers,
-      status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || []
+      status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || [],
+      unread_count: unreadCounts[conv.id] || 0
     }));
     
     setConversations(conversations);
