@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { Message } from "@/types/chat";
@@ -5,13 +6,18 @@ import { VoicePlayer } from "./VoicePlayer";
 import { FilePreview } from "./FilePreview";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { ChannelIndicator } from "./ChannelIndicator";
+import { EditMessageDialog } from "./EditMessageDialog";
+import { Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MessageListProps {
   messages: Message[];
   onCreateTask?: (message: Message) => void;
+  onMessageUpdate?: () => void;
 }
 
-export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
+export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: MessageListProps) => {
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const renderAttachment = (attachment: any) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
 
@@ -82,7 +88,17 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
                     }
                   }}
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 relative group">
+                    {message.direction === "outbound" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                        onClick={() => setEditingMessage(message)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
                     {message.direction === "inbound" && (
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold mt-1">
                         {message.platform === 'email' ? '@' : 'W'}
@@ -127,6 +143,17 @@ export const MessageList = ({ messages, onCreateTask }: MessageListProps) => {
           </div>
         ))}
       </div>
+      {editingMessage && (
+        <EditMessageDialog
+          open={!!editingMessage}
+          onOpenChange={(open) => !open && setEditingMessage(null)}
+          messageId={editingMessage.id}
+          currentContent={editingMessage.content}
+          onSuccess={() => {
+            if (onMessageUpdate) onMessageUpdate();
+          }}
+        />
+      )}
     </ScrollArea>
   );
 };

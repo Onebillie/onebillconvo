@@ -6,17 +6,18 @@ interface MessageStatusIndicatorProps {
 }
 
 export const MessageStatusIndicator = ({ status, className = '' }: MessageStatusIndicatorProps) => {
-  const iconClass = `w-3 h-3 ${className}`;
+  const iconClass = `w-3.5 h-3.5 ${className}`;
 
   switch (status) {
     case 'sending':
+    case 'pending':
       return <Clock className={`${iconClass} opacity-50`} />;
     case 'sent':
-      return <Check className={iconClass} />;
+      return <Check className={`${iconClass} text-muted-foreground`} />;
     case 'delivered':
-      return <CheckCheck className={iconClass} />;
+      return <CheckCheck className={`${iconClass} text-muted-foreground`} />;
     case 'read':
-      return <CheckCheck className={`${iconClass} text-primary`} />;
+      return <CheckCheck className={`${iconClass} text-blue-500`} />;
     case 'failed':
       return <XCircle className={`${iconClass} text-destructive`} />;
     default:

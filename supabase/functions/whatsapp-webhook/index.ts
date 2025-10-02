@@ -60,7 +60,14 @@ serve(async (req) => {
         for (const entry of body.entry) {
           for (const change of entry.changes) {
             if (change.field === 'messages') {
-              await processMessages(change.value, supabase, accountId || undefined);
+              // Handle status updates
+              if (change.value.statuses) {
+                await processStatusUpdates(change.value.statuses, supabase);
+              }
+              // Handle incoming messages
+              if (change.value.messages) {
+                await processMessages(change.value, supabase, accountId || undefined);
+              }
             }
           }
         }
@@ -75,6 +82,41 @@ serve(async (req) => {
     return new Response('Internal server error', { status: 500, headers: corsHeaders });
   }
 });
+
+async function processStatusUpdates(statuses: any[], supabase: any) {
+  for (const status of statuses) {
+    try {
+      const { id: messageId, status: messageStatus } = status;
+      
+      let newStatus = 'sent';
+      if (messageStatus === 'delivered') {
+        newStatus = 'delivered';
+      } else if (messageStatus === 'read') {
+        newStatus = 'read';
+      } else if (messageStatus === 'failed') {
+        newStatus = 'failed';
+      }
+
+      // Update message status
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          status: newStatus,
+          is_read: messageStatus === 'read' ? true : undefined
+        })
+        .eq('external_message_id', messageId)
+        .eq('platform', 'whatsapp');
+
+      if (error) {
+        console.error('Error updating message status:', error);
+      } else {
+        console.log(`WhatsApp message ${messageId} status updated to ${newStatus}`);
+      }
+    } catch (error) {
+      console.error('Error processing status update:', error);
+    }
+  }
+}
 
 async function processMessages(messageData: any, supabase: any, accountId?: string) {
   const { messages, contacts } = messageData;

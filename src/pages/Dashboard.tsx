@@ -381,6 +381,7 @@ const Dashboard = () => {
                     setSelectedMessageForTask(message);
                     setTaskDialogOpen(true);
                   }}
+                  onMessageUpdate={() => fetchMessages(selectedConversation.id)}
                 />
                 <MessageInput
                   conversationId={selectedConversation.id}
