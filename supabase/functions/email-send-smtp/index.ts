@@ -124,23 +124,37 @@ async function sendViaSMTP(
 ): Promise<boolean> {
   console.log(`Connecting to SMTP: ${account.smtp_host}:${account.smtp_port}`);
   
-  // Note: Deno doesn't have native SMTP support
-  // You'll need to use a service or library
-  
-  // TODO: Implement actual SMTP sending using:
-  // - nodemailer equivalent for Deno
-  // - Or use a service like Mailgun, SendGrid with your domain
-  // - Or use a Deno SMTP library
-  
-  // For now, log the email details
-  console.log('Email details:', {
-    from: account.email_address,
-    to,
-    subject,
-    html: html.substring(0, 100) + '...'
-  });
-  
-  // Return false to indicate SMTP not yet implemented
-  // In production, this would actually send the email and return true/false
-  return false;
+  try {
+    // Import SMTPClient from denomailer
+    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+    
+    const client = new SMTPClient({
+      connection: {
+        hostname: account.smtp_host,
+        port: account.smtp_port,
+        tls: account.smtp_use_ssl,
+        auth: {
+          username: account.smtp_username,
+          password: account.smtp_password,
+        },
+      },
+    });
+
+    await client.send({
+      from: account.email_address,
+      to: to,
+      replyTo: account.email_address,
+      subject: subject,
+      content: text || html,
+      html: html,
+    });
+
+    await client.close();
+    
+    console.log('Email sent successfully via SMTP from:', account.email_address);
+    return true;
+  } catch (error: any) {
+    console.error('SMTP send error:', error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
 }

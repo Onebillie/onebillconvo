@@ -144,37 +144,93 @@ serve(async (req) => {
 });
 
 async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]> {
-  // IMPORTANT: This implementation will:
-  // 1. Fetch emails in READ-ONLY mode (EXAMINE command instead of SELECT)
-  // 2. NOT mark emails as read on the server
-  // 3. NOT delete or move emails from the server
-  // 4. Keep emails on server so other mail clients can access them
-  // 5. Use UNSEEN flag to fetch only new emails
-  // 6. Store message IDs in database to track already-processed emails
+  console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port}`);
   
-  console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port} (READ-ONLY mode)`);
-  
-  // TODO: Implement actual IMAP connection using a library like:
-  // - imap (npm package) with { readOnly: true } option
-  // - Use EXAMINE command instead of SELECT to open mailbox in read-only mode
-  // - Search for UNSEEN messages: 'UNSEEN'
-  // - Fetch without setting \Seen flag
-  // - Track processed message IDs in database to avoid duplicates
-  
-  // Example configuration when implementing:
-  // const connection = await connectIMAP({
-  //   host: account.imap_host,
-  //   port: account.imap_port,
-  //   secure: account.imap_use_ssl,
-  //   auth: {
-  //     user: account.imap_username,
-  //     pass: account.imap_password
-  //   },
-  //   readOnly: true  // CRITICAL: Prevents marking as read
-  // });
-  
-  // For now, return empty array
-  return [];
+  try {
+    const { ImapClient } = await import("https://deno.land/x/imap_client@0.5.1/mod.ts");
+    
+    const client = new ImapClient({
+      connection: {
+        hostname: account.imap_host,
+        port: account.imap_port,
+        tls: account.imap_use_ssl,
+        auth: {
+          username: account.imap_username,
+          password: account.imap_password,
+        },
+      },
+    });
+
+    await client.connect();
+    
+    // Select INBOX
+    await client.select("INBOX");
+    
+    // Search for unseen emails (last 50)
+    const messageIds = await client.search(["UNSEEN"]);
+    
+    if (!messageIds || messageIds.length === 0) {
+      console.log('No new emails found');
+      await client.close();
+      return [];
+    }
+
+    console.log(`Found ${messageIds.length} new emails`);
+    
+    const emails: ParsedEmail[] = [];
+    
+    // Fetch email details (limit to last 50 to avoid overload)
+    const idsToFetch = messageIds.slice(-50);
+    
+    for (const msgId of idsToFetch) {
+      try {
+        const message = await client.fetch(msgId, {
+          body: true,
+          headers: true,
+          envelope: true,
+        });
+        
+        if (!message) continue;
+        
+        // Parse email body
+        let bodyText = '';
+        let bodyHtml = '';
+        
+        if (message.body) {
+          if (typeof message.body === 'string') {
+            bodyText = message.body;
+          } else if (message.body.text) {
+            bodyText = message.body.text;
+          }
+          if (message.body.html) {
+            bodyHtml = message.body.html;
+          }
+        }
+        
+        const parsedEmail: ParsedEmail = {
+          from: message.envelope?.from?.[0]?.address || '',
+          to: message.envelope?.to?.[0]?.address || account.email_address,
+          subject: message.envelope?.subject || 'No Subject',
+          body: bodyText,
+          html: bodyHtml,
+          date: message.envelope?.date ? new Date(message.envelope.date) : new Date(),
+          messageId: message.headers?.['message-id']?.[0] || `msg-${msgId}`,
+          inReplyTo: message.headers?.['in-reply-to']?.[0],
+          references: message.headers?.['references'] || [],
+        };
+        
+        emails.push(parsedEmail);
+      } catch (error) {
+        console.error(`Error fetching message ${msgId}:`, error);
+      }
+    }
+    
+    await client.close();
+    return emails;
+  } catch (error: any) {
+    console.error('IMAP fetch error:', error);
+    throw new Error(`Failed to fetch emails: ${error.message}`);
+  }
 }
 
 async function processIncomingEmail(

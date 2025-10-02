@@ -51,13 +51,15 @@ export const MessageInput = ({
     setUploading(true);
     try {
       if (sendVia === "email" && customerEmail) {
-        // Send via email
-        const { error } = await supabase.functions.invoke("send-email", {
+        // Send via email using SMTP
+        const { error } = await supabase.functions.invoke("email-send-smtp", {
           body: {
             to: customerEmail,
-            content: newMessage,
-            conversationId,
-            customerId,
+            subject: "Message from Support",
+            html: `<p>${newMessage.replace(/\n/g, '<br>')}</p>`,
+            text: newMessage,
+            conversation_id: conversationId,
+            customer_id: customerId,
           },
         });
 

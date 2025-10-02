@@ -1217,6 +1217,10 @@ export type Database = {
         Args: { phone_num: string }
         Returns: string
       }
+      sync_all_email_accounts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "superadmin" | "admin" | "agent"
