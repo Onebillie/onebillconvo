@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const useGlobalNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
+  const toastTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastNotificationRef = useRef<number>(0);
 
   const fetchUnreadCount = useCallback(async () => {
     const { count, error } = await supabase
@@ -34,35 +36,40 @@ export const useGlobalNotifications = () => {
         async (payload) => {
           const newMessage = payload.new as any;
           
-          // Fetch customer details for the notification
-          const { data: conversation } = await supabase
-            .from('conversations')
-            .select(`
-              customer:customers (
-                name,
-                phone,
-                email
-              )
-            `)
-            .eq('id', newMessage.conversation_id)
-            .single();
+          // Throttle notifications - only show one every 3 seconds
+          const now = Date.now();
+          if (now - lastNotificationRef.current < 3000) {
+            // Just update count without showing toast
+            fetchUnreadCount();
+            return;
+          }
+          
+          lastNotificationRef.current = now;
+          
+          // Debounce the toast to avoid spam
+          if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current);
+          }
+          
+          toastTimeoutRef.current = setTimeout(async () => {
+            // Simplified query - just get customer name
+            const { data: conversation } = await supabase
+              .from('conversations')
+              .select('customer:customers(name)')
+              .eq('id', newMessage.conversation_id)
+              .single();
 
-          const customerName = conversation?.customer?.name || 'Unknown';
-          const messagePreview = newMessage.content.substring(0, 50);
+            const customerName = conversation?.customer?.name || 'Unknown';
+            const messagePreview = newMessage.content.substring(0, 40);
 
-          // Show prominent toast notification
-          toast.success('New Message Received', {
-            description: `${customerName}: ${messagePreview}${newMessage.content.length > 50 ? '...' : ''}`,
-            duration: 8000,
-            action: {
-              label: 'View',
-              onClick: () => {
-                window.location.href = '/dashboard';
-              },
-            },
-          });
+            // Show toast notification
+            toast.success('New Message', {
+              description: `${customerName}: ${messagePreview}...`,
+              duration: 5000,
+            });
+          }, 300);
 
-          // Update unread count
+          // Update unread count immediately
           fetchUnreadCount();
         }
       )
@@ -81,6 +88,9 @@ export const useGlobalNotifications = () => {
       .subscribe();
 
     return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [fetchUnreadCount]);

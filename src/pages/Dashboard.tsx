@@ -46,7 +46,7 @@ const Dashboard = () => {
   const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null);
   const navigate = useNavigate();
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     const { data, error } = await (supabase as any)
       .from('conversations')
       .select(`
@@ -70,15 +70,22 @@ const Dashboard = () => {
         )
       `)
       .eq('is_archived', false)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(100); // Limit to 100 most recent conversations
 
     if (error) {
       console.error('Error fetching conversations:', error);
       return;
     }
 
-    // Fetch unread counts for all conversations
+    // Fetch unread counts for all conversations in a single query
     const conversationIds = (data || []).map(conv => conv.id);
+    if (conversationIds.length === 0) {
+      setConversations([]);
+      setFilteredConversations([]);
+      return;
+    }
+
     const { data: unreadData } = await supabase
       .from('messages')
       .select('conversation_id')
@@ -102,9 +109,9 @@ const Dashboard = () => {
     
     setConversations(conversations);
     applyFilters(conversations, filters);
-  };
+  }, [filters]);
 
-  const applyFilters = (convs: Conversation[], currentFilters: typeof filters) => {
+  const applyFilters = useCallback((convs: Conversation[], currentFilters: typeof filters) => {
     let filtered = [...convs];
 
     // Filter by unread
@@ -122,14 +129,14 @@ const Dashboard = () => {
     }
 
     setFilteredConversations(filtered);
-  };
+  }, []);
 
-  const handleFilterChange = (newFilters: typeof filters) => {
+  const handleFilterChange = useCallback((newFilters: typeof filters) => {
     setFilters(newFilters);
     applyFilters(conversations, newFilters);
-  };
+  }, [conversations, applyFilters]);
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string) => {
     const { data, error } = await (supabase as any)
       .from('messages')
       .select(`
@@ -144,31 +151,34 @@ const Dashboard = () => {
         )
       `)
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .limit(200); // Limit to last 200 messages
 
     if (error) {
       console.error('Error fetching messages:', error);
       return;
     }
 
-    // Transform data to ensure direction is properly typed
-    const messages = (data || []).map(msg => ({
-      ...msg,
-      direction: msg.direction as 'inbound' | 'outbound'
-    }));
+    // Transform and reverse to show oldest first
+    const messages = (data || [])
+      .map(msg => ({
+        ...msg,
+        direction: msg.direction as 'inbound' | 'outbound'
+      }))
+      .reverse();
     
     setMessages(messages);
-  };
+  }, []);
 
-  const markAsRead = async (conversationId: string) => {
+  const markAsRead = useCallback(async (conversationId: string) => {
     await supabase
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
       .eq("direction", "inbound");
-  };
+  }, []);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke("whatsapp-templates");
       if (error) throw error;
@@ -176,7 +186,7 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error("Error fetching templates:", error);
     }
-  };
+  }, []);
 
   // Real-time message handlers
   const handleNewMessage = useCallback((newMessage: Message) => {
@@ -204,14 +214,14 @@ const Dashboard = () => {
   useEffect(() => {
     fetchConversations();
     fetchTemplates();
-  }, []);
+  }, [fetchConversations, fetchTemplates]);
 
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
       markAsRead(selectedConversation.id);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, fetchMessages, markAsRead]);
 
   const handleDeleteConversation = async (conversationId: string) => {
     try {
