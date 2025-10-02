@@ -21,7 +21,7 @@ interface TemplateFormData {
   header_text?: string;
   body_text: string;
   footer_text?: string;
-  buttons: Array<{ type: string; text: string; }>;
+  buttons: Array<{ type: string; text: string; url?: string; phone_number?: string; }>;
 }
 
 interface MetaTemplate {
@@ -39,7 +39,7 @@ interface MetaTemplate {
 
 export const WhatsAppTemplateManagement = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [buttons, setButtons] = useState<Array<{ type: string; text: string; }>>([]);
+  const [buttons, setButtons] = useState<Array<{ type: string; text: string; url?: string; phone_number?: string; }>>([]);
   const [metaTemplates, setMetaTemplates] = useState<MetaTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -186,9 +186,30 @@ export const WhatsAppTemplateManagement = () => {
 
       // Add buttons component if any buttons exist
       if (buttons.length > 0) {
+        const formattedButtons = buttons.map(btn => {
+          if (btn.type === 'URL') {
+            return {
+              type: btn.type,
+              text: btn.text,
+              url: btn.url || ''
+            };
+          } else if (btn.type === 'PHONE_NUMBER') {
+            return {
+              type: btn.type,
+              text: btn.text,
+              phone_number: btn.phone_number || ''
+            };
+          } else {
+            return {
+              type: btn.type,
+              text: btn.text
+            };
+          }
+        });
+        
         components.push({
           type: "BUTTONS",
-          buttons: buttons,
+          buttons: formattedButtons,
         });
       }
 
@@ -428,33 +449,51 @@ export const WhatsAppTemplateManagement = () => {
             </div>
             
             {buttons.map((button, index) => (
-              <div key={index} className="flex gap-2">
-                <Select
-                  value={button.type}
-                  onValueChange={(value) => updateButton(index, "type", value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
-                    <SelectItem value="URL">URL</SelectItem>
-                    <SelectItem value="PHONE_NUMBER">Phone</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={button.text}
-                  onChange={(e) => updateButton(index, "text", e.target.value)}
-                  placeholder="Button text"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeButton(index)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div key={index} className="space-y-2">
+                <div className="flex gap-2">
+                  <Select
+                    value={button.type}
+                    onValueChange={(value) => updateButton(index, "type", value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
+                      <SelectItem value="URL">URL</SelectItem>
+                      <SelectItem value="PHONE_NUMBER">Phone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={button.text}
+                    onChange={(e) => updateButton(index, "text", e.target.value)}
+                    placeholder="Button text"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeButton(index)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                {button.type === 'URL' && (
+                  <Input
+                    value={button.url || ''}
+                    onChange={(e) => updateButton(index, "url", e.target.value)}
+                    placeholder="https://example.com"
+                    className="ml-[196px]"
+                  />
+                )}
+                {button.type === 'PHONE_NUMBER' && (
+                  <Input
+                    value={button.phone_number || ''}
+                    onChange={(e) => updateButton(index, "phone_number", e.target.value)}
+                    placeholder="+1234567890"
+                    className="ml-[196px]"
+                  />
+                )}
               </div>
             ))}
           </div>
