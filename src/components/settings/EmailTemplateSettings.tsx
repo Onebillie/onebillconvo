@@ -6,8 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { AlertCircle, Code2 } from "lucide-react";
+import { AlertCircle, Code2, Unlock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function EmailTemplateSettings() {
   const [loading, setLoading] = useState(false);
@@ -67,6 +78,11 @@ export function EmailTemplateSettings() {
     }
   };
 
+  const handleUnlock = () => {
+    setIsLocked(false);
+    toast.success("Template unlocked for editing");
+  };
+
   const resetToDefault = () => {
     setHtmlTemplate(`<!DOCTYPE html>
 <html>
@@ -103,8 +119,30 @@ export function EmailTemplateSettings() {
       {isLocked && (
         <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-900 dark:text-amber-100">
-            Email template is locked after initial configuration and cannot be modified.
+          <AlertDescription className="text-amber-900 dark:text-amber-100 flex items-center justify-between">
+            <span>Email template is locked to prevent accidental changes.</span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="ml-4">
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Unlock for Editing
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Unlock Email Template?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will allow you to edit the email template configuration. Make sure you understand the implications of changing the template as it affects all outgoing emails.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleUnlock}>
+                    Unlock Template
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </AlertDescription>
         </Alert>
       )}
