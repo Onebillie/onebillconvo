@@ -503,6 +503,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          alternate_emails: string[] | null
           avatar: string | null
           created_at: string | null
           email: string | null
@@ -516,6 +517,7 @@ export type Database = {
           phone: string
         }
         Insert: {
+          alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
           email?: string | null
@@ -529,6 +531,7 @@ export type Database = {
           phone: string
         }
         Update: {
+          alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
           email?: string | null

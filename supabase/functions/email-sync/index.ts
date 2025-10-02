@@ -145,19 +145,28 @@ serve(async (req) => {
 
 async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]> {
   console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port}`);
+  console.log(`IMAP Config - Host: ${account.imap_host}, Port: ${account.imap_port}, SSL: ${account.imap_use_ssl}`);
+  
+  if (!account.imap_host || !account.imap_port) {
+    throw new Error('IMAP host or port is missing from account configuration');
+  }
   
   try {
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
-    const client = new ImapClient({
-      hostname: account.imap_host,
-      port: account.imap_port,
-      tls: account.imap_use_ssl,
+    const imapConfig = {
+      hostname: String(account.imap_host),
+      port: Number(account.imap_port),
+      tls: Boolean(account.imap_use_ssl),
       auth: {
-        username: account.imap_username,
-        password: account.imap_password,
+        username: String(account.imap_username || account.email_address),
+        password: String(account.imap_password),
       },
-    });
+    };
+    
+    console.log('Creating IMAP client with config:', { ...imapConfig, auth: { username: imapConfig.auth.username, password: '[REDACTED]' } });
+    
+    const client = new ImapClient(imapConfig);
 
     await client.connect();
     console.log('Connected to IMAP server');
@@ -259,11 +268,11 @@ async function processIncomingEmail(
     return;
   }
 
-  // Find customer by email OR phone (normalized)
+  // Find customer by email, phone, OR alternate_emails
   let { data: customer } = await supabase
     .from('customers')
     .select('*')
-    .or(`email.eq.${fromEmail},phone.eq.${fromEmail}`)
+    .or(`email.eq.${fromEmail},phone.eq.${fromEmail},alternate_emails.cs.{${fromEmail}}`)
     .maybeSingle();
 
   if (!customer) {

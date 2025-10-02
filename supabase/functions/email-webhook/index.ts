@@ -97,11 +97,11 @@ serve(async (req) => {
         }
       }
 
-      // Find customer by email OR phone
+      // Find customer by email, phone, OR alternate_emails
       let { data: customer, error: customerError } = await supabase
         .from('customers')
         .select('*')
-        .or(`email.eq.${fromEmail},phone.eq.${fromEmail}`)
+        .or(`email.eq.${fromEmail},phone.eq.${fromEmail},alternate_emails.cs.{${fromEmail}}`)
         .maybeSingle();
 
       if (customerError) {

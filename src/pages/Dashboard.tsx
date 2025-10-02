@@ -25,6 +25,7 @@ import { AssignDialog } from "@/components/conversations/AssignDialog";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
+import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
 
 const Dashboard = () => {
   const { profile, loading: authLoading } = useAuth();
@@ -288,6 +289,11 @@ const Dashboard = () => {
 
         {/* Filters */}
         <ConversationFilters onFilterChange={handleFilterChange} />
+
+        {/* Duplicate Contacts Banner */}
+        <div className="px-4 py-2">
+          <DuplicateContactsBanner />
+        </div>
 
         {/* Conversations List */}
         <ScrollArea className="flex-1">
