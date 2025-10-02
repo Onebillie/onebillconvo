@@ -534,6 +534,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          delete_after_sync: boolean
           email_address: string
           id: string
           imap_host: string
@@ -543,6 +544,7 @@ export type Database = {
           imap_username: string
           is_active: boolean
           last_sync_at: string | null
+          mark_as_read: boolean
           name: string
           smtp_host: string
           smtp_password: string
@@ -556,6 +558,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          delete_after_sync?: boolean
           email_address: string
           id?: string
           imap_host: string
@@ -565,6 +568,7 @@ export type Database = {
           imap_username: string
           is_active?: boolean
           last_sync_at?: string | null
+          mark_as_read?: boolean
           name: string
           smtp_host: string
           smtp_password: string
@@ -578,6 +582,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          delete_after_sync?: boolean
           email_address?: string
           id?: string
           imap_host?: string
@@ -587,6 +592,7 @@ export type Database = {
           imap_username?: string
           is_active?: boolean
           last_sync_at?: string | null
+          mark_as_read?: boolean
           name?: string
           smtp_host?: string
           smtp_password?: string

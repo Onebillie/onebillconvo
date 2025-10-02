@@ -144,17 +144,36 @@ serve(async (req) => {
 });
 
 async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]> {
-  // Note: Deno doesn't have native IMAP support, so we'll use a REST API approach
-  // This is a placeholder - you'll need to use an IMAP library or service
+  // IMPORTANT: This implementation will:
+  // 1. Fetch emails in READ-ONLY mode (EXAMINE command instead of SELECT)
+  // 2. NOT mark emails as read on the server
+  // 3. NOT delete or move emails from the server
+  // 4. Keep emails on server so other mail clients can access them
+  // 5. Use UNSEEN flag to fetch only new emails
+  // 6. Store message IDs in database to track already-processed emails
   
-  console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port}`);
+  console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port} (READ-ONLY mode)`);
   
   // TODO: Implement actual IMAP connection using a library like:
-  // - imap (npm package) 
-  // - Or use a service like Nylas, Zapier Email Parser, etc.
+  // - imap (npm package) with { readOnly: true } option
+  // - Use EXAMINE command instead of SELECT to open mailbox in read-only mode
+  // - Search for UNSEEN messages: 'UNSEEN'
+  // - Fetch without setting \Seen flag
+  // - Track processed message IDs in database to avoid duplicates
+  
+  // Example configuration when implementing:
+  // const connection = await connectIMAP({
+  //   host: account.imap_host,
+  //   port: account.imap_port,
+  //   secure: account.imap_use_ssl,
+  //   auth: {
+  //     user: account.imap_username,
+  //     pass: account.imap_password
+  //   },
+  //   readOnly: true  // CRITICAL: Prevents marking as read
+  // });
   
   // For now, return empty array
-  // In production, this would connect to IMAP, fetch unread emails, parse them
   return [];
 }
 
