@@ -24,6 +24,16 @@ interface Conversation {
   last_message_at: string;
 }
 
+// Full row type used for fresh fetches during merge
+interface DbConversation {
+  id: string;
+  customer_id: string;
+  status: string;
+  created_at: string;
+  last_message_at: string | null;
+  whatsapp_account_id: string | null;
+}
+
 interface MergeConversationsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -82,32 +92,91 @@ export const MergeConversationsDialog = ({
 
       if (updateError) throw updateError;
 
-      // Move all conversations from other customers to the primary customer
-      for (const customer of otherCustomers) {
-        const customerConversations = conversations.filter(
-          (conv) => conv.customer_id === customer.id
-        );
+      // Merge conversations safely respecting unique constraint: only one active conversation per customer
+      // 1) Fetch fresh conversations for all duplicates (to have status field)
+      const allCustomerIds = duplicateCustomers.map((c) => c.id);
+      const { data: allConversations, error: fetchConvsError } = await supabase
+        .from("conversations")
+        .select("id, customer_id, status, created_at, last_message_at, whatsapp_account_id")
+        .in("customer_id", allCustomerIds);
+      if (fetchConvsError) throw fetchConvsError;
 
-        if (customerConversations.length > 0) {
-          const { error: convError } = await supabase
+      const toProcess = (allConversations || []) as DbConversation[];
+
+      // Determine the primary active conversation (if any)
+      let primaryActive = toProcess.find(
+        (c) => c.customer_id === primaryCustomerId && c.status === "active"
+      ) || null;
+
+      // 2) Handle active conversations from other customers
+      const otherActive = toProcess.filter(
+        (c) => c.customer_id !== primaryCustomerId && c.status === "active"
+      );
+
+      for (const src of otherActive) {
+        if (!primaryActive) {
+          // Keep this one as the active conversation by reassigning it
+          const { error } = await supabase
             .from("conversations")
             .update({ customer_id: primaryCustomerId })
-            .in(
-              "id",
-              customerConversations.map((c) => c.id)
-            );
+            .eq("id", src.id);
+          if (error) throw error;
+          primaryActive = { ...src, customer_id: primaryCustomerId };
+        } else {
+          // Merge messages into the existing primary active conversation and delete the source
+          const { error: moveErr } = await supabase
+            .from("messages")
+            .update({ conversation_id: primaryActive.id })
+            .eq("conversation_id", src.id);
+          if (moveErr) throw moveErr;
 
-          if (convError) throw convError;
+          const { error: delErr } = await supabase
+            .from("conversations")
+            .delete()
+            .eq("id", src.id);
+          if (delErr) throw delErr;
         }
+      }
 
-        // Delete the duplicate customer
+      // 3) Reassign non-active conversations from other customers to the primary customer
+      const otherNonActive = toProcess.filter(
+        (c) => c.customer_id !== primaryCustomerId && c.status !== "active"
+      );
+      for (const conv of otherNonActive) {
+        const { error } = await supabase
+          .from("conversations")
+          .update({ customer_id: primaryCustomerId })
+          .eq("id", conv.id);
+        if (error) throw error;
+      }
+
+      // 4) Recalculate last_message_at for the kept active conversation based on merged messages
+      if (primaryActive) {
+        const { data: latest, error: latestErr } = await supabase
+          .from("messages")
+          .select("created_at")
+          .eq("conversation_id", primaryActive.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestErr) throw latestErr;
+        if (latest?.created_at) {
+          await supabase
+            .from("conversations")
+            .update({ last_message_at: latest.created_at })
+            .eq("id", primaryActive.id);
+        }
+      }
+
+      // 5) Delete the duplicate customers after their conversations have been moved/merged
+      for (const customer of otherCustomers) {
         const { error: deleteError } = await supabase
           .from("customers")
           .delete()
           .eq("id", customer.id);
-
         if (deleteError) throw deleteError;
       }
+
 
       toast({
         title: "Contacts Merged",
@@ -199,6 +268,7 @@ export const MergeConversationsDialog = ({
             <p className="font-medium mb-2">What happens during merge:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li>All conversations will be transferred to the selected contact</li>
+              <li>If multiple active conversations exist, their messages are merged into one by timestamp and duplicates are removed</li>
               <li>All email addresses will be stored as alternate emails</li>
               <li>Duplicate contacts will be deleted</li>
               <li>Conversation timestamps will be preserved</li>
