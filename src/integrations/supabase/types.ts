@@ -748,6 +748,7 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           name: string
+          platform: string | null
           updated_at: string | null
           usage_count: number | null
           variables: Json | null
@@ -761,6 +762,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           name: string
+          platform?: string | null
           updated_at?: string | null
           usage_count?: number | null
           variables?: Json | null
@@ -774,6 +776,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           name?: string
+          platform?: string | null
           updated_at?: string | null
           usage_count?: number | null
           variables?: Json | null

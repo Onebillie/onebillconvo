@@ -8,13 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, LogOut, Settings as SettingsIcon, Bell } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Conversation, Message, Template, Customer } from "@/types/chat";
+import { Conversation, Message, Customer } from "@/types/chat";
 import { ContactList } from "@/components/chat/ContactList";
 import { MessageList } from "@/components/chat/MessageList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { ContactDetails } from "@/components/chat/ContactDetails";
 import { CreateContactDialog } from "@/components/chat/CreateContactDialog";
-import { TemplateSelector } from "@/components/chat/TemplateSelector";
+import { EnhancedTemplateSelector } from "@/components/chat/EnhancedTemplateSelector";
 import { AdminAssignment } from "@/components/chat/AdminAssignment";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
@@ -37,7 +37,6 @@ const Dashboard = () => {
     statusIds: [],
   });
   const [messages, setMessages] = useState<Message[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [showContactDetails, setShowContactDetails] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -178,16 +177,6 @@ const Dashboard = () => {
       .eq("direction", "inbound");
   }, []);
 
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("whatsapp-templates");
-      if (error) throw error;
-      setTemplates(data.templates || []);
-    } catch (error: any) {
-      console.error("Error fetching templates:", error);
-    }
-  }, []);
-
   // Real-time message handlers
   const handleNewMessage = useCallback((newMessage: Message) => {
     setMessages(prev => [...prev, newMessage]);
@@ -213,8 +202,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchConversations();
-    fetchTemplates();
-  }, [fetchConversations, fetchTemplates]);
+  }, [fetchConversations]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -295,13 +283,6 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center space-x-2">
             <CreateContactDialog onContactCreated={fetchConversations} />
-            {selectedConversation && (
-              <TemplateSelector
-                templates={templates}
-                customerPhone={selectedConversation.customer.phone || ""}
-                onTemplateSent={() => fetchMessages(selectedConversation.id)}
-              />
-            )}
           </div>
         </div>
 
@@ -365,12 +346,22 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
-                <div className="w-48">
-                  <AdminAssignment
+                <div className="flex items-center gap-2">
+                  <EnhancedTemplateSelector
                     conversationId={selectedConversation.id}
-                    currentAssignee={selectedConversation.assigned_to}
-                    onAssignmentChange={fetchConversations}
+                    customerId={selectedConversation.customer.id}
+                    customerPhone={selectedConversation.customer.phone}
+                    customerEmail={selectedConversation.customer.email}
+                    onTemplateSent={() => fetchMessages(selectedConversation.id)}
                   />
+                  
+                  <div className="w-48">
+                    <AdminAssignment
+                      conversationId={selectedConversation.id}
+                      currentAssignee={selectedConversation.assigned_to}
+                      onAssignmentChange={fetchConversations}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
