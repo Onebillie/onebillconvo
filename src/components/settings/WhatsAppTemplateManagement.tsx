@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, RefreshCw, Download } from "lucide-react";
 
 interface TemplateFormData {
   name: string;
@@ -21,9 +24,25 @@ interface TemplateFormData {
   buttons: Array<{ type: string; text: string; }>;
 }
 
+interface MetaTemplate {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category: string;
+  components: Array<{
+    type: string;
+    text?: string;
+    format?: string;
+  }>;
+}
+
 export const WhatsAppTemplateManagement = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [buttons, setButtons] = useState<Array<{ type: string; text: string; }>>([]);
+  const [metaTemplates, setMetaTemplates] = useState<MetaTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const { register, handleSubmit, reset, watch, setValue } = useForm<TemplateFormData>({
     defaultValues: {
@@ -45,6 +64,96 @@ export const WhatsAppTemplateManagement = () => {
     const newButtons = [...buttons];
     newButtons[index] = { ...newButtons[index], [field]: value };
     setButtons(newButtons);
+  };
+
+  useEffect(() => {
+    fetchMetaTemplates();
+  }, []);
+
+  const fetchMetaTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-templates");
+      
+      if (error) throw error;
+      
+      setMetaTemplates(data.templates || []);
+      toast.success(`Loaded ${data.templates?.length || 0} templates from Meta`);
+    } catch (error: any) {
+      console.error("Error fetching templates:", error);
+      toast.error(error.message || "Failed to fetch templates from Meta");
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  const syncTemplateToDatabase = async (template: MetaTemplate) => {
+    setIsSyncing(true);
+    try {
+      // Extract body text from components
+      const bodyComponent = template.components.find(c => c.type === 'BODY');
+      const content = bodyComponent?.text || '';
+
+      // Check if template already exists
+      const { data: existing } = await supabase
+        .from('message_templates')
+        .select('id')
+        .eq('name', template.name)
+        .eq('platform', 'whatsapp')
+        .single();
+
+      if (existing) {
+        toast.info(`Template "${template.name}" already synced`);
+        return;
+      }
+
+      // Insert into message_templates
+      const { error } = await supabase
+        .from('message_templates')
+        .insert({
+          name: template.name,
+          content,
+          platform: 'whatsapp',
+          category: template.category.toLowerCase(),
+          is_active: template.status === 'APPROVED',
+        });
+
+      if (error) throw error;
+
+      toast.success(`Synced "${template.name}" to local templates`);
+    } catch (error: any) {
+      console.error("Error syncing template:", error);
+      toast.error(error.message || "Failed to sync template");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const syncAllTemplates = async () => {
+    setIsSyncing(true);
+    try {
+      const approvedTemplates = metaTemplates.filter(t => t.status === 'APPROVED');
+      
+      for (const template of approvedTemplates) {
+        await syncTemplateToDatabase(template);
+      }
+      
+      toast.success(`Synced ${approvedTemplates.length} templates`);
+    } catch (error: any) {
+      console.error("Error syncing all templates:", error);
+      toast.error("Failed to sync all templates");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED': return 'default';
+      case 'PENDING': return 'secondary';
+      case 'REJECTED': return 'destructive';
+      default: return 'outline';
+    }
   };
 
   const onSubmit = async (data: TemplateFormData) => {
@@ -97,6 +206,8 @@ export const WhatsAppTemplateManagement = () => {
       toast.success("Template submitted to Meta for approval");
       reset();
       setButtons([]);
+      // Refresh the templates list after a delay to allow Meta to process
+      setTimeout(() => fetchMetaTemplates(), 2000);
     } catch (error: any) {
       console.error("Error submitting template:", error);
       toast.error(error.message || "Failed to submit template");
@@ -106,15 +217,117 @@ export const WhatsAppTemplateManagement = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>WhatsApp Message Templates</CardTitle>
-        <CardDescription>
-          Create and submit new WhatsApp message templates to Meta for approval
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>WhatsApp Business Templates</CardTitle>
+          <CardDescription>
+            Manage your WhatsApp message templates from Meta Business Manager
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="existing" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="existing">Existing Templates</TabsTrigger>
+              <TabsTrigger value="create">Create New</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="existing" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {metaTemplates.length} templates from Meta Business Manager
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchMetaTemplates}
+                    disabled={isLoadingTemplates}
+                  >
+                    {isLoadingTemplates ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={syncAllTemplates}
+                    disabled={isSyncing || metaTemplates.length === 0}
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    Sync All Approved
+                  </Button>
+                </div>
+              </div>
+
+              {isLoadingTemplates ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : metaTemplates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No templates found. Create your first template below.
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Language</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Content Preview</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {metaTemplates.map((template) => {
+                        const bodyComponent = template.components.find(c => c.type === 'BODY');
+                        return (
+                          <TableRow key={template.id}>
+                            <TableCell className="font-medium">{template.name}</TableCell>
+                            <TableCell>{template.language}</TableCell>
+                            <TableCell className="capitalize">{template.category.toLowerCase()}</TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusColor(template.status)}>
+                                {template.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                              {bodyComponent?.text || 'No content'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {template.status === 'APPROVED' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => syncTemplateToDatabase(template)}
+                                  disabled={isSyncing}
+                                >
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Sync
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="create" className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Template Name</Label>
@@ -246,12 +459,15 @@ export const WhatsAppTemplateManagement = () => {
             ))}
           </div>
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Submit to Meta for Approval
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Submit to Meta for Approval
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
