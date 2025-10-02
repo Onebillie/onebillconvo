@@ -15,6 +15,7 @@ export function AIAssistantSettings() {
   const [trainingData, setTrainingData] = useState<any[]>([]);
   const [ragDocs, setRagDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -29,6 +30,10 @@ export function AIAssistantSettings() {
     setConfig(cfg);
     setTrainingData(training || []);
     setRagDocs(docs || []);
+    // Lock if config exists and has been configured
+    if (cfg && cfg.system_prompt) {
+      setIsLocked(true);
+    }
     setLoading(false);
   };
 
@@ -62,6 +67,15 @@ export function AIAssistantSettings() {
 
   return (
     <div className="space-y-6">
+      {isLocked && (
+        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950">
+          <CardContent className="pt-6">
+            <p className="text-sm text-amber-900 dark:text-amber-100">
+              ⚠️ Settings are locked after initial configuration and cannot be modified.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>AI Assistant Configuration</CardTitle>
@@ -70,15 +84,15 @@ export function AIAssistantSettings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Enable AI Assistant</Label>
-            <Switch checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
+            <Switch disabled={isLocked} checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
           </div>
           <div className="flex items-center justify-between">
             <Label>Out of Hours Only</Label>
-            <Switch checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
+            <Switch disabled={isLocked} checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
           </div>
           <div className="space-y-2">
             <Label>System Prompt</Label>
-            <Textarea value={config?.system_prompt} onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} onBlur={() => updateConfig({ system_prompt: config.system_prompt })} rows={4} />
+            <Textarea disabled={isLocked} value={config?.system_prompt} onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} onBlur={() => updateConfig({ system_prompt: config.system_prompt })} rows={4} />
           </div>
         </CardContent>
       </Card>
@@ -89,23 +103,23 @@ export function AIAssistantSettings() {
           <TabsTrigger value="rag">RAG Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="training" className="space-y-4">
-          <Button onClick={addTrainingData}><Plus className="w-4 h-4 mr-2" />Add Q&A</Button>
+          {!isLocked && <Button onClick={addTrainingData}><Plus className="w-4 h-4 mr-2" />Add Q&A</Button>}
           {trainingData.map((item) => (
             <Card key={item.id}>
               <CardContent className="pt-4 space-y-2">
-                <Input placeholder="Question" defaultValue={item.question} onBlur={(e) => supabase.from('ai_training_data').update({ question: e.target.value }).eq('id', item.id)} />
-                <Textarea placeholder="Answer" defaultValue={item.answer} onBlur={(e) => supabase.from('ai_training_data').update({ answer: e.target.value }).eq('id', item.id)} />
+                <Input disabled={isLocked} placeholder="Question" defaultValue={item.question} onBlur={(e) => !isLocked && supabase.from('ai_training_data').update({ question: e.target.value }).eq('id', item.id)} />
+                <Textarea disabled={isLocked} placeholder="Answer" defaultValue={item.answer} onBlur={(e) => !isLocked && supabase.from('ai_training_data').update({ answer: e.target.value }).eq('id', item.id)} />
               </CardContent>
             </Card>
           ))}
         </TabsContent>
         <TabsContent value="rag" className="space-y-4">
-          <Button onClick={addRagDoc}><Plus className="w-4 h-4 mr-2" />Add Document</Button>
+          {!isLocked && <Button onClick={addRagDoc}><Plus className="w-4 h-4 mr-2" />Add Document</Button>}
           {ragDocs.map((doc) => (
             <Card key={doc.id}>
               <CardContent className="pt-4 space-y-2">
-                <Input placeholder="Title" defaultValue={doc.title} onBlur={(e) => supabase.from('ai_rag_documents').update({ title: e.target.value }).eq('id', doc.id)} />
-                <Textarea placeholder="Content" defaultValue={doc.content} onBlur={(e) => supabase.from('ai_rag_documents').update({ content: e.target.value }).eq('id', doc.id)} rows={6} />
+                <Input disabled={isLocked} placeholder="Title" defaultValue={doc.title} onBlur={(e) => !isLocked && supabase.from('ai_rag_documents').update({ title: e.target.value }).eq('id', doc.id)} />
+                <Textarea disabled={isLocked} placeholder="Content" defaultValue={doc.content} onBlur={(e) => !isLocked && supabase.from('ai_rag_documents').update({ content: e.target.value }).eq('id', doc.id)} rows={6} />
               </CardContent>
             </Card>
           ))}

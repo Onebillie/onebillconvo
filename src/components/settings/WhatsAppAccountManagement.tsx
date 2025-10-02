@@ -26,6 +26,7 @@ interface WhatsAppAccount {
 export function WhatsAppAccountManagement() {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone_number: "",
@@ -45,6 +46,10 @@ export function WhatsAppAccountManagement() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      // Lock if any account exists
+      if (data && data.length > 0) {
+        setIsLocked(true);
+      }
       return data as WhatsAppAccount[];
     },
   });
@@ -136,18 +141,28 @@ export function WhatsAppAccountManagement() {
 
   return (
     <div className="space-y-6">
+      {isLocked && (
+        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950">
+          <CardContent className="pt-6">
+            <p className="text-sm text-amber-900 dark:text-amber-100">
+              ⚠️ WhatsApp accounts are locked after initial configuration and cannot be added, modified, or deleted.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">WhatsApp Accounts</h2>
           <p className="text-muted-foreground">Manage multiple WhatsApp Business API accounts</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Account
-            </Button>
-          </DialogTrigger>
+        {!isLocked && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Account
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add WhatsApp Account</DialogTitle>
@@ -221,6 +236,7 @@ export function WhatsAppAccountManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {accounts && accounts.length === 0 && (
@@ -289,40 +305,42 @@ export function WhatsAppAccountManagement() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={account.is_active}
-                      onCheckedChange={(checked) =>
-                        toggleAccountMutation.mutate({ id: account.id, is_active: checked })
-                      }
-                    />
-                    <Label>Active</Label>
+              {!isLocked && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={account.is_active}
+                        onCheckedChange={(checked) =>
+                          toggleAccountMutation.mutate({ id: account.id, is_active: checked })
+                        }
+                      />
+                      <Label>Active</Label>
+                    </div>
+                    {!account.is_default && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDefaultMutation.mutate(account.id)}
+                      >
+                        Set as Default
+                      </Button>
+                    )}
                   </div>
-                  {!account.is_default && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDefaultMutation.mutate(account.id)}
-                    >
-                      Set as Default
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("Are you sure you want to delete this account?")) {
+                        deleteAccountMutation.mutate(account.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete this account?")) {
-                      deleteAccountMutation.mutate(account.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
         ))}
