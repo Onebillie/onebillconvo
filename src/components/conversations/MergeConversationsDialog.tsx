@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Phone, Calendar } from "lucide-react";
@@ -50,7 +51,18 @@ export const MergeConversationsDialog = ({
   onMergeComplete,
 }: MergeConversationsDialogProps) => {
   const [primaryCustomerId, setPrimaryCustomerId] = useState<string>("");
+  const [defaultEmail, setDefaultEmail] = useState<string>("");
   const [merging, setMerging] = useState(false);
+
+  // Collect all unique emails whenever customers change
+  const allUniqueEmails = Array.from(
+    new Set(
+      duplicateCustomers.flatMap((c) => [
+        c.email,
+        ...(c.alternate_emails || []),
+      ].filter(Boolean) as string[])
+    )
+  );
 
   const handleMerge = async () => {
     if (!primaryCustomerId) {
@@ -62,13 +74,22 @@ export const MergeConversationsDialog = ({
       return;
     }
 
+    if (!defaultEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please select the default email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setMerging(true);
 
     try {
       const primaryCustomer = duplicateCustomers.find((c) => c.id === primaryCustomerId);
       const otherCustomers = duplicateCustomers.filter((c) => c.id !== primaryCustomerId);
 
-      // Collect all unique emails from all customers
+      // Collect all unique emails and set the chosen one as primary
       const allEmails = new Set<string>();
       duplicateCustomers.forEach((customer) => {
         if (customer.email) allEmails.add(customer.email);
@@ -77,15 +98,14 @@ export const MergeConversationsDialog = ({
         }
       });
 
-      // Remove the primary email from the set
-      if (primaryCustomer?.email) {
-        allEmails.delete(primaryCustomer.email);
-      }
+      // Remove the selected default email from alternates
+      allEmails.delete(defaultEmail);
 
-      // Update primary customer with all alternate emails
+      // Update primary customer with selected default email and all other emails as alternates
       const { error: updateError } = await supabase
         .from("customers")
         .update({
+          email: defaultEmail,
           alternate_emails: Array.from(allEmails),
         })
         .eq("id", primaryCustomerId);
@@ -264,6 +284,29 @@ export const MergeConversationsDialog = ({
             })}
           </RadioGroup>
 
+          {allUniqueEmails.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="default-email" className="text-sm font-medium">
+                Default Email Address
+              </Label>
+              <Select value={defaultEmail} onValueChange={setDefaultEmail}>
+                <SelectTrigger id="default-email">
+                  <SelectValue placeholder="Select the primary email address" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUniqueEmails.map((email) => (
+                    <SelectItem key={email} value={email}>
+                      {email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                This will be the main email for the merged contact. All others will be stored as alternates.
+              </p>
+            </div>
+          )}
+
           <div className="rounded-lg bg-muted p-4 text-sm">
             <p className="font-medium mb-2">What happens during merge:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -280,7 +323,7 @@ export const MergeConversationsDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={merging}>
             Cancel
           </Button>
-          <Button onClick={handleMerge} disabled={!primaryCustomerId || merging}>
+          <Button onClick={handleMerge} disabled={!primaryCustomerId || !defaultEmail || merging}>
             {merging ? "Merging..." : "Merge Contacts"}
           </Button>
         </DialogFooter>
