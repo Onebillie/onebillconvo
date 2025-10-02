@@ -211,6 +211,110 @@ export type Database = {
           },
         ]
       }
+      calendar_export_log: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          export_type: string
+          exported_by: string | null
+          file_name: string
+          id: string
+          sync_config_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          export_type: string
+          exported_by?: string | null
+          file_name: string
+          id?: string
+          sync_config_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          export_type?: string
+          exported_by?: string | null
+          file_name?: string
+          id?: string
+          sync_config_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_export_log_sync_config_id_fkey"
+            columns: ["sync_config_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_sync_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_sync_config: {
+        Row: {
+          access_token: string | null
+          api_key: string | null
+          calendar_url: string | null
+          created_at: string
+          created_by: string | null
+          default_timezone: string
+          id: string
+          include_attendees: boolean
+          include_description: boolean
+          is_active: boolean
+          last_sync_at: string | null
+          name: string
+          provider: string
+          refresh_token: string | null
+          sync_completed_tasks: boolean
+          sync_interval_minutes: number
+          sync_tasks: boolean
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          api_key?: string | null
+          calendar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_timezone?: string
+          id?: string
+          include_attendees?: boolean
+          include_description?: boolean
+          is_active?: boolean
+          last_sync_at?: string | null
+          name: string
+          provider: string
+          refresh_token?: string | null
+          sync_completed_tasks?: boolean
+          sync_interval_minutes?: number
+          sync_tasks?: boolean
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          api_key?: string | null
+          calendar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_timezone?: string
+          id?: string
+          include_attendees?: boolean
+          include_description?: boolean
+          is_active?: boolean
+          last_sync_at?: string | null
+          name?: string
+          provider?: string
+          refresh_token?: string | null
+          sync_completed_tasks?: boolean
+          sync_interval_minutes?: number
+          sync_tasks?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_tags: {
         Row: {
           color: string | null
