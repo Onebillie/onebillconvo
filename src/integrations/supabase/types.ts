@@ -1485,3 +1485,19 @@ export const Constants = {
     },
   },
 } as const
+// ✅ Add Template type for WhatsApp template integration
+export interface Template {
+  id: string
+  name: string
+  category: string | null
+  content: string
+  platform: string | null
+  is_active: boolean | null
+  media_type: string | null
+  media_url: string | null
+  usage_count: number | null
+  variables: Json | null
+  created_at: string | null
+  updated_at: string | null
+  metadata?: Record<string, any> // optional field for Meta sync data
+}
