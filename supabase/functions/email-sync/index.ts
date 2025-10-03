@@ -319,16 +319,52 @@ async function processIncomingEmail(
       .eq('id', customer.id);
   }
 
-  // Find or create active conversation
-  let { data: conversation } = await supabase
-    .from('conversations')
-    .select('*')
-    .eq('customer_id', customer.id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Try to find existing conversation by threading (for replies)
+  let { data: conversation } = null;
+  
+  // First, try to find conversation by checking if this is a reply to an existing message
+  if (email.inReplyTo || (email.references && email.references.length > 0)) {
+    const threadIds = [email.inReplyTo, ...(email.references || [])].filter(Boolean);
+    
+    for (const threadId of threadIds) {
+      const { data: parentMessage } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .eq('external_message_id', threadId)
+        .maybeSingle();
+      
+      if (parentMessage) {
+        const { data: existingConv } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('id', parentMessage.conversation_id)
+          .eq('customer_id', customer.id)
+          .single();
+        
+        if (existingConv) {
+          conversation = existingConv;
+          console.log('Found existing conversation via email threading');
+          break;
+        }
+      }
+    }
+  }
+  
+  // If not found via threading, look for most recent active conversation
+  if (!conversation) {
+    const { data: activeConv } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('customer_id', customer.id)
+      .eq('status', 'active')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    conversation = activeConv;
+  }
 
+  // If still no conversation, create new one
   if (!conversation) {
     const { data: newConversation, error: convError } = await supabase
       .from('conversations')

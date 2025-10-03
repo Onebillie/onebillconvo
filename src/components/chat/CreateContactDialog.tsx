@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { formatIrishPhone, formatPhoneForDisplay } from "@/lib/phoneUtils";
+
 
 interface CreateContactDialogProps {
   onContactCreated: () => void;
@@ -29,11 +29,6 @@ export const CreateContactDialog = ({
     email: "",
   });
 
-  const handlePhoneChange = (value: string) => {
-    // Auto-format as user types
-    const formatted = formatIrishPhone(value);
-    setFormData(prev => ({ ...prev, phone: formatted }));
-  };
 
   const handleCreate = async () => {
     if (!formData.name || !formData.phone) {
@@ -47,15 +42,12 @@ export const CreateContactDialog = ({
 
     setCreating(true);
     try {
-      // Format phone number to Irish format
-      const normalizedPhone = formatIrishPhone(formData.phone);
-      
       // Create customer
       const { data: customer, error: customerError } = await (supabase as any)
         .from("customers")
         .insert({
           name: formData.name,
-          phone: normalizedPhone,
+          phone: formData.phone,
           email: formData.email || null,
         })
         .select()
@@ -120,12 +112,14 @@ export const CreateContactDialog = ({
             <Label htmlFor="phone">Phone *</Label>
             <Input
               id="phone"
-              value={formatPhoneForDisplay(formData.phone)}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              placeholder="087 123 4567"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              placeholder="353871234567"
             />
             <p className="text-xs text-muted-foreground">
-              Auto-formatted to Irish format (+353)
+              Enter full number with country code (e.g., 353871234567)
             </p>
           </div>
           <div className="space-y-2">

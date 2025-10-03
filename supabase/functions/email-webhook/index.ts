@@ -138,20 +138,59 @@ serve(async (req) => {
           .eq('id', customer.id);
       }
 
-      // Find or create active conversation
-      let { data: conversation, error: convError } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('customer_id', customer.id)
-        .eq('status', 'active')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Try to find existing conversation by threading (for replies)
+      let conversation = null;
+      
+      // Check if this is a reply by looking at email headers
+      const inReplyTo = data.in_reply_to;
+      const references = data.references || [];
+      
+      if (inReplyTo || references.length > 0) {
+        const threadIds = [inReplyTo, ...references].filter(Boolean);
+        
+        for (const threadId of threadIds) {
+          const { data: parentMessage } = await supabase
+            .from('messages')
+            .select('conversation_id')
+            .eq('external_message_id', threadId)
+            .maybeSingle();
+          
+          if (parentMessage) {
+            const { data: existingConv } = await supabase
+              .from('conversations')
+              .select('*')
+              .eq('id', parentMessage.conversation_id)
+              .eq('customer_id', customer.id)
+              .single();
+            
+            if (existingConv) {
+              conversation = existingConv;
+              console.log('Found existing conversation via email threading');
+              break;
+            }
+          }
+        }
+      }
+      
+      // If not found via threading, look for most recent active conversation
+      if (!conversation) {
+        const { data: activeConv, error: convError } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('status', 'active')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (convError) {
-        console.error('Error finding conversation:', convError);
+        if (convError) {
+          console.error('Error finding conversation:', convError);
+        }
+        
+        conversation = activeConv;
       }
 
+      // If still no conversation, create new one
       if (!conversation) {
         const { data: newConv, error: createConvError } = await supabase
           .from('conversations')
