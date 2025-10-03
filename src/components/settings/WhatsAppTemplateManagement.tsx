@@ -107,7 +107,7 @@ export const WhatsAppTemplateManagement = () => {
         return;
       }
 
-      // Insert into message_templates
+      // Insert into message_templates with metadata for template sending
       const { error } = await supabase
         .from('message_templates')
         .insert({
@@ -116,6 +116,10 @@ export const WhatsAppTemplateManagement = () => {
           platform: 'whatsapp',
           category: template.category.toLowerCase(),
           is_active: template.status === 'APPROVED',
+          metadata: {
+            meta_template_name: template.name,
+            template_language: template.language,
+          },
         });
 
       if (error) throw error;

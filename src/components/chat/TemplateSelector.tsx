@@ -40,6 +40,7 @@ export const TemplateSelector = ({
           to: customerPhone,
           message,
           templateName: template.name,
+          templateLanguage: template.language,
         },
       });
 

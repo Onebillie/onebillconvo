@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, message, attachments, whatsapp_account_id, conversation_id } = await req.json();
+    const { to, message, attachments, whatsapp_account_id, conversation_id, templateName, templateLanguage } = await req.json();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -85,40 +85,59 @@ serve(async (req) => {
     // Clean phone number (remove + and leading zeros)
     const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
 
-    let whatsappPayload: any = {
-      messaging_product: 'whatsapp',
-      to: cleanPhoneNumber,
-      type: 'text',
-      text: {
-        body: message
-      }
-    };
+    let whatsappPayload: any;
 
-    // Handle attachments if present
-    if (attachments && attachments.length > 0) {
-      const attachment = attachments[0]; // WhatsApp supports one attachment per message
-      
-      if (attachment.type.startsWith('image/')) {
-        whatsappPayload = {
-          messaging_product: 'whatsapp',
-          to: cleanPhoneNumber,
-          type: 'image',
-          image: {
-            link: attachment.url,
-            caption: message
+    // If template name is provided, send as WhatsApp template
+    if (templateName) {
+      console.log('Sending WhatsApp template:', { templateName, templateLanguage });
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: cleanPhoneNumber,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: {
+            code: templateLanguage || 'en'
           }
-        };
-      } else if (attachment.type === 'application/pdf' || attachment.type.startsWith('application/')) {
-        whatsappPayload = {
-          messaging_product: 'whatsapp',
-          to: cleanPhoneNumber,
-          type: 'document',
-          document: {
-            link: attachment.url,
-            caption: message,
-            filename: attachment.filename
-          }
-        };
+        }
+      };
+    } else {
+      // Send as regular text message
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: cleanPhoneNumber,
+        type: 'text',
+        text: {
+          body: message
+        }
+      };
+
+      // Handle attachments if present
+      if (attachments && attachments.length > 0) {
+        const attachment = attachments[0]; // WhatsApp supports one attachment per message
+        
+        if (attachment.type.startsWith('image/')) {
+          whatsappPayload = {
+            messaging_product: 'whatsapp',
+            to: cleanPhoneNumber,
+            type: 'image',
+            image: {
+              link: attachment.url,
+              caption: message
+            }
+          };
+        } else if (attachment.type === 'application/pdf' || attachment.type.startsWith('application/')) {
+          whatsappPayload = {
+            messaging_product: 'whatsapp',
+            to: cleanPhoneNumber,
+            type: 'document',
+            document: {
+              link: attachment.url,
+              caption: message,
+              filename: attachment.filename
+            }
+          };
+        }
       }
     }
 
