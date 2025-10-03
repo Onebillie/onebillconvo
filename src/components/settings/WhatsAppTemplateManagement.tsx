@@ -112,7 +112,7 @@ export const WhatsAppTemplateManagement = () => {
         is_active: template.status === "APPROVED",
         metadata: {
           meta_template_name: template.name,
-          template_language: template.language,
+          template_language: template.language, // ✅ will save en_US or en_GB as given by Meta
           components: template.components,
         },
       });
@@ -199,7 +199,7 @@ export const WhatsAppTemplateManagement = () => {
         body: {
           name: data.name,
           category: data.category,
-          language: { code: data.language }, // ✅ language code like en_US or en_GB
+          language: { code: data.language }, // ✅ handles en_US / en_GB etc.
           components,
         },
       });
@@ -326,6 +326,7 @@ export const WhatsAppTemplateManagement = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* ✅ Explicitly support both US & UK English */}
                         <SelectItem value="en_US">English (US)</SelectItem>
                         <SelectItem value="en_GB">English (UK)</SelectItem>
                         <SelectItem value="es_ES">Spanish (Spain)</SelectItem>
