@@ -221,7 +221,9 @@ export const WhatsAppTemplateManagement = () => {
         body: {
           name: data.name,
           category: data.category,
-          language: data.language,
+          language: {}
+            code: data.language, // should be en_US or en_GB
+        }
           components,
         },
       });
