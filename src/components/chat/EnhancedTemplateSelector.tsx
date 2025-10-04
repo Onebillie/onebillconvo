@@ -19,6 +19,7 @@ interface Template {
   category: string;
   platform: 'whatsapp' | 'email' | 'text';
   is_active: boolean;
+  variables?: any;
 }
 
 interface EnhancedTemplateSelectorProps {
@@ -86,10 +87,17 @@ export const EnhancedTemplateSelector = ({
           throw new Error("Customer phone number not available");
         }
         
+        // Extract metadata for WhatsApp templates
+        const metadata = template.variables as any;
+        const templateName = metadata?.meta_template_name;
+        const templateLanguage = metadata?.template_language || 'en';
+        
         const { error } = await supabase.functions.invoke("whatsapp-send", {
           body: {
             to: customerPhone,
             message: template.content,
+            templateName: templateName,
+            templateLanguage: templateLanguage,
           },
         });
 

@@ -107,6 +107,14 @@ export const WhatsAppTemplateManagement = () => {
         return;
       }
 
+      // Store WhatsApp metadata including the Meta template name and language
+      const metadata = {
+        meta_template_name: template.name,
+        template_language: template.language,
+        whatsapp_template_id: template.id,
+        components: template.components
+      };
+
       // Insert into message_templates
       const { error } = await supabase
         .from('message_templates')
@@ -116,6 +124,7 @@ export const WhatsAppTemplateManagement = () => {
           platform: 'whatsapp',
           category: template.category.toLowerCase(),
           is_active: template.status === 'APPROVED',
+          variables: metadata,
         });
 
       if (error) throw error;

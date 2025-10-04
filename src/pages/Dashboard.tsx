@@ -14,6 +14,7 @@ import { MessageList } from "@/components/chat/MessageList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { ContactDetails } from "@/components/chat/ContactDetails";
 import { CreateContactDialog } from "@/components/chat/CreateContactDialog";
+import { ContactPickerDialog } from "@/components/chat/ContactPickerDialog";
 import { EnhancedTemplateSelector } from "@/components/chat/EnhancedTemplateSelector";
 import { AdminAssignment } from "@/components/chat/AdminAssignment";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
@@ -282,8 +283,40 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col gap-2">
             <CreateContactDialog onContactCreated={fetchConversations} />
+            <ContactPickerDialog
+              onContactSelected={async (customerId) => {
+                // Find or create conversation for the selected customer
+                const { data: conversation } = await supabase
+                  .from("conversations")
+                  .select(`
+                    *,
+                    customers (
+                      id,
+                      name,
+                      phone,
+                      email,
+                      avatar,
+                      last_active,
+                      notes
+                    )
+                  `)
+                  .eq("customer_id", customerId)
+                  .eq("is_archived", false)
+                  .maybeSingle();
+
+                if (conversation) {
+                  setSelectedConversation({
+                    ...conversation,
+                    customer: conversation.customers,
+                    status_tags: [],
+                    unread_count: 0,
+                  });
+                }
+                await fetchConversations();
+              }}
+            />
           </div>
         </div>
 

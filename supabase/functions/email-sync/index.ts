@@ -320,7 +320,7 @@ async function processIncomingEmail(
   }
 
   // Try to find existing conversation by threading (for replies)
-  let { data: conversation } = null;
+  let conversation = null;
   
   // First, try to find conversation by checking if this is a reply to an existing message
   if (email.inReplyTo || (email.references && email.references.length > 0)) {
