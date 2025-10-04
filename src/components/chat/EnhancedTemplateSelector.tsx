@@ -86,16 +86,10 @@ export const EnhancedTemplateSelector = ({
           throw new Error("Customer phone number not available");
         }
         
-        // For WhatsApp templates, we need the Meta template name from metadata
-        // If the template has metadata with Meta info, send as template
-        const metadata = (template as any).metadata || {};
-        
         const { error } = await supabase.functions.invoke("whatsapp-send", {
           body: {
             to: customerPhone,
             message: template.content,
-            templateName: metadata.meta_template_name || template.name,
-            templateLanguage: metadata.template_language || 'en',
           },
         });
 
