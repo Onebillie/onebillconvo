@@ -25,7 +25,6 @@ export function EmailTemplateSettings() {
   const [htmlTemplate, setHtmlTemplate] = useState("");
   const [bundleWindow, setBundleWindow] = useState(2);
   const [settingsId, setSettingsId] = useState("");
-  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -46,11 +45,6 @@ export function EmailTemplateSettings() {
       setSettingsId(data.id);
       setHtmlTemplate(data.email_html_template || "");
       setBundleWindow(data.email_bundle_window_minutes || 2);
-      
-      // Lock if template is already configured
-      if (data.email_html_template) {
-        setIsLocked(true);
-      }
     }
   };
 
@@ -70,17 +64,11 @@ export function EmailTemplateSettings() {
       if (error) throw error;
 
       toast.success("Email template settings saved successfully");
-      setIsLocked(true);
     } catch (error: any) {
       toast.error(`Failed to save: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleUnlock = () => {
-    setIsLocked(false);
-    toast.success("Template unlocked for editing");
   };
 
   const resetToDefault = () => {
@@ -116,37 +104,6 @@ export function EmailTemplateSettings() {
 
   return (
     <div className="space-y-6">
-      {isLocked && (
-        <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-900 dark:text-amber-100 flex items-center justify-between">
-            <span>Email template is locked to prevent accidental changes.</span>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-4">
-                  <Unlock className="w-4 h-4 mr-2" />
-                  Unlock for Editing
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Unlock Email Template?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will allow you to edit the email template configuration. Make sure you understand the implications of changing the template as it affects all outgoing emails.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleUnlock}>
-                    Unlock Template
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -175,22 +132,19 @@ export function EmailTemplateSettings() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="htmlTemplate">HTML Template</Label>
-                {!isLocked && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={resetToDefault}
-                  >
-                    Reset to Default
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={resetToDefault}
+                >
+                  Reset to Default
+                </Button>
               </div>
               <Textarea
                 id="htmlTemplate"
                 value={htmlTemplate}
                 onChange={(e) => setHtmlTemplate(e.target.value)}
-                disabled={isLocked}
                 rows={20}
                 className="font-mono text-xs"
                 placeholder="Enter your HTML email template..."
@@ -209,18 +163,15 @@ export function EmailTemplateSettings() {
                 max={10}
                 value={bundleWindow}
                 onChange={(e) => setBundleWindow(parseInt(e.target.value))}
-                disabled={isLocked}
               />
               <p className="text-sm text-muted-foreground">
                 If multiple messages are sent within this time window, they will be bundled into one email to avoid spamming the customer. Recommended: 1-2 minutes.
               </p>
             </div>
 
-            {!isLocked && (
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Template Settings"}
-              </Button>
-            )}
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : "Save Template Settings"}
+            </Button>
           </form>
         </CardContent>
       </Card>

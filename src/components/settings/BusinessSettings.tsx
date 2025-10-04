@@ -22,7 +22,6 @@ interface BusinessInfo {
 
 export const BusinessSettings = () => {
   const [loading, setLoading] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
   const [formData, setFormData] = useState<BusinessInfo>({
     id: "",
     company_name: "",
@@ -53,10 +52,6 @@ export const BusinessSettings = () => {
 
     if (data) {
       setFormData(data);
-      // Lock if company name is set (indicates initial configuration is done)
-      if (data.company_name) {
-        setIsLocked(true);
-      }
     }
   };
 
@@ -96,15 +91,6 @@ export const BusinessSettings = () => {
 
   return (
     <div className="space-y-4">
-      {isLocked && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950">
-          <CardContent className="pt-6">
-            <p className="text-sm text-amber-900 dark:text-amber-100">
-              ⚠️ Settings are locked after initial configuration and cannot be modified.
-            </p>
-          </CardContent>
-        </Card>
-      )}
       <Card>
         <CardHeader>
           <CardTitle>Business Settings</CardTitle>
@@ -115,7 +101,6 @@ export const BusinessSettings = () => {
             <div className="space-y-2">
               <Label>Company Name</Label>
               <Input
-                disabled={isLocked}
                 value={formData.company_name || ""}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                 placeholder="Your Company Name"
@@ -125,7 +110,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>Company Logo URL</Label>
             <Input
-              disabled={isLocked}
               value={formData.company_logo || ""}
               onChange={(e) => setFormData({ ...formData, company_logo: e.target.value })}
               placeholder="https://example.com/logo.png"
@@ -135,7 +119,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>Support Email (for Resend verification)</Label>
             <Input
-              disabled={isLocked}
               type="email"
               value={formData.support_email || ""}
               onChange={(e) => setFormData({ ...formData, support_email: e.target.value })}
@@ -149,7 +132,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>From Email</Label>
             <Input
-              disabled={isLocked}
               type="email"
               value={formData.from_email || ""}
               onChange={(e) => setFormData({ ...formData, from_email: e.target.value })}
@@ -163,7 +145,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>Reply-To Email</Label>
             <Input
-              disabled={isLocked}
               type="email"
               value={formData.reply_to_email || ""}
               onChange={(e) => setFormData({ ...formData, reply_to_email: e.target.value })}
@@ -177,7 +158,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>Email Subject Template</Label>
             <Input
-              disabled={isLocked}
               value={formData.email_subject_template || ""}
               onChange={(e) => setFormData({ ...formData, email_subject_template: e.target.value })}
               placeholder="Message from {{company_name}}"
@@ -190,7 +170,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>Email Signature</Label>
             <Textarea
-              disabled={isLocked}
               value={formData.email_signature || ""}
               onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
               placeholder="Best regards,&#10;Your Company Team&#10;support@example.com"
@@ -204,7 +183,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>WhatsApp Status</Label>
             <Input
-              disabled={isLocked}
               value={formData.whatsapp_status || ""}
               onChange={(e) => setFormData({ ...formData, whatsapp_status: e.target.value })}
               placeholder="Available 24/7"
@@ -214,7 +192,6 @@ export const BusinessSettings = () => {
           <div className="space-y-2">
             <Label>WhatsApp About</Label>
             <Textarea
-              disabled={isLocked}
               value={formData.whatsapp_about || ""}
               onChange={(e) => setFormData({ ...formData, whatsapp_about: e.target.value })}
               placeholder="Describe your business..."
@@ -222,13 +199,11 @@ export const BusinessSettings = () => {
             />
           </div>
 
-          {!isLocked && (
-            <div className="pt-4">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Settings"}
-              </Button>
-            </div>
-          )}
+          <div className="pt-4">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : "Save Settings"}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

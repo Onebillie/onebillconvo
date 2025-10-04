@@ -34,7 +34,6 @@ export function EmailAccountManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email_address: "",
@@ -61,10 +60,6 @@ export function EmailAccountManagement() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // Lock if any account exists
-      if (data && data.length > 0) {
-        setIsLocked(true);
-      }
       return data as EmailAccount[];
     }
   });
@@ -193,15 +188,6 @@ export function EmailAccountManagement() {
 
   return (
     <div className="space-y-6">
-      {isLocked && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950">
-          <CardContent className="pt-6">
-            <p className="text-sm text-amber-900 dark:text-amber-100">
-              ⚠️ Email accounts are locked after initial configuration and cannot be added, modified, or deleted.
-            </p>
-          </CardContent>
-        </Card>
-      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Email Accounts</h2>
@@ -210,8 +196,7 @@ export function EmailAccountManagement() {
           </p>
         </div>
         
-        {!isLocked && (
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -375,7 +360,6 @@ export function EmailAccountManagement() {
             </form>
           </DialogContent>
         </Dialog>
-        )}
       </div>
 
       {!accounts || accounts.length === 0 ? (
@@ -410,36 +394,32 @@ export function EmailAccountManagement() {
                       size="sm"
                       variant="outline"
                       onClick={() => syncNowMutation.mutate(account.id)}
-                      disabled={!account.is_active || syncNowMutation.isPending || isLocked}
+                      disabled={!account.is_active || syncNowMutation.isPending}
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Sync Now
                     </Button>
-                    {!isLocked && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteAccountMutation.mutate(account.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteAccountMutation.mutate(account.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {!isLocked && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Active</span>
-                      <Switch
-                        checked={account.is_active}
-                        onCheckedChange={(checked) =>
-                          toggleAccountMutation.mutate({ id: account.id, is_active: checked })
-                        }
-                      />
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Active</span>
+                    <Switch
+                      checked={account.is_active}
+                      onCheckedChange={(checked) =>
+                        toggleAccountMutation.mutate({ id: account.id, is_active: checked })
+                      }
+                    />
+                  </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">IMAP Server</span>
                     <span>{account.imap_host}:{account.imap_port}</span>
