@@ -35,27 +35,31 @@ export const TemplateSelector = ({
       const bodyComponent = template.components.find((c) => c.type === "BODY");
       const message = bodyComponent?.text || "";
 
+      // ✅ Correct payload fields for the Supabase Edge Function
       const { error } = await supabase.functions.invoke("whatsapp-send", {
         body: {
           to: customerPhone,
-          message,
-          templateName: template.name,
+          template_name: template.name,
+          template_language: template.language || "en",
+          template_components: [], // no variables for now
+          message, // optional for fallback logging
         },
       });
 
       if (error) throw error;
 
       toast({
-        title: "Template sent",
-        description: `Sent "${template.name}" template successfully.`,
+        title: "✅ Template Sent",
+        description: `Sent "${template.name}" successfully.`,
       });
 
       setOpen(false);
       onTemplateSent();
     } catch (error: any) {
+      console.error("Error sending template:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to send template",
+        title: "❌ Error",
+        description: error.message || "Failed to send WhatsApp template",
         variant: "destructive",
       });
     } finally {
