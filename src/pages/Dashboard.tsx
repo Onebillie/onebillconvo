@@ -423,6 +423,7 @@ const Dashboard = () => {
                   customerEmail={selectedConversation.customer.email}
                   lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
                   onMessageSent={() => fetchMessages(selectedConversation.id)}
+                  customer={selectedConversation.customer}
                 />
               </div>
 

@@ -7,6 +7,8 @@ import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
+import { Customer } from "@/types/chat";
+import { populateTemplateWithContactData } from "@/lib/templateUtils";
 
 interface MessageInputProps {
   conversationId: string;
@@ -15,6 +17,7 @@ interface MessageInputProps {
   customerEmail?: string;
   lastContactMethod?: "whatsapp" | "email";
   onMessageSent: () => void;
+  customer?: Customer;
 }
 
 export const MessageInput = ({
@@ -24,6 +27,7 @@ export const MessageInput = ({
   customerEmail,
   lastContactMethod = "whatsapp",
   onMessageSent,
+  customer,
 }: MessageInputProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -50,6 +54,12 @@ export const MessageInput = ({
 
     setUploading(true);
     try {
+      // Populate template variables with contact data if customer is provided
+      let processedMessage = newMessage;
+      if (customer) {
+        processedMessage = populateTemplateWithContactData(newMessage, customer);
+      }
+
       if (sendVia === "email" && customerEmail) {
         // First, insert message as pending for bundling
         const { error: insertError } = await supabase
@@ -57,7 +67,7 @@ export const MessageInput = ({
           .insert({
             conversation_id: conversationId,
             customer_id: customerId,
-            content: newMessage,
+            content: processedMessage,
             direction: 'outbound',
             platform: 'email',
             channel: 'email',
@@ -72,8 +82,8 @@ export const MessageInput = ({
           body: {
             to: customerEmail,
             subject: "Message from Support",
-            html: newMessage,
-            text: newMessage,
+            html: processedMessage,
+            text: processedMessage,
             conversation_id: conversationId,
             customer_id: customerId,
           },
@@ -136,7 +146,7 @@ export const MessageInput = ({
         const { error } = await supabase.functions.invoke("whatsapp-send", {
           body: {
             to: customerPhone,
-            message: newMessage,
+            message: processedMessage,
             attachments: attachmentUrls,
           },
         });
