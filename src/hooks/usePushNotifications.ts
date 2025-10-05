@@ -15,7 +15,7 @@ const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
 
 // VAPID public key - this should be generated on the server
 // For now using a placeholder - in production, generate proper VAPID keys
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PUBLIC_KEY = 'BKCghPJGOCo4UwtB9xaqbSPxHTe0aerXwErtQlZFpTxIPFHxPcdcAvg7vgQcN8G64J0VweS-fQXs66B9iUJYEgI';
 
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
