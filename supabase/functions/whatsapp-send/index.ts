@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, message, attachments, whatsapp_account_id, conversation_id } = await req.json();
+    const { to, message, attachments, whatsapp_account_id, conversation_id, templateName, templateLanguage, templateVariables } = await req.json();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -75,9 +75,16 @@ serve(async (req) => {
       throw new Error('WhatsApp credentials not configured');
     }
 
-    if (!to || !message) {
+    if (!to) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: to, message' }),
+        JSON.stringify({ error: 'Missing required field: to' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!templateName && !message) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: message or templateName' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -85,18 +92,39 @@ serve(async (req) => {
     // Clean phone number (remove + and leading zeros)
     const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
 
-    let whatsappPayload: any = {
-      messaging_product: 'whatsapp',
-      to: cleanPhoneNumber,
-      type: 'text',
-      text: {
-        body: message
-      }
-    };
+    let whatsappPayload: any;
 
-    // Handle attachments if present
-    if (attachments && attachments.length > 0) {
-      const attachment = attachments[0]; // WhatsApp supports one attachment per message
+    // Check if this is a template message
+    if (templateName) {
+      // Template message payload
+      const hasVariables = templateVariables && Array.isArray(templateVariables) && templateVariables.length > 0;
+      
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: cleanPhoneNumber,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: templateLanguage || 'en' },
+          // Only include components if template has variables
+          ...(hasVariables && {
+            components: [
+              {
+                type: 'body',
+                parameters: templateVariables.map((v: string) => ({
+                  type: 'text',
+                  text: v
+                }))
+              }
+            ]
+          })
+        }
+      };
+      
+      console.log('Sending template:', templateName, 'with', templateVariables?.length || 0, 'variables');
+    } else if (attachments && attachments.length > 0) {
+      // Handle attachments
+      const attachment = attachments[0];
       
       if (attachment.type.startsWith('image/')) {
         whatsappPayload = {
@@ -120,6 +148,16 @@ serve(async (req) => {
           }
         };
       }
+    } else {
+      // Regular text message
+      whatsappPayload = {
+        messaging_product: 'whatsapp',
+        to: cleanPhoneNumber,
+        type: 'text',
+        text: {
+          body: message
+        }
+      };
     }
 
     // Send message to WhatsApp API
@@ -191,7 +229,7 @@ serve(async (req) => {
           .insert({
             conversation_id: conversation.id,
             customer_id: customer.id,
-            content: message,
+            content: message || `Template: ${templateName}`,
             direction: 'outbound',
             platform: 'whatsapp',
             external_message_id: responseData.messages[0].id,

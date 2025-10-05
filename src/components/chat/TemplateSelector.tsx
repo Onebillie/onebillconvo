@@ -35,14 +35,19 @@ export const TemplateSelector = ({
       const bodyComponent = template.components.find((c) => c.type === "BODY");
       const message = bodyComponent?.text || "";
 
-      // ✅ Correct payload fields for the Supabase Edge Function
+      // Detect if template has variables
+      const variablePattern = /\{\{(\d+)\}\}/g;
+      const hasVariables = variablePattern.test(message);
+
+      // For now, send without variable substitution
+      // TODO: Add variable input dialog if needed
       const { error } = await supabase.functions.invoke("whatsapp-send", {
         body: {
           to: customerPhone,
-          template_name: template.name,
-          template_language: template.language || "en",
-          template_components: [], // no variables for now
-          message, // optional for fallback logging
+          templateName: template.name,
+          templateLanguage: template.language || "en",
+          // Only include templateVariables if template has variables
+          ...(hasVariables ? { templateVariables: [] } : {}),
         },
       });
 

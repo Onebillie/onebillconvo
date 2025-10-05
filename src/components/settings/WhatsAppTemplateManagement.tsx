@@ -94,6 +94,12 @@ export const WhatsAppTemplateManagement = () => {
       const bodyComponent = template.components.find(c => c.type === 'BODY');
       const content = bodyComponent?.text || '';
 
+      // Detect variables in template (e.g., {{1}}, {{2}}, {{3}})
+      const variablePattern = /\{\{(\d+)\}\}/g;
+      const matches = content.match(variablePattern);
+      const variableCount = matches ? matches.length : 0;
+      const requiresVariables = variableCount > 0;
+
       // Check if template already exists
       const { data: existing } = await supabase
         .from('message_templates')
@@ -125,11 +131,13 @@ export const WhatsAppTemplateManagement = () => {
           category: template.category.toLowerCase(),
           is_active: template.status === 'APPROVED',
           variables: metadata,
+          variable_count: variableCount,
+          requires_variables: requiresVariables,
         });
 
       if (error) throw error;
 
-      toast.success(`Synced "${template.name}" to local templates`);
+      toast.success(`Synced "${template.name}" (${variableCount} variables)`);
     } catch (error: any) {
       console.error("Error syncing template:", error);
       toast.error(error.message || "Failed to sync template");
