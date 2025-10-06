@@ -46,8 +46,8 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex flex-col items-center space-y-2">
+    <div className="p-4 md:p-6 space-y-4 h-full overflow-y-auto">
+      <div className="flex flex-col items-center space-y-2 pt-4">
         <Avatar className="w-24 h-24">
           <AvatarImage src={customer.avatar} />
           <AvatarFallback className="text-2xl">
