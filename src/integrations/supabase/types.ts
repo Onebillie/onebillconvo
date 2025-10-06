@@ -1686,6 +1686,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_business_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          business_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1708,6 +1714,10 @@ export type Database = {
       trigger_email_sync: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      user_belongs_to_business: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
