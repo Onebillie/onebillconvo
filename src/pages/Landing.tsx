@@ -14,6 +14,7 @@ const Landing = () => {
     { icon: Users, title: "Multi-Agent Support", description: "10 agents collaborating from different locations" },
     { icon: Bell, title: "Native Notifications", description: "Real-time push notifications across devices" },
     { icon: Calendar, title: "Calendar Sync", description: "Sync tasks and appointments automatically" },
+    { icon: MessageSquare, title: "Train AI Chatbot", description: "Customize and train your AI assistant for automated responses" },
   ];
 
   const pricingTiers = [
