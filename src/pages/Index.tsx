@@ -22,10 +22,10 @@ const Index = () => {
           </p>
           <Button 
             size="lg" 
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/onebillchat/dashboard')}
             className="text-lg px-8 py-6"
           >
-            Sign In
+            Go to Dashboard
           </Button>
         </div>
 

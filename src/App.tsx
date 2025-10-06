@@ -6,11 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { NotificationBanner } from "@/components/ui/notification-banner";
+import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import SuperAdmin from "./pages/SuperAdmin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -26,15 +28,20 @@ function AppContent() {
       <NotificationBanner unreadCount={unreadCount} />
       <div className={unreadCount > 0 ? "pt-14" : ""}>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/superadmin" element={<SuperAdmin />} />
+          
+          {/* OneBillChat App Routes */}
+          <Route path="/onebillchat" element={<Index />} />
+          <Route path="/onebillchat/dashboard" element={<Dashboard />} />
+          <Route path="/onebillchat/settings" element={<Settings />} />
+          <Route path="/onebillchat/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UsersManagement />} />
             <Route path="system" element={<SystemHealth />} />
           </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
