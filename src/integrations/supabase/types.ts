@@ -1297,7 +1297,7 @@ export type Database = {
       }
       messages: {
         Row: {
-          business_id: string
+          business_id: string | null
           channel: string | null
           content: string
           conversation_id: string | null
@@ -1315,7 +1315,7 @@ export type Database = {
           thread_id: string | null
         }
         Insert: {
-          business_id: string
+          business_id?: string | null
           channel?: string | null
           content: string
           conversation_id?: string | null
@@ -1333,7 +1333,7 @@ export type Database = {
           thread_id?: string | null
         }
         Update: {
-          business_id?: string
+          business_id?: string | null
           channel?: string | null
           content?: string
           conversation_id?: string | null
@@ -1941,6 +1941,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_or_create_user_business: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_user_business_ids: {
         Args: { _user_id: string }
         Returns: {

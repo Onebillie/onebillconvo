@@ -123,19 +123,46 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 
   if (!messages) return;
 
-  // Determine which WhatsApp account to use
+  // Determine which WhatsApp account to use and get business_id
   let whatsappAccountId = accountId;
+  let businessId = null;
   
   // If no account_id provided, try to find default account
   if (!whatsappAccountId) {
     const { data: defaultAccount } = await supabase
       .from('whatsapp_accounts')
-      .select('id')
+      .select('id, business_id')
       .eq('is_default', true)
       .eq('is_active', true)
       .single();
     
     whatsappAccountId = defaultAccount?.id;
+    businessId = defaultAccount?.business_id;
+  } else {
+    // Get business_id for the specified account
+    const { data: account } = await supabase
+      .from('whatsapp_accounts')
+      .select('business_id')
+      .eq('id', whatsappAccountId)
+      .single();
+    
+    businessId = account?.business_id;
+  }
+
+  // If no business_id found, use first available business
+  if (!businessId) {
+    const { data: firstBusiness } = await supabase
+      .from('businesses')
+      .select('id')
+      .limit(1)
+      .single();
+    
+    businessId = firstBusiness?.id;
+  }
+
+  if (!businessId) {
+    console.error('No business_id found - cannot process messages');
+    return;
   }
 
   for (const message of messages) {
@@ -184,6 +211,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
             last_name: whatsappName.split(' ').slice(1).join(' ') || null,
             whatsapp_name: whatsappName,
             last_active: new Date().toISOString(),
+            business_id: businessId,
           })
           .select()
           .single();
@@ -217,6 +245,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
             customer_id: customer.id,
             status: 'active',
             whatsapp_account_id: whatsappAccountId,
+            business_id: businessId,
           })
           .select()
           .single();
@@ -302,6 +331,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           thread_id: conversation.id,
           is_read: false,
           replied_to_message_id: repliedToMessageId,
+          business_id: businessId,
         })
         .select()
         .single();

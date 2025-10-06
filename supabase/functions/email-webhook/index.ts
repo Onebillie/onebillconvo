@@ -77,7 +77,40 @@ serve(async (req) => {
     if (type === 'email.received') {
       const { from, to, subject, html, text } = data;
       const fromEmail = from.email || from;
+      const toEmail = to?.[0]?.email || to;
       const content = text || html || '';
+
+      // Get business_id from the email account that received this message
+      let businessId = null;
+      if (toEmail) {
+        const { data: emailAccount } = await supabase
+          .from('email_accounts')
+          .select('business_id')
+          .eq('email_address', toEmail)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        businessId = emailAccount?.business_id;
+      }
+
+      // If no business found, use first available business
+      if (!businessId) {
+        const { data: firstBusiness } = await supabase
+          .from('businesses')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        businessId = firstBusiness?.id;
+      }
+
+      if (!businessId) {
+        console.error('No business_id found - cannot process email');
+        return new Response(JSON.stringify({ success: false, error: 'No business found' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       // Check if message already exists (prevent duplicates)
       const messageId = data.email_id || data.message_id;
@@ -118,6 +151,7 @@ serve(async (req) => {
             phone: '',
             last_active: new Date().toISOString(),
             last_contact_method: 'email',
+            business_id: businessId,
           })
           .select()
           .single();
@@ -197,6 +231,7 @@ serve(async (req) => {
           .insert({
             customer_id: customer.id,
             status: 'active',
+            business_id: businessId,
           })
           .select()
           .single();
@@ -220,6 +255,7 @@ serve(async (req) => {
           channel: 'email',
           external_message_id: messageId || null,
           is_read: false,
+          business_id: businessId,
         });
 
       if (messageError) {
