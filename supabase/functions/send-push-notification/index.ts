@@ -44,45 +44,68 @@ serve(async (req) => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
+      console.log("No subscriptions found");
       return new Response(
-        JSON.stringify({ message: "No subscriptions found" }),
+        JSON.stringify({ message: "No subscriptions found", successful: 0, failed: 0, total: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // VAPID keys - these should be stored securely as secrets
+    // VAPID keys
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-    const vapidSubject = "mailto:support@onebill.ie";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       console.error("VAPID keys not configured");
       throw new Error("VAPID keys not configured");
     }
 
+    // Import web-push for proper push notification sending
+    const webpush = await import("npm:web-push@3.6.7");
+    
+    webpush.setVapidDetails(
+      'mailto:support@onebill.ie',
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const pushPayload = JSON.stringify(payload);
+
     // Send push notification to each subscription
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         try {
-          // Use web-push-deno or native fetch for web push
-          const pushPayload = JSON.stringify(payload);
+          const pushSubscription = {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.p256dh,
+              auth: sub.auth,
+            },
+          };
+
+          await webpush.sendNotification(pushSubscription, pushPayload);
           
-          // For now, just log - in production, use proper web-push library
-          console.log(`Would send push to ${sub.endpoint}:`, pushPayload);
-          
-          // TODO: Implement actual web push sending using web-push protocol
-          // This requires generating proper VAPID headers and encryption
-          
+          console.log(`Push sent to ${sub.endpoint.substring(0, 50)}...`);
           return { success: true, endpoint: sub.endpoint };
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Failed to send to ${sub.endpoint}:`, error);
-          return { success: false, endpoint: sub.endpoint, error };
+          
+          // If subscription is invalid/expired, delete it
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            console.log(`Deleting expired subscription: ${sub.id}`);
+            await supabaseClient
+              .from("push_subscriptions")
+              .delete()
+              .eq("id", sub.id);
+          }
+          
+          return { success: false, endpoint: sub.endpoint, error: error.message };
         }
       })
     );
 
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
 
     return new Response(
       JSON.stringify({
@@ -93,7 +116,7 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending push notifications:", error);
     return new Response(
       JSON.stringify({ error: error.message }),

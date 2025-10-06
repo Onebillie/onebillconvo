@@ -320,24 +320,26 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 
       // Send push notification to all active users
       try {
-        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-          },
-          body: JSON.stringify({
+        const customerName = customer.name || customer.whatsapp_name || 'Unknown';
+        const preview = messageContent.length > 50 
+          ? messageContent.substring(0, 50) + '...' 
+          : messageContent;
+        
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
             payload: {
-              title: 'New WhatsApp Message',
-              body: `${customer.name}: ${messageContent}`,
-              icon: '/favicon.ico',
+              title: `[WhatsApp] ${customerName}`,
+              body: preview,
+              icon: '/icon-192.png',
+              badge: '/badge-72.png',
               tag: `whatsapp-${conversation.id}`,
               data: {
-                url: '/dashboard',
-                conversationId: conversation.id
+                type: 'whatsapp',
+                conversationId: conversation.id,
+                customerId: customer.id
               }
             }
-          })
+          }
         });
       } catch (pushError) {
         console.error('Error sending push notification:', pushError);

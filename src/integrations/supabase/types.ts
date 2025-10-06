@@ -693,7 +693,10 @@ export type Database = {
           imap_use_ssl: boolean
           imap_username: string
           is_active: boolean
+          last_imap_uid: number | null
+          last_imap_uidvalidity: number | null
           last_sync_at: string | null
+          last_synced_at: string | null
           mark_as_read: boolean
           name: string
           smtp_host: string
@@ -717,7 +720,10 @@ export type Database = {
           imap_use_ssl?: boolean
           imap_username: string
           is_active?: boolean
+          last_imap_uid?: number | null
+          last_imap_uidvalidity?: number | null
           last_sync_at?: string | null
+          last_synced_at?: string | null
           mark_as_read?: boolean
           name: string
           smtp_host: string
@@ -741,7 +747,10 @@ export type Database = {
           imap_use_ssl?: boolean
           imap_username?: string
           is_active?: boolean
+          last_imap_uid?: number | null
+          last_imap_uidvalidity?: number | null
           last_sync_at?: string | null
+          last_synced_at?: string | null
           mark_as_read?: boolean
           name?: string
           smtp_host?: string
@@ -758,6 +767,7 @@ export type Database = {
       email_sync_logs: {
         Row: {
           created_at: string
+          diagnostics: Json | null
           email_account_id: string
           emails_fetched: number | null
           emails_processed: number | null
@@ -769,6 +779,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          diagnostics?: Json | null
           email_account_id: string
           emails_fetched?: number | null
           emails_processed?: number | null
@@ -780,6 +791,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          diagnostics?: Json | null
           email_account_id?: string
           emails_fetched?: number | null
           emails_processed?: number | null

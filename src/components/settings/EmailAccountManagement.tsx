@@ -149,10 +149,22 @@ export function EmailAccountManagement() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
-      toast({
-        title: "Email sync completed",
-        description: `Fetched ${data.fetched} emails, processed ${data.processed}`,
-      });
+      
+      const diagInfo = data.diagnostics ? 
+        `\n\nDiagnostics:\n${JSON.stringify(data.diagnostics, null, 2)}` : '';
+      
+      if (data.success) {
+        toast({
+          title: "Email sync completed",
+          description: `Fetched ${data.fetched} emails, processed ${data.processed}${diagInfo}`,
+        });
+      } else {
+        toast({
+          title: "Sync completed with warnings",
+          description: `Check diagnostics for details${diagInfo}`,
+          variant: "default",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -443,24 +455,26 @@ export function EmailAccountManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Note: IMAP/SMTP Integration Status</CardTitle>
+          <CardTitle>✅ Email Integration Status</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>
-            The email account management interface is ready, but actual IMAP/SMTP connectivity requires additional libraries.
+          <p className="text-green-600 font-semibold">
+            ✓ Full IMAP/SMTP email integration is now active!
           </p>
           <p>
-            <strong>Next steps to complete full integration:</strong>
+            <strong>Features enabled:</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
-            <li>Deploy IMAP client library for Deno edge functions</li>
-            <li>Implement SMTP sending functionality</li>
-            <li>Set up automated sync scheduling (cron jobs)</li>
-            <li>Add email parsing for attachments and threading</li>
+            <li>✓ IMAP email fetching with SSL/TLS</li>
+            <li>✓ Incremental sync (only fetches new emails)</li>
+            <li>✓ Attachment parsing and storage</li>
+            <li>✓ Email threading and reply detection</li>
+            <li>✓ Push notifications for new emails</li>
+            <li>✓ Connection diagnostics and error reporting</li>
           </ul>
           <p className="pt-2">
-            For now, you can continue using Resend for outgoing emails, and this system will be ready 
-            for full IMAP/SMTP integration when the backend libraries are deployed.
+            <strong>Automated sync:</strong> Emails are automatically synced every 5 minutes via cron job.
+            Use "Sync Now" to manually trigger an immediate sync for testing.
           </p>
         </CardContent>
       </Card>

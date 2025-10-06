@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { PostalMime } from "npm:postal-mime@2.2.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,8 @@ interface EmailAccount {
   imap_username: string;
   imap_password: string;
   imap_use_ssl: boolean;
+  last_imap_uid?: number;
+  last_imap_uidvalidity?: number;
 }
 
 interface ParsedEmail {
@@ -26,7 +29,23 @@ interface ParsedEmail {
   messageId: string;
   inReplyTo?: string;
   references?: string[];
+  attachments?: Array<{
+    filename: string;
+    contentType: string;
+    content: Uint8Array;
+  }>;
 }
+
+interface Diagnostics {
+  dnsResolvedIPs?: string[];
+  connectTest?: { success: boolean; error?: string };
+  tlsHandshake?: { success: boolean; error?: string };
+  imapLoginOk?: boolean;
+  error?: string;
+}
+
+// Global sync lock to prevent concurrent syncs per account
+const syncLocks = new Map<string, boolean>();
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,105 +59,138 @@ serve(async (req) => {
 
     const { account_id } = await req.json();
 
-    console.log('Starting email sync for account:', account_id);
-
-    // Fetch email account configuration
-    const { data: account, error: accountError } = await supabase
-      .from('email_accounts')
-      .select('id, name, email_address, imap_host, imap_port, imap_username, imap_password, imap_use_ssl, smtp_host, smtp_port, smtp_username, smtp_password, smtp_use_ssl')
-      .eq('id', account_id)
-      .eq('is_active', true)
-      .eq('sync_enabled', true)
-      .single();
-
-    if (accountError || !account) {
-      console.error('Email account error:', accountError);
-      throw new Error(`Email account not found or inactive: ${accountError?.message}`);
+    // Check for concurrent sync lock
+    if (syncLocks.get(account_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Sync already in progress for this account' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Account retrieved:', {
-      id: account.id,
-      name: account.name,
-      email: account.email_address,
-      imap_host: account.imap_host,
-      imap_port: account.imap_port,
-      has_imap_password: !!account.imap_password
-    });
-
-    // Create sync log entry
-    const { data: syncLog, error: logError } = await supabase
-      .from('email_sync_logs')
-      .insert({
-        email_account_id: account.id,
-        status: 'running'
-      })
-      .select()
-      .single();
-
-    if (logError) {
-      console.error('Failed to create sync log:', logError);
-    }
+    syncLocks.set(account_id, true);
 
     try {
-      // Fetch emails from IMAP server
-      const emails = await fetchEmailsFromIMAP(account as EmailAccount);
-      
-      console.log(`Fetched ${emails.length} emails from IMAP`);
+      console.log('Starting email sync for account:', account_id);
 
-      let processedCount = 0;
-
-      // Process each email
-      for (const email of emails) {
-        try {
-          await processIncomingEmail(supabase, email, account.email_address);
-          processedCount++;
-        } catch (error) {
-          console.error('Error processing email:', error);
-        }
-      }
-
-      // Update sync log as completed
-      await supabase
-        .from('email_sync_logs')
-        .update({
-          status: 'completed',
-          sync_completed_at: new Date().toISOString(),
-          emails_fetched: emails.length,
-          emails_processed: processedCount
-        })
-        .eq('id', syncLog.id);
-
-      // Update last_sync_at on email account
-      await supabase
+      // Fetch email account configuration
+      const { data: account, error: accountError } = await supabase
         .from('email_accounts')
-        .update({ last_sync_at: new Date().toISOString() })
-        .eq('id', account.id);
+        .select('*')
+        .eq('id', account_id)
+        .eq('is_active', true)
+        .eq('sync_enabled', true)
+        .single();
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          fetched: emails.length, 
-          processed: processedCount 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
-    } catch (error) {
-      console.error('Email sync failed:', error);
-      
-      // Update sync log as failed
-      if (syncLog) {
-        await supabase
-          .from('email_sync_logs')
-          .update({
-            status: 'failed',
-            sync_completed_at: new Date().toISOString(),
-            error_message: error.message
-          })
-          .eq('id', syncLog.id);
+      if (accountError || !account) {
+        throw new Error(`Email account not found or inactive: ${accountError?.message}`);
       }
 
-      throw error;
+      // Create sync log entry
+      const { data: syncLog } = await supabase
+        .from('email_sync_logs')
+        .insert({
+          email_account_id: account.id,
+          status: 'running'
+        })
+        .select()
+        .single();
+
+      const diagnostics: Diagnostics = {};
+
+      try {
+        // Fetch emails with diagnostics
+        const { emails, newUid, newUidValidity, diagnostics: fetchDiag } = 
+          await fetchEmailsFromIMAP(account as EmailAccount, diagnostics);
+        
+        Object.assign(diagnostics, fetchDiag);
+        
+        console.log(`Fetched ${emails.length} emails from IMAP`);
+
+        let processedCount = 0;
+
+        // Process each email
+        for (const email of emails) {
+          try {
+            await processIncomingEmail(supabase, email, account.email_address, account.id);
+            processedCount++;
+          } catch (error) {
+            console.error('Error processing email:', error);
+          }
+        }
+
+        // Update incremental sync markers
+        if (newUid !== undefined && newUidValidity !== undefined) {
+          await supabase
+            .from('email_accounts')
+            .update({ 
+              last_imap_uid: newUid,
+              last_imap_uidvalidity: newUidValidity,
+              last_sync_at: new Date().toISOString(),
+              last_synced_at: new Date().toISOString()
+            })
+            .eq('id', account.id);
+        }
+
+        // Update sync log as completed
+        if (syncLog) {
+          await supabase
+            .from('email_sync_logs')
+            .update({
+              status: 'completed',
+              sync_completed_at: new Date().toISOString(),
+              emails_fetched: emails.length,
+              emails_processed: processedCount,
+              diagnostics
+            })
+            .eq('id', syncLog.id);
+        }
+
+        // Trigger push notifications for new emails
+        if (processedCount > 0) {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              payload: {
+                title: `${processedCount} New Email${processedCount > 1 ? 's' : ''}`,
+                body: `You have received ${processedCount} new email message${processedCount > 1 ? 's' : ''}`,
+                icon: '/icon-192.png',
+                tag: 'email-notification',
+                data: { type: 'email', count: processedCount }
+              }
+            }
+          }).catch(err => console.error('Push notification error:', err));
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            fetched: emails.length, 
+            processed: processedCount,
+            diagnostics
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+
+      } catch (error: any) {
+        console.error('Email sync failed:', error);
+        diagnostics.error = error.message;
+        
+        // Update sync log as failed
+        if (syncLog) {
+          await supabase
+            .from('email_sync_logs')
+            .update({
+              status: 'failed',
+              sync_completed_at: new Date().toISOString(),
+              error_message: error.message,
+              diagnostics
+            })
+            .eq('id', syncLog.id);
+        }
+
+        throw error;
+      }
+    } finally {
+      syncLocks.delete(account_id);
     }
 
   } catch (error: any) {
@@ -153,44 +205,63 @@ serve(async (req) => {
   }
 });
 
-async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]> {
-  console.log('=== Starting IMAP fetch ===');
-  console.log('Account object received:', JSON.stringify({
-    id: account.id,
-    email_address: account.email_address,
-    imap_host: account.imap_host,
-    imap_port: account.imap_port,
-    imap_username: account.imap_username,
-    imap_use_ssl: account.imap_use_ssl,
-    has_password: !!account.imap_password
-  }, null, 2));
+async function fetchEmailsFromIMAP(
+  account: EmailAccount, 
+  diagnostics: Diagnostics
+): Promise<{ 
+  emails: ParsedEmail[]; 
+  newUid?: number; 
+  newUidValidity?: number;
+  diagnostics: Diagnostics;
+}> {
+  console.log('=== Starting IMAP fetch with diagnostics ===');
   
-  if (!account.imap_host || !account.imap_port) {
-    throw new Error(`IMAP host or port is missing from account configuration. Host: ${account.imap_host}, Port: ${account.imap_port}`);
+  const hostname = account.imap_host?.trim();
+  const port = account.imap_port;
+  
+  if (!hostname || !port) {
+    throw new Error(`IMAP configuration missing: host=${hostname}, port=${port}`);
   }
-  
+
+  // Step 1: DNS Resolution
+  try {
+    const resolved = await Deno.resolveDns(hostname, "A");
+    diagnostics.dnsResolvedIPs = resolved;
+    console.log(`DNS resolved ${hostname} to:`, resolved);
+  } catch (error) {
+    diagnostics.dnsResolvedIPs = [];
+    console.error('DNS resolution failed:', error);
+  }
+
+  // Step 2: TCP Connection Test
+  try {
+    const testConn = await Deno.connectTls({
+      hostname,
+      port,
+      alpnProtocols: ["imap"],
+    });
+    testConn.close();
+    diagnostics.connectTest = { success: true };
+    console.log('TCP/TLS connection test successful');
+  } catch (error: any) {
+    diagnostics.connectTest = { success: false, error: error.message };
+    console.error('TCP/TLS connection test failed:', error);
+    throw new Error(`Cannot connect to ${hostname}:${port} - ${error.message}`);
+  }
+
   try {
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
-    // Ensure all config values are properly set
-    const hostname = account.imap_host?.trim();
-    const port = account.imap_port;
     const username = account.imap_username || account.email_address;
     const password = account.imap_password;
     
-    console.log('Parsed config values:', {
-      hostname,
-      port,
-      username,
-      has_password: !!password
-    });
-    
-    if (!hostname || !port || !username || !password) {
-      throw new Error(`Missing IMAP configuration: hostname=${hostname}, port=${port}, username=${username ? 'set' : 'missing'}, password=${password ? 'set' : 'missing'}`);
+    if (!username || !password) {
+      throw new Error('IMAP credentials missing');
     }
     
     const imapConfig = {
-      hostname,
+      hostname, // Set both hostname and host for library compatibility
+      host: hostname,
       port,
       tls: account.imap_use_ssl,
       auth: {
@@ -199,78 +270,107 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
       },
     };
     
-    console.log('Creating IMAP client with config:', { 
-      hostname: imapConfig.hostname, 
-      port: imapConfig.port, 
-      tls: imapConfig.tls,
-      auth: { username: imapConfig.auth.username, password: '[REDACTED]' } 
+    console.log('Creating IMAP client:', { 
+      hostname, 
+      port, 
+      tls: account.imap_use_ssl 
     });
     
     const client = new ImapClient(imapConfig);
 
-    console.log('Attempting to connect to IMAP server...');
-    await client.connect();
-    console.log('Connected to IMAP server successfully');
+    // Connection timeout wrapper
+    const connectTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('IMAP connection timeout (10s)')), 10000)
+    );
+
+    await Promise.race([
+      client.connect(),
+      connectTimeout
+    ]);
+    
+    console.log('Connected to IMAP server');
+    diagnostics.imapLoginOk = true;
+    diagnostics.tlsHandshake = { success: true };
     
     // Select INBOX
-    await client.selectMailbox("INBOX");
-    console.log('Selected INBOX');
+    const mailbox = await client.selectMailbox("INBOX");
+    console.log('Selected INBOX, UIDVALIDITY:', mailbox.uidValidity);
     
-    // Calculate date 7 days ago to fetch recent emails (read or unread)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const dateStr = sevenDaysAgo.toISOString().split('T')[0].replace(/-/g, '');
+    const currentUidValidity = mailbox.uidValidity;
+    let searchCriteria: string[];
+
+    // Incremental sync logic
+    if (account.last_imap_uidvalidity === currentUidValidity && account.last_imap_uid) {
+      // Same mailbox, fetch only new messages
+      searchCriteria = [`UID ${account.last_imap_uid + 1}:*`];
+      console.log(`Incremental sync from UID ${account.last_imap_uid + 1}`);
+    } else {
+      // UIDVALIDITY changed or first sync - fetch last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const dateStr = sevenDaysAgo.toISOString().split('T')[0].replace(/-/g, '');
+      searchCriteria = [`SINCE ${dateStr}`];
+      console.log('Full sync from last 7 days');
+    }
     
-    // Search for emails from last 7 days (both read and unread)
-    const messageIds = await client.search([`SINCE ${dateStr}`]);
+    const messageIds = await client.search(searchCriteria);
     
     if (!messageIds || messageIds.length === 0) {
       console.log('No new emails found');
-      await client.close();
-      return [];
+      await client.logout();
+      return { 
+        emails: [], 
+        newUid: account.last_imap_uid,
+        newUidValidity: currentUidValidity,
+        diagnostics 
+      };
     }
 
-    console.log(`Found ${messageIds.length} new emails`);
+    console.log(`Found ${messageIds.length} emails`);
     
     const emails: ParsedEmail[] = [];
+    let maxUid = account.last_imap_uid || 0;
     
-    // Fetch email details (limit to last 100 to avoid overload)
+    // Fetch emails (limit to 100 per sync to avoid timeout)
     const idsToFetch = messageIds.slice(-100);
-    console.log(`Fetching ${idsToFetch.length} emails`);
     
     for (const msgId of idsToFetch) {
       try {
+        // Fetch UID and raw message
         const message = await client.fetchMessage(msgId, {
-          bodyStructure: true,
           envelope: true,
-          flags: true,
+          uid: true,
         });
         
         if (!message) continue;
         
-        // Fetch full body
-        const bodyPart = await client.fetchMessageBody(msgId);
-        let bodyText = '';
-        let bodyHtml = '';
+        const uid = message.uid || msgId;
+        if (uid > maxUid) maxUid = uid;
+
+        // Fetch raw RFC822 message for MIME parsing
+        const rawMessage = await client.fetchMessageSource(msgId);
         
-        if (bodyPart) {
-          // Parse body - simplified approach
-          bodyText = bodyPart.toString();
-          if (bodyText.includes('<html') || bodyText.includes('<HTML')) {
-            bodyHtml = bodyText;
-          }
-        }
+        if (!rawMessage) continue;
+
+        // Parse with PostalMime for attachments and better structure
+        const parser = new PostalMime();
+        const parsed = await parser.parse(rawMessage);
         
         const parsedEmail: ParsedEmail = {
-          from: message.envelope?.from?.[0]?.address || '',
-          to: message.envelope?.to?.[0]?.address || account.email_address,
-          subject: message.envelope?.subject || 'No Subject',
-          body: bodyText,
-          html: bodyHtml,
-          date: message.envelope?.date ? new Date(message.envelope.date) : new Date(),
-          messageId: message.envelope?.messageId || `msg-${msgId}`,
-          inReplyTo: message.envelope?.inReplyTo,
-          references: message.envelope?.references || [],
+          from: parsed.from?.address || '',
+          to: parsed.to?.[0]?.address || account.email_address,
+          subject: parsed.subject || 'No Subject',
+          body: parsed.text || '',
+          html: parsed.html || undefined,
+          date: parsed.date ? new Date(parsed.date) : new Date(),
+          messageId: parsed.messageId || `msg-${msgId}`,
+          inReplyTo: parsed.inReplyTo,
+          references: parsed.references || [],
+          attachments: parsed.attachments?.map(att => ({
+            filename: att.filename || 'attachment',
+            contentType: att.mimeType || 'application/octet-stream',
+            content: att.content
+          })) || []
         };
         
         emails.push(parsedEmail);
@@ -280,9 +380,16 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
     }
     
     await client.logout();
-    return emails;
+    
+    return { 
+      emails, 
+      newUid: maxUid, 
+      newUidValidity: currentUidValidity,
+      diagnostics 
+    };
   } catch (error: any) {
     console.error('IMAP fetch error:', error);
+    diagnostics.imapLoginOk = false;
     throw new Error(`Failed to fetch emails: ${error.message}`);
   }
 }
@@ -290,14 +397,14 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
 async function processIncomingEmail(
   supabase: any, 
   email: ParsedEmail, 
-  accountEmail: string
+  accountEmail: string,
+  accountId: string
 ) {
-  console.log('Processing email from:', email.from, 'subject:', email.subject);
+  console.log('Processing email:', email.subject);
 
-  // Extract email address from "Name <email@domain.com>" format
   const fromEmail = email.from.match(/<(.+)>/)?.[1] || email.from;
 
-  // Check if message already exists (prevent duplicates)
+  // Check for duplicates
   const { data: existingMessage } = await supabase
     .from('messages')
     .select('id')
@@ -305,11 +412,11 @@ async function processIncomingEmail(
     .maybeSingle();
 
   if (existingMessage) {
-    console.log('Email already processed, skipping');
+    console.log('Duplicate email, skipping');
     return;
   }
 
-  // Find customer by email or alternate_emails (use phone as unique identifier too if available)
+  // Find or create customer
   let { data: customer } = await supabase
     .from('customers')
     .select('*')
@@ -321,74 +428,49 @@ async function processIncomingEmail(
     const firstName = customerName.split(' ')[0] || customerName;
     const lastName = customerName.split(' ').slice(1).join(' ') || '';
     
-    const { data: newCustomer, error: customerError } = await supabase
+    const { data: newCustomer } = await supabase
       .from('customers')
       .insert({
         name: customerName,
         first_name: firstName,
         last_name: lastName,
         email: fromEmail,
-        phone: fromEmail, // Use email as unique identifier when no phone
+        phone: fromEmail,
         last_contact_method: 'email'
       })
       .select()
       .single();
 
-    if (customerError) {
-      console.error('Failed to create customer:', customerError);
-      throw customerError;
-    }
     customer = newCustomer;
   } else {
-    // Update last_contact_method and email if it was using phone as identifier
-    const updateData: any = { 
-      last_contact_method: 'email',
-      last_active: new Date().toISOString()
-    };
-    
-    // If customer doesn't have an email yet (was created via WhatsApp), add it
-    if (!customer.email || customer.email === customer.phone) {
-      updateData.email = fromEmail;
-    }
-    
     await supabase
       .from('customers')
-      .update(updateData)
+      .update({ 
+        last_contact_method: 'email',
+        last_active: new Date().toISOString()
+      })
       .eq('id', customer.id);
   }
 
-  // Try to find existing conversation by threading (for replies)
+  // Find or create conversation with threading
   let conversation = null;
-  
-  // First, try to find conversation by checking if this is a reply to an existing message
-  if (email.inReplyTo || (email.references && email.references.length > 0)) {
-    const threadIds = [email.inReplyTo, ...(email.references || [])].filter(Boolean);
+  let repliedToMessageId = null;
+  let threadId = null;
+
+  if (email.inReplyTo) {
+    const { data: parentMsg } = await supabase
+      .from('messages')
+      .select('conversation_id, id, thread_id')
+      .eq('external_message_id', email.inReplyTo)
+      .maybeSingle();
     
-    for (const threadId of threadIds) {
-      const { data: parentMessage } = await supabase
-        .from('messages')
-        .select('conversation_id')
-        .eq('external_message_id', threadId)
-        .maybeSingle();
-      
-      if (parentMessage) {
-        const { data: existingConv } = await supabase
-          .from('conversations')
-          .select('*')
-          .eq('id', parentMessage.conversation_id)
-          .eq('customer_id', customer.id)
-          .single();
-        
-        if (existingConv) {
-          conversation = existingConv;
-          console.log('Found existing conversation via email threading');
-          break;
-        }
-      }
+    if (parentMsg) {
+      conversation = { id: parentMsg.conversation_id };
+      repliedToMessageId = parentMsg.id;
+      threadId = parentMsg.thread_id || parentMsg.id;
     }
   }
   
-  // If not found via threading, look for most recent active conversation
   if (!conversation) {
     const { data: activeConv } = await supabase
       .from('conversations')
@@ -402,9 +484,8 @@ async function processIncomingEmail(
     conversation = activeConv;
   }
 
-  // If still no conversation, create new one
   if (!conversation) {
-    const { data: newConversation, error: convError } = await supabase
+    const { data: newConv } = await supabase
       .from('conversations')
       .insert({
         customer_id: customer.id,
@@ -413,31 +494,73 @@ async function processIncomingEmail(
       .select()
       .single();
 
-    if (convError) {
-      console.error('Failed to create conversation:', convError);
-      throw convError;
-    }
-    conversation = newConversation;
+    conversation = newConv;
   }
 
   // Insert message
-  const { error: messageError } = await supabase
+  const { data: insertedMessage, error: messageError } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversation.id,
       customer_id: customer.id,
-      content: email.body || email.html || email.subject,
+      content: email.html || email.body || email.subject,
       direction: 'inbound',
       platform: 'email',
       channel: 'email',
       external_message_id: email.messageId,
+      replied_to_message_id: repliedToMessageId,
+      thread_id: threadId,
       is_read: false,
       created_at: email.date.toISOString()
-    });
+    })
+    .select()
+    .single();
 
-  if (messageError) {
-    console.error('Failed to insert message:', messageError);
-    throw messageError;
+  if (messageError) throw messageError;
+
+  // Handle attachments
+  if (email.attachments && email.attachments.length > 0) {
+    for (const attachment of email.attachments) {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const filename = `${Date.now()}-${attachment.filename}`;
+        const storagePath = `customers/${customer.id}/email/${year}/${month}/${filename}`;
+
+        // Upload to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('customer_media')
+          .upload(storagePath, attachment.content, {
+            contentType: attachment.contentType,
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Attachment upload error:', uploadError);
+          continue;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('customer_media')
+          .getPublicUrl(storagePath);
+
+        // Insert attachment record
+        await supabase
+          .from('message_attachments')
+          .insert({
+            message_id: insertedMessage.id,
+            filename: attachment.filename,
+            url: publicUrl,
+            type: attachment.contentType,
+            size: attachment.content.byteLength
+          });
+
+      } catch (error) {
+        console.error('Error processing attachment:', error);
+      }
+    }
   }
 
   console.log('Email processed successfully');
