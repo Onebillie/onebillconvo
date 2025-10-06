@@ -17,6 +17,9 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
 import SystemHealth from "./pages/admin/SystemHealth";
+import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
+import PricingConfiguration from "./pages/admin/PricingConfiguration";
+import PaymentsTracking from "./pages/admin/PaymentsTracking";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,16 @@ function AppContent() {
           <Route path="/onebillchat/settings" element={<Settings />} />
           <Route path="/onebillchat/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<UsersManagement />} />
+            <Route path="system" element={<SystemHealth />} />
+          </Route>
+          
+          {/* SuperAdmin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="subscriptions" element={<SubscriptionManagement />} />
+            <Route path="pricing" element={<PricingConfiguration />} />
+            <Route path="payments" element={<PaymentsTracking />} />
             <Route path="users" element={<UsersManagement />} />
             <Route path="system" element={<SystemHealth />} />
           </Route>
