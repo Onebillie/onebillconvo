@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,63 +60,59 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {Object.entries(STRIPE_PRODUCTS).map(([tier, config]) => (
             <Card
               key={tier}
-              className={`relative ${
+              className={`relative p-8 rounded-xl transition-all hover:shadow-xl ${
                 isCurrentPlan(tier as SubscriptionTier)
                   ? "border-primary border-2 shadow-lg"
-                  : ""
+                  : "border"
               }`}
             >
               {isCurrentPlan(tier as SubscriptionTier) && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
                   Your Plan
                 </Badge>
               )}
               
-              <CardHeader>
-                <CardTitle className="text-2xl">{config.name}</CardTitle>
-                <CardDescription>
-                  <span className="text-4xl font-bold text-foreground">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-4">{config.name}</h3>
+                <div className="mb-2">
+                  <span className="text-5xl font-bold text-foreground">
                     ${config.price}
                   </span>
-                  <span className="text-muted-foreground">/{config.interval}</span>
-                  <span className="text-sm block mt-1">per seat</span>
-                </CardDescription>
-              </CardHeader>
+                  <span className="text-muted-foreground text-lg">/{config.interval}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">per seat</p>
+              </div>
 
-              <CardContent>
-                <ul className="space-y-3">
-                  {config.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+              <ul className="space-y-3 mb-8">
+                {config.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
 
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={isCurrentPlan(tier as SubscriptionTier) ? "outline" : "default"}
-                  disabled={isCurrentPlan(tier as SubscriptionTier) || loadingTier === tier}
-                  onClick={() => handleSubscribe(tier as SubscriptionTier)}
-                >
-                  {loadingTier === tier ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : isCurrentPlan(tier as SubscriptionTier) ? (
-                    "Current Plan"
-                  ) : (
-                    "Subscribe"
-                  )}
-                </Button>
-              </CardFooter>
+              <Button
+                className="w-full rounded-lg py-6 text-base font-medium bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+                size="lg"
+                disabled={isCurrentPlan(tier as SubscriptionTier) || loadingTier === tier}
+                onClick={() => handleSubscribe(tier as SubscriptionTier)}
+              >
+                {loadingTier === tier ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : isCurrentPlan(tier as SubscriptionTier) ? (
+                  "Current Plan"
+                ) : (
+                  "Subscribe"
+                )}
+              </Button>
             </Card>
           ))}
         </div>

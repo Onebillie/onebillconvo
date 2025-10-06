@@ -108,21 +108,52 @@ const Landing = () => {
     description: "Train your AI assistant to handle customer inquiries and manage WhatsApp Business messages automatically"
   }];
   const pricingTiers = [{
-    name: "Free",
-    price: "€0",
-    period: "forever",
-    description: "Perfect for testing WhatsApp Business API",
-    features: ["1 User", "Basic combined inbox", "WhatsApp Business API access", "Community support"],
-    cta: "Start Free",
+    name: "Starter",
+    price: "$29",
+    period: "/month",
+    description: "per seat",
+    features: [
+      "2 team members",
+      "1,000 messages/month",
+      "Basic templates",
+      "Email support",
+      "WhatsApp integration"
+    ],
+    cta: "Subscribe",
     highlighted: false
   }, {
-    name: "Tier 1",
-    price: "€30",
-    period: "per month",
-    description: "+ €7.50 per additional user + €0.01 per message",
-    features: ["Multi-agent support (up to 10)", "€7.50 per additional user/month", "Full WhatsApp Business API (Meta)", "Aggregated inbox for all channels", "Email integration & management", "AI chatbot for automated responses", "Real-time notifications", "Task & calendar management", "Priority support", "72-hour free trial"],
-    cta: "Start Trial",
+    name: "Professional",
+    price: "$79",
+    period: "/month",
+    description: "per seat",
+    features: [
+      "10 team members",
+      "10,000 messages/month",
+      "Advanced templates",
+      "AI assistant",
+      "Priority support",
+      "API access",
+      "Email integration"
+    ],
+    cta: "Subscribe",
     highlighted: true
+  }, {
+    name: "Enterprise",
+    price: "$199",
+    period: "/month",
+    description: "per seat",
+    features: [
+      "Unlimited team members",
+      "Unlimited messages",
+      "Custom templates",
+      "AI assistant",
+      "24/7 premium support",
+      "Full API access",
+      "Custom integrations",
+      "Dedicated account manager"
+    ],
+    cta: "Subscribe",
+    highlighted: false
   }];
   return <div className="min-h-screen bg-background">
       {/* Header */}
@@ -473,29 +504,33 @@ ai.response.completed`}</code>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-secondary/5">
+      <section className="py-20 bg-gradient-to-br from-secondary/5 to-primary/5">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Simple Pricing for WhatsApp Business Management</h2>
-          <p className="text-center text-muted-foreground mb-12 text-lg">
-            Start managing all your customer messages with our combined inbox. 72-hour free trial included.
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Choose Your Plan</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Select the perfect plan for your business needs
           </p>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {pricingTiers.map((tier, index) => <Card key={index} className={`p-8 rounded-2xl ${tier.highlighted ? "border-4 border-primary shadow-2xl scale-105" : "border-2"}`}>
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {pricingTiers.map((tier, index) => <Card key={index} className={`p-8 rounded-xl transition-all hover:shadow-xl ${tier.highlighted ? "border-primary border-2 shadow-lg" : "border"}`}>
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold mb-4">{tier.name}</h3>
                   <div className="mb-2">
-                    <span className="text-4xl font-bold">{tier.price}</span>
-                    <span className="text-muted-foreground">/{tier.period}</span>
+                    <span className="text-5xl font-bold">{tier.price}</span>
+                    <span className="text-muted-foreground text-lg">{tier.period}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{tier.description}</p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature, i) => <li key={i} className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                      <span>{feature}</span>
+                  {tier.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <span className="text-sm">{feature}</span>
                     </li>)}
                 </ul>
-                <Button className="w-full rounded-xl" variant={tier.highlighted ? "default" : "outline"} size="lg" onClick={() => navigate("/auth")}>
+                <Button 
+                  className="w-full rounded-lg py-6 text-base font-medium bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90" 
+                  size="lg" 
+                  onClick={() => navigate(user ? "/pricing" : "/auth")}
+                >
                   {tier.cta}
                 </Button>
               </Card>)}
