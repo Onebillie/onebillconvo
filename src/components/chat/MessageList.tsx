@@ -166,9 +166,9 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                           {message.platform === 'email' ? '@' : 'W'}
                         </div>
                       )}
-                      <div className="relative">
+                      <div className="relative max-w-[90%] lg:max-w-[75%]">
                         <div
-                          className={`w-fit max-w-[85%] sm:max-w-[70%] break-words [overflow-wrap:anywhere] rounded-lg px-3 py-2 ${
+                          className={`w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 ${
                             message.direction === "outbound"
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted"
@@ -189,7 +189,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                             </div>
                           )}
 
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word]">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1">{message.content}</p>
                           
                           {/* Attachments */}
                           {message.message_attachments &&
