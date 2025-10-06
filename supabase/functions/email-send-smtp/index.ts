@@ -231,8 +231,8 @@ async function sendViaSMTP(
         port: account.smtp_port,
         tls: account.smtp_use_ssl,
         auth: {
-          username: account.smtp_username,
-          password: account.smtp_password,
+          username: account.smtp_username?.trim() || account.email_address,
+          password: account.smtp_password?.trim(),
         },
       },
     });

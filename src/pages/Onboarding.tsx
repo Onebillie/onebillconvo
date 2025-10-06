@@ -19,18 +19,35 @@ const STEPS = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const { user, checkSubscription, subscriptionState, currentBusinessId } = useAuth();
+  const { user, checkSubscription, subscriptionState, currentBusinessId, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    // Check if user is authenticated but not loaded yet
+    if (authLoading) return;
+    
     // If coming back from Stripe checkout
     const sessionId = searchParams.get("session_id");
     if (sessionId) {
       checkSubscription();
-      setCurrentStep(3); // Move to WhatsApp setup after payment
+      toast({
+        title: "Payment successful!",
+        description: "Your subscription is now active",
+      });
     }
-  }, [searchParams]);
+    
+    // If user is not authenticated after loading, redirect to signup
+    // BUT give a grace period for session to establish (2 seconds)
+    if (!user) {
+      const timer = setTimeout(() => {
+        if (!user) {
+          navigate("/signup", { replace: true });
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, authLoading, user, navigate]);
 
   const handleNext = () => {
     if (currentStep < STEPS.length) {

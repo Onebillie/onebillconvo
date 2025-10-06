@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ export default function SignUp() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { profile, loading: authLoading } = useAuth();
   
   const [formData, setFormData] = useState<SignUpData>({
     firstName: "",
@@ -52,6 +54,13 @@ export default function SignUp() {
     email: "",
     password: "",
   });
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (!authLoading && profile) {
+      navigate("/app/dashboard", { replace: true });
+    }
+  }, [authLoading, profile, navigate]);
 
   const updateFormData = (field: keyof SignUpData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -113,9 +122,19 @@ export default function SignUp() {
   const handlePayment = async () => {
     if (!formData.selectedPlan) return;
     
+    // If free plan (Starter), skip payment and go directly to account creation
+    if (formData.selectedPlan === 'starter') {
+      toast({
+        title: "Free plan selected",
+        description: "No payment required. Let's create your account!",
+      });
+      setCurrentStep(6); // Skip payment and go to account creation
+      return;
+    }
+    
     setLoading(true);
     try {
-      // Create Stripe checkout session
+      // Create Stripe checkout session for paid plans
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           priceId: STRIPE_PRODUCTS[formData.selectedPlan].priceId,
@@ -135,7 +154,14 @@ export default function SignUp() {
       if (data.url) {
         // Store form data in sessionStorage before redirecting
         sessionStorage.setItem("signupData", JSON.stringify(formData));
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
+        
+        // Move to next step after opening payment in new tab
+        toast({
+          title: "Payment window opened",
+          description: "Complete payment in the new window, then return to create your account",
+        });
+        setCurrentStep(6);
       }
     } catch (error: any) {
       toast({
@@ -171,11 +197,13 @@ export default function SignUp() {
 
     setLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/app/onboarding`;
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: `${formData.firstName} ${formData.lastName}`,
             first_name: formData.firstName,
@@ -183,21 +211,33 @@ export default function SignUp() {
             contact_phone: formData.contactPhone,
             account_type: formData.accountType,
             business_name: formData.businessName,
+            selected_plan: formData.selectedPlan,
           },
         },
       });
 
       if (authError) throw authError;
 
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account",
-      });
-
       // Clear stored data
       sessionStorage.removeItem("signupData");
-      
-      navigate("/auth");
+
+      // Check if user is immediately confirmed (email confirmation disabled)
+      if (authData.user && authData.session) {
+        toast({
+          title: "Welcome!",
+          description: "Your account has been created successfully",
+        });
+        // User is logged in, redirect to onboarding
+        navigate("/app/onboarding");
+      } else {
+        // Email confirmation required
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account, then you can sign in",
+        });
+        // Redirect to auth page to allow sign in after verification
+        navigate("/auth");
+      }
     } catch (error: any) {
       toast({
         title: "Error",

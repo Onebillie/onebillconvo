@@ -179,7 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string, role: string = 'agent') => {
     const redirectUrl = `${window.location.origin}/app/onboarding`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -191,8 +191,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     
-    if (!error) {
+    // Check if user is immediately confirmed or needs email verification
+    if (!error && data.user && data.session) {
+      // User is logged in immediately (email confirmation disabled)
       navigate("/app/onboarding");
+    } else if (!error && data.user && !data.session) {
+      // Email confirmation required
+      // Don't navigate, let the calling component handle the flow
     }
     
     return { error };
