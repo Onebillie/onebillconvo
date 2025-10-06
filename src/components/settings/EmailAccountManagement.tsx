@@ -249,7 +249,7 @@ export function EmailAccountManagement() {
 
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-3">IMAP Settings (Incoming Mail)</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="imap_host">IMAP Host</Label>
                     <Input
@@ -295,7 +295,7 @@ export function EmailAccountManagement() {
 
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-3">SMTP Settings (Outgoing Mail)</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="smtp_host">SMTP Host</Label>
                     <Input

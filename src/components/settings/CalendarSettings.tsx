@@ -225,9 +225,9 @@ export const CalendarSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="export" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="export">Export Settings</TabsTrigger>
-          <TabsTrigger value="sync">Calendar Sync</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
+          <TabsTrigger value="export" className="shrink-0">Export Settings</TabsTrigger>
+          <TabsTrigger value="sync" className="shrink-0">Calendar Sync</TabsTrigger>
         </TabsList>
 
         <TabsContent value="export" className="space-y-4">
@@ -448,7 +448,7 @@ export const CalendarSettings = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Sync Tasks</p>
                         <p className="font-medium">{config.sync_tasks ? "Yes" : "No"}</p>

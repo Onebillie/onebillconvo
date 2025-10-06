@@ -297,6 +297,7 @@ export const TemplateManagement = () => {
           </Select>
         </div>
 
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -359,6 +360,7 @@ export const TemplateManagement = () => {
             )}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

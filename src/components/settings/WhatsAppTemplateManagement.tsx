@@ -265,9 +265,9 @@ export const WhatsAppTemplateManagement = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="existing" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="existing">Existing Templates</TabsTrigger>
-              <TabsTrigger value="create">Create New</TabsTrigger>
+            <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
+              <TabsTrigger value="existing" className="shrink-0">Existing Templates</TabsTrigger>
+              <TabsTrigger value="create" className="shrink-0">Create New</TabsTrigger>
             </TabsList>
 
             <TabsContent value="existing" className="space-y-4">
@@ -314,7 +314,7 @@ export const WhatsAppTemplateManagement = () => {
                   No templates found. Create your first template below.
                 </div>
               ) : (
-                <div className="border rounded-lg">
+                <div className="border rounded-lg overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

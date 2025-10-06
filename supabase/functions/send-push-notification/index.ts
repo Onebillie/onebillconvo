@@ -63,8 +63,10 @@ serve(async (req) => {
     // Import web-push for proper push notification sending
     const webpush = await import("npm:web-push@3.6.7");
     
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT") || 'mailto:support@onebill.ie';
+    
     webpush.setVapidDetails(
-      'mailto:support@onebill.ie',
+      vapidSubject,
       vapidPublicKey,
       vapidPrivateKey
     );

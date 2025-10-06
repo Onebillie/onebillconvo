@@ -118,9 +118,9 @@ export default function Auth() {
         <CardContent>
           {mode === "auth" && (
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
+                <TabsTrigger value="signin" className="shrink-0">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="shrink-0">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">

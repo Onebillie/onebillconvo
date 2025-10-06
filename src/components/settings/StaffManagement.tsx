@@ -255,6 +255,7 @@ export const StaffManagement = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -329,6 +330,7 @@ export const StaffManagement = () => {
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

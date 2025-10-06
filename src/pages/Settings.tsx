@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettin
 export default function Settings() {
   const { profile, loading, signOut } = useAuth();
   const { unreadCount } = useGlobalNotifications();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -67,7 +68,7 @@ export default function Settings() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">{profile.full_name}</span>
-            <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard'} className="relative">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="relative">
               <MessageSquare className="w-4 h-4 mr-2" />
               Dashboard
               {unreadCount > 0 && (
@@ -86,19 +87,19 @@ export default function Settings() {
       {/* Content */}
       <div className="container mx-auto p-6">
         <Tabs defaultValue="staff" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-12 lg:w-auto lg:inline-grid">
-            {isSuperAdmin && <TabsTrigger value="staff">Staff</TabsTrigger>}
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="whatsapp-templates">WA Templates</TabsTrigger>
-            <TabsTrigger value="whatsapp-accounts">WA Accounts</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="email-template">Email Template</TabsTrigger>
-            <TabsTrigger value="statuses">Statuses</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            <TabsTrigger value="business">Business</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="ai">AI Assistant</TabsTrigger>
-            {isSuperAdmin && <TabsTrigger value="api">API Access</TabsTrigger>}
+          <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
+            {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff</TabsTrigger>}
+            <TabsTrigger value="templates" className="shrink-0">Templates</TabsTrigger>
+            <TabsTrigger value="whatsapp-templates" className="shrink-0">WA Templates</TabsTrigger>
+            <TabsTrigger value="whatsapp-accounts" className="shrink-0">WA Accounts</TabsTrigger>
+            <TabsTrigger value="email" className="shrink-0">Email</TabsTrigger>
+            <TabsTrigger value="email-template" className="shrink-0">Email Template</TabsTrigger>
+            <TabsTrigger value="statuses" className="shrink-0">Statuses</TabsTrigger>
+            <TabsTrigger value="tasks" className="shrink-0">Tasks</TabsTrigger>
+            <TabsTrigger value="business" className="shrink-0">Business</TabsTrigger>
+            <TabsTrigger value="calendar" className="shrink-0">Calendar</TabsTrigger>
+            <TabsTrigger value="ai" className="shrink-0">AI Assistant</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="api" className="shrink-0">API Access</TabsTrigger>}
           </TabsList>
 
           {isSuperAdmin && (
