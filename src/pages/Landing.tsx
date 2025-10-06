@@ -4,15 +4,14 @@ import { MessageSquare, Users, Mail, Bell, Calendar, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     // SEO Meta Tags
     document.title = "À La Carte Chat - WhatsApp Business API & Combined Inbox Platform | Manage All Customer Messages";
-    
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute('content', 'Manage WhatsApp Business API, email, and all customer messages in one aggregated inbox. Meta Business integration for multi-agent teams. Talk to your customers in one place with AI-powered responses.');
@@ -35,13 +34,19 @@ const Landing = () => {
     }
 
     // Open Graph tags
-    const ogTags = [
-      { property: 'og:title', content: 'À La Carte Chat - WhatsApp Business API & Combined Inbox Platform' },
-      { property: 'og:description', content: 'Manage all customer messages in one aggregated inbox. WhatsApp Business API, email integration, and AI-powered responses.' },
-      { property: 'og:type', content: 'website' },
-      { property: 'og:image', content: '/placeholder.svg' },
-    ];
-
+    const ogTags = [{
+      property: 'og:title',
+      content: 'À La Carte Chat - WhatsApp Business API & Combined Inbox Platform'
+    }, {
+      property: 'og:description',
+      content: 'Manage all customer messages in one aggregated inbox. WhatsApp Business API, email integration, and AI-powered responses.'
+    }, {
+      property: 'og:type',
+      content: 'website'
+    }, {
+      property: 'og:image',
+      content: '/placeholder.svg'
+    }];
     ogTags.forEach(tag => {
       let element = document.querySelector(`meta[property="${tag.property}"]`);
       if (element) {
@@ -67,18 +72,8 @@ const Landing = () => {
       },
       "description": "Combined inbox platform for managing WhatsApp Business API, email, and all customer messages. Meta Business integration with AI chatbot and multi-agent support.",
       "operatingSystem": "Web Browser",
-      "featureList": [
-        "WhatsApp Business API Integration",
-        "Meta Business Platform",
-        "Combined Inbox",
-        "Aggregated Inbox",
-        "Email Integration",
-        "AI Chatbot",
-        "Multi-Agent Support",
-        "Unified Customer Messaging"
-      ]
+      "featureList": ["WhatsApp Business API Integration", "Meta Business Platform", "Combined Inbox", "Aggregated Inbox", "Email Integration", "AI Chatbot", "Multi-Agent Support", "Unified Customer Messaging"]
     };
-
     let scriptTag = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
     if (!scriptTag) {
       scriptTag = document.createElement('script') as HTMLScriptElement;
@@ -87,50 +82,49 @@ const Landing = () => {
     }
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
-
-  const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration for WhatsApp Business API with full message management" },
-    { icon: Mail, title: "Combined Email Inbox", description: "Manage messages from multiple email accounts in one aggregated inbox" },
-    { icon: Users, title: "Multi-Agent Support", description: "Up to 10 agents can manage customer conversations from different locations simultaneously" },
-    { icon: Bell, title: "Real-Time Notifications", description: "Never miss a customer message with instant push notifications across all devices" },
-    { icon: Calendar, title: "Task & Calendar Sync", description: "Automatically sync customer appointments and follow-ups to your calendar" },
-    { icon: MessageSquare, title: "AI Chatbot Training", description: "Train your AI assistant to handle customer inquiries and manage WhatsApp Business messages automatically" },
-  ];
-
-  const pricingTiers = [
-    {
-      name: "Free",
-      price: "€0",
-      period: "forever",
-      description: "Perfect for testing WhatsApp Business API",
-      features: ["1 User", "Basic combined inbox", "WhatsApp Business API access", "Community support"],
-      cta: "Start Free",
-      highlighted: false,
-    },
-    {
-      name: "Tier 1",
-      price: "€30",
-      period: "per month",
-      description: "+ €7.50 per additional user + €0.01 per message",
-      features: [
-        "Multi-agent support (up to 10)",
-        "€7.50 per additional user/month",
-        "Full WhatsApp Business API (Meta)",
-        "Aggregated inbox for all channels",
-        "Email integration & management",
-        "AI chatbot for automated responses",
-        "Real-time notifications",
-        "Task & calendar management",
-        "Priority support",
-        "72-hour free trial",
-      ],
-      cta: "Start Trial",
-      highlighted: true,
-    },
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const features = [{
+    icon: MessageSquare,
+    title: "WhatsApp Business API",
+    description: "Official Meta Business Platform integration for WhatsApp Business API with full message management"
+  }, {
+    icon: Mail,
+    title: "Combined Email Inbox",
+    description: "Manage messages from multiple email accounts in one aggregated inbox"
+  }, {
+    icon: Users,
+    title: "Multi-Agent Support",
+    description: "Up to 10 agents can manage customer conversations from different locations simultaneously"
+  }, {
+    icon: Bell,
+    title: "Real-Time Notifications",
+    description: "Never miss a customer message with instant push notifications across all devices"
+  }, {
+    icon: Calendar,
+    title: "Task & Calendar Sync",
+    description: "Automatically sync customer appointments and follow-ups to your calendar"
+  }, {
+    icon: MessageSquare,
+    title: "AI Chatbot Training",
+    description: "Train your AI assistant to handle customer inquiries and manage WhatsApp Business messages automatically"
+  }];
+  const pricingTiers = [{
+    name: "Free",
+    price: "€0",
+    period: "forever",
+    description: "Perfect for testing WhatsApp Business API",
+    features: ["1 User", "Basic combined inbox", "WhatsApp Business API access", "Community support"],
+    cta: "Start Free",
+    highlighted: false
+  }, {
+    name: "Tier 1",
+    price: "€30",
+    period: "per month",
+    description: "+ €7.50 per additional user + €0.01 per message",
+    features: ["Multi-agent support (up to 10)", "€7.50 per additional user/month", "Full WhatsApp Business API (Meta)", "Aggregated inbox for all channels", "Email integration & management", "AI chatbot for automated responses", "Real-time notifications", "Task & calendar management", "Priority support", "72-hour free trial"],
+    cta: "Start Trial",
+    highlighted: true
+  }];
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -140,15 +134,11 @@ const Landing = () => {
             </div>
             <span className="text-xl font-semibold">À La Carte Chat</span>
           </div>
-          {user ? (
-            <Button onClick={() => navigate("/onebillchat")}>
+          {user ? <Button onClick={() => navigate("/onebillchat")}>
               Go to App
-            </Button>
-          ) : (
-            <Button onClick={() => navigate("/auth")} variant="outline">
+            </Button> : <Button onClick={() => navigate("/auth")} variant="outline">
               Sign In
-            </Button>
-          )}
+            </Button>}
         </div>
       </header>
 
@@ -158,7 +148,7 @@ const Landing = () => {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Manage WhatsApp Business & All Customer Messages in One Place
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-zinc-950">
             The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -180,13 +170,11 @@ const Landing = () => {
             Our aggregated inbox combines WhatsApp Business, email, and all channels. Talk to your customers in one place with powerful Meta Business integration.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2">
+            {features.map((feature, index) => <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2">
                 <feature.icon className="w-12 h-12 text-primary mb-4" aria-hidden="true" />
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -199,19 +187,25 @@ const Landing = () => {
             Set up your combined inbox and start managing all customer messages from WhatsApp Business API, email, and more
           </p>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              { step: "1", title: "Connect WhatsApp Business API", description: "Link your Meta Business Platform account and WhatsApp Business API to your aggregated inbox" },
-              { step: "2", title: "Add Your Team Agents", description: "Invite up to 10 agents to manage messages and talk to customers collaboratively" },
-              { step: "3", title: "Manage All Messages", description: "Handle WhatsApp, email, and all customer communications from one combined inbox with AI assistance" },
-            ].map((step, index) => (
-              <div key={index} className="text-center">
+            {[{
+            step: "1",
+            title: "Connect WhatsApp Business API",
+            description: "Link your Meta Business Platform account and WhatsApp Business API to your aggregated inbox"
+          }, {
+            step: "2",
+            title: "Add Your Team Agents",
+            description: "Invite up to 10 agents to manage messages and talk to customers collaboratively"
+          }, {
+            step: "3",
+            title: "Manage All Messages",
+            description: "Handle WhatsApp, email, and all customer communications from one combined inbox with AI assistance"
+          }].map((step, index) => <div key={index} className="text-center">
                 <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 mx-auto" aria-label={`Step ${step.step}`}>
                   {step.step}
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
                 <p className="text-muted-foreground">{step.description}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -230,15 +224,49 @@ const Landing = () => {
                   <h3 className="font-semibold">Conversations (24)</h3>
                 </div>
                 <div className="space-y-2 p-2">
-                  {[
-                    { name: "Sarah Johnson", channel: "whatsapp", msg: "Can you help with my order?", time: "Just now", agent: "AI Bot", unread: true },
-                    { name: "john@acme.com", channel: "email", msg: "Invoice inquiry", time: "2m ago", agent: "Maria", unread: true },
-                    { name: "+1 555 0123", channel: "whatsapp", msg: "Delivery status?", time: "5m ago", agent: "AI Bot", unread: false },
-                    { name: "support@client.com", channel: "email", msg: "Feature request", time: "12m ago", agent: "Tom", unread: false },
-                    { name: "Lisa Chen", channel: "whatsapp", msg: "Thank you!", time: "18m ago", agent: "Maria", unread: false },
-                    { name: "sales@company.co", channel: "email", msg: "Partnership opportunity", time: "25m ago", agent: "Tom", unread: false },
-                  ].map((conv, i) => (
-                    <div key={i} className={`p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all ${conv.unread ? 'bg-primary/5 border-l-2 border-primary' : ''}`}>
+                  {[{
+                  name: "Sarah Johnson",
+                  channel: "whatsapp",
+                  msg: "Can you help with my order?",
+                  time: "Just now",
+                  agent: "AI Bot",
+                  unread: true
+                }, {
+                  name: "john@acme.com",
+                  channel: "email",
+                  msg: "Invoice inquiry",
+                  time: "2m ago",
+                  agent: "Maria",
+                  unread: true
+                }, {
+                  name: "+1 555 0123",
+                  channel: "whatsapp",
+                  msg: "Delivery status?",
+                  time: "5m ago",
+                  agent: "AI Bot",
+                  unread: false
+                }, {
+                  name: "support@client.com",
+                  channel: "email",
+                  msg: "Feature request",
+                  time: "12m ago",
+                  agent: "Tom",
+                  unread: false
+                }, {
+                  name: "Lisa Chen",
+                  channel: "whatsapp",
+                  msg: "Thank you!",
+                  time: "18m ago",
+                  agent: "Maria",
+                  unread: false
+                }, {
+                  name: "sales@company.co",
+                  channel: "email",
+                  msg: "Partnership opportunity",
+                  time: "25m ago",
+                  agent: "Tom",
+                  unread: false
+                }].map((conv, i) => <div key={i} className={`p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all ${conv.unread ? 'bg-primary/5 border-l-2 border-primary' : ''}`}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-sm">{conv.name}</span>
                         <span className="text-xs text-muted-foreground">{conv.time}</span>
@@ -250,8 +278,7 @@ const Landing = () => {
                         <span className="text-xs text-muted-foreground">→ {conv.agent}</span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{conv.msg}</p>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </div>
 
@@ -307,12 +334,7 @@ const Landing = () => {
 
                 <div className="p-4 border-t">
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 border rounded-lg bg-background"
-                      disabled
-                    />
+                    <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2 border rounded-lg bg-background" disabled />
                     <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg">Send</button>
                   </div>
                 </div>
@@ -329,12 +351,28 @@ const Landing = () => {
           <p className="text-center text-muted-foreground mb-12">See how your team collaborates in real-time</p>
           
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { name: "Maria Rodriguez", avatar: "👩‍💼", status: "active", conversations: 8, avgResponse: "2m", channel: "email" },
-              { name: "Tom Wilson", avatar: "👨‍💻", status: "active", conversations: 12, avgResponse: "1.5m", channel: "whatsapp" },
-              { name: "AI Bot", avatar: "🤖", status: "active", conversations: 156, avgResponse: "3s", channel: "both" },
-            ].map((agent, i) => (
-              <div key={i} className="bg-card border rounded-lg p-6 hover:shadow-lg transition-shadow">
+            {[{
+            name: "Maria Rodriguez",
+            avatar: "👩‍💼",
+            status: "active",
+            conversations: 8,
+            avgResponse: "2m",
+            channel: "email"
+          }, {
+            name: "Tom Wilson",
+            avatar: "👨‍💻",
+            status: "active",
+            conversations: 12,
+            avgResponse: "1.5m",
+            channel: "whatsapp"
+          }, {
+            name: "AI Bot",
+            avatar: "🤖",
+            status: "active",
+            conversations: 156,
+            avgResponse: "3s",
+            channel: "both"
+          }].map((agent, i) => <div key={i} className="bg-card border rounded-lg p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="text-4xl">{agent.avatar}</div>
                   <div className="flex-1">
@@ -361,16 +399,13 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {agent.name === "AI Bot" && (
-                  <div className="mt-4 pt-4 border-t">
+                {agent.name === "AI Bot" && <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center gap-2 text-sm text-green-600">
                       <span>✓</span>
                       <span>Handling 89% of inquiries</span>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  </div>}
+              </div>)}
           </div>
         </div>
       </section>
@@ -445,15 +480,7 @@ ai.response.completed`}</code>
             Start managing all your customer messages with our combined inbox. 72-hour free trial included.
           </p>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {pricingTiers.map((tier, index) => (
-              <Card
-                key={index}
-                className={`p-8 rounded-2xl ${
-                  tier.highlighted
-                    ? "border-4 border-primary shadow-2xl scale-105"
-                    : "border-2"
-                }`}
-              >
+            {pricingTiers.map((tier, index) => <Card key={index} className={`p-8 rounded-2xl ${tier.highlighted ? "border-4 border-primary shadow-2xl scale-105" : "border-2"}`}>
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
                   <div className="mb-2">
@@ -463,23 +490,15 @@ ai.response.completed`}</code>
                   <p className="text-sm text-muted-foreground">{tier.description}</p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2">
+                  {tier.features.map((feature, i) => <li key={i} className="flex items-center gap-2">
                       <Check className="w-5 h-5 text-primary flex-shrink-0" />
                       <span>{feature}</span>
-                    </li>
-                  ))}
+                    </li>)}
                 </ul>
-                <Button
-                  className="w-full rounded-xl"
-                  variant={tier.highlighted ? "default" : "outline"}
-                  size="lg"
-                  onClick={() => navigate("/auth")}
-                >
+                <Button className="w-full rounded-xl" variant={tier.highlighted ? "default" : "outline"} size="lg" onClick={() => navigate("/auth")}>
                   {tier.cta}
                 </Button>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -533,8 +552,6 @@ ai.response.completed`}</code>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Landing;
