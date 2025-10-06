@@ -30,9 +30,10 @@ const Landing = () => {
       name: "Tier 1",
       price: "€30",
       period: "per month",
-      description: "+ €0.01 per message",
+      description: "+ €7.50 per additional user + €0.01 per message",
       features: [
         "Multi-agent support (up to 10)",
+        "€7.50 per additional user/month",
         "WhatsApp Business API",
         "Email integration",
         "Native notifications",
