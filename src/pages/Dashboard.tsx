@@ -27,6 +27,7 @@ import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog"
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
 import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
+import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 
 const Dashboard = () => {
   const { profile, loading: authLoading } = useAuth();
@@ -386,6 +387,13 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <EmailSyncButton onSyncComplete={() => {
+                    if (selectedConversation) {
+                      fetchMessages(selectedConversation.id);
+                    }
+                    fetchConversations();
+                  }} />
+                  
                   <EnhancedTemplateSelector
                     conversationId={selectedConversation.id}
                     customerId={selectedConversation.customer.id}

@@ -45,15 +45,25 @@ serve(async (req) => {
     // Fetch email account configuration
     const { data: account, error: accountError } = await supabase
       .from('email_accounts')
-      .select('*')
+      .select('id, name, email_address, imap_host, imap_port, imap_username, imap_password, imap_use_ssl, smtp_host, smtp_port, smtp_username, smtp_password, smtp_use_ssl')
       .eq('id', account_id)
       .eq('is_active', true)
       .eq('sync_enabled', true)
       .single();
 
     if (accountError || !account) {
+      console.error('Email account error:', accountError);
       throw new Error(`Email account not found or inactive: ${accountError?.message}`);
     }
+
+    console.log('Account retrieved:', {
+      id: account.id,
+      name: account.name,
+      email: account.email_address,
+      imap_host: account.imap_host,
+      imap_port: account.imap_port,
+      has_imap_password: !!account.imap_password
+    });
 
     // Create sync log entry
     const { data: syncLog, error: logError } = await supabase
@@ -144,11 +154,19 @@ serve(async (req) => {
 });
 
 async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]> {
-  console.log(`Connecting to IMAP: ${account.imap_host}:${account.imap_port}`);
-  console.log(`IMAP Config - Host: ${account.imap_host}, Port: ${account.imap_port}, SSL: ${account.imap_use_ssl}`);
+  console.log('=== Starting IMAP fetch ===');
+  console.log('Account object received:', JSON.stringify({
+    id: account.id,
+    email_address: account.email_address,
+    imap_host: account.imap_host,
+    imap_port: account.imap_port,
+    imap_username: account.imap_username,
+    imap_use_ssl: account.imap_use_ssl,
+    has_password: !!account.imap_password
+  }, null, 2));
   
   if (!account.imap_host || !account.imap_port) {
-    throw new Error('IMAP host or port is missing from account configuration');
+    throw new Error(`IMAP host or port is missing from account configuration. Host: ${account.imap_host}, Port: ${account.imap_port}`);
   }
   
   try {
@@ -159,6 +177,13 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
     const port = account.imap_port;
     const username = account.imap_username || account.email_address;
     const password = account.imap_password;
+    
+    console.log('Parsed config values:', {
+      hostname,
+      port,
+      username,
+      has_password: !!password
+    });
     
     if (!hostname || !port || !username || !password) {
       throw new Error(`Missing IMAP configuration: hostname=${hostname}, port=${port}, username=${username ? 'set' : 'missing'}, password=${password ? 'set' : 'missing'}`);
@@ -183,8 +208,9 @@ async function fetchEmailsFromIMAP(account: EmailAccount): Promise<ParsedEmail[]
     
     const client = new ImapClient(imapConfig);
 
+    console.log('Attempting to connect to IMAP server...');
     await client.connect();
-    console.log('Connected to IMAP server');
+    console.log('Connected to IMAP server successfully');
     
     // Select INBOX
     await client.selectMailbox("INBOX");
