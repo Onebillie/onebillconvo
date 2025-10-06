@@ -148,7 +148,7 @@ const Landing = () => {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Manage WhatsApp Business & All Customer Messages in One Place
           </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-zinc-950">
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-foreground">
             The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -400,7 +400,7 @@ const Landing = () => {
                 </div>
 
                 {agent.name === "AI Bot" && <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
+                    <div className="flex items-center gap-2 text-sm text-primary">
                       <span>✓</span>
                       <span>Handling 89% of inquiries</span>
                     </div>
@@ -504,7 +504,7 @@ ai.response.completed`}</code>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-secondary text-secondary-foreground">
+      <footer className="border-t border-border py-12 bg-muted/10">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -514,13 +514,13 @@ ai.response.completed`}</code>
                 </div>
                 <span className="font-semibold">À La Carte Chat</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground/70">
                 The leading combined inbox platform for WhatsApp Business API and customer message management. Talk to your customers in one place with Meta Business integration.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Features</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-foreground/70">
                 <li>WhatsApp Business API</li>
                 <li>Meta Business Integration</li>
                 <li>Combined Inbox</li>
@@ -530,7 +530,7 @@ ai.response.completed`}</code>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-foreground/70">
                 <li>How to Manage WhatsApp Business</li>
                 <li>API Documentation</li>
                 <li>Pricing</li>
@@ -539,14 +539,14 @@ ai.response.completed`}</code>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li className="text-muted-foreground">Email: hello@alacartesaas.com</li>
-                <li className="text-muted-foreground">Knowledge Base</li>
-                <li className="text-muted-foreground">Contact Us</li>
+              <ul className="space-y-2 text-sm text-foreground/70">
+                <li>Email: hello@alacartesaas.com</li>
+                <li>Knowledge Base</li>
+                <li>Contact Us</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-border/20 pt-8 text-center text-sm text-muted-foreground">
+          <div className="border-t border-border pt-8 text-center text-sm text-foreground/60">
             <p className="mb-2">© 2025 À La Carte Chat. All rights reserved.</p>
             <p className="text-xs">WhatsApp Business API | Meta Business Platform | Combined Inbox | Aggregated Messaging | Customer Message Management</p>
           </div>
