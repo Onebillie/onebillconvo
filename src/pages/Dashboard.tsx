@@ -32,7 +32,7 @@ import { DuplicateContactsBanner } from "@/components/conversations/DuplicateCon
 import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 
 const Dashboard = () => {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, isAdmin } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const isMobile = useIsMobile();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -280,7 +280,7 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <TaskNotifications />
-            {profile?.role && ['admin', 'superadmin'].includes(profile.role) && (
+            {isAdmin && (
               <Button variant="ghost" size="sm" onClick={handleBack}>
                 <SettingsIcon className="w-4 h-4" />
               </Button>
@@ -388,7 +388,7 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-2">
                 <TaskNotifications />
-                {profile?.role && ['admin', 'superadmin'].includes(profile.role) && (
+                {isAdmin && (
                   <Button variant="ghost" size="icon" onClick={handleBack}>
                     <SettingsIcon className="w-4 h-4" />
                   </Button>

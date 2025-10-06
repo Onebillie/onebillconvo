@@ -8,8 +8,11 @@ interface Profile {
   full_name: string;
   email: string;
   avatar_url?: string;
-  role: 'superadmin' | 'admin' | 'agent';
   is_active: boolean;
+}
+
+interface UserRole {
+  role: 'superadmin' | 'admin' | 'agent';
 }
 
 interface AuthContextType {
@@ -22,6 +25,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
   isAdmin: boolean;
+  currentBusinessId: string | null;
+  userRole: 'superadmin' | 'admin' | 'agent' | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,17 +36,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'superadmin' | 'admin' | 'agent' | null>(null);
   const navigate = useNavigate();
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
+    // Fetch profile
+    const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
 
-    if (!error && data) {
-      setProfile(data as Profile);
+    if (!profileError && profileData) {
+      setProfile(profileData as Profile);
+    }
+
+    // Fetch user role from user_roles table
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    if (roleData) {
+      setUserRole(roleData.role as 'superadmin' | 'admin' | 'agent');
+    }
+
+    // Fetch user's business (first business they're a member of)
+    const { data: businessData } = await supabase
+      .from("business_users")
+      .select("business_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .single();
+
+    if (businessData) {
+      setCurrentBusinessId(businessData.business_id);
     }
   };
 
@@ -117,8 +148,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate("/auth");
   };
 
-  const isSuperAdmin = profile?.role === 'superadmin';
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin';
+  const isSuperAdmin = userRole === 'superadmin';
+  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
 
   return (
     <AuthContext.Provider
@@ -132,6 +163,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signOut,
         isSuperAdmin,
         isAdmin,
+        currentBusinessId,
+        userRole,
       }}
     >
       {children}

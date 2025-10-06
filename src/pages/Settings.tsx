@@ -22,7 +22,7 @@ import { NotificationSettings } from "@/components/settings/NotificationSettings
 import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
 
 export default function Settings() {
-  const { profile, loading, signOut } = useAuth();
+  const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const navigate = useNavigate();
 
@@ -37,9 +37,6 @@ export default function Settings() {
   if (!profile || !profile.is_active) {
     return <Navigate to="/auth" replace />;
   }
-
-  const isAdmin = profile.role === 'admin' || profile.role === 'superadmin';
-  const isSuperAdmin = profile.role === 'superadmin';
 
   if (!isAdmin) {
     return (
