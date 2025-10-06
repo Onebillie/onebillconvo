@@ -35,6 +35,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Conversation ID:", conversationId);
     console.log("Customer ID:", customerId);
 
+    // Fetch customer data for template population
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('name, first_name, last_name, email, phone')
+      .eq('id', customerId)
+      .single();
+
     // Get business settings for email configuration
     const { data: settings } = await supabase
       .from("business_settings")
@@ -46,6 +53,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Parse subject template
     let emailSubject = subject || settings?.email_subject_template || "Message from {{company_name}}";
     emailSubject = emailSubject.replace(/\{\{company_name\}\}/g, companyName);
+    if (customer?.name) {
+      emailSubject = emailSubject.replace(/\{\{customer_name\}\}/g, customer.name);
+      emailSubject = emailSubject.replace(/\{\{name\}\}/g, customer.name);
+    }
 
     const signature = settings?.email_signature 
       ? settings.email_signature.replace(/\n/g, '<br>')
@@ -64,7 +75,18 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    const contentHtml = content.replace(/\n/g, '<br>');
+    let contentHtml = content.replace(/\n/g, '<br>');
+    
+    // Populate customer data in content
+    if (customer) {
+      contentHtml = contentHtml.replace(/\{\{customer_name\}\}/g, customer.name || '');
+      contentHtml = contentHtml.replace(/\{\{name\}\}/g, customer.name || '');
+      contentHtml = contentHtml.replace(/\{\{first_name\}\}/g, customer.first_name || '');
+      contentHtml = contentHtml.replace(/\{\{last_name\}\}/g, customer.last_name || '');
+      contentHtml = contentHtml.replace(/\{\{email\}\}/g, customer.email || '');
+      contentHtml = contentHtml.replace(/\{\{phone\}\}/g, customer.phone || '');
+    }
+    
     const finalHtml = htmlTemplate
       .replace(/\{\{content\}\}/g, contentHtml)
       .replace(/\{\{company_name\}\}/g, companyName)

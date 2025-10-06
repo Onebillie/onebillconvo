@@ -61,13 +61,26 @@ export const MessageInput = ({
       }
 
       if (sendVia === "email" && customerEmail) {
-        // Get business_id
+        // Get business_id and settings
         const { data: { user } } = await supabase.auth.getUser();
         const { data: businessData } = await supabase
           .from('business_users')
           .select('business_id')
           .eq('user_id', user?.id)
           .maybeSingle();
+
+        // Fetch email subject from business settings
+        const { data: settings } = await supabase
+          .from('business_settings')
+          .select('email_subject_template, company_name')
+          .single();
+
+        let emailSubject = settings?.email_subject_template || "Message from {{company_name}}";
+        const companyName = settings?.company_name || "Support";
+        emailSubject = emailSubject.replace(/\{\{company_name\}\}/g, companyName);
+        if (customer?.name) {
+          emailSubject = emailSubject.replace(/\{\{customer_name\}\}/g, customer.name);
+        }
 
         // First, insert message as pending for bundling
         const { error: insertError } = await supabase
@@ -90,7 +103,7 @@ export const MessageInput = ({
         const { error } = await supabase.functions.invoke("email-send-smtp", {
           body: {
             to: customerEmail,
-            subject: "Message from Support",
+            subject: emailSubject,
             html: processedMessage,
             text: processedMessage,
             conversation_id: conversationId,

@@ -30,10 +30,17 @@ serve(async (req) => {
 
     console.log('Sending email via SMTP to:', emailRequest.to);
 
+    // Fetch customer data for template population
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('name, first_name, last_name, email, phone')
+      .eq('id', emailRequest.customer_id)
+      .single();
+
     // Check for recent unsent messages within the bundling window
     const { data: settings } = await supabase
       .from('business_settings')
-      .select('email_html_template, email_bundle_window_minutes, company_name, email_signature')
+      .select('email_html_template, email_bundle_window_minutes, company_name, email_signature, email_subject_template')
       .single();
 
     const bundleWindowMinutes = settings?.email_bundle_window_minutes || 2;
@@ -108,9 +115,28 @@ serve(async (req) => {
     const contentHtml = bundledContent.replace(/\n/g, '<br>');
     const companyName = settings?.company_name || 'Customer Service';
     const signature = settings?.email_signature?.replace(/\n/g, '<br>') || `Best regards,<br>${companyName}`;
+    
+    // Populate customer data in content
+    let finalContent = contentHtml;
+    if (customer) {
+      finalContent = finalContent.replace(/\{\{customer_name\}\}/g, customer.name || '');
+      finalContent = finalContent.replace(/\{\{name\}\}/g, customer.name || '');
+      finalContent = finalContent.replace(/\{\{first_name\}\}/g, customer.first_name || '');
+      finalContent = finalContent.replace(/\{\{last_name\}\}/g, customer.last_name || '');
+      finalContent = finalContent.replace(/\{\{email\}\}/g, customer.email || '');
+      finalContent = finalContent.replace(/\{\{phone\}\}/g, customer.phone || '');
+    }
+
+    // Populate subject template
+    let finalSubject = emailRequest.subject;
+    finalSubject = finalSubject.replace(/\{\{company_name\}\}/g, companyName);
+    if (customer) {
+      finalSubject = finalSubject.replace(/\{\{customer_name\}\}/g, customer.name || '');
+      finalSubject = finalSubject.replace(/\{\{name\}\}/g, customer.name || '');
+    }
 
     const finalHtml = htmlTemplate
-      .replace(/\{\{content\}\}/g, contentHtml)
+      .replace(/\{\{content\}\}/g, finalContent)
       .replace(/\{\{company_name\}\}/g, companyName)
       .replace(/\{\{signature\}\}/g, signature);
 
@@ -118,7 +144,7 @@ serve(async (req) => {
     const emailSent = await sendViaSMTP(
       account,
       emailRequest.to,
-      emailRequest.subject,
+      finalSubject,
       finalHtml,
       bundledContent
     );

@@ -57,7 +57,7 @@ const Dashboard = () => {
       .from('conversations')
       .select(`
         *,
-        customers (
+        customers!inner (
           id,
           name,
           phone,
@@ -84,8 +84,16 @@ const Dashboard = () => {
       return;
     }
 
+    // Deduplicate conversations by ID
+    const uniqueConvs = (data || []).reduce((acc: any[], conv: any) => {
+      if (!acc.find(c => c.id === conv.id)) {
+        acc.push(conv);
+      }
+      return acc;
+    }, []);
+
     // Fetch unread counts for all conversations in a single query
-    const conversationIds = (data || []).map(conv => conv.id);
+    const conversationIds = uniqueConvs.map(conv => conv.id);
     if (conversationIds.length === 0) {
       setConversations([]);
       setFilteredConversations([]);
@@ -106,7 +114,7 @@ const Dashboard = () => {
     }, {});
 
     // Transform data to match interface
-    const conversations = (data || []).map(conv => ({
+    const conversations = uniqueConvs.map(conv => ({
       ...conv,
       customer: conv.customers,
       status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || [],
