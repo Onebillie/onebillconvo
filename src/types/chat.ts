@@ -38,9 +38,11 @@ export interface Message {
   direction: "inbound" | "outbound";
   created_at: string;
   customer_id: string;
+  conversation_id?: string;
   is_read: boolean;
   platform: string;
   status?: string;
+  replied_to_message_id?: string | null;
   message_attachments?: Array<{
     id: string;
     filename: string;

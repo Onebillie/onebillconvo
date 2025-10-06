@@ -117,30 +117,32 @@ export const MessageInput = ({
           });
         }
 
-        // Upload attachments if any
-        if (attachments.length > 0) {
-          for (const file of attachments) {
-            const fileExt = file.name.split(".").pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${conversationId}/${fileName}`;
+          // Upload attachments if any (store in customer-specific folder)
+          if (attachments.length > 0) {
+            for (const file of attachments) {
+              const fileExt = file.name.split(".").pop();
+              const fileName = `${Date.now()}_${file.name}`;
+              const filePath = `customers/${customerId}/media/${fileName}`;
 
-            const { error: uploadError } = await supabase.storage
-              .from("customer_bills")
-              .upload(filePath, file);
+              const { error: uploadError } = await supabase.storage
+                .from("customer_bills")
+                .upload(filePath, file, {
+                  upsert: false
+                });
 
-            if (uploadError) throw uploadError;
+              if (uploadError) throw uploadError;
 
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
 
-            attachmentUrls.push({
-              url: publicUrl,
-              filename: file.name,
-              type: file.type,
-            });
+              attachmentUrls.push({
+                url: publicUrl,
+                filename: file.name,
+                type: file.type,
+              });
+            }
           }
-        }
 
         // Send message via WhatsApp API
         const { error } = await supabase.functions.invoke("whatsapp-send", {

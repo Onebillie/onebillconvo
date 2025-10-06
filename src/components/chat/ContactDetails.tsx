@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Save, Pencil } from "lucide-react";
+import { Save, Pencil, FolderOpen } from "lucide-react";
 import { EditContactDialog } from "./EditContactDialog";
+import { CustomerMediaLibrary } from "./CustomerMediaLibrary";
 
 interface ContactDetailsProps {
   customer: Customer;
@@ -18,6 +19,7 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
   const [notes, setNotes] = useState(customer.notes || "");
   const [saving, setSaving] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
 
   const saveNotes = async () => {
     setSaving(true);
@@ -106,6 +108,16 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
         )}
       </div>
 
+      {/* Media Library Button */}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => setMediaLibraryOpen(true)}
+      >
+        <FolderOpen className="w-4 h-4 mr-2" />
+        View Media Library
+      </Button>
+
       <div className="space-y-2">
         <Label htmlFor="notes" className="text-sm font-semibold">Private Notes</Label>
         <Textarea
@@ -127,6 +139,12 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
         onOpenChange={setEditDialogOpen}
         customer={customer}
         onUpdate={onUpdate}
+      />
+
+      <CustomerMediaLibrary
+        customerId={customer.id}
+        open={mediaLibraryOpen}
+        onOpenChange={setMediaLibraryOpen}
       />
     </div>
   );

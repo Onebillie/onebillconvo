@@ -228,16 +228,62 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
         conversation = newConversation;
       }
 
+      // Handle reactions
+      if (message.type === 'reaction') {
+        console.log('Processing reaction:', message.reaction);
+        
+        // Find the original message by external_message_id
+        const { data: originalMessage } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('external_message_id', message.reaction.message_id)
+          .maybeSingle();
+        
+        if (originalMessage) {
+          // Insert or update reaction
+          const { error: reactionError } = await supabase
+            .from('message_reactions')
+            .upsert({
+              message_id: originalMessage.id,
+              emoji: message.reaction.emoji,
+              user_id: null, // Customer reaction
+            }, {
+              onConflict: 'message_id,user_id'
+            });
+          
+          if (reactionError) {
+            console.error('Error creating reaction:', reactionError);
+          } else {
+            console.log('Reaction processed successfully');
+          }
+        }
+        continue; // Don't create a message for reactions
+      }
+
+      // Determine replied_to_message_id if this is a reply
+      let repliedToMessageId = null;
+      if (message.context?.id) {
+        const { data: repliedMessage } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('external_message_id', message.context.id)
+          .maybeSingle();
+        
+        if (repliedMessage) {
+          repliedToMessageId = repliedMessage.id;
+        }
+      }
+
       // Create message
       let messageContent = '';
       if (message.type === 'text') {
         messageContent = message.text.body;
       } else if (message.type === 'image') {
-        messageContent = 'Image received';
+        messageContent = message.image.caption || 'Image received';
       } else if (message.type === 'document') {
         messageContent = `Document: ${message.document.filename || 'Unknown'}`;
       } else if (message.type === 'video') {
-        messageContent = 'Video received';
+        messageContent = message.video.caption || 'Video received';
       } else if (message.type === 'audio' || message.type === 'voice') {
         messageContent = 'Voice note received';
       } else {
@@ -255,6 +301,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           external_message_id: message.id,
           thread_id: conversation.id,
           is_read: false,
+          replied_to_message_id: repliedToMessageId,
         })
         .select()
         .single();
@@ -264,9 +311,9 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
         continue;
       }
 
-      // Handle attachments
+      // Handle attachments (store in customer-specific folder)
       if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
-        await handleAttachment(message, newMessage.id, supabase, whatsappAccountId);
+        await handleAttachment(message, newMessage.id, customer.id, supabase, whatsappAccountId);
       }
 
       console.log('Message processed successfully:', newMessage.id);
@@ -301,7 +348,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
   }
 }
 
-async function handleAttachment(message: any, messageId: string, supabase: any, whatsappAccountId?: string) {
+async function handleAttachment(message: any, messageId: string, customerId: string, supabase: any, whatsappAccountId?: string) {
   try {
     let mediaId, filename, mimeType, duration;
     
@@ -375,12 +422,13 @@ async function handleAttachment(message: any, messageId: string, supabase: any, 
     const fileBuffer = await fileResponse.arrayBuffer();
     const file = new Uint8Array(fileBuffer);
 
-    // Upload to Supabase Storage
-    const filePath = `whatsapp/${Date.now()}_${filename}`;
+    // Upload to Supabase Storage in customer-specific folder
+    const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('customer_bills')
       .upload(filePath, file, {
         contentType: mimeType,
+        upsert: false,
       });
 
     if (uploadError) {
