@@ -61,6 +61,14 @@ export const MessageInput = ({
       }
 
       if (sendVia === "email" && customerEmail) {
+        // Get business_id
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
         // First, insert message as pending for bundling
         const { error: insertError } = await supabase
           .from('messages')
@@ -72,7 +80,8 @@ export const MessageInput = ({
             platform: 'email',
             channel: 'email',
             status: 'pending',
-            is_read: true
+            is_read: true,
+            business_id: businessData?.business_id
           });
 
         if (insertError) throw insertError;

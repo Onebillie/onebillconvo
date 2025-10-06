@@ -14,7 +14,7 @@ interface UserProfile {
   id: string;
   full_name: string;
   email: string;
-  role: string;
+  user_role?: string;
   is_active: boolean;
   created_at: string;
   avatar_url?: string;
@@ -37,13 +37,24 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+
+      // Fetch roles from user_roles table
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      const usersWithRoles = profiles?.map(profile => ({
+        ...profile,
+        user_role: rolesData?.find((r: any) => r.user_id === profile.id)?.role || 'agent'
+      })) || [];
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
@@ -81,7 +92,7 @@ export default function UsersManagement() {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role?: string) => {
     switch (role) {
       case "superadmin":
         return "destructive";
@@ -163,9 +174,9 @@ export default function UsersManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
+                    <Badge variant={getRoleBadgeVariant(user.user_role)}>
                       <Shield className="h-3 w-3 mr-1" />
-                      {user.role}
+                      {user.user_role || 'agent'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -180,7 +191,7 @@ export default function UsersManagement() {
                     <Switch
                       checked={user.is_active}
                       onCheckedChange={() => toggleUserStatus(user.id, user.is_active)}
-                      disabled={user.role === "superadmin"}
+                      disabled={user.user_role === "superadmin"}
                     />
                   </TableCell>
                 </TableRow>

@@ -15,7 +15,7 @@ interface Staff {
   id: string;
   full_name: string;
   email: string;
-  role: string;
+  user_role?: 'superadmin' | 'admin' | 'agent';
   is_active: boolean;
   email_confirmed_at?: string;
 }
@@ -46,21 +46,26 @@ export const StaffManagement = () => {
 
       if (profilesError) throw profilesError;
 
+      // Get roles from user_roles table
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
       // Get auth user data to check email confirmation status
       const { data: usersData, error: usersError } = await supabase.functions.invoke("list-users-status");
       
       if (usersError) {
         console.error("Error fetching users:", usersError);
-        setStaff(profiles || []);
-        return;
       }
 
       // Merge the data
       const staffWithEmailStatus = profiles?.map(profile => {
         const authUser = usersData?.users?.find((u: any) => u.id === profile.id);
+        const userRole = rolesData?.find((r: any) => r.user_id === profile.id);
         return {
           ...profile,
-          email_confirmed_at: authUser?.email_confirmed_at
+          email_confirmed_at: authUser?.email_confirmed_at,
+          user_role: userRole?.role || 'agent'
         };
       }) || [];
 
@@ -132,26 +137,33 @@ export const StaffManagement = () => {
   };
 
   const handleUpdateRole = async (staffId: string, newRole: "agent" | "admin" | "superadmin") => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", staffId);
+    try {
+      // Delete existing role
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", staffId);
 
-    if (error) {
+      // Insert new role
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: staffId, role: newRole });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Role updated successfully",
+      });
+
+      fetchStaff();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update role",
+        description: error.message || "Failed to update role",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Success",
-      description: "Role updated successfully",
-    });
-
-    fetchStaff();
   };
 
   const handleConfirmEmail = async (userId: string) => {
@@ -274,7 +286,7 @@ export const StaffManagement = () => {
                 <TableCell>{member.email}</TableCell>
                 <TableCell>
                   <Select
-                    value={member.role}
+                    value={member.user_role || 'agent'}
                     onValueChange={(value: "agent" | "admin" | "superadmin") => handleUpdateRole(member.id, value)}
                   >
                     <SelectTrigger className="w-32">

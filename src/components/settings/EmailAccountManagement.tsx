@@ -67,12 +67,18 @@ export function EmailAccountManagement() {
   const addAccountMutation = useMutation({
     mutationFn: async (accountData: typeof formData) => {
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: businessData } = await supabase
+        .from('business_users')
+        .select('business_id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
       
       const { data, error } = await supabase
         .from('email_accounts')
         .insert({
           ...accountData,
-          created_by: user?.id
+          created_by: user?.id,
+          business_id: businessData?.business_id
         })
         .select()
         .single();

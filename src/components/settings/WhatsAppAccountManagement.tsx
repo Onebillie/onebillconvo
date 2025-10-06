@@ -51,7 +51,17 @@ export function WhatsAppAccountManagement() {
 
   const addAccountMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from("whatsapp_accounts").insert([data]);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: businessData } = await supabase
+        .from('business_users')
+        .select('business_id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      const { error } = await supabase.from("whatsapp_accounts").insert([{
+        ...data,
+        business_id: businessData?.business_id
+      }]);
       if (error) throw error;
     },
     onSuccess: () => {

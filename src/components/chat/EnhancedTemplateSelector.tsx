@@ -107,6 +107,14 @@ export const EnhancedTemplateSelector = ({
           throw new Error("Customer email not available");
         }
 
+        // Get business_id
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
         // Insert pending message for bundling
         await supabase.from('messages').insert({
           conversation_id: conversationId,
@@ -116,7 +124,8 @@ export const EnhancedTemplateSelector = ({
           platform: 'email',
           channel: 'email',
           status: 'pending',
-          is_read: true
+          is_read: true,
+          business_id: businessData?.business_id
         });
 
         const { error } = await supabase.functions.invoke("email-send-smtp", {
@@ -132,6 +141,14 @@ export const EnhancedTemplateSelector = ({
 
         if (error) throw error;
       } else {
+        // Get business_id
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
         // Plain text - insert as regular message
         const { error } = await supabase
           .from('messages')
@@ -143,7 +160,8 @@ export const EnhancedTemplateSelector = ({
             platform: 'text',
             channel: 'text',
             status: 'sent',
-            is_read: true
+            is_read: true,
+            business_id: businessData?.business_id
           });
 
         if (error) throw error;

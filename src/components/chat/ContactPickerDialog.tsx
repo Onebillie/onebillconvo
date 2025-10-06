@@ -90,11 +90,19 @@ export const ContactPickerDialog = ({ onContactSelected }: ContactPickerDialogPr
       }
 
       // Create new conversation
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: businessData } = await supabase
+        .from('business_users')
+        .select('business_id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
       const { data: newConv, error } = await supabase
         .from("conversations")
         .insert({
           customer_id: customer.id,
           status: "active",
+          business_id: businessData?.business_id
         })
         .select()
         .single();

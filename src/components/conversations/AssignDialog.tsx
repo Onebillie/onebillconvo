@@ -51,11 +51,10 @@ export const AssignDialog = ({
   }, [open]);
 
   const fetchTeamMembers = async () => {
-    const { data, error } = await supabase
+    const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role, is_active")
+      .select("id, full_name, email, is_active")
       .eq("is_active", true)
-      .order("role")
       .order("full_name");
 
     if (error) {
@@ -63,7 +62,17 @@ export const AssignDialog = ({
       return;
     }
 
-    setTeamMembers(data || []);
+    // Fetch roles separately
+    const { data: rolesData } = await supabase
+      .from("user_roles")
+      .select("user_id, role");
+
+    const membersWithRoles = profiles?.map(profile => ({
+      ...profile,
+      role: rolesData?.find((r: any) => r.user_id === profile.id)?.role || 'agent'
+    })) || [];
+
+    setTeamMembers(membersWithRoles);
   };
 
   const handleAssign = async () => {
