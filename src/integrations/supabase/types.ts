@@ -1958,6 +1958,10 @@ export type Database = {
         Args: { business_uuid: string }
         Returns: undefined
       }
+      is_business_owner: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
       normalize_phone: {
         Args: { phone_num: string }
         Returns: string
