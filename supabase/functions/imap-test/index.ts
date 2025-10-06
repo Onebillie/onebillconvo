@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Utility to sanitize hostnames: strips protocols, paths, and ports
+function sanitizeHostname(input: string): string {
+  try {
+    if (!input) return input;
+    let h = input.trim();
+    h = h.replace(/^(imap|imaps|smtp|smtps|http|https):\/\//i, '');
+    h = h.split('/')[0];
+    h = h.split(':')[0];
+    return h;
+  } catch (_) {
+    return input;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,7 +43,8 @@ serve(async (req) => {
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
 
-    const hostname = account.imap_host?.trim();
+    const rawHost = account.imap_host || '';
+    const hostname = sanitizeHostname(rawHost);
     const port = account.imap_port;
     const username = (account.imap_username || account.email_address).trim();
     const password = account.imap_password?.trim();
@@ -37,6 +52,8 @@ serve(async (req) => {
     if (!hostname || !port || !username || !password) {
       throw new Error('IMAP configuration incomplete');
     }
+
+    console.log('Sanitized IMAP host', { rawHost, hostname });
 
     // Test connection
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");

@@ -45,6 +45,24 @@ interface Diagnostics {
 }
 
 // Global sync lock to prevent concurrent syncs per account
+
+// Utility to sanitize hostnames: strips protocols, paths, and ports
+function sanitizeHostname(input: string): string {
+  try {
+    if (!input) return input;
+    let h = input.trim();
+    // Remove protocol prefixes
+    h = h.replace(/^(imap|imaps|smtp|smtps|http|https):\/\//i, '');
+    // Remove any path/query fragments
+    h = h.split('/')[0];
+    // Remove inline port if present
+    h = h.split(':')[0];
+    return h;
+  } catch (_) {
+    return input;
+  }
+}
+
 const syncLocks = new Map<string, boolean>();
 
 serve(async (req) => {
@@ -231,12 +249,15 @@ async function fetchEmailsFromIMAP(
 }> {
   console.log('=== Starting IMAP fetch with diagnostics ===');
   
-  const hostname = account.imap_host?.trim();
+  const rawHost = account.imap_host || '';
+  const hostname = sanitizeHostname(rawHost);
   const port = account.imap_port;
   
   if (!hostname || !port) {
-    throw new Error(`IMAP configuration missing: host=${hostname}, port=${port}`);
+    throw new Error(`IMAP configuration missing: host=${rawHost}, port=${port}`);
   }
+
+  console.log('IMAP host sanitized', { rawHost, hostname });
 
   // Step 1: DNS Resolution
   try {
