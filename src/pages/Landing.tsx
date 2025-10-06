@@ -3,18 +3,98 @@ import { Card } from "@/components/ui/card";
 import { MessageSquare, Users, Mail, Bell, Calendar, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  useEffect(() => {
+    // SEO Meta Tags
+    document.title = "À La Carte Chat - WhatsApp Business API & Combined Inbox Platform | Manage All Customer Messages";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Manage WhatsApp Business API, email, and all customer messages in one aggregated inbox. Meta Business integration for multi-agent teams. Talk to your customers in one place with AI-powered responses.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'Manage WhatsApp Business API, email, and all customer messages in one aggregated inbox. Meta Business integration for multi-agent teams. Talk to your customers in one place with AI-powered responses.';
+      document.head.appendChild(meta);
+    }
+
+    // Additional SEO meta tags
+    const keywords = document.querySelector('meta[name="keywords"]');
+    if (keywords) {
+      keywords.setAttribute('content', 'WhatsApp Business API, Meta Business, combined inbox, aggregated inbox, manage messages, customer messaging platform, WhatsApp business management, unified inbox, multi-agent support, AI chatbot');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'keywords';
+      meta.content = 'WhatsApp Business API, Meta Business, combined inbox, aggregated inbox, manage messages, customer messaging platform, WhatsApp business management, unified inbox, multi-agent support, AI chatbot';
+      document.head.appendChild(meta);
+    }
+
+    // Open Graph tags
+    const ogTags = [
+      { property: 'og:title', content: 'À La Carte Chat - WhatsApp Business API & Combined Inbox Platform' },
+      { property: 'og:description', content: 'Manage all customer messages in one aggregated inbox. WhatsApp Business API, email integration, and AI-powered responses.' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:image', content: '/placeholder.svg' },
+    ];
+
+    ogTags.forEach(tag => {
+      let element = document.querySelector(`meta[property="${tag.property}"]`);
+      if (element) {
+        element.setAttribute('content', tag.content);
+      } else {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', tag.property);
+        meta.content = tag.content;
+        document.head.appendChild(meta);
+      }
+    });
+
+    // Structured Data (JSON-LD)
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "À La Carte Chat",
+      "applicationCategory": "BusinessApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "30",
+        "priceCurrency": "EUR"
+      },
+      "description": "Combined inbox platform for managing WhatsApp Business API, email, and all customer messages. Meta Business integration with AI chatbot and multi-agent support.",
+      "operatingSystem": "Web Browser",
+      "featureList": [
+        "WhatsApp Business API Integration",
+        "Meta Business Platform",
+        "Combined Inbox",
+        "Aggregated Inbox",
+        "Email Integration",
+        "AI Chatbot",
+        "Multi-Agent Support",
+        "Unified Customer Messaging"
+      ]
+    };
+
+    let scriptTag = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
+    if (!scriptTag) {
+      scriptTag = document.createElement('script') as HTMLScriptElement;
+      scriptTag.type = 'application/ld+json';
+      document.head.appendChild(scriptTag);
+    }
+    scriptTag.textContent = JSON.stringify(structuredData);
+  }, []);
+
   const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Connect your official WhatsApp Business account" },
-    { icon: Mail, title: "Email Integration", description: "Unified inbox for all your email communications" },
-    { icon: Users, title: "Multi-Agent Support", description: "10 agents collaborating from different locations" },
-    { icon: Bell, title: "Native Notifications", description: "Real-time push notifications across devices" },
-    { icon: Calendar, title: "Calendar Sync", description: "Sync tasks and appointments automatically" },
-    { icon: MessageSquare, title: "Train AI Chatbot", description: "Customize and train your AI assistant for automated responses" },
+    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration for WhatsApp Business API with full message management" },
+    { icon: Mail, title: "Combined Email Inbox", description: "Manage messages from multiple email accounts in one aggregated inbox" },
+    { icon: Users, title: "Multi-Agent Support", description: "Up to 10 agents can manage customer conversations from different locations simultaneously" },
+    { icon: Bell, title: "Real-Time Notifications", description: "Never miss a customer message with instant push notifications across all devices" },
+    { icon: Calendar, title: "Task & Calendar Sync", description: "Automatically sync customer appointments and follow-ups to your calendar" },
+    { icon: MessageSquare, title: "AI Chatbot Training", description: "Train your AI assistant to handle customer inquiries and manage WhatsApp Business messages automatically" },
   ];
 
   const pricingTiers = [
@@ -22,8 +102,8 @@ const Landing = () => {
       name: "Free",
       price: "€0",
       period: "forever",
-      description: "Single user only",
-      features: ["1 User", "Basic features", "Community support"],
+      description: "Perfect for testing WhatsApp Business API",
+      features: ["1 User", "Basic combined inbox", "WhatsApp Business API access", "Community support"],
       cta: "Start Free",
       highlighted: false,
     },
@@ -35,11 +115,12 @@ const Landing = () => {
       features: [
         "Multi-agent support (up to 10)",
         "€7.50 per additional user/month",
-        "WhatsApp Business API",
-        "Email integration",
-        "Native notifications",
-        "Task management",
-        "Calendar sync",
+        "Full WhatsApp Business API (Meta)",
+        "Aggregated inbox for all channels",
+        "Email integration & management",
+        "AI chatbot for automated responses",
+        "Real-time notifications",
+        "Task & calendar management",
         "Priority support",
         "72-hour free trial",
       ],
@@ -75,10 +156,10 @@ const Landing = () => {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            À La Carte Chat
+            Manage WhatsApp Business & All Customer Messages in One Place
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Pulling all of your business conversations into one place
+            The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
@@ -94,11 +175,14 @@ const Landing = () => {
       {/* Features Section */}
       <section className="py-20 bg-secondary/5">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Everything You Need</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Everything You Need to Manage Customer Messages</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Our aggregated inbox combines WhatsApp Business, email, and all channels. Talk to your customers in one place with powerful Meta Business integration.
+          </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2">
-                <feature.icon className="w-12 h-12 text-primary mb-4" />
+                <feature.icon className="w-12 h-12 text-primary mb-4" aria-hidden="true" />
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
               </Card>
@@ -110,15 +194,18 @@ const Landing = () => {
       {/* How It Works */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How It Works</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">How to Manage WhatsApp Business in 3 Steps</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Set up your combined inbox and start managing all customer messages from WhatsApp Business API, email, and more
+          </p>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { step: "1", title: "Connect Your Accounts", description: "Link your WhatsApp Business API and email accounts" },
-              { step: "2", title: "Invite Your Team", description: "Add up to 10 agents to collaborate seamlessly" },
-              { step: "3", title: "Start Conversations", description: "Manage all customer communications from one unified platform" },
+              { step: "1", title: "Connect WhatsApp Business API", description: "Link your Meta Business Platform account and WhatsApp Business API to your aggregated inbox" },
+              { step: "2", title: "Add Your Team Agents", description: "Invite up to 10 agents to manage messages and talk to customers collaboratively" },
+              { step: "3", title: "Manage All Messages", description: "Handle WhatsApp, email, and all customer communications from one combined inbox with AI assistance" },
             ].map((step, index) => (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 mx-auto">
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 mx-auto" aria-label={`Step ${step.step}`}>
                   {step.step}
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
@@ -132,8 +219,8 @@ const Landing = () => {
       {/* Demo: Aggregated Inbox */}
       <section className="py-20 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4">Unified Inbox in Action</h2>
-          <p className="text-center text-muted-foreground mb-12">All channels, one place. Watch messages flow in real-time.</p>
+          <h2 className="text-4xl font-bold text-center mb-4">Your Aggregated Inbox in Action</h2>
+          <p className="text-center text-muted-foreground mb-12">See how WhatsApp Business API and email messages flow into one combined inbox. Manage all customer conversations in one place.</p>
           
           <div className="bg-card border rounded-lg shadow-lg overflow-hidden">
             <div className="grid grid-cols-3 h-[500px]">
@@ -353,9 +440,9 @@ ai.response.completed`}</code>
       {/* Pricing Section */}
       <section className="py-20 bg-secondary/5">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Simple Pricing for WhatsApp Business Management</h2>
           <p className="text-center text-muted-foreground mb-12 text-lg">
-            Start with a 72-hour free trial. Cancel anytime.
+            Start managing all your customer messages with our combined inbox. 72-hour free trial included.
           </p>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {pricingTiers.map((tier, index) => (
@@ -400,36 +487,49 @@ ai.response.completed`}</code>
       {/* Footer */}
       <footer className="border-t border-border py-12 bg-secondary text-secondary-foreground">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-primary-foreground" />
+                  <MessageSquare className="w-5 h-5 text-primary-foreground" aria-hidden="true" />
                 </div>
                 <span className="font-semibold">À La Carte Chat</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Pulling all of your business conversations into one place
+                The leading combined inbox platform for WhatsApp Business API and customer message management. Talk to your customers in one place with Meta Business integration.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <h4 className="font-semibold mb-4">Features</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Features</li>
-                <li>Pricing</li>
+                <li>WhatsApp Business API</li>
+                <li>Meta Business Integration</li>
+                <li>Combined Inbox</li>
+                <li>Aggregated Messaging</li>
+                <li>AI Chatbot</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Resources</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>How to Manage WhatsApp Business</li>
                 <li>API Documentation</li>
+                <li>Pricing</li>
+                <li>Use Cases</li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
                 <li className="text-muted-foreground">Email: hello@alacartesaas.com</li>
-                <li className="text-muted-foreground">Documentation</li>
+                <li className="text-muted-foreground">Knowledge Base</li>
+                <li className="text-muted-foreground">Contact Us</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-border/20 pt-8 text-center text-sm text-muted-foreground">
-            © 2025 À La Carte Chat. All rights reserved.
+            <p className="mb-2">© 2025 À La Carte Chat. All rights reserved.</p>
+            <p className="text-xs">WhatsApp Business API | Meta Business Platform | Combined Inbox | Aggregated Messaging | Customer Message Management</p>
           </div>
         </div>
       </footer>
