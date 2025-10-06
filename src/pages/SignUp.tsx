@@ -218,10 +218,30 @@ export default function SignUp() {
 
       if (authError) throw authError;
 
+      // Auto-confirm the user's email to allow immediate sign-in
+      if (authData.user && !authData.session) {
+        try {
+          const { error: confirmError } = await supabase.functions.invoke(
+            'confirm-user-email',
+            {
+              body: { userId: authData.user.id }
+            }
+          );
+          
+          if (confirmError) {
+            console.error('Error confirming email:', confirmError);
+          } else {
+            console.log('Email auto-confirmed successfully');
+          }
+        } catch (confirmErr) {
+          console.error('Failed to auto-confirm email:', confirmErr);
+        }
+      }
+
       // Clear stored data
       sessionStorage.removeItem("signupData");
 
-      // Check if user is immediately confirmed (email confirmation disabled)
+      // Check if user is immediately confirmed or has been auto-confirmed
       if (authData.user && authData.session) {
         toast({
           title: "Welcome!",
@@ -230,13 +250,16 @@ export default function SignUp() {
         // User is logged in, redirect to onboarding
         navigate("/app/onboarding");
       } else {
-        // Email confirmation required
+        // Email has been confirmed, user can now sign in
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account, then you can sign in",
+          description: "Your email has been verified. You can now sign in with your credentials.",
+          duration: 5000,
         });
-        // Redirect to auth page to allow sign in after verification
-        navigate("/auth");
+        // Redirect to auth page to sign in
+        setTimeout(() => {
+          navigate("/auth");
+        }, 1500);
       }
     } catch (error: any) {
       toast({

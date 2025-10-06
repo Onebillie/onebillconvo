@@ -47,9 +47,18 @@ export default function Auth() {
       const { error } = await signIn(email, password);
 
       if (error) {
+        // Provide more helpful error messages
+        let errorMessage = error.message;
+        
+        if (error.message === "Email not confirmed") {
+          errorMessage = "Please check your email and click the confirmation link to verify your account.";
+        } else if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Invalid email or password. Please check your credentials and try again.";
+        }
+        
         toast({
           title: "Error signing in",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
       }
