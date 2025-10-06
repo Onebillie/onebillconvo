@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Download, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface BusinessInfo {
   id: string;
@@ -22,6 +24,8 @@ interface BusinessInfo {
 
 export const BusinessSettings = () => {
   const [loading, setLoading] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const { permission, subscribeToPush, unsubscribeFromPush } = usePushNotifications();
   const [formData, setFormData] = useState<BusinessInfo>({
     id: "",
     company_name: "",
@@ -37,6 +41,18 @@ export const BusinessSettings = () => {
 
   useEffect(() => {
     fetchBusinessSettings();
+
+    // Listen for PWA install prompt
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const fetchBusinessSettings = async () => {
@@ -52,6 +68,33 @@ export const BusinessSettings = () => {
 
     if (data) {
       setFormData(data);
+    }
+  };
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      toast({
+        title: "Already installed",
+        description: "App is already installed or install prompt not available",
+      });
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      toast({ title: "Success", description: "App installed successfully" });
+    }
+    setDeferredPrompt(null);
+  };
+
+  const handleNotifications = async () => {
+    if (permission === 'granted') {
+      await unsubscribeFromPush();
+      toast({ title: "Notifications disabled" });
+    } else {
+      await subscribeToPush();
     }
   };
 
@@ -91,6 +134,23 @@ export const BusinessSettings = () => {
 
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Mobile App Features</CardTitle>
+          <CardDescription>Install as app and enable notifications</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button onClick={handleInstallPWA} variant="outline" disabled={!deferredPrompt}>
+            <Download className="mr-2 h-4 w-4" />
+            Add to Home Screen
+          </Button>
+          <Button onClick={handleNotifications} variant="outline">
+            <Bell className="mr-2 h-4 w-4" />
+            {permission === 'granted' ? 'Disable' : 'Activate'} Notifications
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Business Settings</CardTitle>
