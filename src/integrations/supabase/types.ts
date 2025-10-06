@@ -211,6 +211,92 @@ export type Database = {
           },
         ]
       }
+      business_users: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_users_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          cancellation_history: Json | null
+          created_at: string | null
+          id: string
+          message_count_current_period: number | null
+          name: string
+          owner_id: string
+          slug: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_ends_at: string | null
+          subscription_started_at: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cancellation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          message_count_current_period?: number | null
+          name: string
+          owner_id: string
+          slug: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cancellation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          message_count_current_period?: number | null
+          name?: string
+          owner_id?: string
+          slug?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       calendar_export_log: {
         Row: {
           created_at: string
@@ -1087,6 +1173,47 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_history: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          new_tier: string | null
+          old_tier: string | null
+          stripe_event_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          new_tier?: string | null
+          old_tier?: string | null
+          stripe_event_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          new_tier?: string | null
+          old_tier?: string | null
+          stripe_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_notifications: {
         Row: {
           created_at: string | null
@@ -1252,6 +1379,50 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_tracking: {
+        Row: {
+          base_fee: number | null
+          business_id: string
+          created_at: string | null
+          id: string
+          message_count: number | null
+          message_fee: number | null
+          period_end: string
+          period_start: string
+          total_fee: number | null
+        }
+        Insert: {
+          base_fee?: number | null
+          business_id: string
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          message_fee?: number | null
+          period_end: string
+          period_start: string
+          total_fee?: number | null
+        }
+        Update: {
+          base_fee?: number | null
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          message_count?: number | null
+          message_fee?: number | null
+          period_end?: string
+          period_start?: string
+          total_fee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_tracking_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1373,6 +1544,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_message_count: {
+        Args: { business_uuid: string }
+        Returns: undefined
       }
       normalize_phone: {
         Args: { phone_num: string }
