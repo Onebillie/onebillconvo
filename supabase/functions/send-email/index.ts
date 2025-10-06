@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +13,7 @@ interface EmailRequest {
   content: string;
   conversationId: string;
   customerId: string;
+  email_account_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -28,9 +26,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, content, conversationId, customerId }: EmailRequest = await req.json();
+    const { to, subject, content, conversationId, customerId, email_account_id }: EmailRequest = await req.json();
 
-    console.log("=== SEND EMAIL FUNCTION CALLED ===");
+    console.log("=== SEND EMAIL FUNCTION CALLED (SMTP) ===");
     console.log("Sending email to:", to);
     console.log("Subject:", subject);
     console.log("Content length:", content?.length);
@@ -40,11 +38,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Get business settings for email configuration
     const { data: settings } = await supabase
       .from("business_settings")
-      .select("company_name, support_email, from_email, reply_to_email, email_subject_template, email_signature")
+      .select("company_name, support_email, from_email, reply_to_email, email_subject_template, email_signature, email_html_template")
       .single();
 
-    const fromEmail = settings?.from_email || settings?.support_email || "onboarding@resend.dev";
-    const replyToEmail = settings?.reply_to_email || settings?.support_email;
     const companyName = settings?.company_name || "Customer Service";
     
     // Parse subject template
@@ -55,32 +51,72 @@ const handler = async (req: Request): Promise<Response> => {
       ? settings.email_signature.replace(/\n/g, '<br>')
       : `Best regards,<br>${companyName}`;
 
-    const emailConfig: any = {
-      from: `${companyName} <${fromEmail}>`,
-      to: [to],
-      subject: emailSubject,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <p>${content.replace(/\n/g, '<br>')}</p>
-          <br>
-          <p style="color: #666; font-size: 14px;">
-            ${signature}
-          </p>
-        </div>
-      `,
-    };
+    // Build HTML content
+    let htmlTemplate = settings?.email_html_template || `
+<!DOCTYPE html>
+<html>
+<body>
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+    {{content}}
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+    <p style="color: #666; font-size: 12px;">{{signature}}</p>
+  </div>
+</body>
+</html>`;
 
-    // Add reply-to if configured
-    if (replyToEmail) {
-      emailConfig.reply_to = replyToEmail;
+    const contentHtml = content.replace(/\n/g, '<br>');
+    const finalHtml = htmlTemplate
+      .replace(/\{\{content\}\}/g, contentHtml)
+      .replace(/\{\{company_name\}\}/g, companyName)
+      .replace(/\{\{signature\}\}/g, signature);
+
+    // Get email account to use
+    let emailAccountId = email_account_id;
+    
+    if (!emailAccountId) {
+      // Use the first active email account
+      const { data: accounts } = await supabase
+        .from('email_accounts')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1);
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No active email accounts found. Please configure an email account in settings.');
+      }
+      
+      emailAccountId = accounts[0].id;
     }
 
-    console.log("Attempting to send via Resend...");
-    const emailResponse = await resend.emails.send(emailConfig);
+    // Fetch email account configuration
+    const { data: account, error: accountError } = await supabase
+      .from('email_accounts')
+      .select('*')
+      .eq('id', emailAccountId)
+      .single();
 
-    console.log("✅ Email sent successfully:", emailResponse);
+    if (accountError || !account) {
+      throw new Error(`Email account not found: ${accountError?.message}`);
+    }
 
-    // Create message record in database with Resend message ID for tracking
+    console.log(`Using email account: ${account.email_address}`);
+
+    // Send email via SMTP
+    const emailSent = await sendViaSMTP(
+      account,
+      to,
+      emailSubject,
+      finalHtml,
+      content
+    );
+
+    if (!emailSent) {
+      throw new Error('Failed to send email via SMTP');
+    }
+
+    console.log("✅ Email sent successfully via SMTP");
+
+    // Create message record in database
     const { error: messageError } = await supabase
       .from("messages")
       .insert({
@@ -91,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
         channel: "email",
         platform: "email",
         status: "sent",
-        external_message_id: emailResponse.data?.id || emailResponse.id,
+        is_read: true
       });
 
     if (messageError) {
@@ -104,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ last_contact_method: "email" })
       .eq("id", customerId);
 
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+    return new Response(JSON.stringify({ success: true, message: 'Email sent via SMTP' }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -122,5 +158,49 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
+
+async function sendViaSMTP(
+  account: any,
+  to: string,
+  subject: string,
+  html: string,
+  text?: string
+): Promise<boolean> {
+  console.log(`Connecting to SMTP: ${account.smtp_host}:${account.smtp_port}`);
+  
+  try {
+    // Import SMTPClient from denomailer
+    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+    
+    const client = new SMTPClient({
+      connection: {
+        hostname: account.smtp_host,
+        port: account.smtp_port,
+        tls: account.smtp_use_ssl,
+        auth: {
+          username: account.smtp_username.trim(),
+          password: account.smtp_password.trim(),
+        },
+      },
+    });
+
+    await client.send({
+      from: account.email_address,
+      to: to,
+      replyTo: account.email_address,
+      subject: subject,
+      content: text || html,
+      html: html,
+    });
+
+    await client.close();
+    
+    console.log('Email sent successfully via SMTP from:', account.email_address);
+    return true;
+  } catch (error: any) {
+    console.error('SMTP send error:', error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+}
 
 serve(handler);
