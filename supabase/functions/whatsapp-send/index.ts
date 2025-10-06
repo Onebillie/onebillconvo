@@ -97,31 +97,33 @@ serve(async (req) => {
     // Check if this is a template message
     if (templateName) {
       // Template message payload
-      const hasVariables = templateVariables && Array.isArray(templateVariables) && templateVariables.length > 0;
-      
       whatsappPayload = {
         messaging_product: 'whatsapp',
         to: cleanPhoneNumber,
         type: 'template',
         template: {
           name: templateName,
-          language: { code: templateLanguage || 'en' },
-          // Only include components if template has variables
-          ...(hasVariables && {
-            components: [
-              {
-                type: 'body',
-                parameters: templateVariables.map((v: string) => ({
-                  type: 'text',
-                  text: v
-                }))
-              }
-            ]
-          })
+          language: { code: templateLanguage || 'en' }
         }
       };
       
-      console.log('Sending template:', templateName, 'with', templateVariables?.length || 0, 'variables');
+      // CRITICAL: Only add components if templateVariables is explicitly provided AND not empty
+      // Meta's API requires this field ONLY when the template has variables
+      // Sending components for templates without variables causes error #132000
+      if (templateVariables !== undefined && templateVariables !== null && Array.isArray(templateVariables) && templateVariables.length > 0) {
+        whatsappPayload.template.components = [
+          {
+            type: 'body',
+            parameters: templateVariables.map((v: string) => ({
+              type: 'text',
+              text: v
+            }))
+          }
+        ];
+        console.log('Sending template:', templateName, 'with', templateVariables.length, 'variables');
+      } else {
+        console.log('Sending template:', templateName, 'without variables');
+      }
     } else if (attachments && attachments.length > 0) {
       // Handle attachments
       const attachment = attachments[0];

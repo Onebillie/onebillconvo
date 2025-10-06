@@ -35,20 +35,25 @@ export const TemplateSelector = ({
       const bodyComponent = template.components.find((c) => c.type === "BODY");
       const message = bodyComponent?.text || "";
 
-      // Detect if template has variables
-      const variablePattern = /\{\{(\d+)\}\}/g;
-      const hasVariables = variablePattern.test(message);
+      // Detect if template has variables like {{1}}, {{2}}, etc.
+      const variableMatches = message.match(/\{\{(\d+)\}\}/g);
+      const hasVariables = variableMatches && variableMatches.length > 0;
 
-      // For now, send without variable substitution
-      // TODO: Add variable input dialog if needed
+      // Build payload - CRITICAL: don't send templateVariables at all if no variables
+      const payload: any = {
+        to: customerPhone,
+        templateName: template.name,
+        templateLanguage: template.language || "en",
+      };
+
+      // Only add templateVariables if template actually has variables
+      // DO NOT send empty array for templates without variables
+      if (hasVariables) {
+        payload.templateVariables = [];
+      }
+
       const { error } = await supabase.functions.invoke("whatsapp-send", {
-        body: {
-          to: customerPhone,
-          templateName: template.name,
-          templateLanguage: template.language || "en",
-          // Only include templateVariables if template has variables
-          ...(hasVariables ? { templateVariables: [] } : {}),
-        },
+        body: payload,
       });
 
       if (error) throw error;

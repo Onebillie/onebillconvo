@@ -626,42 +626,51 @@ export type Database = {
           avatar: string | null
           created_at: string | null
           email: string | null
+          first_name: string | null
           id: string
           is_blocked: boolean | null
           last_active: string | null
           last_contact_method: string | null
+          last_name: string | null
           metadata: Json | null
           name: string
           notes: string | null
           phone: string
+          whatsapp_name: string | null
         }
         Insert: {
           alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
           is_blocked?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
+          last_name?: string | null
           metadata?: Json | null
           name: string
           notes?: string | null
           phone: string
+          whatsapp_name?: string | null
         }
         Update: {
           alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
           is_blocked?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
+          last_name?: string | null
           metadata?: Json | null
           name?: string
           notes?: string | null
           phone?: string
+          whatsapp_name?: string | null
         }
         Relationships: []
       }

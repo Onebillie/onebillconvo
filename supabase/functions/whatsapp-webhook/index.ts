@@ -141,29 +141,57 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
   for (const message of messages) {
     try {
       const contact = contacts?.find((c: any) => c.wa_id === message.from);
-      const customerName = contact?.profile?.name || message.from;
+      const whatsappName = contact?.profile?.name || message.from;
       
       // Normalize phone number (remove + and leading 00)
       const normalizedPhone = message.from.replace(/^\+/, '').replace(/^00/, '');
 
-      // Create or get customer
-      const { data: customer, error: customerError } = await supabase
+      // Check if customer exists
+      const { data: existingCustomer } = await supabase
         .from('customers')
-        .upsert({
-          phone: normalizedPhone,
-          name: customerName,
-          last_active: new Date().toISOString(),
-        }, {
-          onConflict: 'phone',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('phone', normalizedPhone)
+        .maybeSingle();
 
-      if (customerError) {
-        console.error('Error creating/updating customer:', customerError);
-        continue;
+      let customer;
+      if (existingCustomer) {
+        // Update only whatsapp_name and last_active, preserve user-edited name
+        const { data: updatedCustomer, error: updateError } = await supabase
+          .from('customers')
+          .update({
+            whatsapp_name: whatsappName,
+            last_active: new Date().toISOString(),
+          })
+          .eq('phone', normalizedPhone)
+          .select()
+          .single();
+        
+        if (updateError) {
+          console.error('Error updating customer:', updateError);
+          customer = existingCustomer;
+        } else {
+          customer = updatedCustomer;
+        }
+      } else {
+        // Create new customer with WhatsApp name
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            phone: normalizedPhone,
+            name: whatsappName,
+            whatsapp_name: whatsappName,
+            last_active: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (customerError) {
+          console.error('Error creating customer:', customerError);
+          continue;
+        }
+        customer = newCustomer;
       }
+
 
       // Create or get conversation (reuse latest active if exists)
       let { data: conversation, error: conversationSelectError } = await supabase

@@ -283,21 +283,26 @@ async function processIncomingEmail(
     return;
   }
 
-  // Find customer by email, phone, OR alternate_emails
+  // Find customer by email or alternate_emails (use phone as unique identifier too if available)
   let { data: customer } = await supabase
     .from('customers')
     .select('*')
-    .or(`email.eq.${fromEmail},phone.eq.${fromEmail},alternate_emails.cs.{${fromEmail}}`)
+    .or(`email.eq.${fromEmail},alternate_emails.cs.{${fromEmail}}`)
     .maybeSingle();
 
   if (!customer) {
     const customerName = email.from.replace(/<.*>/, '').trim() || fromEmail;
+    const firstName = customerName.split(' ')[0] || customerName;
+    const lastName = customerName.split(' ').slice(1).join(' ') || '';
+    
     const { data: newCustomer, error: customerError } = await supabase
       .from('customers')
       .insert({
         name: customerName,
+        first_name: firstName,
+        last_name: lastName,
         email: fromEmail,
-        phone: '', // Required field
+        phone: fromEmail, // Use email as unique identifier when no phone
         last_contact_method: 'email'
       })
       .select()
@@ -309,13 +314,20 @@ async function processIncomingEmail(
     }
     customer = newCustomer;
   } else {
-    // Update last_contact_method
+    // Update last_contact_method and email if it was using phone as identifier
+    const updateData: any = { 
+      last_contact_method: 'email',
+      last_active: new Date().toISOString()
+    };
+    
+    // If customer doesn't have an email yet (was created via WhatsApp), add it
+    if (!customer.email || customer.email === customer.phone) {
+      updateData.email = fromEmail;
+    }
+    
     await supabase
       .from('customers')
-      .update({ 
-        last_contact_method: 'email',
-        last_active: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', customer.id);
   }
 

@@ -10,6 +10,11 @@ export function populateTemplateWithContactData(
 ): string {
   let result = template;
   
+  // Replace {{name}} with first name (most common use case)
+  const firstName = (contact as any).first_name || contact.name?.split(' ')[0] || contact.name || '';
+  result = result.replace(/\{\{name\}\}/gi, firstName);
+  result = result.replace(/\{\{1\}\}/g, firstName); // WhatsApp variable format
+  
   // Replace contact.name
   result = result.replace(/\{\{contact\.name\}\}/gi, contact.name || '');
   
@@ -19,12 +24,11 @@ export function populateTemplateWithContactData(
   // Replace contact.email
   result = result.replace(/\{\{contact\.email\}\}/gi, contact.email || '');
   
-  // Replace contact.first_name (extract first name from full name)
-  const firstName = contact.name?.split(' ')[0] || '';
+  // Replace contact.first_name
   result = result.replace(/\{\{contact\.first_name\}\}/gi, firstName);
   
-  // Replace contact.last_name (extract last name from full name)
-  const lastName = contact.name?.split(' ').slice(1).join(' ') || '';
+  // Replace contact.last_name
+  const lastName = (contact as any).last_name || contact.name?.split(' ').slice(1).join(' ') || '';
   result = result.replace(/\{\{contact\.last_name\}\}/gi, lastName);
   
   return result;
