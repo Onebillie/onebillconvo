@@ -218,10 +218,10 @@ export const MessageInput = ({
         </div>
       )}
 
-      <div className="flex space-x-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Channel selector */}
         {customerEmail && (
-          <div className="flex border rounded-md">
+          <div className="flex border rounded-md overflow-hidden" >
             <button
               onClick={() => setSendVia("whatsapp")}
               className={cn(
@@ -281,12 +281,13 @@ export const MessageInput = ({
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && !uploading && sendMessage()}
-          className="flex-1"
+          className="flex-1 min-w-[200px]"
           disabled={uploading}
         />
         <Button 
           onClick={sendMessage} 
           disabled={uploading || (!newMessage.trim() && attachments.length === 0 && !voiceNote)}
+          className="ml-auto"
         >
           <Send className="w-4 h-4" />
         </Button>

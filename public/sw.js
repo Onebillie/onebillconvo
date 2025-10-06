@@ -38,7 +38,8 @@ self.addEventListener('push', function(event) {
       badge: notificationData.badge,
       tag: notificationData.tag,
       requireInteraction: notificationData.requireInteraction,
-      data: notificationData.data
+      data: notificationData.data,
+      renotify: true
     })
   );
 });
@@ -75,4 +76,17 @@ self.addEventListener('install', function(event) {
 self.addEventListener('activate', function(event) {
   console.log('Service Worker activating');
   event.waitUntil(clients.claim());
+});
+
+// Handle subscription changes (e.g., iOS Safari key rotations)
+self.addEventListener('pushsubscriptionchange', function(event) {
+  console.log('Push subscription change event:', event);
+  // Notify clients to re-subscribe in app context where VAPID key is available
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        client.postMessage({ type: 'PUSH_RESUBSCRIBE_REQUIRED' });
+      }
+    })
+  );
 });

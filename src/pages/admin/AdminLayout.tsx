@@ -55,9 +55,9 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         {/* Sidebar Navigation */}
-        <aside className="w-64 border-r bg-card min-h-[calc(100vh-4rem)]">
+        <aside className="hidden md:block w-64 border-r bg-card min-h-[calc(100vh-4rem)]">
           <nav className="space-y-1 p-4">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -81,7 +81,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

@@ -42,7 +42,7 @@ export const ContactList = ({
         >
           <div className="flex items-start space-x-3 flex-1">
             <div className="relative">
-              <Avatar className="w-12 h-12">
+              <Avatar className="w-10 h-10 md:w-12 md:h-12">
                 <AvatarImage src={conversation.customer.avatar} />
                 <AvatarFallback className="bg-primary/10 text-primary">
                   {conversation.customer.name.charAt(0).toUpperCase()}

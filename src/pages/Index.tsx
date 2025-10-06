@@ -14,7 +14,7 @@ const Index = () => {
           <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-6">
             <MessageSquare className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-4">
             Customer Service Portal
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -29,7 +29,7 @@ const Index = () => {
           </Button>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
           <div className="text-center p-6 rounded-lg border border-border">
             <Users className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Multi-Agent Support</h3>

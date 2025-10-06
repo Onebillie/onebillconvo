@@ -13,9 +13,8 @@ const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
   return outputArray;
 };
 
-// VAPID public key - this should be generated on the server
-// For now using a placeholder - in production, generate proper VAPID keys
-const VAPID_PUBLIC_KEY = 'BKCghPJGOCo4UwtB9xaqbSPxHTe0aerXwErtQlZFpTxIPFHxPcdcAvg7vgQcN8G64J0VweS-fQXs66B9iUJYEgI';
+// VAPID public key is fetched from the server (edge function)
+let CACHED_VAPID_PUBLIC_KEY: string | null = null;
 
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
@@ -34,6 +33,12 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/'
       });
+      // Listen for messages from SW (e.g., resubscribe requests)
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'PUSH_RESUBSCRIBE_REQUIRED') {
+          subscribeToPush();
+        }
+      });
       console.log('Service Worker registered:', registration);
       return registration;
     } catch (error) {
@@ -42,8 +47,33 @@ export const usePushNotifications = () => {
     }
   };
 
+  const getVapidPublicKey = async (): Promise<string | null> => {
+    try {
+      if (CACHED_VAPID_PUBLIC_KEY) return CACHED_VAPID_PUBLIC_KEY;
+      const { data, error } = await supabase.functions.invoke('get-vapid-key');
+      if (error) throw error;
+      const key = (data as any)?.publicKey as string;
+      CACHED_VAPID_PUBLIC_KEY = key;
+      return key;
+    } catch (e) {
+      console.error('Failed to fetch VAPID public key', e);
+      toast.error('Push setup error: missing VAPID key');
+      return null;
+    }
+  };
+
+  const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  const isStandalone = () => (window.matchMedia('(display-mode: standalone)').matches) || (navigator as any).standalone;
+
   const subscribeToPush = async (): Promise<boolean> => {
     try {
+      // iOS Safari requires installation to Home Screen for push
+      if (isIos() && !isStandalone()) {
+        toast.message('Install to Home Screen to enable push on iPhone');
+        setPermission(Notification.permission);
+        return false;
+      }
+
       // Request notification permission
       const permissionResult = await Notification.requestPermission();
       setPermission(permissionResult);
@@ -52,6 +82,10 @@ export const usePushNotifications = () => {
         toast.error('Notification permission denied');
         return false;
       }
+
+      // Fetch VAPID key
+      const vapidKey = await getVapidPublicKey();
+      if (!vapidKey) return false;
 
       // Register service worker
       const registration = await registerServiceWorker();
@@ -66,7 +100,7 @@ export const usePushNotifications = () => {
       // Subscribe to push notifications
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
 
       setSubscription(pushSubscription);
@@ -134,7 +168,6 @@ export const usePushNotifications = () => {
       return false;
     }
   };
-
   return {
     isSupported,
     permission,
