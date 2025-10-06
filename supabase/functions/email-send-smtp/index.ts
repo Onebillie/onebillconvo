@@ -127,6 +127,13 @@ serve(async (req) => {
       throw new Error('Failed to send email via SMTP');
     }
 
+    // Get business_id from conversation
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("business_id")
+      .eq("id", emailRequest.conversation_id)
+      .single();
+
     // Insert message record (or update if bundling)
     const { error: messageError } = await supabase
       .from('messages')
@@ -138,7 +145,8 @@ serve(async (req) => {
         platform: 'email',
         channel: 'email',
         status: 'sent',
-        is_read: true
+        is_read: true,
+        business_id: conversation?.business_id
       });
 
     // Mark bundled messages as sent

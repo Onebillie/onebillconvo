@@ -116,6 +116,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("✅ Email sent successfully via SMTP");
 
+    // Get business_id from conversation
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("business_id")
+      .eq("id", conversationId)
+      .single();
+
     // Create message record in database
     const { error: messageError } = await supabase
       .from("messages")
@@ -127,7 +134,8 @@ const handler = async (req: Request): Promise<Response> => {
         channel: "email",
         platform: "email",
         status: "sent",
-        is_read: true
+        is_read: true,
+        business_id: conversation?.business_id
       });
 
     if (messageError) {

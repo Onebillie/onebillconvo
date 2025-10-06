@@ -34,7 +34,7 @@ serve(async (req) => {
     if (!accountId && conversation_id) {
       const { data: conversation } = await supabase
         .from('conversations')
-        .select('whatsapp_account_id')
+        .select('whatsapp_account_id, business_id')
         .eq('id', conversation_id)
         .single();
       
@@ -189,7 +189,7 @@ serve(async (req) => {
     // Find customer and conversation
     const { data: customer } = await supabase
       .from('customers')
-      .select('id')
+      .select('id, business_id')
       .eq('phone', cleanPhoneNumber)
       .single();
 
@@ -213,7 +213,8 @@ serve(async (req) => {
           .insert({ 
             customer_id: customer.id, 
             status: 'active',
-            whatsapp_account_id: accountId
+            whatsapp_account_id: accountId,
+            business_id: customer.business_id
           })
           .select()
           .single();
@@ -237,6 +238,7 @@ serve(async (req) => {
             external_message_id: responseData.messages[0].id,
             thread_id: conversation.id,
             is_read: true,
+            business_id: customer.business_id
           });
 
         // Update conversation timestamp
