@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { Message } from "@/types/chat";
@@ -18,6 +18,13 @@ interface MessageListProps {
 
 export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: MessageListProps) => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
   const renderAttachment = (attachment: any) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
 
@@ -61,7 +68,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
 
   return (
     <ScrollArea className="flex-1 p-4">
-      <div className="space-y-6">
+      <div className="space-y-6" ref={scrollRef}>
         {Object.entries(groupedMessages).map(([date, dateMessages]) => (
           <div key={date}>
             {/* Date separator */}
@@ -142,6 +149,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       {editingMessage && (
         <EditMessageDialog

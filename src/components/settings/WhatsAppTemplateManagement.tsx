@@ -374,6 +374,9 @@ export const WhatsAppTemplateManagement = () => {
                 {...register("name", { required: true })}
                 placeholder="welcome_message"
               />
+              <p className="text-xs text-muted-foreground">
+                Lowercase only, use underscores instead of spaces. No special characters except underscore.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -415,8 +418,14 @@ export const WhatsAppTemplateManagement = () => {
                   <SelectItem value="TEXT">Text</SelectItem>
                   <SelectItem value="IMAGE">Image</SelectItem>
                   <SelectItem value="VIDEO">Video</SelectItem>
+                  <SelectItem value="DOCUMENT">Document</SelectItem>
                 </SelectContent>
               </Select>
+              {watch("header_type") && watch("header_type") !== "TEXT" && (
+                <p className="text-xs text-muted-foreground">
+                  Media files for {watch("header_type")} headers must be uploaded via Meta Business Manager after template approval.
+                </p>
+              )}
             </div>
           </div>
 
@@ -438,7 +447,7 @@ export const WhatsAppTemplateManagement = () => {
               rows={4}
             />
             <p className="text-sm text-muted-foreground">
-              Use {"{{1}}"}, {"{{2}}"} for variables
+              Use {"{{1}}"}, {"{{2}}"}, {"{{3}}"} for dynamic variables. Variables must be in sequential order starting from 1. Example: "Hi {"{{1}}"}, your order {"{{2}}"} is ready!"
             </p>
           </div>
 
@@ -453,63 +462,81 @@ export const WhatsAppTemplateManagement = () => {
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Buttons (Optional)</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addButton}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Button
-              </Button>
+              <div>
+                <Label>Buttons (Optional - Max 3)</Label>
+                <p className="text-xs text-muted-foreground mt-1">Add call-to-action buttons to your template</p>
+              </div>
+              {buttons.length < 3 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addButton}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Button
+                </Button>
+              )}
             </div>
             
             {buttons.map((button, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex gap-2">
-                  <Select
-                    value={button.type}
-                    onValueChange={(value) => updateButton(index, "type", value)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
-                      <SelectItem value="URL">URL</SelectItem>
-                      <SelectItem value="PHONE_NUMBER">Phone</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={button.text}
-                    onChange={(e) => updateButton(index, "text", e.target.value)}
-                    placeholder="Button text"
-                  />
+              <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Button {index + 1}</Label>
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
+                    size="sm"
                     onClick={() => removeButton(index)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                {button.type === 'URL' && (
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label className="text-xs">Button Type</Label>
+                    <Select
+                      value={button.type}
+                      onValueChange={(value) => updateButton(index, "type", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
+                        <SelectItem value="URL">Website URL</SelectItem>
+                        <SelectItem value="PHONE_NUMBER">Call Phone</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Button Text</Label>
                   <Input
-                    value={button.url || ''}
-                    onChange={(e) => updateButton(index, "url", e.target.value)}
-                    placeholder="https://example.com"
-                    className="ml-[196px]"
+                    value={button.text}
+                    onChange={(e) => updateButton(index, "text", e.target.value)}
+                    placeholder="e.g., View Details, Call Us, Visit Website"
                   />
+                </div>
+                {button.type === 'URL' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Website URL</Label>
+                    <Input
+                      value={button.url || ''}
+                      onChange={(e) => updateButton(index, "url", e.target.value)}
+                      placeholder="https://example.com"
+                    />
+                  </div>
                 )}
                 {button.type === 'PHONE_NUMBER' && (
-                  <Input
-                    value={button.phone_number || ''}
-                    onChange={(e) => updateButton(index, "phone_number", e.target.value)}
-                    placeholder="+1234567890"
-                    className="ml-[196px]"
-                  />
+                  <div className="space-y-2">
+                    <Label className="text-xs">Phone Number (with country code)</Label>
+                    <Input
+                      value={button.phone_number || ''}
+                      onChange={(e) => updateButton(index, "phone_number", e.target.value)}
+                      placeholder="+1234567890"
+                    />
+                  </div>
                 )}
               </div>
             ))}
