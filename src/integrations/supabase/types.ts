@@ -16,9 +16,11 @@ export type Database = {
     Tables: {
       ai_assistant_config: {
         Row: {
+          ai_provider_id: string | null
           business_hours_end: string | null
           business_hours_start: string | null
           business_id: string | null
+          fallback_provider_id: string | null
           id: string
           is_enabled: boolean | null
           max_tokens: number | null
@@ -29,9 +31,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_provider_id?: string | null
           business_hours_end?: string | null
           business_hours_start?: string | null
           business_id?: string | null
+          fallback_provider_id?: string | null
           id?: string
           is_enabled?: boolean | null
           max_tokens?: number | null
@@ -42,9 +46,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_provider_id?: string | null
           business_hours_end?: string | null
           business_hours_start?: string | null
           business_id?: string | null
+          fallback_provider_id?: string | null
           id?: string
           is_enabled?: boolean | null
           max_tokens?: number | null
@@ -56,7 +62,77 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ai_assistant_config_ai_provider_id_fkey"
+            columns: ["ai_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_assistant_config_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_config_fallback_provider_id_fkey"
+            columns: ["fallback_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_providers: {
+        Row: {
+          api_key: string | null
+          business_id: string | null
+          configuration: Json | null
+          created_at: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          model: string
+          monthly_cost: number | null
+          provider_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          api_key?: string | null
+          business_id?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          model: string
+          monthly_cost?: number | null
+          provider_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string | null
+          business_id?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          model?: string
+          monthly_cost?: number | null
+          provider_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_providers_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -157,8 +233,10 @@ export type Database = {
           key_hash: string
           key_prefix: string
           last_used_at: string | null
+          min_subscription_tier: string | null
           name: string
           permissions: Json | null
+          rate_limit_per_hour: number | null
         }
         Insert: {
           business_id?: string | null
@@ -170,8 +248,10 @@ export type Database = {
           key_hash: string
           key_prefix: string
           last_used_at?: string | null
+          min_subscription_tier?: string | null
           name: string
           permissions?: Json | null
+          rate_limit_per_hour?: number | null
         }
         Update: {
           business_id?: string | null
@@ -183,12 +263,68 @@ export type Database = {
           key_hash?: string
           key_prefix?: string
           last_used_at?: string | null
+          min_subscription_tier?: string | null
           name?: string
           permissions?: Json | null
+          rate_limit_per_hour?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "api_keys_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_usage_logs: {
+        Row: {
+          api_key_id: string | null
+          business_id: string | null
+          created_at: string | null
+          endpoint: string
+          id: string
+          ip_address: string | null
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          ip_address?: string | null
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          ip_address?: string | null
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_usage_logs_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -289,7 +425,9 @@ export type Database = {
       }
       businesses: {
         Row: {
+          cancellation_feedback: Json | null
           cancellation_history: Json | null
+          cancellation_reason: string | null
           created_at: string | null
           id: string
           message_count_current_period: number | null
@@ -302,11 +440,15 @@ export type Database = {
           subscription_started_at: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          trial_conversion_date: string | null
+          trial_converted: boolean | null
           trial_ends_at: string | null
           updated_at: string | null
         }
         Insert: {
+          cancellation_feedback?: Json | null
           cancellation_history?: Json | null
+          cancellation_reason?: string | null
           created_at?: string | null
           id?: string
           message_count_current_period?: number | null
@@ -319,11 +461,15 @@ export type Database = {
           subscription_started_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          trial_conversion_date?: string | null
+          trial_converted?: boolean | null
           trial_ends_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          cancellation_feedback?: Json | null
           cancellation_history?: Json | null
+          cancellation_reason?: string | null
           created_at?: string | null
           id?: string
           message_count_current_period?: number | null
@@ -336,6 +482,8 @@ export type Database = {
           subscription_started_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          trial_conversion_date?: string | null
+          trial_converted?: boolean | null
           trial_ends_at?: string | null
           updated_at?: string | null
         }
@@ -1240,6 +1388,63 @@ export type Database = {
           },
         ]
       }
+      platform_costs: {
+        Row: {
+          created_at: string | null
+          email_service_cost: number | null
+          fixed_monthly_costs: number | null
+          id: string
+          lovable_ai_cost: number | null
+          lovable_credits_cost: number | null
+          month: string
+          notes: string | null
+          other_costs: Json | null
+          sms_cost: number | null
+          supabase_bandwidth_cost: number | null
+          supabase_db_cost: number | null
+          supabase_storage_cost: number | null
+          total_cost: number | null
+          updated_at: string | null
+          whatsapp_api_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_service_cost?: number | null
+          fixed_monthly_costs?: number | null
+          id?: string
+          lovable_ai_cost?: number | null
+          lovable_credits_cost?: number | null
+          month: string
+          notes?: string | null
+          other_costs?: Json | null
+          sms_cost?: number | null
+          supabase_bandwidth_cost?: number | null
+          supabase_db_cost?: number | null
+          supabase_storage_cost?: number | null
+          total_cost?: number | null
+          updated_at?: string | null
+          whatsapp_api_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email_service_cost?: number | null
+          fixed_monthly_costs?: number | null
+          id?: string
+          lovable_ai_cost?: number | null
+          lovable_credits_cost?: number | null
+          month?: string
+          notes?: string | null
+          other_costs?: Json | null
+          sms_cost?: number | null
+          supabase_bandwidth_cost?: number | null
+          supabase_db_cost?: number | null
+          supabase_storage_cost?: number | null
+          total_cost?: number | null
+          updated_at?: string | null
+          whatsapp_api_cost?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1624,6 +1829,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      webhooks: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          events: string[]
+          failure_count: number | null
+          id: string
+          is_active: boolean | null
+          last_status_code: number | null
+          last_triggered_at: string | null
+          secret: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          events: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_status_code?: number | null
+          last_triggered_at?: string | null
+          secret?: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          events?: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_status_code?: number | null
+          last_triggered_at?: string | null
+          secret?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhooks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_accounts: {
         Row: {
