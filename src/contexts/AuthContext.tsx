@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { getTierFromProductId, type SubscriptionTier } from "@/lib/stripeConfig";
 
 interface Profile {
   id: string;
@@ -13,6 +14,16 @@ interface Profile {
 
 interface UserRole {
   role: 'superadmin' | 'admin' | 'agent';
+}
+
+interface SubscriptionState {
+  subscribed: boolean;
+  tier: SubscriptionTier;
+  productId: string | null;
+  subscriptionEnd: Date | null;
+  isFrozen: boolean;
+  seatCount: number;
+  loading: boolean;
 }
 
 interface AuthContextType {
@@ -27,6 +38,8 @@ interface AuthContextType {
   isAdmin: boolean;
   currentBusinessId: string | null;
   userRole: 'superadmin' | 'admin' | 'agent' | null;
+  subscriptionState: SubscriptionState;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,7 +51,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'superadmin' | 'admin' | 'agent' | null>(null);
+  const [subscriptionState, setSubscriptionState] = useState<SubscriptionState>({
+    subscribed: false,
+    tier: 'starter',
+    productId: null,
+    subscriptionEnd: null,
+    isFrozen: false,
+    seatCount: 1,
+    loading: true,
+  });
   const navigate = useNavigate();
+
+  const checkSubscription = async () => {
+    try {
+      setSubscriptionState(prev => ({ ...prev, loading: true }));
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      
+      if (error) {
+        console.error("Error checking subscription:", error);
+        setSubscriptionState(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      const tier = getTierFromProductId(data.product_id);
+      setSubscriptionState({
+        subscribed: data.subscribed || false,
+        tier,
+        productId: data.product_id || null,
+        subscriptionEnd: data.subscription_end ? new Date(data.subscription_end) : null,
+        isFrozen: data.isFrozen || false,
+        seatCount: data.seatCount || 1,
+        loading: false,
+      });
+    } catch (error) {
+      console.error("Error in checkSubscription:", error);
+      setSubscriptionState(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     // Fetch profile
@@ -74,6 +123,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (businessData) {
       setCurrentBusinessId(businessData.business_id);
     }
+
+    // Check subscription after fetching profile
+    await checkSubscription();
   };
 
   useEffect(() => {
@@ -125,7 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: string = 'agent') => {
-    const redirectUrl = `${window.location.origin}/app/dashboard`;
+    const redirectUrl = `${window.location.origin}/app/onboarding`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -139,6 +191,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     
+    if (!error) {
+      navigate("/app/onboarding");
+    }
+    
     return { error };
   };
 
@@ -150,6 +206,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isSuperAdmin = userRole === 'superadmin';
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+
+  // Auto-refresh subscription every 60 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      checkSubscription();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <AuthContext.Provider
@@ -165,6 +232,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin,
         currentBusinessId,
         userRole,
+        subscriptionState,
+        checkSubscription,
       }}
     >
       {children}

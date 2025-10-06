@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
+import Pricing from "./pages/Pricing";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -19,6 +21,7 @@ import SystemHealth from "./pages/admin/SystemHealth";
 import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
+import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 
 const queryClient = new QueryClient();
 
@@ -27,16 +30,20 @@ function AppContent() {
 
   return (
     <>
+      <AccountFrozenBanner />
       <NotificationBanner unreadCount={unreadCount} />
       <div className={unreadCount > 0 ? "pt-14" : ""}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/app/onboarding" element={<Onboarding />} />
           
           {/* Customer Business App Routes */}
           <Route path="/app" element={<Index />} />
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/settings" element={<Settings />} />
+          <Route path="/settings" element={<Settings />} />
           
           {/* Legacy routes - redirect to /app */}
           <Route path="/onebillchat" element={<Index />} />

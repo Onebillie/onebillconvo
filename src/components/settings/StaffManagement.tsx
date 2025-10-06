@@ -94,6 +94,47 @@ export const StaffManagement = () => {
 
       if (authError) throw authError;
 
+      // Update seat count after adding new staff
+      const { data: businessData } = await supabase
+        .from("business_users")
+        .select("business_id")
+        .eq("user_id", authData.user!.id)
+        .single();
+
+      if (businessData) {
+        const { data: business } = await supabase
+          .from("businesses")
+          .select("seat_count, stripe_subscription_id")
+          .eq("id", businessData.business_id)
+          .single();
+
+        if (business?.stripe_subscription_id) {
+          // Update subscription seats
+          try {
+            const { data: seatUpdateData, error: seatError } = await supabase.functions.invoke(
+              "update-subscription-seats",
+              {
+                body: {
+                  businessId: businessData.business_id,
+                  newSeatCount: (business.seat_count || 1) + 1,
+                },
+              }
+            );
+
+            if (seatError) {
+              console.error("Failed to update seats:", seatError);
+            } else if (seatUpdateData) {
+              toast({
+                title: "Subscription Updated",
+                description: seatUpdateData.message,
+              });
+            }
+          } catch (err) {
+            console.error("Error updating seats:", err);
+          }
+        }
+      }
+
       toast({
         title: "Success",
         description: "Staff member created successfully",

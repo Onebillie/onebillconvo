@@ -20,6 +20,7 @@ import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
+import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -86,6 +87,7 @@ export default function Settings() {
         <Tabs defaultValue="staff" className="space-y-6">
           <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
             {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff</TabsTrigger>}
+            <TabsTrigger value="subscription" className="shrink-0">Subscription</TabsTrigger>
             <TabsTrigger value="templates" className="shrink-0">Templates</TabsTrigger>
             <TabsTrigger value="whatsapp-templates" className="shrink-0">WA Templates</TabsTrigger>
             <TabsTrigger value="whatsapp-accounts" className="shrink-0">WA Accounts</TabsTrigger>
@@ -104,6 +106,10 @@ export default function Settings() {
               <StaffManagement />
             </TabsContent>
           )}
+
+          <TabsContent value="subscription">
+            <SubscriptionSettings />
+          </TabsContent>
 
           <TabsContent value="templates">
             <TemplateManagement />

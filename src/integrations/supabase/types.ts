@@ -430,9 +430,12 @@ export type Database = {
           cancellation_reason: string | null
           created_at: string | null
           id: string
+          is_frozen: boolean | null
           message_count_current_period: number | null
           name: string
+          onboarding_completed: boolean | null
           owner_id: string
+          seat_count: number | null
           slug: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -451,9 +454,12 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           id?: string
+          is_frozen?: boolean | null
           message_count_current_period?: number | null
           name: string
+          onboarding_completed?: boolean | null
           owner_id: string
+          seat_count?: number | null
           slug: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -472,9 +478,12 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           id?: string
+          is_frozen?: boolean | null
           message_count_current_period?: number | null
           name?: string
+          onboarding_completed?: boolean | null
           owner_id?: string
+          seat_count?: number | null
           slug?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1961,6 +1970,10 @@ export type Database = {
       increment_message_count: {
         Args: { business_uuid: string }
         Returns: undefined
+      }
+      is_account_frozen: {
+        Args: { _business_id: string }
+        Returns: boolean
       }
       is_business_owner: {
         Args: { _business_id: string; _user_id: string }
