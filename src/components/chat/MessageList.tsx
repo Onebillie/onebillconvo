@@ -168,7 +168,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                       )}
                       <div className="relative">
                         <div
-                          className={`max-w-[85%] md:max-w-[70%] rounded-lg px-3 md:px-4 py-2 ${
+                          className={`inline-block w-auto min-w-[10ch] max-w-[85%] md:max-w-[70%] rounded-lg px-3 md:px-4 py-2 ${
                             message.direction === "outbound"
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted"
@@ -189,7 +189,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                             </div>
                           )}
 
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words hyphens-auto">{message.content}</p>
                           
                           {/* Attachments */}
                           {message.message_attachments &&
