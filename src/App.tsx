@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
+import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -36,6 +37,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/app/onboarding" element={<Onboarding />} />
           

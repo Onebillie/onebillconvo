@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { toast } from "@/hooks/use-toast";
 import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,89 +117,45 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           {mode === "auth" && (
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
-                <TabsTrigger value="signin" className="shrink-0">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="shrink-0">Sign Up</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </div>
-                  <div className="text-center">
-                    <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
-                      Forgot your password?
-                    </Button>
-                  </div>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Sign Up"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </div>
+              <div className="text-center space-y-2">
+                <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
+                  Forgot your password?
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <a href="/signup" className="text-primary hover:underline font-medium">
+                    Sign up here
+                  </a>
+                </div>
+              </div>
+            </form>
           )}
 
           {mode === "forgot" && (

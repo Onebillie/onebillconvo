@@ -16,7 +16,7 @@ export default function Pricing() {
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (!user) {
-      navigate("/auth");
+      navigate("/signup");
       return;
     }
 

@@ -167,8 +167,8 @@ const Landing = () => {
           </div>
           {user ? <Button onClick={() => navigate("/onebillchat")}>
               Go to App
-            </Button> : <Button onClick={() => navigate("/auth")} variant="outline">
-              Sign In
+            </Button> : <Button onClick={() => navigate("/signup")} variant="outline">
+              Sign Up
             </Button>}
         </div>
       </header>
@@ -183,7 +183,7 @@ const Landing = () => {
             The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+            <Button size="lg" onClick={() => navigate("/signup")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
               Start Free Trial
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 py-6 rounded-2xl">
