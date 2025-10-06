@@ -622,6 +622,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          address: string | null
           alternate_emails: string[] | null
           avatar: string | null
           created_at: string | null
@@ -637,8 +638,10 @@ export type Database = {
           notes: string | null
           phone: string
           whatsapp_name: string | null
+          whatsapp_phone: string | null
         }
         Insert: {
+          address?: string | null
           alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
@@ -654,8 +657,10 @@ export type Database = {
           notes?: string | null
           phone: string
           whatsapp_name?: string | null
+          whatsapp_phone?: string | null
         }
         Update: {
+          address?: string | null
           alternate_emails?: string[] | null
           avatar?: string | null
           created_at?: string | null
@@ -671,6 +676,7 @@ export type Database = {
           notes?: string | null
           phone?: string
           whatsapp_name?: string | null
+          whatsapp_phone?: string | null
         }
         Relationships: []
       }

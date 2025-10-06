@@ -1,8 +1,14 @@
 export interface Customer {
   id: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
+  whatsapp_phone?: string;
+  whatsapp_name?: string;
   email?: string;
+  alternate_emails?: string[];
+  address?: string;
   avatar?: string;
   last_active?: string;
   notes?: string;

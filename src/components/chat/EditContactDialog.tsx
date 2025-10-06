@@ -25,16 +25,23 @@ export const EditContactDialog = ({
   customer,
   onUpdate,
 }: EditContactDialogProps) => {
-  const [name, setName] = useState(customer.name);
-  const [phone, setPhone] = useState(customer.phone || "");
+  const [firstName, setFirstName] = useState(customer.first_name || "");
+  const [lastName, setLastName] = useState(customer.last_name || "");
+  const [whatsappPhone, setWhatsappPhone] = useState(customer.whatsapp_phone || "");
+  const [whatsappName, setWhatsappName] = useState(customer.whatsapp_name || "");
   const [email, setEmail] = useState(customer.email || "");
+  const [alternateEmails, setAlternateEmails] = useState(
+    customer.alternate_emails?.join(", ") || ""
+  );
+  const [address, setAddress] = useState(customer.address || "");
+  const [notes, setNotes] = useState(customer.notes || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim()) {
+    if (!firstName.trim()) {
       toast({
         title: "Error",
-        description: "Name is required",
+        description: "First name is required",
         variant: "destructive",
       });
       return;
@@ -42,12 +49,24 @@ export const EditContactDialog = ({
 
     setSaving(true);
     try {
+      // Parse alternate emails
+      const emailsArray = alternateEmails
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e);
+
       const { error } = await supabase
         .from("customers")
         .update({
-          name: name.trim(),
-          phone: phone.trim() || null,
+          first_name: firstName.trim(),
+          last_name: lastName.trim() || null,
+          name: `${firstName.trim()} ${lastName.trim()}`.trim(), // Auto-generate full name
+          whatsapp_phone: whatsappPhone.trim() || null,
+          whatsapp_name: whatsappName.trim() || null,
           email: email.trim() || null,
+          alternate_emails: emailsArray.length > 0 ? emailsArray : null,
+          address: address.trim() || null,
+          notes: notes.trim() || null,
         })
         .eq("id", customer.id);
 
@@ -77,36 +96,95 @@ export const EditContactDialog = ({
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Contact name"
-            />
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Name *</Label>
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Surname</Label>
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone number"
-            />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="whatsappPhone">WhatsApp Phone</Label>
+              <Input
+                id="whatsappPhone"
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value)}
+                placeholder="WhatsApp number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="whatsappName">WhatsApp Name</Label>
+              <Input
+                id="whatsappName"
+                value={whatsappName}
+                onChange={(e) => setWhatsappName(e.target.value)}
+                placeholder="Name on WhatsApp"
+                disabled
+              />
+            </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email Address (Default for outbound)</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
+              placeholder="Primary email address"
             />
           </div>
-          <div className="flex justify-end space-x-2">
+
+          <div className="space-y-2">
+            <Label htmlFor="alternateEmails">Associated Email Addresses</Label>
+            <Input
+              id="alternateEmails"
+              value={alternateEmails}
+              onChange={(e) => setAlternateEmails(e.target.value)}
+              placeholder="email1@example.com, email2@example.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Separate multiple emails with commas
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Physical address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Input
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Private notes"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}

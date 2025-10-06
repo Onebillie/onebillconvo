@@ -2,7 +2,7 @@ import { Customer } from "@/types/chat";
 
 /**
  * Replaces template variables with contact data
- * Supports: {{contact.name}}, {{contact.phone}}, {{contact.email}}
+ * Supports: {{contact.name}}, {{contact.phone}}, {{contact.email}}, {{contact.whatsapp_phone}}, {{contact.whatsapp_name}}, {{contact.address}}
  */
 export function populateTemplateWithContactData(
   template: string,
@@ -11,25 +11,34 @@ export function populateTemplateWithContactData(
   let result = template;
   
   // Replace {{name}} with first name (most common use case)
-  const firstName = (contact as any).first_name || contact.name?.split(' ')[0] || contact.name || '';
+  const firstName = contact.first_name || contact.name?.split(' ')[0] || contact.name || '';
   result = result.replace(/\{\{name\}\}/gi, firstName);
   result = result.replace(/\{\{1\}\}/g, firstName); // WhatsApp variable format
   
   // Replace contact.name
   result = result.replace(/\{\{contact\.name\}\}/gi, contact.name || '');
   
-  // Replace contact.phone
-  result = result.replace(/\{\{contact\.phone\}\}/gi, contact.phone || '');
-  
-  // Replace contact.email
-  result = result.replace(/\{\{contact\.email\}\}/gi, contact.email || '');
-  
   // Replace contact.first_name
   result = result.replace(/\{\{contact\.first_name\}\}/gi, firstName);
   
   // Replace contact.last_name
-  const lastName = (contact as any).last_name || contact.name?.split(' ').slice(1).join(' ') || '';
+  const lastName = contact.last_name || contact.name?.split(' ').slice(1).join(' ') || '';
   result = result.replace(/\{\{contact\.last_name\}\}/gi, lastName);
+  
+  // Replace contact.phone
+  result = result.replace(/\{\{contact\.phone\}\}/gi, contact.phone || '');
+  
+  // Replace contact.whatsapp_phone
+  result = result.replace(/\{\{contact\.whatsapp_phone\}\}/gi, contact.whatsapp_phone || contact.phone || '');
+  
+  // Replace contact.whatsapp_name
+  result = result.replace(/\{\{contact\.whatsapp_name\}\}/gi, contact.whatsapp_name || '');
+  
+  // Replace contact.email
+  result = result.replace(/\{\{contact\.email\}\}/gi, contact.email || '');
+  
+  // Replace contact.address
+  result = result.replace(/\{\{contact\.address\}\}/gi, contact.address || '');
   
   return result;
 }

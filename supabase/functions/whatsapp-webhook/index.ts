@@ -178,7 +178,10 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           .from('customers')
           .insert({
             phone: normalizedPhone,
+            whatsapp_phone: normalizedPhone,
             name: whatsappName,
+            first_name: whatsappName.split(' ')[0] || whatsappName,
+            last_name: whatsappName.split(' ').slice(1).join(' ') || null,
             whatsapp_name: whatsappName,
             last_active: new Date().toISOString(),
           })
@@ -279,7 +282,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           body: JSON.stringify({
             payload: {
               title: 'New WhatsApp Message',
-              body: `${customerName}: ${messageContent}`,
+              body: `${customer.name}: ${messageContent}`,
               icon: '/favicon.ico',
               tag: `whatsapp-${conversation.id}`,
               data: {

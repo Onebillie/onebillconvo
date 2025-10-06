@@ -67,15 +67,41 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="text-sm">
-          <span className="text-muted-foreground">Phone:</span>{" "}
-          <span className="font-medium">{customer.phone}</span>
-        </div>
+      <div className="space-y-3 text-sm">
+        {customer.whatsapp_phone && (
+          <div>
+            <span className="text-muted-foreground">WhatsApp:</span>{" "}
+            <span className="font-medium">{customer.whatsapp_phone}</span>
+          </div>
+        )}
+        {customer.whatsapp_name && (
+          <div>
+            <span className="text-muted-foreground">WhatsApp Name:</span>{" "}
+            <span className="font-medium">{customer.whatsapp_name}</span>
+          </div>
+        )}
+        {customer.phone && (
+          <div>
+            <span className="text-muted-foreground">Phone:</span>{" "}
+            <span className="font-medium">{customer.phone}</span>
+          </div>
+        )}
         {customer.email && (
-          <div className="text-sm">
+          <div>
             <span className="text-muted-foreground">Email:</span>{" "}
             <span className="font-medium">{customer.email}</span>
+          </div>
+        )}
+        {customer.alternate_emails && customer.alternate_emails.length > 0 && (
+          <div>
+            <span className="text-muted-foreground">Alternate Emails:</span>{" "}
+            <span className="font-medium">{customer.alternate_emails.join(", ")}</span>
+          </div>
+        )}
+        {customer.address && (
+          <div>
+            <span className="text-muted-foreground">Address:</span>{" "}
+            <span className="font-medium">{customer.address}</span>
           </div>
         )}
       </div>
