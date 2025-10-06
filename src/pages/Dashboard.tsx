@@ -247,7 +247,7 @@ const Dashboard = () => {
   };
 
   const handleBack = () => {
-    navigate('/settings');
+    navigate('/app/settings');
   };
 
   if (authLoading) {

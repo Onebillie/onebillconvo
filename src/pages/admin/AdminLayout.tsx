@@ -5,15 +5,15 @@ import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, Doll
 import { useEffect } from "react";
 
 export default function AdminLayout() {
-  const { isSuperAdmin, signOut } = useAuth();
+  const { isSuperAdmin, signOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isSuperAdmin) {
-      navigate("/dashboard");
+    if (!loading && !isSuperAdmin) {
+      navigate("/app/dashboard");
     }
-  }, [isSuperAdmin, navigate]);
+  }, [isSuperAdmin, loading, navigate]);
 
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -22,7 +22,7 @@ export default function AdminLayout() {
     { path: "/admin/payments", label: "Payments", icon: Receipt },
     { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/system", label: "System Health", icon: Activity },
-    { path: "/settings", label: "Settings", icon: Settings },
+    { path: "/app/settings", label: "Settings", icon: Settings },
   ];
 
   const isActive = (path: string) => {
@@ -31,6 +31,14 @@ export default function AdminLayout() {
     }
     return location.pathname.startsWith(path);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   if (!isSuperAdmin) {
     return null;
@@ -44,7 +52,7 @@ export default function AdminLayout() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/app/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to App

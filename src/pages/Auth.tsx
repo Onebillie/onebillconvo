@@ -23,7 +23,7 @@ export default function Auth() {
   // If already authenticated, redirect away from /auth
   useEffect(() => {
     if (!authLoading && profile && mode === "auth") {
-      navigate("/dashboard", { replace: true });
+      navigate("/app/dashboard", { replace: true });
     }
   }, [authLoading, profile, mode, navigate]);
 
@@ -100,7 +100,7 @@ export default function Auth() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Password updated", description: "You are now signed in." });
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     }
     setLoading(false);
   };

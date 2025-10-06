@@ -12,7 +12,6 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import SuperAdmin from "./pages/SuperAdmin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -33,19 +32,18 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/superadmin" element={<SuperAdmin />} />
           
-          {/* OneBillChat App Routes */}
+          {/* Customer Business App Routes */}
+          <Route path="/app" element={<Index />} />
+          <Route path="/app/dashboard" element={<Dashboard />} />
+          <Route path="/app/settings" element={<Settings />} />
+          
+          {/* Legacy routes - redirect to /app */}
           <Route path="/onebillchat" element={<Index />} />
           <Route path="/onebillchat/dashboard" element={<Dashboard />} />
           <Route path="/onebillchat/settings" element={<Settings />} />
-          <Route path="/onebillchat/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<UsersManagement />} />
-            <Route path="system" element={<SystemHealth />} />
-          </Route>
           
-          {/* SuperAdmin Routes */}
+          {/* Platform Owner (SuperAdmin) Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
