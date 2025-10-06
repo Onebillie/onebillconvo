@@ -41,14 +41,18 @@ export const EmailSyncButton = ({ onSyncComplete }: EmailSyncButtonProps) => {
 
       const results = await Promise.allSettled(syncPromises);
       
-      // Check results
+      // Check results and extract error messages
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map(r => r.reason?.message || 'Unknown error');
 
       if (failed > 0) {
+        const errorMsg = errors.length > 0 ? `\n\n${errors.join('\n')}` : '';
         toast({
           title: "Sync partially completed",
-          description: `${successful} account(s) synced successfully, ${failed} failed`,
+          description: `${successful} account(s) synced successfully, ${failed} failed${errorMsg}`,
           variant: "destructive",
         });
       } else {

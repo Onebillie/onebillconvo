@@ -195,6 +195,21 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error in email-sync function:', error);
+    
+    // Return 401 for auth errors
+    if (error.message?.startsWith('IMAP_AUTH_FAILED')) {
+      return new Response(
+        JSON.stringify({ 
+          error: error.message.replace('IMAP_AUTH_FAILED: ', ''),
+          code: 'IMAP_AUTH_FAILED'
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
@@ -252,8 +267,8 @@ async function fetchEmailsFromIMAP(
   try {
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
-    const username = account.imap_username || account.email_address;
-    const password = account.imap_password;
+    const username = (account.imap_username || account.email_address).trim();
+    const password = account.imap_password?.trim();
     
     if (!username || !password) {
       throw new Error('IMAP credentials missing');
@@ -390,6 +405,12 @@ async function fetchEmailsFromIMAP(
   } catch (error: any) {
     console.error('IMAP fetch error:', error);
     diagnostics.imapLoginOk = false;
+    
+    // Detect authentication failure
+    if (error.name === 'ImapAuthError' || error.message?.includes('AUTHENTICATIONFAILED')) {
+      throw new Error('IMAP_AUTH_FAILED: Authentication failed. Please verify your username and password. Some mail providers require an "app password" instead of your regular password.');
+    }
+    
     throw new Error(`Failed to fetch emails: ${error.message}`);
   }
 }

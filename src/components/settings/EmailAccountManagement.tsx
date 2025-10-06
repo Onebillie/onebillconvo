@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface EmailAccount {
@@ -150,26 +150,51 @@ export function EmailAccountManagement() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
       
-      const diagInfo = data.diagnostics ? 
-        `\n\nDiagnostics:\n${JSON.stringify(data.diagnostics, null, 2)}` : '';
-      
       if (data.success) {
         toast({
           title: "Email sync completed",
-          description: `Fetched ${data.fetched} emails, processed ${data.processed}${diagInfo}`,
+          description: `Fetched ${data.fetched} emails, processed ${data.processed}`,
         });
       } else {
         toast({
           title: "Sync completed with warnings",
-          description: `Check diagnostics for details${diagInfo}`,
+          description: data.error || "Check logs for details",
           variant: "default",
         });
       }
     },
     onError: (error: any) => {
+      const message = error.message || "Failed to sync emails";
       toast({
         title: "Sync failed",
-        description: error.message,
+        description: message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const testConnectionMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase.functions.invoke('imap-test', {
+        body: { account_id: accountId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.ok) {
+        toast({
+          title: "Connection successful",
+          description: `Connected to ${data.server}:${data.port} successfully`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      const message = error.message || "Connection test failed";
+      toast({
+        title: "Connection failed",
+        description: message,
         variant: "destructive",
       });
     }
@@ -402,6 +427,15 @@ export function EmailAccountManagement() {
                     <CardDescription>{account.email_address}</CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => testConnectionMutation.mutate(account.id)}
+                      disabled={testConnectionMutation.isPending}
+                    >
+                      <Wifi className="w-4 h-4 mr-2" />
+                      Test
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
