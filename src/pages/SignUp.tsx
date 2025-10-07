@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -591,9 +591,9 @@ export default function SignUp() {
           <div className="text-center pt-4 border-t">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <a href="/auth" className="text-primary hover:underline font-medium">
+              <Link to="/auth" className="text-primary hover:underline font-medium">
                 Sign in here
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>

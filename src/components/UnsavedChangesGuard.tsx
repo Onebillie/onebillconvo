@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useBlocker } from 'react-router-dom';
 
 interface UnsavedChangesGuardProps {
   hasUnsavedChanges: boolean;
@@ -10,8 +10,7 @@ export function UnsavedChangesGuard({
   hasUnsavedChanges, 
   message = 'You have unsaved changes. Are you sure you want to leave?' 
 }: UnsavedChangesGuardProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const blocker = useBlocker(hasUnsavedChanges);
 
   // Warn on browser navigation (close tab, refresh, etc.)
   useEffect(() => {
@@ -26,6 +25,18 @@ export function UnsavedChangesGuard({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges, message]);
+
+  // Block in-app route changes when there are unsaved changes
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      const shouldProceed = window.confirm(message);
+      if (shouldProceed) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker, message]);
 
   return null;
 }

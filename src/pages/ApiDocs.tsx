@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 const ApiDocs = () => {
   const [copiedEndpoint, setCopiedEndpoint] = useState<string>("");
   const { toast } = useToast();
-
+  const navigate = useNavigate();
+  
   const API_BASE_URL = "https://api.alacartechat.com/v1";
   const SUPABASE_URL = "https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1";
 
@@ -423,7 +425,7 @@ const ApiDocs = () => {
           <div className="flex items-center gap-3">
             <span className="text-xl font-semibold">À La Carte Chat API</span>
           </div>
-          <Button onClick={() => window.location.href = "/auth"}>
+          <Button onClick={() => navigate("/auth")}>
             Sign In
           </Button>
         </div>
