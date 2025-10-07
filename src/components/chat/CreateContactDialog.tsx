@@ -71,6 +71,22 @@ export const CreateContactDialog = ({
 
     setCreating(true);
     try {
+      // Get user's business_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data: businessUser, error: businessError } = await supabase
+        .from("business_users")
+        .select("business_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (businessError || !businessUser) {
+        throw new Error("No business found for user");
+      }
+
       // Create customer
       const { data: customer, error: customerError } = await (supabase as any)
         .from("customers")
@@ -78,6 +94,7 @@ export const CreateContactDialog = ({
           name: formData.name,
           phone: formData.phone,
           email: formData.email || null,
+          business_id: businessUser.business_id,
         })
         .select()
         .single();
@@ -90,6 +107,7 @@ export const CreateContactDialog = ({
         .insert({
           customer_id: customer.id,
           status: "active",
+          business_id: businessUser.business_id,
         });
 
       if (conversationError) throw conversationError;
