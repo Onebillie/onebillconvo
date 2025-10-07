@@ -429,6 +429,7 @@ export type Database = {
           cancellation_history: Json | null
           cancellation_reason: string | null
           created_at: string | null
+          credit_balance: number | null
           id: string
           is_frozen: boolean | null
           message_count_current_period: number | null
@@ -453,6 +454,7 @@ export type Database = {
           cancellation_history?: Json | null
           cancellation_reason?: string | null
           created_at?: string | null
+          credit_balance?: number | null
           id?: string
           is_frozen?: boolean | null
           message_count_current_period?: number | null
@@ -477,6 +479,7 @@ export type Database = {
           cancellation_history?: Json | null
           cancellation_reason?: string | null
           created_at?: string | null
+          credit_balance?: number | null
           id?: string
           is_frozen?: boolean | null
           message_count_current_period?: number | null

@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.update-subscription-seats]
 verify_jwt = true
+
+[functions.purchase-credits]
+verify_jwt = true

@@ -30,6 +30,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
 import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
 import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
+import { LimitReachedBanner } from "@/components/LimitReachedBanner";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin } = useAuth();
@@ -504,6 +505,7 @@ const Dashboard = () => {
             <div className="flex flex-1 overflow-hidden">
               {/* Messages */}
               <div className="flex-1 flex flex-col min-w-0">
+                <LimitReachedBanner />
                 <MessageList 
                   messages={messages}
                   onCreateTask={(message) => {

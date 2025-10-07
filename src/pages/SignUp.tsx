@@ -274,7 +274,7 @@ export default function SignUp() {
 
   const calculateTotal = () => {
     if (!formData.selectedPlan) return 0;
-    return STRIPE_PRODUCTS[formData.selectedPlan].price;
+    return STRIPE_PRODUCTS[formData.selectedPlan].price || 0;
   };
 
   const progress = (currentStep / STEPS.length) * 100;
@@ -381,39 +381,62 @@ export default function SignUp() {
 
           {/* Step 3: Choose Plan */}
           {currentStep === 3 && (
-            <div className="space-y-4">
-              <div className="grid gap-4">
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {(Object.entries(STRIPE_PRODUCTS) as [SubscriptionTier, typeof STRIPE_PRODUCTS[SubscriptionTier]][]).map(([tier, config]) => (
-                  <div
+                  <Card
                     key={tier}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      formData.selectedPlan === tier
+                    className={`relative p-6 cursor-pointer transition-all hover:shadow-lg ${
+                      config.popular
+                        ? "border-primary border-2 shadow-lg"
+                        : formData.selectedPlan === tier
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/50"
                     }`}
                     onClick={() => updateFormData("selectedPlan", tier)}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold">{config.name}</h3>
-                        <div className="flex items-baseline gap-1 mt-1">
-                          <span className="text-2xl font-bold">${config.price}</span>
-                          <span className="text-muted-foreground">/{config.interval}</span>
-                        </div>
+                    {config.popular && (
+                      <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-xs">
+                        Popular
+                      </Badge>
+                    )}
+                    {formData.selectedPlan === tier && !config.popular && (
+                      <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-xs">
+                        Selected
+                      </Badge>
+                    )}
+                    
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">{config.name}</h3>
+                      <div className="mb-1">
+                        {config.price === 0 ? (
+                          <span className="text-3xl font-bold">Free</span>
+                        ) : (
+                          <>
+                            <span className="text-3xl font-bold">${config.price}</span>
+                            <span className="text-muted-foreground text-sm">/{config.interval}</span>
+                          </>
+                        )}
                       </div>
-                      {formData.selectedPlan === tier && (
-                        <Badge className="bg-primary">Selected</Badge>
+                      {config.price > 0 && (
+                        <p className="text-xs text-muted-foreground">per seat</p>
                       )}
                     </div>
+
                     <ul className="space-y-2">
-                      {config.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                      {config.features.slice(0, 4).map((feature, index) => (
+                        <li key={index} className="flex items-start gap-2 text-xs">
+                          <Check className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
                           <span>{feature}</span>
                         </li>
                       ))}
+                      {config.features.length > 4 && (
+                        <li className="text-xs text-muted-foreground">
+                          + {config.features.length - 4} more
+                        </li>
+                      )}
                     </ul>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>

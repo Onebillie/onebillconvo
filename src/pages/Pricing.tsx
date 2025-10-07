@@ -60,17 +60,24 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {Object.entries(STRIPE_PRODUCTS).map(([tier, config]) => (
             <Card
               key={tier}
               className={`relative p-8 rounded-xl transition-all hover:shadow-xl ${
-                isCurrentPlan(tier as SubscriptionTier)
+                config.popular
+                  ? "border-primary border-2 shadow-2xl scale-105"
+                  : isCurrentPlan(tier as SubscriptionTier)
                   ? "border-primary border-2 shadow-lg"
                   : "border"
               }`}
             >
-              {isCurrentPlan(tier as SubscriptionTier) && (
+              {config.popular && (
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500">
+                  Most Popular
+                </Badge>
+              )}
+              {isCurrentPlan(tier as SubscriptionTier) && !config.popular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
                   Your Plan
                 </Badge>
@@ -79,12 +86,20 @@ export default function Pricing() {
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-4">{config.name}</h3>
                 <div className="mb-2">
-                  <span className="text-5xl font-bold text-foreground">
-                    ${config.price}
-                  </span>
-                  <span className="text-muted-foreground text-lg">/{config.interval}</span>
+                  {config.price === 0 ? (
+                    <span className="text-5xl font-bold text-foreground">Free</span>
+                  ) : (
+                    <>
+                      <span className="text-5xl font-bold text-foreground">
+                        ${config.price}
+                      </span>
+                      <span className="text-muted-foreground text-lg">/{config.interval}</span>
+                    </>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">per seat</p>
+                {config.price > 0 && (
+                  <p className="text-sm text-muted-foreground">per seat</p>
+                )}
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -97,10 +112,11 @@ export default function Pricing() {
               </ul>
 
               <Button
-                className="w-full rounded-lg py-6 text-base font-medium bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+                className="w-full rounded-lg py-6 text-base font-medium"
                 size="lg"
-                disabled={isCurrentPlan(tier as SubscriptionTier) || loadingTier === tier}
-                onClick={() => handleSubscribe(tier as SubscriptionTier)}
+                variant={config.popular ? "default" : "outline"}
+                disabled={isCurrentPlan(tier as SubscriptionTier) || loadingTier === tier || tier === "free"}
+                onClick={() => tier !== "free" && handleSubscribe(tier as SubscriptionTier)}
               >
                 {loadingTier === tier ? (
                   <>
@@ -109,6 +125,8 @@ export default function Pricing() {
                   </>
                 ) : isCurrentPlan(tier as SubscriptionTier) ? (
                   "Current Plan"
+                ) : tier === "free" ? (
+                  "Free Plan"
                 ) : (
                   "Subscribe"
                 )}

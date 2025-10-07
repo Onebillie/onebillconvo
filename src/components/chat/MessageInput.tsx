@@ -9,6 +9,7 @@ import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
 import { Customer } from "@/types/chat";
 import { populateTemplateWithContactData } from "@/lib/templateUtils";
+import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
 
 interface MessageInputProps {
   conversationId: string;
@@ -51,6 +52,41 @@ export const MessageInput = ({
 
   const sendMessage = async () => {
     if (!newMessage.trim() && attachments.length === 0 && !voiceNote) return;
+
+    // Check message limits for WhatsApp sending (only if sending via WhatsApp)
+    if (sendVia === "whatsapp") {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: businessData } = await supabase
+        .from('business_users')
+        .select('business_id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (businessData?.business_id) {
+        const { data: business } = await supabase
+          .from('businesses')
+          .select('message_count_current_period, subscription_tier, credit_balance')
+          .eq('id', businessData.business_id)
+          .single();
+
+        if (business) {
+          const tier = business.subscription_tier || 'free';
+          const messageLimit = STRIPE_PRODUCTS[tier as SubscriptionTier]?.limits.whatsappSending || 0;
+          const currentCount = business.message_count_current_period || 0;
+          const creditBalance = business.credit_balance || 0;
+
+          // Check if user has exceeded limits
+          if (currentCount >= messageLimit && creditBalance === 0) {
+            toast({
+              title: "Message Limit Reached",
+              description: `You've reached your ${messageLimit} message limit. Upgrade your plan or purchase credit bundles to continue sending.`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+    }
 
     setUploading(true);
     try {
