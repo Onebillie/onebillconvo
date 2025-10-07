@@ -456,7 +456,33 @@ const Landing = () => {
       <section className="py-20 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-4">Developer-Friendly API</h2>
-          <p className="text-center text-muted-foreground mb-12">Integrate with your existing tools in minutes</p>
+          <p className="text-center text-muted-foreground mb-4">Integrate with your existing tools in minutes</p>
+          
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="bg-card border rounded-lg p-6">
+              <h3 className="text-xl font-semibold mb-3">Two Ways to Integrate</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <span className="text-2xl">🔗</span>
+                    Embed Link
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Simply embed our chat widget into your existing website or app. Add a single line of code and your customers can start chatting through WhatsApp and email directly from your site.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <span className="text-2xl">⚡</span>
+                    REST API
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use our comprehensive REST API to connect your CRM, e-commerce platform, or custom applications. Send messages, manage customers, and sync conversations programmatically.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-card border rounded-lg p-6">
