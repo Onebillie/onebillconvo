@@ -235,7 +235,7 @@ const Landing = () => {
             description: "Link your Meta Business Platform account and WhatsApp Business API to your aggregated inbox"
           }, {
             step: "2",
-            title: "Add Your Team Agents",
+            title: "Connect WhatsApp and Email",
             description: "Invite up to 10 agents to manage messages and talk to customers collaboratively"
           }, {
             step: "3",
@@ -245,7 +245,7 @@ const Landing = () => {
                 <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 mx-auto" aria-label={`Step ${step.step}`}>
                   {step.step}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                <h3 className="text-xl font-semibold mb-2">Connect WhatsApp and Email</h3>
                 <p className="text-muted-foreground">{step.description}</p>
               </div>)}
           </div>
