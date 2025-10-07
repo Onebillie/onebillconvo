@@ -38,6 +38,13 @@ export function WhatsAppAccountManagement() {
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["whatsapp-accounts"],
     queryFn: async () => {
+      // Attempt to seed from Supabase secrets if no accounts exist yet
+      try {
+        await supabase.functions.invoke("whatsapp-seed-from-secrets", { body: {} });
+      } catch (e) {
+        // ignore; seeding is best-effort
+      }
+
       const { data, error } = await supabase
         .from("whatsapp_accounts")
         .select("*")
