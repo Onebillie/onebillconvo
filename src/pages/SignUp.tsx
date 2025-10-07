@@ -136,17 +136,7 @@ export default function SignUp() {
     
     setLoading(true);
     try {
-      // Ensure we have an authenticated session before creating checkout
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-        if (signInError) throw signInError;
-      }
-
-      // Create Stripe checkout session for paid plans (user is now authenticated)
+      // Create Stripe checkout session for paid plans
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           priceId: STRIPE_PRODUCTS[formData.selectedPlan].priceId,
@@ -216,37 +206,16 @@ export default function SignUp() {
 
       if (authError) throw authError;
 
-      // Auto-confirm the user's email to allow immediate sign-in
-      if (authData.user && !authData.session) {
-        try {
-          const { error: confirmError } = await supabase.functions.invoke(
-            'confirm-user-email',
-            {
-              body: { userId: authData.user.id }
-            }
-          );
-          if (confirmError) {
-            console.error('Error confirming email:', confirmError);
-          } else {
-            console.log('Email auto-confirmed successfully');
-          }
-        } catch (confirmErr) {
-          console.error('Failed to auto-confirm email:', confirmErr);
-        }
-
-        // Immediately sign the user in so the checkout call has a valid JWT
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
+      // Check if we have a valid session (depends on email confirmation settings)
+      if (!authData.session) {
+        toast({
+          title: "Email verification required",
+          description: "Please verify your email address by clicking the verification link we just sent you. Then sign in to complete your payment.",
+          variant: "default",
         });
-        if (signInError) {
-          toast({
-            title: "Sign-in failed",
-            description: signInError.message,
-            variant: "destructive",
-          });
-          return;
-        }
+        // Redirect to sign in page
+        navigate("/auth");
+        return;
       }
 
       toast({
@@ -254,7 +223,7 @@ export default function SignUp() {
         description: "Now proceeding to payment...",
       });
       
-      // Move to payment step after account creation (user is authenticated now)
+      // Move to payment step (user has valid session)
       setCurrentStep(6);
     } catch (error: any) {
       toast({
