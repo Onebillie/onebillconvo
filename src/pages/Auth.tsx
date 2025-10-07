@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -167,9 +167,9 @@ export default function Auth() {
                 </Button>
                 <div className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
-                  <a href="/signup" className="text-primary hover:underline font-medium">
+                  <Link to="/signup" className="text-primary hover:underline font-medium">
                     Sign up here
-                  </a>
+                  </Link>
                 </div>
               </div>
             </form>

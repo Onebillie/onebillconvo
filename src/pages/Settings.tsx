@@ -102,58 +102,58 @@ export default function Settings() {
           </TabsList>
 
           {isSuperAdmin && (
-            <TabsContent value="staff">
+            <TabsContent value="staff" forceMount>
               <StaffManagement />
             </TabsContent>
           )}
 
-          <TabsContent value="subscription">
+          <TabsContent value="subscription" forceMount>
             <SubscriptionSettings />
           </TabsContent>
 
-          <TabsContent value="templates">
+          <TabsContent value="templates" forceMount>
             <TemplateManagement />
           </TabsContent>
 
-          <TabsContent value="whatsapp-templates">
+          <TabsContent value="whatsapp-templates" forceMount>
             <WhatsAppTemplateManagement />
           </TabsContent>
 
-          <TabsContent value="whatsapp-accounts">
+          <TabsContent value="whatsapp-accounts" forceMount>
             <WhatsAppAccountManagement />
           </TabsContent>
 
-          <TabsContent value="email">
+          <TabsContent value="email" forceMount>
             <EmailAccountManagement />
           </TabsContent>
 
-          <TabsContent value="email-template">
+          <TabsContent value="email-template" forceMount>
             <EmailTemplateSettings />
           </TabsContent>
 
-          <TabsContent value="statuses">
+          <TabsContent value="statuses" forceMount>
             <StatusManagement />
           </TabsContent>
 
-          <TabsContent value="tasks">
+          <TabsContent value="tasks" forceMount>
             <TaskSettings />
           </TabsContent>
 
-          <TabsContent value="business" className="space-y-4">
+          <TabsContent value="business" forceMount className="space-y-4">
             <BusinessSettings />
             <NotificationSettings />
           </TabsContent>
 
-          <TabsContent value="calendar">
+          <TabsContent value="calendar" forceMount>
             <CalendarSettings />
           </TabsContent>
 
-          <TabsContent value="ai">
+          <TabsContent value="ai" forceMount>
             <AIAssistantSettings />
           </TabsContent>
 
           {isSuperAdmin && (
-            <TabsContent value="api">
+            <TabsContent value="api" forceMount>
               <ApiAccessManagement />
             </TabsContent>
           )}
