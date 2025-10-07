@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
+import { useFormAutosave } from "@/hooks/useFormAutosave";
 
 
 interface CreateContactDialogProps {
@@ -28,6 +30,33 @@ export const CreateContactDialog = ({
     phone: "",
     email: "",
   });
+
+  const hasUnsavedChanges = open && (formData.name !== "" || formData.phone !== "" || formData.email !== "");
+  
+  // Autosave form data
+  const { loadSavedData, clearSavedData } = useFormAutosave({
+    key: 'create-contact-form',
+    values: formData,
+    enabled: open && hasUnsavedChanges,
+  });
+
+  // Load saved data when dialog opens
+  useEffect(() => {
+    if (open) {
+      const savedData = loadSavedData();
+      if (savedData && (savedData.name || savedData.phone || savedData.email)) {
+        setFormData({
+          name: savedData.name || "",
+          phone: savedData.phone || "",
+          email: savedData.email || "",
+        });
+        toast({
+          title: "Draft restored",
+          description: "Your previous contact draft has been restored.",
+        });
+      }
+    }
+  }, [open]);
 
 
   const handleCreate = async () => {
@@ -70,6 +99,7 @@ export const CreateContactDialog = ({
         description: "New contact added successfully.",
       });
 
+      clearSavedData();
       setFormData({ name: "", phone: "", email: "" });
       setOpen(false);
       onContactCreated();
@@ -84,8 +114,23 @@ export const CreateContactDialog = ({
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && hasUnsavedChanges) {
+      const confirmClose = window.confirm(
+        "You have unsaved changes. Are you sure you want to close this form?"
+      );
+      if (!confirmClose) return;
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <UnsavedChangesGuard 
+        hasUnsavedChanges={hasUnsavedChanges}
+        message="You have an unsaved contact form. Are you sure you want to leave?"
+      />
+      <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <UserPlus className="w-4 h-4 mr-2" />
@@ -140,5 +185,6 @@ export const CreateContactDialog = ({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 };

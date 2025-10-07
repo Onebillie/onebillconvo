@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
+import { useFormAutosave } from "@/hooks/useFormAutosave";
 
 interface EditContactDialogProps {
   open: boolean;
@@ -37,6 +39,33 @@ export const EditContactDialog = ({
   const [notes, setNotes] = useState(customer.notes || "");
   const [saving, setSaving] = useState(false);
 
+  const formData = {
+    firstName,
+    lastName,
+    whatsappPhone,
+    whatsappName,
+    email,
+    alternateEmails,
+    address,
+    notes,
+  };
+
+  const hasUnsavedChanges = open && (
+    firstName !== (customer.first_name || "") ||
+    lastName !== (customer.last_name || "") ||
+    whatsappPhone !== (customer.whatsapp_phone || "") ||
+    email !== (customer.email || "") ||
+    alternateEmails !== (customer.alternate_emails?.join(", ") || "") ||
+    address !== (customer.address || "") ||
+    notes !== (customer.notes || "")
+  );
+
+  const { clearSavedData } = useFormAutosave({
+    key: `edit-contact-form-${customer.id}`,
+    values: formData,
+    enabled: open && hasUnsavedChanges,
+  });
+
   const handleSave = async () => {
     if (!firstName.trim()) {
       toast({
@@ -60,7 +89,7 @@ export const EditContactDialog = ({
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim() || null,
-          name: `${firstName.trim()} ${lastName.trim()}`.trim(), // Auto-generate full name
+          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
           whatsapp_phone: whatsappPhone.trim() || null,
           whatsapp_name: whatsappName.trim() || null,
           email: email.trim() || null,
@@ -77,6 +106,7 @@ export const EditContactDialog = ({
         description: "Contact updated successfully",
       });
       
+      clearSavedData();
       onUpdate();
       onOpenChange(false);
     } catch (error: any) {
@@ -90,114 +120,130 @@ export const EditContactDialog = ({
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && hasUnsavedChanges) {
+      const confirmClose = window.confirm(
+        "You have unsaved changes. Are you sure you want to close this form?"
+      );
+      if (!confirmClose) return;
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Contact</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
+    <>
+      <UnsavedChangesGuard 
+        hasUnsavedChanges={hasUnsavedChanges}
+        message="You have unsaved contact changes. Are you sure you want to leave?"
+      />
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Name *</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Surname</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="whatsappPhone">WhatsApp Phone</Label>
+                <Input
+                  id="whatsappPhone"
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                  placeholder="WhatsApp number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsappName">WhatsApp Name</Label>
+                <Input
+                  id="whatsappName"
+                  value={whatsappName}
+                  onChange={(e) => setWhatsappName(e.target.value)}
+                  placeholder="Name on WhatsApp"
+                  disabled
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="firstName">Name *</Label>
+              <Label htmlFor="email">Email Address (Default for outbound)</Label>
               <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First name"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Primary email address"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="lastName">Surname</Label>
+              <Label htmlFor="alternateEmails">Associated Email Addresses</Label>
               <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last name"
+                id="alternateEmails"
+                value={alternateEmails}
+                onChange={(e) => setAlternateEmails(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Separate multiple emails with commas
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Physical address"
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+
             <div className="space-y-2">
-              <Label htmlFor="whatsappPhone">WhatsApp Phone</Label>
+              <Label htmlFor="notes">Notes</Label>
               <Input
-                id="whatsappPhone"
-                value={whatsappPhone}
-                onChange={(e) => setWhatsappPhone(e.target.value)}
-                placeholder="WhatsApp number"
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Private notes"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="whatsappName">WhatsApp Name</Label>
-              <Input
-                id="whatsappName"
-                value={whatsappName}
-                onChange={(e) => setWhatsappName(e.target.value)}
-                placeholder="Name on WhatsApp"
-                disabled
-              />
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address (Default for outbound)</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Primary email address"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="alternateEmails">Associated Email Addresses</Label>
-            <Input
-              id="alternateEmails"
-              value={alternateEmails}
-              onChange={(e) => setAlternateEmails(e.target.value)}
-              placeholder="email1@example.com, email2@example.com"
-            />
-            <p className="text-xs text-muted-foreground">
-              Separate multiple emails with commas
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Physical address"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Input
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Private notes"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
