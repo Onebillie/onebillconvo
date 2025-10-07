@@ -9,10 +9,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Zap } from "lucide-react";
-import { CREDIT_BUNDLES, type CreditBundle } from "@/lib/stripeConfig";
+import { Check, Loader2, Zap, Globe } from "lucide-react";
+import { CREDIT_BUNDLES, type CreditBundle, getLocalizedBundlePrice, formatPrice } from "@/lib/stripeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCountryPricing } from "@/hooks/useCountryPricing";
 
 interface CreditBundleDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function CreditBundleDialog({
   onOpenChange,
 }: CreditBundleDialogProps) {
   const [loadingBundle, setLoadingBundle] = useState<CreditBundle | null>(null);
+  const { countryInfo, loading: countryLoading } = useCountryPricing();
 
   const handlePurchase = async (bundleKey: CreditBundle) => {
     setLoadingBundle(bundleKey);
@@ -68,6 +70,14 @@ export function CreditBundleDialog({
           <DialogDescription className="text-center">
             Top up your WhatsApp sending credits to continue messaging
           </DialogDescription>
+          {!countryLoading && countryInfo.currency !== "USD" && (
+            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
+              <Globe className="w-4 h-4" />
+              <span>
+                Pricing shown in {countryInfo.currency} for {countryInfo.country}
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="grid md:grid-cols-3 gap-4 py-4">
@@ -102,9 +112,19 @@ export function CreditBundleDialog({
                   </div>
 
                   <div>
-                    <div className="text-2xl font-bold">${bundle.price}</div>
+                    <div className="text-2xl font-bold">
+                      {formatPrice(
+                        getLocalizedBundlePrice(bundleKey, countryInfo.currency),
+                        countryInfo.currency,
+                        countryInfo.currencySymbol
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      ${(bundle.price / bundle.credits).toFixed(3)} per message
+                      {formatPrice(
+                        getLocalizedBundlePrice(bundleKey, countryInfo.currency) / bundle.credits,
+                        countryInfo.currency,
+                        countryInfo.currencySymbol
+                      )} per message
                     </p>
                   </div>
 

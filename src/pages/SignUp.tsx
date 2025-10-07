@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Check, Loader2, MessageSquare } from "lucide-react";
+import { Check, Loader2, MessageSquare, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
+import { STRIPE_PRODUCTS, type SubscriptionTier, getLocalizedPrice, formatPrice } from "@/lib/stripeConfig";
+import { useCountryPricing } from "@/hooks/useCountryPricing";
 
 const STEPS = [
   { id: 1, title: "Personal Information", description: "Tell us about yourself" },
@@ -41,6 +42,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { profile, loading: authLoading } = useAuth();
+  const { countryInfo, loading: countryLoading } = useCountryPricing();
   
   const [formData, setFormData] = useState<SignUpData>({
     firstName: "",
@@ -382,6 +384,14 @@ export default function SignUp() {
           {/* Step 3: Choose Plan */}
           {currentStep === 3 && (
             <div className="space-y-6">
+              {!countryLoading && countryInfo.currency !== "USD" && (
+                <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg text-sm">
+                  <Globe className="w-4 h-4" />
+                  <span>
+                    Pricing shown in {countryInfo.currency} for {countryInfo.country}
+                  </span>
+                </div>
+              )}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {(Object.entries(STRIPE_PRODUCTS) as [SubscriptionTier, typeof STRIPE_PRODUCTS[SubscriptionTier]][]).map(([tier, config]) => (
                   <Card
@@ -413,7 +423,13 @@ export default function SignUp() {
                           <span className="text-3xl font-bold">Free</span>
                         ) : (
                           <>
-                            <span className="text-3xl font-bold">${config.price}</span>
+                            <span className="text-3xl font-bold">
+                              {formatPrice(
+                                getLocalizedPrice(tier, countryInfo.currency),
+                                countryInfo.currency,
+                                countryInfo.currencySymbol
+                              )}
+                            </span>
                             <span className="text-muted-foreground text-sm">/{config.interval}</span>
                           </>
                         )}
