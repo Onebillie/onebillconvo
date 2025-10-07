@@ -188,7 +188,7 @@ const Landing = () => {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Manage Your Conversations From One Place: WhatsApp / Email / AI ChatBot
+            WhatsApp - Email - AI ChatBot
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-foreground">
             The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
