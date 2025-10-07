@@ -137,13 +137,30 @@ serve(async (req) => {
     }
 
     // First, fill in company placeholders on the template itself
+    const hasContentPlaceholder = /\{\{content\}\}/.test(htmlTemplate);
     const templWithCompany = htmlTemplate
       .replace(/\{\{company_name\}\}/g, companyName)
       .replace(/\{\{signature\}\}/g, signature)
       .replace(/\{\{company_logo\}\}/g, companyLogo);
 
-    // Insert content into the template
-    let finalHtml = templWithCompany.replace(/\{\{content\}\}/g, finalContent);
+    // Insert content into the template (with fallback if {{content}} is missing)
+    let finalHtml = templWithCompany;
+    if (hasContentPlaceholder) {
+      finalHtml = finalHtml.replace(/\{\{content\}\}/g, finalContent);
+    } else {
+      // Try to inject into a common content container, otherwise before </body>, otherwise append
+      if (/<div[^>]*class=["'][^"']*email-content[^"']*["'][^>]*>/i.test(finalHtml)) {
+        finalHtml = finalHtml.replace(
+          /(<div[^>]*class=["'][^"']*email-content[^"']*["'][^>]*>)/i,
+          `$1${finalContent}`
+        );
+      } else if (/<body[^>]*>/i.test(finalHtml)) {
+        finalHtml = finalHtml.replace(/<\/body>/i, `<div>${finalContent}</div></body>`);
+      } else {
+        finalHtml += `<div>${finalContent}</div>`;
+      }
+      console.log('Template missing {{content}} placeholder - injected content automatically');
+    }
 
     // Finally, apply any customer placeholders present in the template itself
     if (customer) {
