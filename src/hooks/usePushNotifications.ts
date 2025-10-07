@@ -98,9 +98,10 @@ export const usePushNotifications = () => {
       await navigator.serviceWorker.ready;
 
       // Subscribe to push notifications
+      const applicationServerKey = urlBase64ToUint8Array(vapidKey);
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer
       });
 
       setSubscription(pushSubscription);
