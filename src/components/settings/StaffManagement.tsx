@@ -38,10 +38,39 @@ export const StaffManagement = () => {
 
   const fetchStaff = async () => {
     try {
-      // First get profiles
+      // Get current user's business
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: businessUser } = await supabase
+        .from("business_users")
+        .select("business_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!businessUser?.business_id) {
+        console.error("No business found for user");
+        return;
+      }
+
+      // Get all user IDs that belong to this business
+      const { data: businessMembers } = await supabase
+        .from("business_users")
+        .select("user_id")
+        .eq("business_id", businessUser.business_id);
+
+      if (!businessMembers || businessMembers.length === 0) {
+        setStaff([]);
+        return;
+      }
+
+      const memberIds = businessMembers.map(m => m.user_id);
+
+      // Fetch profiles for users in this business only
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
+        .in("id", memberIds)
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
