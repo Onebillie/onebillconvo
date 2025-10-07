@@ -418,6 +418,17 @@ const ApiDocs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <header className="border-b border-border">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-semibold">À La Carte Chat API</span>
+          </div>
+          <Button onClick={() => window.location.href = "/auth"}>
+            Sign In
+          </Button>
+        </div>
+      </header>
+      
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">A La Carte Chat API Documentation</h1>

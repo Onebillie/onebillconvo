@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Globe } from "lucide-react";
+import { Check, Loader2, Globe, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { STRIPE_PRODUCTS, type SubscriptionTier, getLocalizedPrice, formatPrice } from "@/lib/stripeConfig";
@@ -54,6 +54,26 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b border-border bg-background">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-semibold">À La Carte Chat</span>
+          </div>
+          {user ? (
+            <Button onClick={() => navigate("/app/dashboard")} variant="outline">
+              Dashboard
+            </Button>
+          ) : (
+            <Button onClick={() => navigate("/auth")}>
+              Sign In
+            </Button>
+          )}
+        </div>
+      </header>
+      
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>

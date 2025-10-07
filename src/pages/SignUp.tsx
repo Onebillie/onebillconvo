@@ -282,8 +282,23 @@ export default function SignUp() {
   const progress = (currentStep / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-3xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b border-border bg-background">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-semibold">À La Carte Chat</span>
+          </div>
+          <Button onClick={() => navigate("/auth")} variant="ghost">
+            Already have an account? Sign In
+          </Button>
+        </div>
+      </header>
+      
+      <div className="flex items-center justify-center p-4 py-16">
+        <Card className="w-full max-w-3xl">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
@@ -611,6 +626,7 @@ export default function SignUp() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

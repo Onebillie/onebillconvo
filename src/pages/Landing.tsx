@@ -165,11 +165,22 @@ const Landing = () => {
             </div>
             <span className="text-xl font-semibold">À La Carte Chat</span>
           </div>
-          {user ? <Button onClick={() => navigate("/onebillchat")}>
-              Go to App
-            </Button> : <Button onClick={() => navigate("/signup")} variant="outline">
-              Sign Up
-            </Button>}
+      <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <Button onClick={() => navigate("/app/dashboard")} variant="outline">
+                  Dashboard
+                </Button>
+                <Button onClick={() => navigate("/auth")} variant="ghost">
+                  Log Out
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
