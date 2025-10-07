@@ -33,7 +33,7 @@ import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 import { LimitReachedBanner } from "@/components/LimitReachedBanner";
 
 const Dashboard = () => {
-  const { profile, loading: authLoading, isAdmin } = useAuth();
+  const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const isMobile = useIsMobile();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -294,6 +294,9 @@ const Dashboard = () => {
                 <SettingsIcon className="w-4 h-4" />
               </Button>
             )}
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
         <div className="flex flex-col gap-2">
@@ -402,6 +405,9 @@ const Dashboard = () => {
                     <SettingsIcon className="w-4 h-4" />
                   </Button>
                 )}
+                <Button variant="ghost" size="icon" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </div>
