@@ -526,7 +526,7 @@ export default function SignUp() {
               <p className="text-muted-foreground">
                 Click below to proceed to secure payment with Stripe
               </p>
-              <div className="p-4 bg-muted rounded-lg max-w-md mx-auto">
+              <div className="p-4 bg-muted rounded-lg max-w-md mx-auto space-y-4">
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
                     <span>Plan:</span>
@@ -535,8 +535,18 @@ export default function SignUp() {
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold pt-2 border-t">
-                    <span>Total:</span>
+                    <span>First Payment Due Now:</span>
                     <span className="text-lg">${calculateTotal()}</span>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-border/50">
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground text-left">
+                    <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    </div>
+                    <p>
+                      <span className="font-semibold text-foreground">Ongoing Monthly Subscription:</span> Your payment will be processed immediately. You will be automatically charged ${calculateTotal()} every month until you cancel.
+                    </p>
                   </div>
                 </div>
               </div>
