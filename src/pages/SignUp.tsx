@@ -20,8 +20,8 @@ const STEPS = [
   { id: 2, title: "Business Details", description: "Your business information" },
   { id: 3, title: "Choose Your Plan", description: "Select the perfect plan" },
   { id: 4, title: "Review & Confirm", description: "Review your selection" },
-  { id: 5, title: "Payment", description: "Complete your subscription" },
-  { id: 6, title: "Create Account", description: "Set up your credentials" },
+  { id: 5, title: "Create Account", description: "Set up your credentials" },
+  { id: 6, title: "Payment", description: "Complete your subscription" },
 ];
 
 interface SignUpData {
@@ -124,46 +124,31 @@ export default function SignUp() {
   const handlePayment = async () => {
     if (!formData.selectedPlan) return;
     
-    // If free plan (Starter), skip payment and go directly to account creation
+    // If free plan (Starter), skip payment and go directly to completion
     if (formData.selectedPlan === 'starter') {
       toast({
         title: "Free plan selected",
-        description: "No payment required. Let's create your account!",
+        description: "Welcome aboard! Redirecting to your dashboard...",
       });
-      setCurrentStep(6); // Skip payment and go to account creation
+      navigate("/app/onboarding");
       return;
     }
     
     setLoading(true);
     try {
-      // Create Stripe checkout session for paid plans
+      // Create Stripe checkout session for paid plans (user is now authenticated)
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           priceId: STRIPE_PRODUCTS[formData.selectedPlan].priceId,
           quantity: 1,
-          metadata: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            contactPhone: formData.contactPhone,
-            accountType: formData.accountType,
-            businessName: formData.businessName,
-          },
         },
       });
 
       if (error) throw error;
 
       if (data.url) {
-        // Store form data in sessionStorage before redirecting
-        sessionStorage.setItem("signupData", JSON.stringify(formData));
-        window.open(data.url, '_blank');
-        
-        // Move to next step after opening payment in new tab
-        toast({
-          title: "Payment window opened",
-          description: "Complete payment in the new window, then return to create your account",
-        });
-        setCurrentStep(6);
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
       }
     } catch (error: any) {
       toast({
@@ -240,29 +225,13 @@ export default function SignUp() {
         }
       }
 
-      // Clear stored data
-      sessionStorage.removeItem("signupData");
-
-      // Check if user is immediately confirmed or has been auto-confirmed
-      if (authData.user && authData.session) {
-        toast({
-          title: "Welcome!",
-          description: "Your account has been created successfully",
-        });
-        // User is logged in, redirect to onboarding
-        navigate("/app/onboarding");
-      } else {
-        // Email has been confirmed, user can now sign in
-        toast({
-          title: "Account created!",
-          description: "Your email has been verified. You can now sign in with your credentials.",
-          duration: 5000,
-        });
-        // Redirect to auth page to sign in
-        setTimeout(() => {
-          navigate("/auth");
-        }, 1500);
-      }
+      toast({
+        title: "Account created!",
+        description: "Now proceeding to payment...",
+      });
+      
+      // Move to payment step after account creation
+      setCurrentStep(6);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -516,35 +485,8 @@ export default function SignUp() {
             </div>
           )}
 
-          {/* Step 5: Payment */}
+          {/* Step 5: Create Account */}
           {currentStep === 5 && (
-            <div className="space-y-4 text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <Check className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold">Ready for Payment</h3>
-              <p className="text-muted-foreground">
-                Click below to proceed to secure payment with Stripe
-              </p>
-              <div className="p-4 bg-muted rounded-lg max-w-md mx-auto">
-                <div className="text-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span>Plan:</span>
-                    <span className="font-medium">
-                      {formData.selectedPlan ? STRIPE_PRODUCTS[formData.selectedPlan].name : "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-semibold pt-2 border-t">
-                    <span>Total:</span>
-                    <span className="text-lg">${calculateTotal()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 6: Create Account */}
-          {currentStep === 6 && (
             <form onSubmit={handleCreateAccount} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Account Email (for MFA) *</Label>
@@ -574,9 +516,36 @@ export default function SignUp() {
             </form>
           )}
 
+          {/* Step 6: Payment */}
+          {currentStep === 6 && (
+            <div className="space-y-4 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Check className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Ready for Payment</h3>
+              <p className="text-muted-foreground">
+                Click below to proceed to secure payment with Stripe
+              </p>
+              <div className="p-4 bg-muted rounded-lg max-w-md mx-auto">
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span>Plan:</span>
+                    <span className="font-medium">
+                      {formData.selectedPlan ? STRIPE_PRODUCTS[formData.selectedPlan].name : "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-semibold pt-2 border-t">
+                    <span>Total:</span>
+                    <span className="text-lg">${calculateTotal()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-4 border-t">
-            {currentStep > 1 && currentStep < 5 && (
+            {currentStep > 1 && currentStep < 6 && (
               <Button variant="outline" onClick={handleBack}>
                 Back
               </Button>
@@ -589,19 +558,6 @@ export default function SignUp() {
             )}
 
             {currentStep === 5 && (
-              <Button onClick={handlePayment} disabled={loading} className="ml-auto">
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Proceed to Payment"
-                )}
-              </Button>
-            )}
-
-            {currentStep === 6 && (
               <Button onClick={handleCreateAccount} disabled={loading} className="ml-auto">
                 {loading ? (
                   <>
@@ -610,6 +566,19 @@ export default function SignUp() {
                   </>
                 ) : (
                   "Create Account"
+                )}
+              </Button>
+            )}
+
+            {currentStep === 6 && (
+              <Button onClick={handlePayment} disabled={loading} className="ml-auto">
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Proceed to Payment"
                 )}
               </Button>
             )}

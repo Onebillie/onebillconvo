@@ -25,15 +25,8 @@ export default function PaymentSuccess() {
   }, [searchParams, checkSubscription]);
 
   const handleContinue = () => {
-    // Retrieve signup data if exists
-    const signupData = sessionStorage.getItem("signupData");
-    if (signupData) {
-      // User came from signup flow, go back to complete account creation
-      navigate("/signup");
-    } else {
-      // Go to onboarding
-      navigate("/app/onboarding");
-    }
+    // Payment successful, redirect to onboarding
+    navigate("/app/onboarding");
   };
 
   return (
@@ -59,7 +52,7 @@ export default function PaymentSuccess() {
         {!loading && (
           <CardContent>
             <Button onClick={handleContinue} className="w-full">
-              Continue to Account Setup
+              Continue to Dashboard
             </Button>
           </CardContent>
         )}
