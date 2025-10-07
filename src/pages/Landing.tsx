@@ -188,10 +188,10 @@ const Landing = () => {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            WhatsApp - Email - AI ChatBot
+            WhatsApp / Email / AI ChatBot In ONE Place
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-foreground">
-            The ultimate combined inbox for WhatsApp Business API, email, and customer conversations. Talk to your customers from one aggregated inbox with Meta Business integration and AI-powered automation.
+            The ultimate combined inbox for WhatsApp Business, Emails and customer conversations with your personally trained AI chatbot Built-in! Allow your team to talk to customers from one aggregated inbox
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/signup")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
