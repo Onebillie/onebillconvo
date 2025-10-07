@@ -27,7 +27,22 @@ verify_jwt = false
 [functions.api-customers]
 verify_jwt = false
 
+[functions.api-customers-create]
+verify_jwt = false
+
+[functions.api-customers-update]
+verify_jwt = false
+
+[functions.api-customers-delete]
+verify_jwt = false
+
 [functions.api-send-message]
+verify_jwt = false
+
+[functions.api-templates]
+verify_jwt = false
+
+[functions.api-settings]
 verify_jwt = false
 
 [functions.ai-assistant]
