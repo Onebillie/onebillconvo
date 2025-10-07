@@ -136,6 +136,16 @@ export default function SignUp() {
     
     setLoading(true);
     try {
+      // Ensure we have an authenticated session before creating checkout
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (signInError) throw signInError;
+      }
+
       // Create Stripe checkout session for paid plans (user is now authenticated)
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
@@ -145,10 +155,11 @@ export default function SignUp() {
       });
 
       if (error) throw error;
-
-      if (data.url) {
+      if (data?.url) {
         // Redirect to Stripe checkout
         window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
       }
     } catch (error: any) {
       toast({
@@ -214,7 +225,6 @@ export default function SignUp() {
               body: { userId: authData.user.id }
             }
           );
-          
           if (confirmError) {
             console.error('Error confirming email:', confirmError);
           } else {
@@ -223,6 +233,20 @@ export default function SignUp() {
         } catch (confirmErr) {
           console.error('Failed to auto-confirm email:', confirmErr);
         }
+
+        // Immediately sign the user in so the checkout call has a valid JWT
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (signInError) {
+          toast({
+            title: "Sign-in failed",
+            description: signInError.message,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       toast({
@@ -230,7 +254,7 @@ export default function SignUp() {
         description: "Now proceeding to payment...",
       });
       
-      // Move to payment step after account creation
+      // Move to payment step after account creation (user is authenticated now)
       setCurrentStep(6);
     } catch (error: any) {
       toast({
