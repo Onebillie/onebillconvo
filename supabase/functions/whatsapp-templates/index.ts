@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,19 +13,69 @@ serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
-    const businessAccountId = Deno.env.get('WHATSAPP_BUSINESS_ACCOUNT_ID');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get account_id from query params or use default
+    const url = new URL(req.url);
+    const accountId = url.searchParams.get('account_id');
+
+    let accessToken: string | null = null;
+    let businessAccountId: string | null = null;
+
+    if (accountId) {
+      // Fetch specific account
+      const { data: account } = await supabase
+        .from('whatsapp_accounts')
+        .select('access_token, business_account_id, is_active')
+        .eq('id', accountId)
+        .eq('is_active', true)
+        .single();
+
+      if (account) {
+        accessToken = account.access_token;
+        businessAccountId = account.business_account_id;
+        console.log('Using specified WhatsApp account');
+      }
+    }
+
+    // Fall back to default account if not found
+    if (!accessToken || !businessAccountId) {
+      const { data: defaultAccount } = await supabase
+        .from('whatsapp_accounts')
+        .select('access_token, business_account_id, is_active')
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .single();
+
+      if (defaultAccount) {
+        accessToken = defaultAccount.access_token;
+        businessAccountId = defaultAccount.business_account_id;
+        console.log('Using default WhatsApp account');
+      }
+    }
 
     if (!accessToken || !businessAccountId) {
-      throw new Error('WhatsApp credentials not configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No WhatsApp account configured. Please add a WhatsApp account in Settings > WA Accounts.',
+          templates: []
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
     }
 
     // Fetch message templates from Meta's Graph API
-    const url = `https://graph.facebook.com/v18.0/${businessAccountId}/message_templates`;
+    const templateUrl = `https://graph.facebook.com/v18.0/${businessAccountId}/message_templates`;
     
-    console.log('Fetching templates from:', url);
+    console.log('Fetching templates from:', templateUrl);
 
-    const response = await fetch(url, {
+    const response = await fetch(templateUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

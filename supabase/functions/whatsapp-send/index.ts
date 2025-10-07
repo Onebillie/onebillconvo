@@ -24,10 +24,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
-    let phoneNumberId = Deno.env.get('WHATSAPP_PHONE_ID');
-
-    // Try to get account-specific credentials
+    let accessToken: string | null = null;
+    let phoneNumberId: string | null = null;
     let accountId = whatsapp_account_id;
 
     // If no account_id provided but conversation_id is, fetch from conversation
@@ -47,15 +45,18 @@ serve(async (req) => {
         .from('whatsapp_accounts')
         .select('access_token, phone_number_id, is_active')
         .eq('id', accountId)
+        .eq('is_active', true)
         .single();
 
-      if (account && account.is_active) {
+      if (account) {
         accessToken = account.access_token;
         phoneNumberId = account.phone_number_id;
-        console.log('Using account-specific credentials');
+        console.log('Using account-specific credentials for account:', accountId);
       }
-    } else {
-      // Fall back to default account if no specific account
+    }
+
+    // Fall back to default account if no specific account found
+    if (!accessToken || !phoneNumberId) {
       const { data: defaultAccount } = await supabase
         .from('whatsapp_accounts')
         .select('access_token, phone_number_id, is_active, id')
@@ -67,12 +68,17 @@ serve(async (req) => {
         accessToken = defaultAccount.access_token;
         phoneNumberId = defaultAccount.phone_number_id;
         accountId = defaultAccount.id;
-        console.log('Using default account credentials');
+        console.log('Using default WhatsApp account');
       }
     }
 
     if (!accessToken || !phoneNumberId) {
-      throw new Error('WhatsApp credentials not configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No WhatsApp account configured. Please add a WhatsApp account in Settings > WA Accounts.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (!to) {
