@@ -412,8 +412,19 @@ async function processIncomingEmail(
     conversationId = newConv?.id;
   }
 
-  // Insert message
-  const messageContent = email.text || email.html?.replace(/<[^>]*>/g, '') || '';
+  // Insert message with subject and better content handling
+  let messageContent = '';
+  if (email.text) {
+    messageContent = email.text;
+  } else if (email.html) {
+    // Strip HTML tags but keep line breaks
+    messageContent = email.html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+  }
+  
+  // Prepend subject if exists
+  const fullContent = email.subject 
+    ? `Subject: ${email.subject}\n\n${messageContent}` 
+    : messageContent;
   
   const { data: message, error: messageError } = await supabase
     .from('messages')
@@ -421,7 +432,7 @@ async function processIncomingEmail(
       conversation_id: conversationId,
       customer_id: customerId,
       business_id: businessId,
-      content: messageContent.substring(0, 5000),
+      content: fullContent.substring(0, 5000),
       direction: 'inbound',
       status: 'delivered',
       channel: 'email',
@@ -437,34 +448,68 @@ async function processIncomingEmail(
     throw messageError;
   }
 
-  // Handle attachments
+  // Handle attachments with better logging
   if (email.attachments && email.attachments.length > 0) {
+    console.log(`📎 Processing ${email.attachments.length} attachments for email: ${email.subject}`);
+    await logger.logSuccess('Processing attachments', { count: email.attachments.length });
+    
     for (const attachment of email.attachments) {
       try {
+        if (!attachment.content || attachment.content.length === 0) {
+          console.warn(`⚠️ Skipping empty attachment: ${attachment.filename}`);
+          await logger.logWarning('Empty attachment skipped', { filename: attachment.filename });
+          continue;
+        }
+
         const fileName = `${Date.now()}-${attachment.filename || 'attachment'}`;
         const filePath = `${businessId}/${fileName}`;
+
+        console.log(`Uploading attachment: ${fileName} (${attachment.content.length} bytes, type: ${attachment.mimeType})`);
 
         const { error: uploadError } = await supabase.storage
           .from('customer_media')
           .upload(filePath, attachment.content, {
             contentType: attachment.mimeType || 'application/octet-stream',
+            upsert: false
           });
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('customer_media')
-            .getPublicUrl(filePath);
-
-          await supabase.from('message_attachments').insert({
-            message_id: message.id,
-            filename: attachment.filename || 'attachment',
-            url: urlData.publicUrl,
-            type: attachment.mimeType || 'application/octet-stream',
-            size: attachment.content?.length || 0,
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          await logger.logWarning('Attachment upload failed', { 
+            filename: attachment.filename, 
+            error: uploadError.message 
           });
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('customer_media')
+          .getPublicUrl(filePath);
+
+        const { error: insertError } = await supabase.from('message_attachments').insert({
+          message_id: message.id,
+          filename: attachment.filename || 'attachment',
+          url: urlData.publicUrl,
+          type: attachment.mimeType || 'application/octet-stream',
+          size: attachment.content?.length || 0,
+        });
+
+        if (insertError) {
+          console.error('Attachment insert error:', insertError);
+          await logger.logWarning('Attachment DB insert failed', { 
+            filename: attachment.filename, 
+            error: insertError.message 
+          });
+        } else {
+          console.log(`✅ Attachment uploaded: ${fileName}`);
+          await logger.logSuccess('Attachment uploaded', { filename: fileName });
         }
       } catch (err: any) {
         console.error('Attachment upload failed:', err);
+        await logger.logWarning('Attachment processing error', { 
+          filename: attachment.filename, 
+          error: err.message 
+        });
       }
     }
   }

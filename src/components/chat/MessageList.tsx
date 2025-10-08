@@ -199,7 +199,10 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                           
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs opacity-70">
-                              {new Date(message.created_at).toLocaleTimeString([], {
+                              {new Date(message.created_at).toLocaleString([], {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}

@@ -53,6 +53,23 @@ const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Handle URL parameters to auto-select conversation
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const conversationId = searchParams.get('conversation');
+    
+    if (conversationId && conversations.length > 0) {
+      const conv = conversations.find(c => c.id === conversationId);
+      if (conv) {
+        setSelectedConversation(conv);
+        setShowContactDetails(false);
+        setMobileMenuOpen(false);
+        // Clear URL parameter
+        window.history.replaceState({}, '', '/app/dashboard');
+      }
+    }
+  }, [conversations]);
+
   const fetchConversations = useCallback(async () => {
     const { data, error } = await (supabase as any)
       .from('conversations')

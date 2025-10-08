@@ -61,27 +61,41 @@ export const useGlobalNotifications = () => {
 
             const customerName = conversation?.customer?.name || 'Unknown';
             const messagePreview = newMessage.content.substring(0, 40);
+            const channel = newMessage.channel === 'email' ? '📧' : '💬';
 
-            // Show toast notification
-            toast.success('New Message', {
+            // Show clickable toast notification
+            toast.success(`${channel} New Message`, {
               description: `${customerName}: ${messagePreview}...`,
               duration: 5000,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  // Navigate to dashboard and select conversation
+                  window.location.href = `/app/dashboard?conversation=${newMessage.conversation_id}`;
+                },
+              },
             });
 
             // Show browser notification if permission granted
             if (Notification.permission === 'granted') {
               try {
-                const notification = new Notification('New Message', {
-                  body: `${customerName}: ${messagePreview}...`,
+                const notification = new Notification(`${channel} New Message from ${customerName}`, {
+                  body: messagePreview,
                   icon: '/favicon.ico',
                   badge: '/favicon.ico',
                   tag: `message-${newMessage.id}`,
+                  data: { 
+                    conversationId: newMessage.conversation_id,
+                    messageId: newMessage.id 
+                  },
                   requireInteraction: false,
                   silent: false,
                 });
 
                 notification.onclick = () => {
                   window.focus();
+                  // Navigate to conversation
+                  window.location.href = `/app/dashboard?conversation=${newMessage.conversation_id}`;
                   notification.close();
                 };
               } catch (error) {
