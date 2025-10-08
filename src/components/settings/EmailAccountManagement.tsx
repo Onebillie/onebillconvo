@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil, Send, Search } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil, Send, Search, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
+import { ManualImapTestDialog } from "./ManualImapTestDialog";
 
 interface EmailAccount {
   id: string;
@@ -39,6 +40,7 @@ export function EmailAccountManagement() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [logsDialogAccount, setLogsDialogAccount] = useState<{ id: string; name: string } | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [manualTestAccount, setManualTestAccount] = useState<EmailAccount | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email_address: "",
@@ -628,6 +630,14 @@ export function EmailAccountManagement() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => setManualTestAccount(account)}
+                    >
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Manual Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => setLogsDialogAccount({ id: account.id, name: account.name })}
                     >
                       <FileText className="w-4 h-4 mr-2" />
@@ -691,6 +701,34 @@ export function EmailAccountManagement() {
           open={!!logsDialogAccount}
           onOpenChange={(open) => !open && setLogsDialogAccount(null)}
           liveMode={isTestingConnection}
+        />
+      )}
+
+      {manualTestAccount && (
+        <ManualImapTestDialog
+          open={!!manualTestAccount}
+          onOpenChange={(open) => !open && setManualTestAccount(null)}
+          defaultHost={manualTestAccount.imap_host}
+          defaultPort={manualTestAccount.imap_port}
+          defaultUsername={manualTestAccount.imap_username}
+          defaultUseSsl={manualTestAccount.imap_use_ssl}
+          onSuccess={async (config) => {
+            // Update the account with the working configuration
+            await updateAccountMutation.mutateAsync({
+              id: manualTestAccount.id,
+              accountData: {
+                ...formData,
+                imap_host: config.hostname,
+                imap_port: config.port,
+                imap_username: config.username,
+                imap_use_ssl: config.useTls,
+              }
+            });
+            toast({
+              title: "Configuration applied",
+              description: "Email account updated with working configuration",
+            });
+          }}
         />
       )}
 

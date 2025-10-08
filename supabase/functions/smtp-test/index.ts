@@ -48,15 +48,15 @@ serve(async (req) => {
       await logger.logError('Fetch account from database', ERROR_CODES.CONFIG_INCOMPLETE, `Email account not found: ${accountError?.message}`);
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
-    await logger.logSuccess('Fetch account from database', { account_name: account.name });
+    await logger.logSuccess('Fetch account from database', { account_name: account.name, email: account.email_address });
 
     // Validate configuration
     await logger.logStep('Validate SMTP configuration', 'in_progress');
     const rawHost = account.smtp_host || '';
     const hostname = sanitizeHostname(rawHost);
     const port = account.smtp_port;
-    const username = (account.smtp_username || account.email_address).trim();
-    const password = account.smtp_password?.trim();
+    const username = (account.smtp_username || account.email_address || '').trim();
+    const password = (account.smtp_password || '').trim();
 
     if (!hostname) {
       await logger.logError('Validate SMTP configuration', ERROR_CODES.INVALID_HOSTNAME, 'Hostname is empty or invalid');
@@ -87,27 +87,67 @@ serve(async (req) => {
       },
     };
 
+    await logger.logStep('SMTP configuration prepared', 'success', { 
+      hostname, 
+      port, 
+      tls: account.smtp_use_ssl, 
+      username,
+      from: account.email_address 
+    });
+
     const client = new SMTPClient(smtpConfig.connection);
 
     try {
+      await logger.logStep('Initiating SMTP connection', 'in_progress');
       await client.connect();
-      await logger.logSuccess('Connect to SMTP server', { hostname, port });
+      await logger.logSuccess('SMTP connection established', { hostname, port });
       
       // Send test email
-      await logger.logStep('Send test email', 'in_progress');
-      await client.send({
+      await logger.logStep('Preparing test email', 'in_progress');
+      const testEmail = {
         from: account.email_address,
         to: account.email_address,
-        subject: "SMTP Test - Connection Successful",
-        content: `This is a test email sent at ${new Date().toISOString()} to verify your SMTP configuration.\n\nYour SMTP server (${hostname}:${port}) is working correctly.`,
-      });
-      await logger.logSuccess('Send test email', { recipient: account.email_address });
+        subject: "SMTP Test - Connection Successful ✓",
+        content: `This is a test email sent at ${new Date().toISOString()} to verify your SMTP configuration.\n\nYour SMTP server (${hostname}:${port}) is working correctly.\n\nAuthentication: ${username}\nTLS/SSL: ${account.smtp_use_ssl ? 'Enabled' : 'Disabled'}`,
+      };
       
+      await logger.logStep('Sending test email', 'in_progress', { 
+        from: testEmail.from, 
+        to: testEmail.to,
+        subject: testEmail.subject 
+      });
+      
+      await client.send(testEmail);
+      await logger.logSuccess('Test email sent successfully ✓', { recipient: account.email_address });
+      
+      await logger.logStep('Closing SMTP connection', 'in_progress');
       await client.close();
-      await logger.logStep('Close connection', 'success');
+      await logger.logSuccess('SMTP connection closed cleanly');
 
     } catch (err: any) {
-      await logger.logError('SMTP connection/send', ERROR_CODES.SMTP_AUTH_FAILED, err.message);
+      const errorMsg = err.message || String(err);
+      
+      if (errorMsg.toLowerCase().includes('auth')) {
+        await logger.logError('SMTP authentication failed', ERROR_CODES.SMTP_AUTH_FAILED, errorMsg, { 
+          username, 
+          hint: 'Check username and password. Some providers require app-specific passwords.' 
+        });
+      } else if (errorMsg.toLowerCase().includes('connect') || errorMsg.toLowerCase().includes('timeout')) {
+        await logger.logError('SMTP connection failed', ERROR_CODES.TCP_CONNECTION_FAILED, errorMsg, { 
+          hostname, 
+          port,
+          hint: 'Verify hostname and port. Check if firewall is blocking the connection.' 
+        });
+      } else {
+        await logger.logError('SMTP send failed', ERROR_CODES.SMTP_SEND_FAILED, errorMsg);
+      }
+      
+      try {
+        await client.close();
+      } catch (_) {
+        // Ignore close errors
+      }
+      
       throw err;
     }
 
