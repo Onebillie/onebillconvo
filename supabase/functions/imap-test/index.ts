@@ -121,16 +121,31 @@ serve(async (req) => {
     
     console.log('✓ Connected and authenticated successfully');
     
-    // STEP 7: Authenticate
-    await logger.logStep('Authenticate', 'success', { username });
-    
-    // STEP 8: Select INBOX
+    // STEP 7: Authenticate and select INBOX
+    await logger.logStep('Authenticate', 'in_progress', { username });
     await logger.logStep('Select INBOX', 'in_progress');
-    const mailbox = await client.selectMailbox("INBOX");
-    await logger.logSuccess('Select INBOX', { 
-      uidValidity: mailbox.uidValidity,
-      exists: mailbox.exists 
-    });
+    let mailbox;
+    try {
+      mailbox = await client.selectMailbox("INBOX");
+      // If we can select INBOX, auth is effectively confirmed
+      await logger.logSuccess('Authenticate', { username });
+      await logger.logSuccess('Select INBOX', { 
+        uidValidity: mailbox.uidValidity,
+        exists: mailbox.exists 
+      });
+    } catch (err: any) {
+      // Classify precisely where it failed
+      if (err.name === 'ImapAuthError' || err.message?.includes('AUTHENTICATIONFAILED') || err.message?.includes('Authentication failed')) {
+        await logger.logError('Authenticate', ERROR_CODES.IMAP_AUTH_FAILED, err.message);
+        throw err;
+      }
+      if (typeof err.message === 'string' && err.message.toLowerCase().includes('mailbox') && err.message.toLowerCase().includes('not') && err.message.toLowerCase().includes('found')) {
+        await logger.logError('Select INBOX', ERROR_CODES.MAILBOX_NOT_FOUND, err.message);
+        throw err;
+      }
+      await logger.logError('Select INBOX', ERROR_CODES.FETCH_FAILED, err.message);
+      throw err;
+    }
     
     // STEP 9: Logout
     await logger.logStep('Logout', 'in_progress');
