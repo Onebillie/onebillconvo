@@ -88,6 +88,9 @@ export const EditContactDialog = ({
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        // Treat WhatsApp Phone as the primary phone displayed in lists
+        // Only include `phone` when the input is non-empty to avoid nulling a NOT NULL column
+        phone: whatsappPhone.trim() ? whatsappPhone.trim() : undefined,
         whatsapp_phone: whatsappPhone.trim() || null,
         whatsapp_name: whatsappName.trim() || null,
         email: email.trim() || null,
@@ -95,7 +98,6 @@ export const EditContactDialog = ({
         address: address.trim() || null,
         notes: notes.trim() || null,
       };
-
       console.log("Updating customer:", customer.id, updateData);
 
       const { data, error } = await supabase
