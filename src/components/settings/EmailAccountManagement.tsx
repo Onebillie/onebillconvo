@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
@@ -36,6 +36,7 @@ export function EmailAccountManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [logsDialogAccount, setLogsDialogAccount] = useState<{ id: string; name: string } | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [formData, setFormData] = useState({
@@ -97,26 +98,42 @@ export function EmailAccountManagement() {
         description: "Your email account has been configured successfully.",
       });
       setIsAddDialogOpen(false);
-      setFormData({
-        name: "",
-        email_address: "",
-        imap_host: "",
-        imap_port: 993,
-        imap_username: "",
-        imap_password: "",
-        imap_use_ssl: true,
-        smtp_host: "",
-        smtp_port: 465,
-        smtp_username: "",
-        smtp_password: "",
-        smtp_use_ssl: true,
-        sync_enabled: true,
-        sync_interval_minutes: 5,
-      });
+      resetForm();
     },
     onError: (error: any) => {
       toast({
         title: "Error adding account",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateAccountMutation = useMutation({
+    mutationFn: async ({ id, accountData }: { id: string; accountData: typeof formData }) => {
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .update(accountData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
+      toast({
+        title: "Email account updated",
+        description: "Your email account has been updated successfully.",
+      });
+      setIsAddDialogOpen(false);
+      setEditingAccountId(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating account",
         description: error.message,
         variant: "destructive",
       });
@@ -227,9 +244,61 @@ export function EmailAccountManagement() {
     }
   });
 
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email_address: "",
+      imap_host: "",
+      imap_port: 993,
+      imap_username: "",
+      imap_password: "",
+      imap_use_ssl: true,
+      smtp_host: "",
+      smtp_port: 465,
+      smtp_username: "",
+      smtp_password: "",
+      smtp_use_ssl: true,
+      sync_enabled: true,
+      sync_interval_minutes: 5,
+    });
+  };
+
+  const handleEdit = (account: EmailAccount) => {
+    setFormData({
+      name: account.name,
+      email_address: account.email_address,
+      imap_host: account.imap_host,
+      imap_port: account.imap_port,
+      imap_username: account.imap_username,
+      imap_password: account.imap_password,
+      imap_use_ssl: account.imap_use_ssl,
+      smtp_host: account.smtp_host,
+      smtp_port: account.smtp_port,
+      smtp_username: account.smtp_username,
+      smtp_password: account.smtp_password,
+      smtp_use_ssl: account.smtp_use_ssl,
+      sync_enabled: account.sync_enabled,
+      sync_interval_minutes: account.sync_interval_minutes,
+    });
+    setEditingAccountId(account.id);
+    setIsAddDialogOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addAccountMutation.mutate(formData);
+    if (editingAccountId) {
+      updateAccountMutation.mutate({ id: editingAccountId, accountData: formData });
+    } else {
+      addAccountMutation.mutate(formData);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsAddDialogOpen(open);
+    if (!open) {
+      setEditingAccountId(null);
+      resetForm();
+    }
   };
 
   if (isLoading) {
@@ -246,7 +315,7 @@ export function EmailAccountManagement() {
           </p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -255,9 +324,9 @@ export function EmailAccountManagement() {
             </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add Email Account</DialogTitle>
+              <DialogTitle>{editingAccountId ? "Edit Email Account" : "Add Email Account"}</DialogTitle>
               <DialogDescription>
-                Configure your cPanel or other email account for two-way sync
+                {editingAccountId ? "Update your email account configuration" : "Configure your cPanel or other email account for two-way sync"}
               </DialogDescription>
             </DialogHeader>
 
@@ -408,11 +477,14 @@ export function EmailAccountManagement() {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => handleDialogClose(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={addAccountMutation.isPending}>
-                  {addAccountMutation.isPending ? "Adding..." : "Add Account"}
+                <Button type="submit" disabled={addAccountMutation.isPending || updateAccountMutation.isPending}>
+                  {editingAccountId 
+                    ? (updateAccountMutation.isPending ? "Updating..." : "Update Account")
+                    : (addAccountMutation.isPending ? "Adding..." : "Add Account")
+                  }
                 </Button>
               </DialogFooter>
             </form>
@@ -448,6 +520,14 @@ export function EmailAccountManagement() {
                     <CardDescription>{account.email_address}</CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(account)}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
