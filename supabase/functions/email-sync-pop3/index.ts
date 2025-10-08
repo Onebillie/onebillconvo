@@ -162,16 +162,31 @@ async function fetchEmailsFromPOP3(
   const buffer = new Uint8Array(4096);
 
   // Read greeting
-  await conn.read(buffer);
+  const greetingBytes = await conn.read(buffer);
+  if (!greetingBytes) {
+    await conn.close();
+    await logger.logError('Failed to read POP3 greeting', ERROR_CODES.CONNECTION_FAILED);
+    throw new Error('POP3_CONNECTION_FAILED: No greeting received');
+  }
   await logger.logSuccess('Connected to POP3 server');
 
   // Authenticate
   await conn.write(encoder.encode(`USER ${pop3_username}\r\n`));
-  await conn.read(buffer);
+  const userBytes = await conn.read(buffer);
+  if (!userBytes) {
+    await conn.close();
+    await logger.logError('Connection closed after USER command', ERROR_CODES.CONNECTION_FAILED);
+    throw new Error('POP3_CONNECTION_FAILED: Connection closed unexpectedly');
+  }
   
   await conn.write(encoder.encode(`PASS ${pop3_password}\r\n`));
   const passResponse = await conn.read(buffer);
-  const passResult = decoder.decode(passResponse!).trim();
+  if (!passResponse) {
+    await conn.close();
+    await logger.logError('Connection closed after PASS command', ERROR_CODES.CONNECTION_FAILED);
+    throw new Error('POP3_CONNECTION_FAILED: Connection closed unexpectedly');
+  }
+  const passResult = decoder.decode(buffer.subarray(0, passResponse)).trim();
   
   if (!passResult.startsWith('+OK')) {
     await conn.close();
@@ -254,7 +269,10 @@ async function fetchEmailsFromPOP3(
       // Optionally delete message
       if (account.delete_after_sync) {
         await conn.write(encoder.encode(`DELE ${msgNum}\r\n`));
-        await conn.read(buffer);
+        const deleBytes = await conn.read(buffer);
+        if (!deleBytes) {
+          console.warn(`Connection closed while deleting message ${msgNum}`);
+        }
       }
 
     } catch (err: any) {
