@@ -198,27 +198,68 @@ serve(async (req) => {
       throw new Error('Failed to send email via SMTP');
     }
 
-    // Get business_id from conversation
-    const { data: conversation } = await supabase
-      .from("conversations")
-      .select("business_id")
-      .eq("id", emailRequest.conversation_id)
-      .single();
-
-    // Insert message record (or update if bundling)
-    const { error: messageError } = await supabase
+    // Update the most recent pending message to 'sent' (instead of inserting a new one)
+    // This prevents duplicate messages from appearing in the chat
+    const { data: pendingMessage, error: fetchError } = await supabase
       .from('messages')
-      .insert({
-        conversation_id: emailRequest.conversation_id,
-        customer_id: emailRequest.customer_id,
-        content: bundledContent,
-        direction: 'outbound',
-        platform: 'email',
-        channel: 'email',
-        status: 'sent',
-        is_read: true,
-        business_id: conversation?.business_id
-      });
+      .select('id')
+      .eq('conversation_id', emailRequest.conversation_id)
+      .eq('customer_id', emailRequest.customer_id)
+      .eq('direction', 'outbound')
+      .eq('platform', 'email')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Error fetching pending message:', fetchError);
+    }
+
+    // Update the pending message to sent with bundled content
+    if (pendingMessage) {
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({ 
+          content: bundledContent,
+          status: 'sent'
+        })
+        .eq('id', pendingMessage.id);
+
+      if (updateError) {
+        console.error('Failed to update message record:', updateError);
+      } else {
+        console.log('Updated pending message to sent status');
+      }
+    } else {
+      // Fallback: if no pending message found, insert a new one
+      // This should rarely happen but prevents message loss
+      console.warn('No pending message found, inserting new message record');
+      
+      const { data: conversation } = await supabase
+        .from("conversations")
+        .select("business_id")
+        .eq("id", emailRequest.conversation_id)
+        .single();
+
+      const { error: insertError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: emailRequest.conversation_id,
+          customer_id: emailRequest.customer_id,
+          content: bundledContent,
+          direction: 'outbound',
+          platform: 'email',
+          channel: 'email',
+          status: 'sent',
+          is_read: true,
+          business_id: conversation?.business_id
+        });
+
+      if (insertError) {
+        console.error('Failed to insert message record:', insertError);
+      }
+    }
 
     // Mark bundled messages as sent
     if (messageIds.length > 0) {
@@ -226,10 +267,8 @@ serve(async (req) => {
         .from('messages')
         .update({ status: 'sent' })
         .in('id', messageIds);
-    }
-
-    if (messageError) {
-      console.error('Failed to insert message record:', messageError);
+      
+      console.log(`Marked ${messageIds.length} bundled messages as sent`);
     }
 
     // Update customer last_contact_method
