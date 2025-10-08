@@ -33,6 +33,9 @@ verify_jwt = true
 [functions.email-sync]
 verify_jwt = false
 
+[functions.email-sync-pop3]
+verify_jwt = false
+
 [functions.api-conversations]
 verify_jwt = false
 

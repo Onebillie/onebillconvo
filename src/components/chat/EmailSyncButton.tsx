@@ -14,10 +14,10 @@ export const EmailSyncButton = ({ onSyncComplete }: EmailSyncButtonProps) => {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      // Get all active email accounts
+      // Get all active email accounts with their inbound method
       const { data: accounts, error: accountsError } = await supabase
         .from('email_accounts')
-        .select('id, name')
+        .select('id, name, inbound_method')
         .eq('is_active', true)
         .eq('sync_enabled', true);
 
@@ -32,12 +32,13 @@ export const EmailSyncButton = ({ onSyncComplete }: EmailSyncButtonProps) => {
         return;
       }
 
-      // Trigger sync for all accounts
-      const syncPromises = accounts.map(account => 
-        supabase.functions.invoke('email-sync', {
+      // Trigger sync for all accounts using the appropriate function
+      const syncPromises = accounts.map(account => {
+        const functionName = account.inbound_method === 'pop3' ? 'email-sync-pop3' : 'email-sync';
+        return supabase.functions.invoke(functionName, {
           body: { account_id: account.id }
-        })
-      );
+        });
+      });
 
       const results = await Promise.allSettled(syncPromises);
       
