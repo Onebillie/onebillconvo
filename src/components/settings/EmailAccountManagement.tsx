@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
 import { ManualImapTestDialog } from "./ManualImapTestDialog";
+import { EmailAutoconfigure } from "./EmailAutoconfigure";
 
 interface EmailAccount {
   id: string;
@@ -393,13 +394,25 @@ export function EmailAccountManagement() {
               </DialogDescription>
             </DialogHeader>
 
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Important:</strong> Some email providers require an "app-specific password" instead of your regular password. 
-                Check your email provider's documentation if authentication fails.
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center justify-between">
+              <Alert className="flex-1">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Important:</strong> Some email providers require an "app-specific password" instead of your regular password. 
+                  Check your email provider's documentation if authentication fails.
+                </AlertDescription>
+              </Alert>
+              <div className="ml-4">
+                <EmailAutoconfigure
+                  onApplyConfig={(config) => {
+                    setFormData({
+                      ...formData,
+                      ...config,
+                    });
+                  }}
+                />
+              </div>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
