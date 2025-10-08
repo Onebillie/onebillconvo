@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { OperationLogger, ERROR_CODES } from "../_shared/emailLogger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,8 +32,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { account_id } = await req.json();
+    
+    // Initialize operation logger
+    const logger = new OperationLogger(supabaseUrl, supabaseKey, account_id, 'account_test');
+    await logger.logStep('Function invoked', 'started', { account_id });
 
-    // Fetch email account configuration
+    // STEP 2: Fetch email account configuration
+    await logger.logStep('Fetch account from database', 'in_progress');
     const { data: account, error: accountError } = await supabase
       .from('email_accounts')
       .select('*')
@@ -40,22 +46,38 @@ serve(async (req) => {
       .single();
 
     if (accountError || !account) {
+      await logger.logError('Fetch account from database', ERROR_CODES.CONFIG_INCOMPLETE, `Email account not found: ${accountError?.message}`);
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
+    await logger.logSuccess('Fetch account from database', { account_name: account.name });
 
+    // STEP 3: Validate configuration
+    await logger.logStep('Validate configuration', 'in_progress');
     const rawHost = account.imap_host || '';
     const hostname = sanitizeHostname(rawHost);
     const port = account.imap_port;
     const username = (account.imap_username || account.email_address).trim();
     const password = account.imap_password?.trim();
 
-    if (!hostname || !port || !username || !password) {
-      throw new Error('IMAP configuration incomplete');
+    if (!hostname) {
+      await logger.logError('Validate configuration', ERROR_CODES.INVALID_HOSTNAME, 'Hostname is empty or invalid');
+      throw new Error('IMAP configuration incomplete: invalid hostname');
     }
+    if (!port || port < 1 || port > 65535) {
+      await logger.logError('Validate configuration', ERROR_CODES.INVALID_PORT, `Invalid port: ${port}`);
+      throw new Error('IMAP configuration incomplete: invalid port');
+    }
+    if (!username || !password) {
+      await logger.logError('Validate configuration', ERROR_CODES.MISSING_CREDENTIALS, 'Username or password missing');
+      throw new Error('IMAP configuration incomplete: missing credentials');
+    }
+    await logger.logSuccess('Validate configuration', { hostname, port, username });
 
+    // STEP 4: Sanitize hostname
     console.log('Sanitized IMAP host', { rawHost, hostname });
 
-    // Test connection
+    // STEP 5: Create IMAP client
+    await logger.logStep('Create IMAP client', 'in_progress', { hostname, port, tls: account.imap_use_ssl });
     const { ImapClient } = await import("jsr:@workingdevshero/deno-imap@1.0.0");
     
     const imapConfig = {
@@ -70,24 +92,54 @@ serve(async (req) => {
     };
 
     console.log(`Testing IMAP connection to ${hostname}:${port}`);
+    await logger.logSuccess('Create IMAP client');
     
+    // STEP 6: Connect to IMAP server
+    await logger.logStep('Connect to IMAP server', 'in_progress');
     const client = new ImapClient(imapConfig);
 
     const connectTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Connection timeout (10s)')), 10000)
+      setTimeout(() => {
+        logger.logError('Connect to IMAP server', ERROR_CODES.CONNECTION_TIMEOUT, 'Connection timeout after 10 seconds');
+        reject(new Error('Connection timeout (10s)'));
+      }, 10000)
     );
 
-    await Promise.race([
-      client.connect(),
-      connectTimeout
-    ]);
+    try {
+      await Promise.race([
+        client.connect(),
+        connectTimeout
+      ]);
+      await logger.logSuccess('Connect to IMAP server');
+    } catch (err: any) {
+      if (err.message.includes('timeout')) {
+        throw err;
+      }
+      await logger.logError('Connect to IMAP server', ERROR_CODES.TCP_CONNECTION_FAILED, err.message);
+      throw err;
+    }
     
     console.log('✓ Connected and authenticated successfully');
     
-    // Get server greeting
-    const mailbox = await client.selectMailbox("INBOX");
+    // STEP 7: Authenticate
+    await logger.logStep('Authenticate', 'success', { username });
     
+    // STEP 8: Select INBOX
+    await logger.logStep('Select INBOX', 'in_progress');
+    const mailbox = await client.selectMailbox("INBOX");
+    await logger.logSuccess('Select INBOX', { 
+      uidValidity: mailbox.uidValidity,
+      exists: mailbox.exists 
+    });
+    
+    // STEP 9: Logout
+    await logger.logStep('Logout', 'in_progress');
     await client.logout();
+    await logger.logSuccess('Logout');
+
+    // STEP 10: Test complete
+    const durationMs = logger.getDurationMs();
+    await logger.logSuccess('Test complete', { duration_ms: durationMs });
 
     return new Response(
       JSON.stringify({ 
@@ -97,6 +149,7 @@ serve(async (req) => {
         tls: account.imap_use_ssl,
         mailbox: 'INBOX',
         uidvalidity: mailbox.uidValidity,
+        duration_ms: durationMs,
         message: 'Connection successful'
       }),
       { 
@@ -113,7 +166,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           ok: false,
-          code: 'IMAP_AUTH_FAILED',
+          code: ERROR_CODES.IMAP_AUTH_FAILED,
           message: 'Authentication failed. Please verify your username and password. Some mail providers require an "app password" instead of your regular password.',
           error: error.message
         }),

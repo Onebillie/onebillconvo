@@ -1119,6 +1119,56 @@ export type Database = {
           },
         ]
       }
+      email_operation_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          email_account_id: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          operation_type: string
+          status: string
+          step_name: string
+          step_number: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          email_account_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type: string
+          status?: string
+          step_name: string
+          step_number?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          email_account_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type?: string
+          status?: string
+          step_name?: string
+          step_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_operation_logs_email_account_id_fkey"
+            columns: ["email_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_sync_logs: {
         Row: {
           created_at: string

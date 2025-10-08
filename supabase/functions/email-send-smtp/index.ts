@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { OperationLogger, ERROR_CODES } from "../_shared/emailLogger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +30,16 @@ serve(async (req) => {
     const emailRequest: EmailRequest = await req.json();
 
     console.log('Sending email via SMTP to:', emailRequest.to);
+
+    // Initialize logger
+    let logger: OperationLogger | null = null;
+    if (emailRequest.email_account_id) {
+      logger = new OperationLogger(supabaseUrl, supabaseKey, emailRequest.email_account_id, 'send_start');
+      await logger.logStep('Send email started', 'started', { 
+        to: emailRequest.to,
+        conversation_id: emailRequest.conversation_id 
+      });
+    }
 
     // Fetch customer data for template population
     const { data: customer } = await supabase

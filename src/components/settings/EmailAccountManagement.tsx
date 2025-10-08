@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
 
 interface EmailAccount {
   id: string;
@@ -34,6 +36,8 @@ export function EmailAccountManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [logsDialogAccount, setLogsDialogAccount] = useState<{ id: string; name: string } | null>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email_address: "",
@@ -181,6 +185,7 @@ export function EmailAccountManagement() {
 
   const testConnectionMutation = useMutation({
     mutationFn: async (accountId: string) => {
+      setIsTestingConnection(true);
       const { data, error } = await supabase.functions.invoke('imap-test', {
         body: { account_id: accountId }
       });
@@ -188,15 +193,17 @@ export function EmailAccountManagement() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, accountId) => {
+      setIsTestingConnection(false);
       if (data.ok) {
         toast({
           title: "Connection successful",
-          description: `Connected to ${data.server}:${data.port} successfully`,
+          description: `Connected to ${data.server}:${data.port} in ${data.duration_ms}ms`,
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: any, accountId) => {
+      setIsTestingConnection(false);
       const message = error.message || "Connection test failed";
       toast({
         title: "Connection failed",
@@ -253,6 +260,14 @@ export function EmailAccountManagement() {
                 Configure your cPanel or other email account for two-way sync
               </DialogDescription>
             </DialogHeader>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important:</strong> Some email providers require an "app-specific password" instead of your regular password. 
+                Check your email provider's documentation if authentication fails.
+              </AlertDescription>
+            </Alert>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -436,11 +451,22 @@ export function EmailAccountManagement() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => testConnectionMutation.mutate(account.id)}
+                      onClick={() => {
+                        setLogsDialogAccount({ id: account.id, name: account.name });
+                        testConnectionMutation.mutate(account.id);
+                      }}
                       disabled={testConnectionMutation.isPending}
                     >
                       <Wifi className="w-4 h-4 mr-2" />
-                      Test
+                      {testConnectionMutation.isPending ? "Testing..." : "Test"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLogsDialogAccount({ id: account.id, name: account.name })}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Logs
                     </Button>
                     <Button
                       size="sm"
@@ -491,6 +517,16 @@ export function EmailAccountManagement() {
             </Card>
           ))}
         </div>
+      )}
+
+      {logsDialogAccount && (
+        <EmailOperationLogsDialog
+          accountId={logsDialogAccount.id}
+          accountName={logsDialogAccount.name}
+          open={!!logsDialogAccount}
+          onOpenChange={(open) => !open && setLogsDialogAccount(null)}
+          liveMode={isTestingConnection}
+        />
       )}
 
       <Card>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import PostalMime from "npm:postal-mime@2.2.1";
+import { OperationLogger, ERROR_CODES } from "../_shared/emailLogger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,6 +89,8 @@ serve(async (req) => {
     syncLocks.set(account_id, true);
 
     try {
+      const logger = new OperationLogger(supabaseUrl, supabaseKey, account_id, 'sync_start');
+      await logger.logStep('Email sync started', 'started', { account_id });
       console.log('Starting email sync for account:', account_id);
 
       // Fetch email account configuration
