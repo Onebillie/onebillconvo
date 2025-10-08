@@ -18,11 +18,17 @@ interface EmailAccount {
   id: string;
   name: string;
   email_address: string;
+  inbound_method: 'imap' | 'pop3';
   imap_host: string;
   imap_port: number;
   imap_username: string;
   imap_password: string;
   imap_use_ssl: boolean;
+  pop3_host: string;
+  pop3_port: number;
+  pop3_username: string;
+  pop3_password: string;
+  pop3_use_ssl: boolean;
   smtp_host: string;
   smtp_port: number;
   smtp_username: string;
@@ -45,11 +51,17 @@ export function EmailAccountManagement() {
   const [formData, setFormData] = useState({
     name: "",
     email_address: "",
+    inbound_method: 'pop3' as 'imap' | 'pop3',
     imap_host: "",
     imap_port: 993,
     imap_username: "",
     imap_password: "",
     imap_use_ssl: true,
+    pop3_host: "",
+    pop3_port: 995,
+    pop3_username: "",
+    pop3_password: "",
+    pop3_use_ssl: true,
     smtp_host: "",
     smtp_port: 465,
     smtp_username: "",
@@ -170,7 +182,10 @@ export function EmailAccountManagement() {
 
   const syncNowMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      const { data, error } = await supabase.functions.invoke('email-sync', {
+      const account = accounts?.find(a => a.id === accountId);
+      const functionName = account?.inbound_method === 'pop3' ? 'email-sync-pop3' : 'email-sync';
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { account_id: accountId }
       });
       
@@ -312,11 +327,17 @@ export function EmailAccountManagement() {
     setFormData({
       name: "",
       email_address: "",
+      inbound_method: 'pop3' as 'imap' | 'pop3',
       imap_host: "",
       imap_port: 993,
       imap_username: "",
       imap_password: "",
       imap_use_ssl: true,
+      pop3_host: "",
+      pop3_port: 995,
+      pop3_username: "",
+      pop3_password: "",
+      pop3_use_ssl: true,
       smtp_host: "",
       smtp_port: 465,
       smtp_username: "",
@@ -331,11 +352,17 @@ export function EmailAccountManagement() {
     setFormData({
       name: account.name,
       email_address: account.email_address,
+      inbound_method: account.inbound_method || 'pop3',
       imap_host: account.imap_host,
       imap_port: account.imap_port,
       imap_username: account.imap_username,
       imap_password: account.imap_password,
       imap_use_ssl: account.imap_use_ssl,
+      pop3_host: account.pop3_host || "",
+      pop3_port: account.pop3_port || 995,
+      pop3_username: account.pop3_username || "",
+      pop3_password: account.pop3_password || "",
+      pop3_use_ssl: account.pop3_use_ssl ?? true,
       smtp_host: account.smtp_host,
       smtp_port: account.smtp_port,
       smtp_username: account.smtp_username,
@@ -439,7 +466,68 @@ export function EmailAccountManagement() {
               </div>
 
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">IMAP Settings (Incoming Mail)</h3>
+                <div className="space-y-2 mb-4">
+                  <Label htmlFor="inbound_method">Inbound Method</Label>
+                  <select
+                    id="inbound_method"
+                    value={formData.inbound_method}
+                    onChange={(e) => setFormData({ ...formData, inbound_method: e.target.value as 'imap' | 'pop3' })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="pop3">POP3 (Recommended - simpler, more reliable)</option>
+                    <option value="imap">IMAP (Advanced)</option>
+                  </select>
+                </div>
+                
+                {formData.inbound_method === 'pop3' ? (
+                  <>
+                    <h3 className="font-semibold mb-3">POP3 Settings (Incoming Mail)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="pop3_host">POP3 Host</Label>
+                        <Input
+                          id="pop3_host"
+                          value={formData.pop3_host}
+                          onChange={(e) => setFormData({ ...formData, pop3_host: e.target.value })}
+                          placeholder="mail.yourdomain.com"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pop3_port">Port</Label>
+                        <Input
+                          id="pop3_port"
+                          type="number"
+                          value={formData.pop3_port}
+                          onChange={(e) => setFormData({ ...formData, pop3_port: parseInt(e.target.value) })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pop3_username">Username</Label>
+                        <Input
+                          id="pop3_username"
+                          value={formData.pop3_username}
+                          onChange={(e) => setFormData({ ...formData, pop3_username: e.target.value })}
+                          placeholder="support@yourdomain.com"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pop3_password">Password</Label>
+                        <Input
+                          id="pop3_password"
+                          type="password"
+                          value={formData.pop3_password}
+                          onChange={(e) => setFormData({ ...formData, pop3_password: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-semibold mb-3">IMAP Settings (Incoming Mail)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="imap_host">IMAP Host</Label>
@@ -482,10 +570,20 @@ export function EmailAccountManagement() {
                     />
                   </div>
                 </div>
+                  </>
+                )}
               </div>
 
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-900">
+                  <strong>Outbound emails now use Resend API</strong> for better deliverability. 
+                  SMTP settings below are legacy and not currently used. Configure your sending email in Business Settings.
+                </AlertDescription>
+              </Alert>
+
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">SMTP Settings (Outgoing Mail)</h3>
+                <h3 className="font-semibold mb-3 text-muted-foreground">SMTP Settings (Legacy - Not Used)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="smtp_host">SMTP Host</Label>
@@ -604,50 +702,54 @@ export function EmailAccountManagement() {
                       <Pencil className="w-4 h-4 mr-2" />
                       Edit
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setLogsDialogAccount({ id: account.id, name: account.name });
-                        testConnectionMutation.mutate(account.id);
-                      }}
-                      disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
-                    >
-                      <Wifi className="w-4 h-4 mr-2" />
-                      {testConnectionMutation.isPending ? "Testing..." : "Test IMAP"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setLogsDialogAccount({ id: account.id, name: account.name });
-                        deepImapTestMutation.mutate(account.id);
-                      }}
-                      disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
-                    >
-                      <Search className="w-4 h-4 mr-2" />
-                      {deepImapTestMutation.isPending ? "Testing..." : "Deep IMAP"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setLogsDialogAccount({ id: account.id, name: account.name });
-                        smtpTestMutation.mutate(account.id);
-                      }}
-                      disabled={smtpTestMutation.isPending}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      {smtpTestMutation.isPending ? "Sending..." : "Test SMTP"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setManualTestAccount(account)}
-                    >
-                      <Wrench className="w-4 h-4 mr-2" />
-                      Manual Test
-                    </Button>
+                    {account.inbound_method === 'imap' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setLogsDialogAccount({ id: account.id, name: account.name });
+                            testConnectionMutation.mutate(account.id);
+                          }}
+                          disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
+                        >
+                          <Wifi className="w-4 h-4 mr-2" />
+                          {testConnectionMutation.isPending ? "Testing..." : "Test IMAP"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setLogsDialogAccount({ id: account.id, name: account.name });
+                            deepImapTestMutation.mutate(account.id);
+                          }}
+                          disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
+                        >
+                          <Search className="w-4 h-4 mr-2" />
+                          {deepImapTestMutation.isPending ? "Testing..." : "Deep IMAP"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setLogsDialogAccount({ id: account.id, name: account.name });
+                            smtpTestMutation.mutate(account.id);
+                          }}
+                          disabled={smtpTestMutation.isPending}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          {smtpTestMutation.isPending ? "Sending..." : "Test SMTP"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualTestAccount(account)}
+                        >
+                          <Wrench className="w-4 h-4 mr-2" />
+                          Manual Test
+                        </Button>
+                      </>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -687,12 +789,23 @@ export function EmailAccountManagement() {
                     />
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">IMAP Server</span>
-                    <span>{account.imap_host}:{account.imap_port}</span>
+                    <span className="text-muted-foreground">Inbound Method</span>
+                    <span className="uppercase font-semibold">{account.inbound_method || 'IMAP'}</span>
                   </div>
+                  {account.inbound_method === 'pop3' ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">POP3 Server</span>
+                      <span>{account.pop3_host}:{account.pop3_port}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">IMAP Server</span>
+                      <span>{account.imap_host}:{account.imap_port}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">SMTP Server</span>
-                    <span>{account.smtp_host}:{account.smtp_port}</span>
+                    <span className="text-muted-foreground">Outbound</span>
+                    <span className="text-green-600 font-semibold">Resend API</span>
                   </div>
                   {account.last_sync_at && (
                     <div className="flex items-center justify-between text-sm">
@@ -751,18 +864,19 @@ export function EmailAccountManagement() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p className="text-green-600 font-semibold">
-            ✓ Full IMAP/SMTP email integration is now active!
+            ✓ Full POP3 + Resend email integration is now active!
           </p>
           <p>
             <strong>Features enabled:</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
-            <li>✓ IMAP email fetching with SSL/TLS</li>
-            <li>✓ Incremental sync (only fetches new emails)</li>
+            <li>✓ POP3 email fetching with SSL/TLS (simpler, more reliable than IMAP)</li>
+            <li>✓ Resend API for sending (better deliverability than SMTP)</li>
+            <li>✓ Incremental sync (only fetches new emails using UIDL tracking)</li>
             <li>✓ Attachment parsing and storage</li>
             <li>✓ Email threading and reply detection</li>
             <li>✓ Push notifications for new emails</li>
-            <li>✓ Connection diagnostics and error reporting</li>
+            <li>✓ Comprehensive operation logging</li>
           </ul>
           <p className="pt-2">
             <strong>Automated sync:</strong> Emails are automatically synced every 5 minutes via cron job.

@@ -7,10 +7,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EmailConfig {
   email_address: string;
+  inbound_method: 'imap' | 'pop3';
   imap_host: string;
   imap_port: number;
   imap_username: string;
   imap_use_ssl: boolean;
+  pop3_host: string;
+  pop3_port: number;
+  pop3_username: string;
+  pop3_use_ssl: boolean;
   smtp_host: string;
   smtp_port: number;
   smtp_username: string;
@@ -39,19 +44,24 @@ export function EmailAutoconfigure({ onApplyConfig }: EmailAutoconfigureProps) {
         return null;
       }
 
-      const imapHost = incServerMatch[1];
-      const smtpHost = outServerMatch?.[1] || imapHost;
+      const popHost = incServerMatch[1];
+      const smtpHost = outServerMatch?.[1] || popHost;
       const email = accountMatch[1];
       
       // Convert hex port to decimal
-      const imapPort = imapPortMatch ? parseInt(imapPortMatch[1], 16) : 993;
+      const popPort = imapPortMatch ? parseInt(imapPortMatch[1], 16) : 995;
       const smtpPort = smtpPortMatch ? parseInt(smtpPortMatch[1], 16) : 465;
       const useSsl = secureMatch ? secureMatch[1] !== "00000000" : true;
 
       return {
         email_address: email,
-        imap_host: imapHost,
-        imap_port: imapPort,
+        inbound_method: 'pop3' as const,
+        pop3_host: popHost,
+        pop3_port: popPort,
+        pop3_username: email,
+        pop3_use_ssl: useSsl,
+        imap_host: popHost,
+        imap_port: 993,
         imap_username: email,
         imap_use_ssl: useSsl,
         smtp_host: smtpHost,
@@ -114,6 +124,11 @@ export function EmailAutoconfigure({ onApplyConfig }: EmailAutoconfigureProps) {
 
     const config: Partial<EmailConfig> = {
       email_address: email,
+      inbound_method: 'pop3',
+      pop3_host: `mail.${domain}`,
+      pop3_port: 995,
+      pop3_username: email,
+      pop3_use_ssl: true,
       imap_host: `mail.${domain}`,
       imap_port: 993,
       imap_username: email,
@@ -144,6 +159,11 @@ export function EmailAutoconfigure({ onApplyConfig }: EmailAutoconfigureProps) {
 
     const config: Partial<EmailConfig> = {
       email_address: email,
+      inbound_method: 'pop3',
+      pop3_host: "pop.gmail.com",
+      pop3_port: 995,
+      pop3_username: email,
+      pop3_use_ssl: true,
       imap_host: "imap.gmail.com",
       imap_port: 993,
       imap_username: email,
@@ -174,6 +194,11 @@ export function EmailAutoconfigure({ onApplyConfig }: EmailAutoconfigureProps) {
 
     const config: Partial<EmailConfig> = {
       email_address: email,
+      inbound_method: 'pop3',
+      pop3_host: "outlook.office365.com",
+      pop3_port: 995,
+      pop3_username: email,
+      pop3_use_ssl: true,
       imap_host: "outlook.office365.com",
       imap_port: 993,
       imap_username: email,

@@ -1037,13 +1037,20 @@ export type Database = {
           imap_port: number
           imap_use_ssl: boolean
           imap_username: string
+          inbound_method: string | null
           is_active: boolean
           last_imap_uid: number | null
           last_imap_uidvalidity: number | null
+          last_pop3_uidl: string | null
           last_sync_at: string | null
           last_synced_at: string | null
           mark_as_read: boolean
           name: string
+          pop3_host: string | null
+          pop3_password: string | null
+          pop3_port: number | null
+          pop3_use_ssl: boolean | null
+          pop3_username: string | null
           smtp_host: string
           smtp_password: string
           smtp_port: number
@@ -1065,13 +1072,20 @@ export type Database = {
           imap_port?: number
           imap_use_ssl?: boolean
           imap_username: string
+          inbound_method?: string | null
           is_active?: boolean
           last_imap_uid?: number | null
           last_imap_uidvalidity?: number | null
+          last_pop3_uidl?: string | null
           last_sync_at?: string | null
           last_synced_at?: string | null
           mark_as_read?: boolean
           name: string
+          pop3_host?: string | null
+          pop3_password?: string | null
+          pop3_port?: number | null
+          pop3_use_ssl?: boolean | null
+          pop3_username?: string | null
           smtp_host: string
           smtp_password: string
           smtp_port?: number
@@ -1093,13 +1107,20 @@ export type Database = {
           imap_port?: number
           imap_use_ssl?: boolean
           imap_username?: string
+          inbound_method?: string | null
           is_active?: boolean
           last_imap_uid?: number | null
           last_imap_uidvalidity?: number | null
+          last_pop3_uidl?: string | null
           last_sync_at?: string | null
           last_synced_at?: string | null
           mark_as_read?: boolean
           name?: string
+          pop3_host?: string | null
+          pop3_password?: string | null
+          pop3_port?: number | null
+          pop3_use_ssl?: boolean | null
+          pop3_username?: string | null
           smtp_host?: string
           smtp_password?: string
           smtp_port?: number
