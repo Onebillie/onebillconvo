@@ -234,9 +234,20 @@ const Dashboard = () => {
 
   useRealtimeConversations(fetchConversations);
 
+  // Initial fetch
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+    
+    // Check if there's a conversation to open from notification click
+    const openConversationId = localStorage.getItem('openConversation');
+    if (openConversationId && conversations.length > 0) {
+      const conversation = conversations.find(c => c.id === openConversationId);
+      if (conversation) {
+        setSelectedConversation(conversation);
+        localStorage.removeItem('openConversation');
+      }
+    }
+  }, [fetchConversations, conversations]);
 
   useEffect(() => {
     if (selectedConversation) {

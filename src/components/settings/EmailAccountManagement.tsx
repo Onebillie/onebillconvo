@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
 import { ManualImapTestDialog } from "./ManualImapTestDialog";
 import { EmailAutoconfigure } from "./EmailAutoconfigure";
+import { EmailSetupWizard } from "./EmailSetupWizard";
 
 interface EmailAccount {
   id: string;

@@ -918,6 +918,13 @@ export type Database = {
             referencedRelation: "whatsapp_accounts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_conversations_assigned_to"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customer_tags: {

@@ -24,7 +24,7 @@ export function NotificationBanner({ unreadCount }: NotificationBannerProps) {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/app/dashboard')}
             className="bg-white text-orange-600 hover:bg-gray-100 text-xs md:text-sm h-7 md:h-9 px-2 md:px-3"
           >
             View
