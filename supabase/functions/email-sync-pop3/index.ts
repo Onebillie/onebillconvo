@@ -201,7 +201,7 @@ async function fetchEmailsFromPOP3(
   let uidlData = '';
   while (true) {
     const n = await conn.read(buffer);
-    if (!n) break;
+    if (!n || n === 0) break;
     const chunk = decoder.decode(buffer.subarray(0, n));
     uidlData += chunk;
     if (uidlData.includes('\r\n.\r\n')) break;
@@ -239,7 +239,7 @@ async function fetchEmailsFromPOP3(
       let emailData = '';
       while (true) {
         const n = await conn.read(buffer);
-        if (!n) break;
+        if (!n || n === 0) break;
         const chunk = decoder.decode(buffer.subarray(0, n));
         emailData += chunk;
         if (emailData.includes('\r\n.\r\n')) break;
@@ -377,7 +377,7 @@ async function processIncomingEmail(
       business_id: businessId,
       content: messageContent.substring(0, 5000),
       direction: 'inbound',
-      status: 'received',
+      status: 'delivered',
       channel: 'email',
       platform: 'email',
       external_message_id: email.messageId,
