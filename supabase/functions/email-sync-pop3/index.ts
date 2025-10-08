@@ -48,7 +48,44 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { account_id } = await req.json();
+    const { account_id, auto_sync } = await req.json();
+
+    // Auto-sync mode: sync all active POP3 accounts
+    if (auto_sync) {
+      const { data: accounts } = await supabase
+        .from('email_accounts')
+        .select('id')
+        .eq('is_active', true)
+        .eq('sync_enabled', true)
+        .eq('inbound_method', 'pop3');
+
+      if (!accounts || accounts.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'No active POP3 accounts to sync' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const results = [];
+      for (const account of accounts) {
+        try {
+          const response = await fetch(req.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account_id: account.id })
+          });
+          const result = await response.json();
+          results.push({ account_id: account.id, ...result });
+        } catch (error: any) {
+          results.push({ account_id: account.id, error: error.message });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, accounts_synced: results.length, results }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (syncLocks.get(account_id)) {
       console.log(`Sync already in progress for account ${account_id}`);
@@ -83,7 +120,7 @@ serve(async (req) => {
       let processedCount = 0;
       for (const email of emails) {
         try {
-          await processIncomingEmail(supabase, email, account.email_address, account.business_id, account_id);
+          await processIncomingEmail(supabase, email, account.email_address, account.business_id, account_id, logger);
           processedCount++;
         } catch (err: any) {
           console.error('Error processing email:', err);
@@ -103,21 +140,10 @@ serve(async (req) => {
           .eq('id', account_id);
       }
 
-      // Log if more emails remain to be processed
-      const remainingCount = newMessages.length - emailsToProcess.length;
-      if (remainingCount > 0) {
-        console.log(`✅ Batch complete. ${remainingCount} emails remaining - trigger another sync to continue`);
-        await logger.logSuccess('Batch completed, more emails remaining', { 
-          fetched: emails.length, 
-          processed: processedCount,
-          remaining: remainingCount
-        });
-      } else {
-        await logger.logSuccess('POP3 sync completed', { 
-          fetched: emails.length, 
-          processed: processedCount 
-        });
-      }
+      await logger.logSuccess('POP3 sync completed', { 
+        fetched: emails.length, 
+        processed: processedCount 
+      });
 
       return new Response(
         JSON.stringify({ 
@@ -339,7 +365,8 @@ async function processIncomingEmail(
   email: ParsedEmail, 
   accountEmail: string,
   businessId: string,
-  accountId: string
+  accountId: string,
+  logger: OperationLogger
 ) {
   console.log(`Processing email from ${email.from}: ${email.subject}`);
 

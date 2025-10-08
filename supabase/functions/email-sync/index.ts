@@ -76,7 +76,44 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { account_id } = await req.json();
+    const { account_id, auto_sync } = await req.json();
+
+    // Auto-sync mode: sync all active IMAP accounts
+    if (auto_sync) {
+      const { data: accounts } = await supabase
+        .from('email_accounts')
+        .select('id')
+        .eq('is_active', true)
+        .eq('sync_enabled', true)
+        .eq('inbound_method', 'imap');
+
+      if (!accounts || accounts.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'No active IMAP accounts to sync' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const results = [];
+      for (const account of accounts) {
+        try {
+          const response = await fetch(req.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account_id: account.id })
+          });
+          const result = await response.json();
+          results.push({ account_id: account.id, ...result });
+        } catch (error: any) {
+          results.push({ account_id: account.id, error: error.message });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, accounts_synced: results.length, results }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check for concurrent sync lock
     if (syncLocks.get(account_id)) {

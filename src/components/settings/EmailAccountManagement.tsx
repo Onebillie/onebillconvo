@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil, Send, Search, Wrench } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil, Send, Search, Wrench, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
 import { ManualImapTestDialog } from "./ManualImapTestDialog";
 import { EmailAutoconfigure } from "./EmailAutoconfigure";
 import { EmailSetupWizard } from "./EmailSetupWizard";
+import { formatDistanceToNow } from "date-fns";
 
 interface EmailAccount {
   id: string;
@@ -39,6 +41,7 @@ interface EmailAccount {
   sync_enabled: boolean;
   sync_interval_minutes: number;
   last_sync_at: string | null;
+  last_synced_at: string | null;
 }
 
 export function EmailAccountManagement() {
@@ -676,15 +679,31 @@ export function EmailAccountManagement() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      {account.name}
-                      {account.is_active ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2">
+                        {account.name}
+                        {account.is_active ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </CardTitle>
+                      {account.is_active && account.sync_enabled && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <RefreshCw className="h-3 w-3" />
+                          Auto-sync
+                        </Badge>
                       )}
-                    </CardTitle>
-                    <CardDescription>{account.email_address}</CardDescription>
+                    </div>
+                    <CardDescription className="flex flex-col gap-1">
+                      <span>{account.email_address}</span>
+                      {(account.last_synced_at || account.last_sync_at) && (
+                        <span className="flex items-center gap-1 text-xs">
+                          <Clock className="h-3 w-3" />
+                          Last synced {formatDistanceToNow(new Date(account.last_synced_at || account.last_sync_at!), { addSuffix: true })}
+                        </span>
+                      )}
+                    </CardDescription>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button
