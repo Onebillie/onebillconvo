@@ -84,22 +84,32 @@ export const EditContactDialog = ({
         .map((e) => e.trim())
         .filter((e) => e);
 
-      const { error } = await supabase
-        .from("customers")
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim() || null,
-          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-          whatsapp_phone: whatsappPhone.trim() || null,
-          whatsapp_name: whatsappName.trim() || null,
-          email: email.trim() || null,
-          alternate_emails: emailsArray.length > 0 ? emailsArray : null,
-          address: address.trim() || null,
-          notes: notes.trim() || null,
-        })
-        .eq("id", customer.id);
+      const updateData = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim() || null,
+        name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        whatsapp_phone: whatsappPhone.trim() || null,
+        whatsapp_name: whatsappName.trim() || null,
+        email: email.trim() || null,
+        alternate_emails: emailsArray.length > 0 ? emailsArray : null,
+        address: address.trim() || null,
+        notes: notes.trim() || null,
+      };
 
-      if (error) throw error;
+      console.log("Updating customer:", customer.id, updateData);
+
+      const { data, error } = await supabase
+        .from("customers")
+        .update(updateData)
+        .eq("id", customer.id)
+        .select();
+
+      console.log("Update result:", { data, error });
+
+      if (error) {
+        console.error("Update error:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -110,6 +120,7 @@ export const EditContactDialog = ({
       onUpdate();
       onOpenChange(false);
     } catch (error: any) {
+      console.error("Save failed:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update contact",
