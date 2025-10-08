@@ -3,6 +3,12 @@ project_id = "jrtlrnfdqfkjlkpfirzr"
 [functions.imap-test]
 verify_jwt = true
 
+[functions.imap-test-deep]
+verify_jwt = true
+
+[functions.smtp-test]
+verify_jwt = true
+
 [functions.whatsapp-send]
 verify_jwt = true
 

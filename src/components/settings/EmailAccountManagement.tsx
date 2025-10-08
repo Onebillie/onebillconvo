@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Mail, CheckCircle, XCircle, Wifi, FileText, AlertCircle, Pencil, Send, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmailOperationLogsDialog } from "./EmailOperationLogsDialog";
@@ -225,6 +225,67 @@ export function EmailAccountManagement() {
       toast({
         title: "Connection failed",
         description: message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deepImapTestMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      setIsTestingConnection(true);
+      const { data, error } = await supabase.functions.invoke('imap-test-deep', {
+        body: { account_id: accountId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setIsTestingConnection(false);
+      if (data.ok) {
+        toast({
+          title: "Deep test found working config!",
+          description: `Working variant: ${data.working_variant}`,
+        });
+      } else {
+        toast({
+          title: "All variants failed",
+          description: data.suggestion || "Check logs for details",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      setIsTestingConnection(false);
+      toast({
+        title: "Deep test failed",
+        description: error.message || "Check logs for details",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const smtpTestMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data, error } = await supabase.functions.invoke('smtp-test', {
+        body: { account_id: accountId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.ok) {
+        toast({
+          title: "SMTP test successful",
+          description: `Test email sent to ${data.test_email_sent_to}`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "SMTP test failed",
+        description: error.message || "Check logs for details",
         variant: "destructive",
       });
     }
@@ -519,7 +580,7 @@ export function EmailAccountManagement() {
                     </CardTitle>
                     <CardDescription>{account.email_address}</CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
@@ -535,10 +596,34 @@ export function EmailAccountManagement() {
                         setLogsDialogAccount({ id: account.id, name: account.name });
                         testConnectionMutation.mutate(account.id);
                       }}
-                      disabled={testConnectionMutation.isPending}
+                      disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
                     >
                       <Wifi className="w-4 h-4 mr-2" />
-                      {testConnectionMutation.isPending ? "Testing..." : "Test"}
+                      {testConnectionMutation.isPending ? "Testing..." : "Test IMAP"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setLogsDialogAccount({ id: account.id, name: account.name });
+                        deepImapTestMutation.mutate(account.id);
+                      }}
+                      disabled={testConnectionMutation.isPending || deepImapTestMutation.isPending}
+                    >
+                      <Search className="w-4 h-4 mr-2" />
+                      {deepImapTestMutation.isPending ? "Testing..." : "Deep IMAP"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setLogsDialogAccount({ id: account.id, name: account.name });
+                        smtpTestMutation.mutate(account.id);
+                      }}
+                      disabled={smtpTestMutation.isPending}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {smtpTestMutation.isPending ? "Sending..." : "Test SMTP"}
                     </Button>
                     <Button
                       size="sm"
