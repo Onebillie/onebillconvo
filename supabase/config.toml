@@ -15,10 +15,13 @@ verify_jwt = false
 [functions.whatsapp-submit-template]
 verify_jwt = true
 
-[functions.send-email]
+[functions.send-transactional-email]
 verify_jwt = true
 
-[functions.email-webhook]
+[functions.email-send-smtp]
+verify_jwt = true
+
+[functions.email-sync]
 verify_jwt = false
 
 [functions.api-conversations]
