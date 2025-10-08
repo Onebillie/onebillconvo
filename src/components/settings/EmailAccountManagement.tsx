@@ -574,16 +574,8 @@ export function EmailAccountManagement() {
                 )}
               </div>
 
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-900">
-                  <strong>Outbound emails now use Resend API</strong> for better deliverability. 
-                  SMTP settings below are legacy and not currently used. Configure your sending email in Business Settings.
-                </AlertDescription>
-              </Alert>
-
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3 text-muted-foreground">SMTP Settings (Legacy - Not Used)</h3>
+                <h3 className="font-semibold mb-3">SMTP Settings (Outgoing Mail)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="smtp_host">SMTP Host</Label>
@@ -804,8 +796,8 @@ export function EmailAccountManagement() {
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Outbound</span>
-                    <span className="text-green-600 font-semibold">Resend API</span>
+                    <span className="text-muted-foreground">SMTP Server</span>
+                    <span>{account.smtp_host}:{account.smtp_port}</span>
                   </div>
                   {account.last_sync_at && (
                     <div className="flex items-center justify-between text-sm">
@@ -864,14 +856,14 @@ export function EmailAccountManagement() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p className="text-green-600 font-semibold">
-            ✓ Full POP3 + Resend email integration is now active!
+            ✓ Full POP3/SMTP email integration is now active!
           </p>
           <p>
             <strong>Features enabled:</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
             <li>✓ POP3 email fetching with SSL/TLS (simpler, more reliable than IMAP)</li>
-            <li>✓ Resend API for sending (better deliverability than SMTP)</li>
+            <li>✓ SMTP email sending with SSL/TLS</li>
             <li>✓ Incremental sync (only fetches new emails using UIDL tracking)</li>
             <li>✓ Attachment parsing and storage</li>
             <li>✓ Email threading and reply detection</li>
