@@ -33,33 +33,33 @@ export const ContactList = ({
       {conversations.map((conversation) => (
         <div
           key={conversation.id}
-          className={`px-3 py-2 cursor-pointer transition-all border-b border-border/40 ${
+          className={`px-2 py-1.5 md:px-3 md:py-2 cursor-pointer transition-all border-b border-border/40 ${
             selectedConversation?.id === conversation.id
               ? "bg-accent/50"
               : "hover:bg-accent/20"
           }`}
           onClick={() => onSelectConversation(conversation)}
         >
-          <div className="flex items-start gap-3">
-            <Avatar className="w-10 h-10 flex-shrink-0">
+          <div className="flex items-start gap-2 md:gap-3">
+            <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
               <AvatarImage src={conversation.customer.avatar} />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {conversation.customer.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                <h3 className="text-sm font-semibold truncate">
-                  {conversation.customer.name}
-                </h3>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  {formatTimestamp(conversation.updated_at)}
-                </span>
-              </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-1 md:gap-2 mb-0.5">
+              <h3 className="text-xs md:text-sm font-semibold truncate">
+                {conversation.customer.name}
+              </h3>
+              <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+                {formatTimestamp(conversation.updated_at)}
+              </span>
+            </div>
               
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-xs text-muted-foreground truncate flex-1">
+              <div className="flex items-center gap-1 md:gap-2 mb-1">
+                <p className="text-[10px] md:text-xs text-muted-foreground truncate flex-1">
                   {conversation.customer.phone}
                 </p>
                 {conversation.assigned_to && (

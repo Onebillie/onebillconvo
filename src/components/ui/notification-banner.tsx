@@ -12,43 +12,25 @@ export function NotificationBanner({ unreadCount }: NotificationBannerProps) {
   if (unreadCount === 0) return null;
 
   return (
-    <>
-      {/* Top Banner */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] shadow-lg">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 animate-pulse" />
-              <span className="font-medium">
-                You have {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="bg-white text-orange-600 hover:bg-gray-100"
-            >
-              View Messages
-            </Button>
+    <div className="fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] shadow-lg">
+      <div className="container mx-auto px-2 py-2 md:px-4 md:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Bell className="w-4 h-4 md:w-5 md:h-5 animate-pulse" />
+            <span className="text-xs md:text-sm font-medium">
+              {unreadCount} unread
+            </span>
           </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="bg-white text-orange-600 hover:bg-gray-100 text-xs md:text-sm h-7 md:h-9 px-2 md:px-3"
+          >
+            View
+          </Button>
         </div>
       </div>
-
-      {/* Floating Badge - Always Visible */}
-      <div 
-        className="fixed bottom-6 right-6 z-50 cursor-pointer animate-bounce"
-        onClick={() => navigate('/dashboard')}
-      >
-        <div className="relative">
-          <div className="bg-destructive text-destructive-foreground rounded-full w-16 h-16 flex items-center justify-center shadow-2xl hover:scale-110 transition-transform">
-            <Bell className="w-8 h-8" />
-          </div>
-          <div className="absolute -top-2 -right-2 bg-background border-2 border-destructive text-destructive rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-            {unreadCount}
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

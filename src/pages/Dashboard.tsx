@@ -401,29 +401,29 @@ const Dashboard = () => {
       {isMobile ? (
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <div className="w-full border-b border-border md:hidden">
-            <div className="p-4 flex items-center justify-between">
+            <div className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="w-5 h-5" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Menu className="w-4 h-4" />
                   </Button>
                 </SheetTrigger>
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <h1 className="font-semibold">Conversations</h1>
+                <MessageSquare className="w-4 h-4 text-primary" />
+                <h1 className="text-sm font-semibold">Conversations</h1>
                 {unreadCount > 0 && (
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
                     {unreadCount}
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <TaskNotifications />
                 {isAdmin && (
-                  <Button variant="ghost" size="icon" onClick={handleBack}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
                     <SettingsIcon className="w-4 h-4" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={signOut}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
@@ -445,20 +445,20 @@ const Dashboard = () => {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-3 md:p-4 border-b border-border bg-background">
-              <div className="flex items-center justify-between gap-2">
+            <div className="p-2 md:p-4 border-b border-border bg-background">
+              <div className="flex items-center justify-between gap-1 md:gap-2">
                 {isMobile && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setSelectedConversation(null)}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 h-8 w-8"
                   >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                   </Button>
                 )}
                 <div 
-                  className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors flex-1 min-w-0"
+                  className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
                   onClick={() => setShowContactDetails(!showContactDetails)}
                 >
                   <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
@@ -468,10 +468,10 @@ const Dashboard = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-semibold text-sm md:text-base truncate">
+                    <h2 className="font-semibold text-xs md:text-base truncate">
                       {selectedConversation.customer.name}
                     </h2>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">
                       {selectedConversation.customer.phone}
                     </p>
                   </div>
@@ -506,7 +506,7 @@ const Dashboard = () => {
               </div>
               
               {/* Mobile: Second row for additional controls */}
-              <div className="flex lg:hidden items-center gap-2 mt-2">
+              <div className="flex lg:hidden items-center gap-1 mt-1.5">
                 <div className="flex-1">
                   <EnhancedTemplateSelector
                     conversationId={selectedConversation.id}

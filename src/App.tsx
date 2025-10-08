@@ -35,7 +35,7 @@ function AppContent() {
     <>
       <AccountFrozenBanner />
       <NotificationBanner unreadCount={unreadCount} />
-      <div className={unreadCount > 0 ? "pt-14" : ""}>
+      <div className={unreadCount > 0 ? "pt-10 md:pt-14" : ""}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
