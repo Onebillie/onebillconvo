@@ -91,7 +91,7 @@ serve(async (req) => {
         }
       }
 
-      // Update last UIDL
+      // Update last UIDL with highest processed UIDL
       if (emails.length > 0) {
         const lastUIDL = emails[emails.length - 1].uidl;
         await supabase
@@ -103,10 +103,21 @@ serve(async (req) => {
           .eq('id', account_id);
       }
 
-      await logger.logSuccess('POP3 sync completed', { 
-        fetched: emails.length, 
-        processed: processedCount 
-      });
+      // Log if more emails remain to be processed
+      const remainingCount = newMessages.length - emailsToProcess.length;
+      if (remainingCount > 0) {
+        console.log(`✅ Batch complete. ${remainingCount} emails remaining - trigger another sync to continue`);
+        await logger.logSuccess('Batch completed, more emails remaining', { 
+          fetched: emails.length, 
+          processed: processedCount,
+          remaining: remainingCount
+        });
+      } else {
+        await logger.logSuccess('POP3 sync completed', { 
+          fetched: emails.length, 
+          processed: processedCount 
+        });
+      }
 
       return new Response(
         JSON.stringify({ 
@@ -219,20 +230,55 @@ async function fetchEmailsFromPOP3(
 
   await logger.logSuccess('Retrieved message UIDLs', { count: messageMap.size });
 
-  // Filter for new messages
+  // Build set of already-seen UIDLs from database
+  const seenUIDLs = new Set<string>();
+  const { data: processedMessages } = await createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  )
+    .from('messages')
+    .select('external_message_id')
+    .eq('business_id', account.business_id)
+    .eq('channel', 'email');
+  
+  processedMessages?.forEach(msg => {
+    if (msg.external_message_id) {
+      // Store both with and without pop3- prefix
+      seenUIDLs.add(msg.external_message_id);
+      if (msg.external_message_id.startsWith('pop3-')) {
+        seenUIDLs.add(msg.external_message_id.replace('pop3-', ''));
+      }
+    }
+  });
+
+  // Filter for truly new messages
   const newMessages: Array<[number, string]> = [];
   for (const [msgNum, uidl] of messageMap.entries()) {
-    if (!last_pop3_uidl || uidl > last_pop3_uidl) {
+    const messageId = `pop3-${uidl}`;
+    if (!seenUIDLs.has(uidl) && !seenUIDLs.has(messageId)) {
       newMessages.push([msgNum, uidl]);
     }
   }
 
-  console.log(`Found ${newMessages.length} new messages`);
+  console.log(`Found ${newMessages.length} new messages (${seenUIDLs.size} already processed)`);
   await logger.logSuccess('Identified new messages', { count: newMessages.length });
+
+  // Batch processing - limit to 50 emails per run to avoid CPU timeout
+  const BATCH_SIZE = 50;
+  const emailsToProcess = newMessages.slice(0, BATCH_SIZE);
+  
+  if (emailsToProcess.length < newMessages.length) {
+    console.log(`⚠️ Processing ${emailsToProcess.length} of ${newMessages.length} new messages (batch mode)`);
+    await logger.logSuccess('Starting batch processing', { 
+      batch: emailsToProcess.length, 
+      total: newMessages.length,
+      remaining: newMessages.length - emailsToProcess.length
+    });
+  }
 
   const emails: ParsedEmail[] = [];
 
-  for (const [msgNum, uidl] of newMessages) {
+  for (const [msgNum, uidl] of emailsToProcess) {
     try {
       // Retrieve message
       await conn.write(encoder.encode(`RETR ${msgNum}\r\n`));
