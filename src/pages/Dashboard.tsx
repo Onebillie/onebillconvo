@@ -91,7 +91,8 @@ const Dashboard = () => {
             name,
             color
           )
-        )
+        ),
+        assigned_user:profiles!assigned_to(id, full_name, department)
       `)
       .eq('is_archived', false)
       .order('updated_at', { ascending: false })

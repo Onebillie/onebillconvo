@@ -64,7 +64,7 @@ export const ContactList = ({
                 </p>
                 {conversation.assigned_to && (
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">
-                    Assigned
+                    {conversation.assigned_user?.full_name?.split(' ')[0] || 'Assigned'}
                   </Badge>
                 )}
               </div>

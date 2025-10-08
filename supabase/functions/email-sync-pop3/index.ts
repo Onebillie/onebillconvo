@@ -366,16 +366,28 @@ async function processIncomingEmail(
   let customerId = customer?.id;
 
   if (!customerId) {
-    const nameParts = email.from.split('@')[0].split(/[._-]/);
-    const name = nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    // Extract sender name from email headers or fallback to email address
+    let displayName = email.from;
+    
+    // Try to parse "Name <email@example.com>" format
+    const nameMatch = email.from.match(/^(.+?)\s*<(.+?)>$/);
+    if (nameMatch) {
+      displayName = nameMatch[1].trim();
+    } else if (email.from.includes('@')) {
+      // Fallback: generate name from email prefix
+      const nameParts = email.from.split('@')[0].split(/[._-]/);
+      displayName = nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    }
+
+    const emailAddress = nameMatch ? nameMatch[2] : email.from;
 
     const { data: newCustomer } = await supabase
       .from('customers')
       .insert({
         business_id: businessId,
-        email: email.from,
-        name,
-        phone: email.from,
+        email: emailAddress,
+        name: displayName,
+        phone: emailAddress,
       })
       .select('id')
       .single();

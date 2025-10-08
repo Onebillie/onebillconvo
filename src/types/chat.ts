@@ -25,6 +25,11 @@ export interface Conversation {
   updated_at: string;
   customer: Customer;
   unread_count?: number;
+  assigned_user?: {
+    id: string;
+    full_name: string;
+    department?: string;
+  };
   status_tags?: Array<{
     id: string;
     name: string;

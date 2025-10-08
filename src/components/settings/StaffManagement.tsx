@@ -18,6 +18,7 @@ interface Staff {
   user_role?: 'superadmin' | 'admin' | 'agent';
   is_active: boolean;
   email_confirmed_at?: string;
+  department?: string;
 }
 
 export const StaffManagement = () => {
@@ -30,6 +31,7 @@ export const StaffManagement = () => {
     password: "",
     fullName: "",
     role: "agent" as "agent" | "admin" | "superadmin",
+    department: "customer_service",
   });
 
   useEffect(() => {
@@ -117,11 +119,20 @@ export const StaffManagement = () => {
           data: {
             full_name: formData.fullName,
             role: formData.role,
+            department: formData.department,
           },
         },
       });
 
       if (authError) throw authError;
+
+      // Update the profile with department
+      if (authData.user) {
+        await supabase
+          .from('profiles')
+          .update({ department: formData.department })
+          .eq('id', authData.user.id);
+      }
 
       // Update seat count after adding new staff
       const { data: businessData } = await supabase
@@ -170,7 +181,7 @@ export const StaffManagement = () => {
       });
 
       setDialogOpen(false);
-      setFormData({ email: "", password: "", fullName: "", role: "agent" });
+      setFormData({ email: "", password: "", fullName: "", role: "agent", department: "customer_service" });
       fetchStaff();
     } catch (error: any) {
       toast({
@@ -323,6 +334,22 @@ export const StaffManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Department</Label>
+                  <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sales">Sales</SelectItem>
+                      <SelectItem value="customer_service">Customer Service</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="renewals">Renewals</SelectItem>
+                      <SelectItem value="technical_support">Technical Support</SelectItem>
+                      <SelectItem value="billing">Billing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancel
@@ -343,6 +370,7 @@ export const StaffManagement = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Department</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Email Status</TableHead>
               <TableHead>Account Status</TableHead>
@@ -354,6 +382,9 @@ export const StaffManagement = () => {
               <TableRow key={member.id}>
                 <TableCell className="font-medium">{member.full_name}</TableCell>
                 <TableCell>{member.email}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{member.department || 'Not set'}</Badge>
+                </TableCell>
                 <TableCell>
                   <Select
                     value={member.user_role || 'agent'}

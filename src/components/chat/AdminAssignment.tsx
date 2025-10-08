@@ -22,6 +22,7 @@ interface TeamMember {
   full_name: string;
   email: string;
   role: "agent" | "admin" | "superadmin";
+  department?: string;
 }
 
 
@@ -37,9 +38,9 @@ export const AdminAssignment = ({
     const fetchMembers = async () => {
       const { data, error } = await (supabase as any)
         .from("profiles")
-        .select("id, full_name, email, role, is_active")
+        .select("id, full_name, email, is_active, department")
         .eq("is_active", true)
-        .order("role")
+        .order("department")
         .order("full_name");
 
       if (error) {
@@ -97,11 +98,18 @@ export const AdminAssignment = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-          {members.map((m) => (
-            <SelectItem key={m.id} value={m.id} className="text-xs">
-              {m.full_name} ({m.role})
-            </SelectItem>
-          ))}
+          {members.map((m) => {
+            const firstName = m.full_name.split(' ')[0];
+            const displayText = m.department 
+              ? `${firstName} (${m.department})`
+              : firstName;
+            
+            return (
+              <SelectItem key={m.id} value={m.id} className="text-xs">
+                {displayText}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 

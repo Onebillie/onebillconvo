@@ -23,6 +23,7 @@ interface TeamMember {
   full_name: string;
   email: string;
   avatar_url?: string;
+  department?: string;
 }
 
 interface AssignDialogProps {
@@ -53,8 +54,9 @@ export const AssignDialog = ({
   const fetchTeamMembers = async () => {
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, is_active")
+      .select("id, full_name, email, is_active, department")
       .eq("is_active", true)
+      .order("department")
       .order("full_name");
 
     if (error) {
@@ -62,17 +64,7 @@ export const AssignDialog = ({
       return;
     }
 
-    // Fetch roles separately
-    const { data: rolesData } = await supabase
-      .from("user_roles")
-      .select("user_id, role");
-
-    const membersWithRoles = profiles?.map(profile => ({
-      ...profile,
-      role: rolesData?.find((r: any) => r.user_id === profile.id)?.role || 'agent'
-    })) || [];
-
-    setTeamMembers(membersWithRoles);
+    setTeamMembers(profiles || []);
   };
 
   const handleAssign = async () => {
@@ -126,11 +118,18 @@ export const AssignDialog = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
-              {teamMembers.map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.full_name} ({member.email})
-                </SelectItem>
-              ))}
+              {teamMembers.map((member) => {
+                const firstName = member.full_name.split(' ')[0];
+                const displayText = member.department 
+                  ? `${firstName} (${member.department})`
+                  : firstName;
+                
+                return (
+                  <SelectItem key={member.id} value={member.id}>
+                    {displayText}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
 

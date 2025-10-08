@@ -22,6 +22,12 @@ export const useGlobalNotifications = () => {
   useEffect(() => {
     fetchUnreadCount();
 
+    // Get current user for department check
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    };
+
     // Listen to all new inbound messages
     const channel = supabase
       .channel('global-messages')
@@ -45,6 +51,56 @@ export const useGlobalNotifications = () => {
           }
           
           lastNotificationRef.current = now;
+
+          // Get current user
+          const currentUser = await getCurrentUser();
+          if (!currentUser) return;
+
+          // Fetch conversation details including assigned user
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select(`
+              id,
+              assigned_to,
+              customer:customers(name)
+            `)
+            .eq('id', newMessage.conversation_id)
+            .single();
+
+          // Determine if this user should be notified
+          let shouldNotify = false;
+          
+          if (!conversation?.assigned_to) {
+            // Unassigned conversation - notify everyone
+            shouldNotify = true;
+          } else if (conversation.assigned_to === currentUser.id) {
+            // Directly assigned to this user
+            shouldNotify = true;
+          } else {
+            // Check if same department as assigned user
+            const { data: assignedUser } = await supabase
+              .from('profiles')
+              .select('department')
+              .eq('id', conversation.assigned_to)
+              .single();
+              
+            const { data: currentUserProfile } = await supabase
+              .from('profiles')
+              .select('department')
+              .eq('id', currentUser.id)
+              .single();
+              
+            if (assignedUser?.department && currentUserProfile?.department && 
+                assignedUser.department === currentUserProfile.department) {
+              shouldNotify = true; // Same department
+            }
+          }
+
+          if (!shouldNotify) {
+            // Just update count for this user
+            fetchUnreadCount();
+            return;
+          }
           
           // Debounce the toast to avoid spam
           if (toastTimeoutRef.current) {
@@ -52,13 +108,6 @@ export const useGlobalNotifications = () => {
           }
           
           toastTimeoutRef.current = setTimeout(async () => {
-            // Simplified query - just get customer name
-            const { data: conversation } = await supabase
-              .from('conversations')
-              .select('customer:customers(name)')
-              .eq('id', newMessage.conversation_id)
-              .single();
-
             const customerName = conversation?.customer?.name || 'Unknown';
             const messagePreview = newMessage.content.substring(0, 40);
             const channel = newMessage.channel === 'email' ? '📧' : '💬';
