@@ -51,21 +51,33 @@ export default function CreateSuperAdmin() {
         <CardHeader>
           <CardTitle>Create SuperAdmin Account</CardTitle>
           <CardDescription>
-            This will create hello@alacartesaas.com with superadmin privileges
+            {!created 
+              ? "Set password and assign superadmin role to hello@alacartesaas.com"
+              : "Setup complete! You can now log in to the admin portal."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {created ? (
             <div className="text-center space-y-4">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-left">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">
+                  ✓ SuperAdmin Setup Complete
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-300 mb-1">
+                  Email: <strong>hello@alacartesaas.com</strong>
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  Role: <strong>superadmin</strong> ✓
+                </p>
+              </div>
               <p className="text-sm text-muted-foreground">
-                ✅ SuperAdmin account created successfully!
-              </p>
-              <p className="text-sm">
-                You can now log in as <strong>hello@alacartesaas.com</strong> with your password.
+                You can now log in to the admin portal with your password.
               </p>
               <Button
                 onClick={() => window.location.href = "/admin/login"}
                 className="w-full"
+                size="lg"
               >
                 Go to Admin Login
               </Button>

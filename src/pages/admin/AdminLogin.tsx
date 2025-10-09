@@ -44,12 +44,17 @@ export default function AdminLogin() {
       });
 
       if (roleCheckError || !isSuperadmin) {
-        // Not a superadmin - sign them out and show error
+        // Not a superadmin - sign them out and guide to setup
         await supabase.auth.signOut();
         toast({
-          title: "Access Denied",
-          description: roleCheckError?.message || "Superadmin role required. Please use the regular login.",
+          title: "Superadmin Setup Required",
+          description: "Your account needs superadmin access. Please visit /admin/create-superadmin to complete setup.",
           variant: "destructive",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/create-superadmin')}>
+              Complete Setup
+            </Button>
+          ),
         });
         setLoading(false);
         return;
@@ -144,7 +149,7 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <Button 
               type="button" 
               variant="link" 
@@ -153,6 +158,20 @@ export default function AdminLogin() {
             >
               ← Back to regular login
             </Button>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-2">
+                First time setup?
+              </p>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                className="text-xs" 
+                onClick={() => navigate("/admin/create-superadmin")}
+              >
+                Create SuperAdmin Account
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
