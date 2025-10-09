@@ -78,3 +78,16 @@ export interface Template {
     format?: string;
   }>;
 }
+
+export interface ConversationFilters {
+  search: string;
+  unread: boolean;
+  statusIds: string[];
+  dateRange: {
+    from: Date | null;
+    to: Date | null;
+  };
+  sortBy: 'newest' | 'oldest' | 'unread' | 'name_asc' | 'name_desc';
+  platforms: string[];
+  assignedTo: string | null;
+}

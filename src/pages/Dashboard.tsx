@@ -29,6 +29,7 @@ import { AssignDialog } from "@/components/conversations/AssignDialog";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
+import { ConversationFilters as FilterType } from "@/types/chat";
 import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
 import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 import { LimitReachedBanner } from "@/components/LimitReachedBanner";
@@ -46,9 +47,14 @@ const Dashboard = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [filters, setFilters] = useState<{ unread: boolean; statusIds: string[] }>({
+  const [filters, setFilters] = useState<FilterType>({
+    search: '',
     unread: false,
     statusIds: [],
+    dateRange: { from: null, to: null },
+    sortBy: 'newest',
+    platforms: [],
+    assignedTo: null,
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [showContactDetails, setShowContactDetails] = useState(false);
@@ -89,6 +95,8 @@ const Dashboard = () => {
         customers!inner (
           id,
           name,
+          first_name,
+          last_name,
           phone,
           email,
           avatar,
@@ -108,16 +116,38 @@ const Dashboard = () => {
       `)
       .eq('is_archived', false);
 
-    // Apply server-side filters
+    // Apply server-side filters for status
     if (filters.statusIds.length > 0) {
       query = query.in('status_tag_id', filters.statusIds);
     }
 
+    // Apply server-side filter for assigned user
+    if (filters.assignedTo) {
+      if (filters.assignedTo === 'unassigned') {
+        query = query.is('assigned_to', null);
+      } else {
+        query = query.eq('assigned_to', filters.assignedTo);
+      }
+    }
+
+    // Apply date range filter
+    if (filters.dateRange.from) {
+      query = query.gte('updated_at', filters.dateRange.from.toISOString());
+    }
+    if (filters.dateRange.to) {
+      query = query.lte('updated_at', filters.dateRange.to.toISOString());
+    }
+
+    // Apply search filter on customer name, email, phone
+    if (filters.search) {
+      query = query.or(`customers.name.ilike.%${filters.search}%,customers.phone.ilike.%${filters.search}%,customers.email.ilike.%${filters.search}%`);
+    }
+
     const { data, error } = await query
-      .order('updated_at', { ascending: false })
+      .order('updated_at', { ascending: filters.sortBy === 'oldest' })
       .order('created_at', { foreignTable: 'messages', ascending: false })
-      .limit(30) // Reduced from 100 to 30 for faster initial load
-      .limit(5, { foreignTable: 'messages' }); // Get 5 recent messages for unread calculation
+      .limit(30)
+      .limit(5, { foreignTable: 'messages' });
 
     if (error) {
       console.error('Error fetching conversations:', error);
@@ -138,7 +168,7 @@ const Dashboard = () => {
       return;
     }
 
-    // Calculate unread counts from fetched messages (more efficient than separate query)
+    // Calculate unread counts from fetched messages
     const conversations = uniqueConvs.map(conv => {
       const unreadCount = conv.messages?.filter((m: any) => 
         m.direction === 'inbound' && !m.is_read
@@ -163,9 +193,11 @@ const Dashboard = () => {
     applyFilters(conversations, filters);
   }, [filters]);
 
-  const applyFilters = useCallback((convs: Conversation[], currentFilters: typeof filters) => {
+  const applyFilters = useCallback((convs: Conversation[], currentFilters: FilterType) => {
     let filtered = [...convs];
 
+    // Client-side filters (for additional filtering not done server-side)
+    
     // Filter by unread
     if (currentFilters.unread) {
       filtered = filtered.filter(conv => 
@@ -173,17 +205,46 @@ const Dashboard = () => {
       );
     }
 
-    // Filter by status
-    if (currentFilters.statusIds.length > 0) {
+    // Filter by platforms
+    if (currentFilters.platforms.length > 0) {
       filtered = filtered.filter(conv =>
-        conv.status_tags?.some(tag => currentFilters.statusIds.includes(tag.id))
+        conv.last_message && currentFilters.platforms.includes(conv.last_message.platform)
       );
+    }
+
+    // Sort by different criteria
+    switch (currentFilters.sortBy) {
+      case 'oldest':
+        filtered.sort((a, b) => 
+          new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+        );
+        break;
+      case 'unread':
+        filtered.sort((a, b) => 
+          (b.unread_count || 0) - (a.unread_count || 0)
+        );
+        break;
+      case 'name_asc':
+        filtered.sort((a, b) => 
+          a.customer.name.localeCompare(b.customer.name)
+        );
+        break;
+      case 'name_desc':
+        filtered.sort((a, b) => 
+          b.customer.name.localeCompare(a.customer.name)
+        );
+        break;
+      case 'newest':
+      default:
+        filtered.sort((a, b) => 
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
     }
 
     setFilteredConversations(filtered);
   }, []);
 
-  const handleFilterChange = useCallback((newFilters: typeof filters) => {
+  const handleFilterChange = useCallback((newFilters: FilterType) => {
     setFilters(newFilters);
     applyFilters(conversations, newFilters);
   }, [conversations, applyFilters]);
@@ -383,7 +444,15 @@ const Dashboard = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setFilters({ unread: true, statusIds: [] })}
+                onClick={() => setFilters({ 
+                  search: '',
+                  unread: true, 
+                  statusIds: [],
+                  dateRange: { from: null, to: null },
+                  sortBy: 'newest',
+                  platforms: [],
+                  assignedTo: null,
+                })}
                 className="text-xs gap-1 h-6 px-2"
               >
                 <Bell className="w-3 h-3" />
@@ -444,7 +513,10 @@ const Dashboard = () => {
       </div>
 
       {/* Filters */}
-      <ConversationFilters onFilterChange={handleFilterChange} />
+      <ConversationFilters 
+        onFilterChange={handleFilterChange} 
+        currentFilters={filters}
+      />
 
       {/* Duplicate Contacts Banner */}
       <div className="px-4 py-2">
@@ -513,7 +585,15 @@ const Dashboard = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setFilters({ unread: true, statusIds: [] });
+                          setFilters({ 
+                            search: '',
+                            unread: true, 
+                            statusIds: [],
+                            dateRange: { from: null, to: null },
+                            sortBy: 'newest',
+                            platforms: [],
+                            assignedTo: null,
+                          });
                         }}
                         className="h-6 px-2 text-xs gap-1 ml-1"
                       >

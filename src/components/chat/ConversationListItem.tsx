@@ -13,17 +13,26 @@ interface ConversationListItemProps {
 }
 
 const formatTimestamp = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
+  try {
+    const date = new Date(dateString);
+    // Validate the date
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24 && isToday(date)) return format(date, "HH:mm");
-  if (isYesterday(date)) return "Yesterday";
-  return format(date, "dd/MM/yyyy");
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24 && isToday(date)) return format(date, "HH:mm");
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "dd/MM/yyyy");
+  } catch {
+    return '';
+  }
 };
 
 export const ConversationListItem = memo(({

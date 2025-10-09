@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState, memo } from "react";
+import { useMessageSearch } from "@/hooks/useMessageSearch";
+import { MessageSearch } from "./MessageSearch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { Message } from "@/types/chat";
@@ -8,7 +10,7 @@ import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
-import { Pencil, Reply } from "lucide-react";
+import { Pencil, Reply, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,16 +20,42 @@ interface MessageListProps {
   onMessageUpdate?: () => void;
 }
 
-export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: MessageListProps) => {
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [messageReactions, setMessageReactions] = useState<Record<string, any[]>>({});
-  const scrollRef = useRef<HTMLDivElement>(null);
+export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Record<string, HTMLDivElement>>({});
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({});
+  const [showSearch, setShowSearch] = useState(false);
+  
+  const {
+    searchTerm,
+    setSearchTerm,
+    matches,
+    currentMatch,
+    currentMatchIndex,
+    goToNextMatch,
+    goToPreviousMatch,
+    clearSearch,
+  } = useMessageSearch(messages);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  };
+
+  useEffect(() => {
+    if (!searchTerm) {
+      scrollToBottom();
+    }
+  }, [messages, searchTerm]);
+
+  useEffect(() => {
+    if (currentMatch && messageRefs.current[currentMatch.id]) {
+      messageRefs.current[currentMatch.id].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }, [currentMatch]);
 
   // Fetch reactions for all messages
   useEffect(() => {
@@ -75,6 +103,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
       supabase.removeChannel(channel);
     };
   }, [messages]);
+
   const renderAttachment = (attachment: any) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
 
@@ -106,8 +135,21 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
     }
   };
 
+  const highlightText = (text: string) => {
+    if (!searchTerm.trim()) return text;
+    const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === searchTerm.toLowerCase() 
+        ? `<mark class="bg-primary/30">${part}</mark>` 
+        : part
+    ).join('');
+  };
+
+  // Display either filtered messages or all messages
+  const displayMessages = searchTerm ? matches : messages;
+
   // Group messages by date
-  const groupedMessages = messages.reduce((groups: { [key: string]: Message[] }, message) => {
+  const groupedMessages = displayMessages.reduce((groups: { [key: string]: Message[] }, message) => {
     const date = format(new Date(message.created_at), "yyyy-MM-dd");
     if (!groups[date]) {
       groups[date] = [];
@@ -117,8 +159,34 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
   }, {});
 
   return (
-    <div className="h-full overflow-y-auto p-4">
-      <div className="space-y-6" ref={scrollRef}>
+    <>
+      {showSearch && (
+        <MessageSearch
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          matchCount={matches.length}
+          currentIndex={currentMatchIndex}
+          onNext={goToNextMatch}
+          onPrevious={goToPreviousMatch}
+          onClear={clearSearch}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10">
+        {!showSearch && messages.length > 5 && (
+          <div className="sticky top-0 z-10 flex justify-center py-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSearch(true)}
+              className="bg-background/95 backdrop-blur"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Search in conversation
+            </Button>
+          </div>
+        )}
+        
         {Object.entries(groupedMessages).map(([date, dateMessages]) => (
           <div key={date}>
             {/* Date separator */}
@@ -137,13 +205,15 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                   ? messages.find(m => m.id === message.replied_to_message_id)
                   : null;
                 const reactions = messageReactions[message.id] || [];
+                const isMatch = searchTerm && currentMatch?.id === message.id;
 
                 return (
                   <div
                     key={message.id}
+                    ref={(el) => { if (el) messageRefs.current[message.id] = el; }}
                     className={`flex ${
                       message.direction === "outbound" ? "justify-end" : "justify-start"
-                    } mb-2 group`}
+                    } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
                     onContextMenu={(e) => {
                       if (onCreateTask) {
                         e.preventDefault();
@@ -197,9 +267,10 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                               subject={message.subject}
                             />
                           ) : (
-                            <p className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1">
-                              {message.content}
-                            </p>
+                            <p 
+                              className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
+                              dangerouslySetInnerHTML={{ __html: searchTerm ? highlightText(message.content) : message.content }}
+                            />
                           )}
                           
                           {/* Attachments */}
@@ -260,6 +331,6 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
           }}
         />
       )}
-    </div>
+    </>
   );
-};
+});
