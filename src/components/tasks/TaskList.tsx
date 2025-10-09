@@ -18,7 +18,7 @@ interface Task {
   due_date: string;
   assigned_to: string | null;
   customer: { name: string } | null;
-  assignee: { full_name: string } | null;
+  assignee: { full_name: string } | null | any;
 }
 
 export function TaskList() {
@@ -40,7 +40,7 @@ export function TaskList() {
       .select(`
         *,
         customer:customers(name),
-        assignee:profiles!tasks_assigned_to_fkey(full_name)
+        assignee:profiles(full_name)
       `)
       .in('status', ['pending', 'in_progress'])
       .order('priority_score', { ascending: false })

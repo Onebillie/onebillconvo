@@ -168,7 +168,17 @@ export const StatusManagement = () => {
             setDialogOpen(open);
             if (!open) {
               setEditingStatus(null);
-              setFormData({ name: "", color: "#3b82f6", icon: "" });
+              setFormData({
+                name: "",
+                color: "#3b82f6",
+                icon: "",
+                auto_create_task: false,
+                default_priority: 'medium',
+                priority_score: 5,
+                task_title_template: '',
+                task_description_template: '',
+                default_assignee_role: '',
+              });
             }
           }}>
             <DialogTrigger asChild>

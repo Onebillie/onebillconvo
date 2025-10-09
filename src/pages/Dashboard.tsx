@@ -23,6 +23,7 @@ import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { TaskNotifications } from "@/components/tasks/TaskNotifications";
+import { GlobalNotificationCenter } from "@/components/notifications/GlobalNotificationCenter";
 import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
 import { AssignDialog } from "@/components/conversations/AssignDialog";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
@@ -386,6 +387,7 @@ const Dashboard = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <GlobalNotificationCenter />
             <TaskNotifications />
             {isAdmin && (
               <Button variant="ghost" size="sm" onClick={handleBack}>
