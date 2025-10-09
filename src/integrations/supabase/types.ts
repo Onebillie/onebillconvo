@@ -17,28 +17,37 @@ export type Database = {
       admin_sessions: {
         Row: {
           created_at: string
+          device_fingerprint: string | null
+          device_name: string | null
           expires_at: string
           id: string
           ip_address: string | null
           is_active: boolean
+          is_trusted: boolean | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          device_fingerprint?: string | null
+          device_name?: string | null
           expires_at?: string
           id?: string
           ip_address?: string | null
           is_active?: boolean
+          is_trusted?: boolean | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          device_fingerprint?: string | null
+          device_name?: string | null
           expires_at?: string
           id?: string
           ip_address?: string | null
           is_active?: boolean
+          is_trusted?: boolean | null
           user_agent?: string | null
           user_id?: string
         }
@@ -2535,6 +2544,10 @@ export type Database = {
       }
       is_business_owner: {
         Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_device_trusted: {
+        Args: { _device_fingerprint: string; _user_id: string }
         Returns: boolean
       }
       normalize_phone: {
