@@ -24,6 +24,7 @@ import SystemHealth from "./pages/admin/SystemHealth";
 import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
+import SystemTesting from "./pages/admin/SystemTesting";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
 
@@ -65,6 +66,7 @@ function AppContent() {
             <Route path="payments" element={<PaymentsTracking />} />
             <Route path="users" element={<UsersManagement />} />
             <Route path="system" element={<SystemHealth />} />
+            <Route path="testing" element={<SystemTesting />} />
           </Route>
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

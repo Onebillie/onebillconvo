@@ -332,6 +332,39 @@ export type Database = {
           },
         ]
       }
+      api_usage_tracking: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          service_name: string
+          updated_at: string | null
+          usage_count: number | null
+          usage_date: string | null
+          usage_limit: number
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          service_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_date?: string | null
+          usage_limit: number
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          service_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_date?: string | null
+          usage_limit?: number
+        }
+        Relationships: []
+      }
       business_settings: {
         Row: {
           company_logo: string | null
@@ -1979,6 +2012,42 @@ export type Database = {
           },
         ]
       }
+      system_test_results: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          run_by: string | null
+          status: string
+          test_category: string
+          test_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          run_by?: string | null
+          status: string
+          test_category: string
+          test_name: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          run_by?: string | null
+          status?: string
+          test_category?: string
+          test_name?: string
+        }
+        Relationships: []
+      }
       task_notifications: {
         Row: {
           created_at: string | null
@@ -2154,6 +2223,30 @@ export type Database = {
           role?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      usage_alerts_sent: {
+        Row: {
+          alert_date: string | null
+          alert_level: number
+          id: string
+          sent_at: string | null
+          service_name: string
+        }
+        Insert: {
+          alert_date?: string | null
+          alert_level: number
+          id?: string
+          sent_at?: string | null
+          service_name: string
+        }
+        Update: {
+          alert_date?: string | null
+          alert_level?: number
+          id?: string
+          sent_at?: string | null
+          service_name?: string
         }
         Relationships: []
       }

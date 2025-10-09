@@ -22,6 +22,7 @@ export default function AdminLayout() {
     { path: "/admin/payments", label: "Payments", icon: Receipt },
     { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/system", label: "System Health", icon: Activity },
+    { path: "/admin/testing", label: "System Testing", icon: Activity },
     { path: "/app/settings", label: "Settings", icon: Settings },
   ];
 

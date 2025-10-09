@@ -104,3 +104,15 @@ verify_jwt = false
 
 [functions.scan-attachment]
 verify_jwt = true
+
+[functions.test-email-send]
+verify_jwt = true
+
+[functions.send-usage-alert]
+verify_jwt = false
+
+[functions.run-system-tests]
+verify_jwt = true
+
+[functions.check-api-limits]
+verify_jwt = true
