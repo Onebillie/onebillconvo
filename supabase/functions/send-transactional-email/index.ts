@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Subject: ${subject}`);
 
     const emailResponse = await resend.emails.send({
-      from: "OneBill <onboarding@resend.dev>",
+      from: "AlaCarte Chat <noreply@alacartechat.com>",
       to: [to],
       subject: subject,
       html: html,

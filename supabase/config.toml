@@ -92,3 +92,12 @@ verify_jwt = true
 
 [functions.ai-suggest-response]
 verify_jwt = true
+
+[functions.verify-payment-session]
+verify_jwt = true
+
+[functions.get-outstanding-invoice]
+verify_jwt = true
+
+[functions.reset-message-counters]
+verify_jwt = false

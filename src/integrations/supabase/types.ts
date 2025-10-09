@@ -430,6 +430,7 @@ export type Database = {
           cancellation_reason: string | null
           created_at: string | null
           credit_balance: number | null
+          grace_period_end: string | null
           id: string
           is_frozen: boolean | null
           message_count_current_period: number | null
@@ -455,6 +456,7 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          grace_period_end?: string | null
           id?: string
           is_frozen?: boolean | null
           message_count_current_period?: number | null
@@ -480,6 +482,7 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          grace_period_end?: string | null
           id?: string
           is_frozen?: boolean | null
           message_count_current_period?: number | null
@@ -1285,6 +1288,62 @@ export type Database = {
             columns: ["email_account_id"]
             isOneToOne: false
             referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_due: number
+          amount_paid: number
+          business_id: string
+          created_at: string
+          currency: string
+          hosted_invoice_url: string | null
+          id: string
+          invoice_pdf: string | null
+          period_end: string
+          period_start: string
+          status: string
+          stripe_invoice_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          amount_paid: number
+          business_id: string
+          created_at?: string
+          currency?: string
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_pdf?: string | null
+          period_end: string
+          period_start: string
+          status: string
+          stripe_invoice_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          amount_paid?: number
+          business_id?: string
+          created_at?: string
+          currency?: string
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_pdf?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          stripe_invoice_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]

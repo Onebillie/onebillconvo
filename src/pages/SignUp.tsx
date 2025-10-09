@@ -124,8 +124,8 @@ export default function SignUp() {
   const handlePayment = async () => {
     if (!formData.selectedPlan) return;
     
-    // If free plan (Starter), skip payment and go directly to completion
-    if (formData.selectedPlan === 'starter') {
+    // If free plan, skip payment and go directly to completion
+    if (formData.selectedPlan === 'free') {
       toast({
         title: "Free plan selected",
         description: "Welcome aboard! Redirecting to your dashboard...",

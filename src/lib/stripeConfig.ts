@@ -42,8 +42,8 @@ export const STRIPE_PRODUCTS = {
   },
   starter: {
     name: "Starter",
-    priceId: "price_starter", // Replace with actual Stripe price ID
-    productId: "prod_starter",
+    priceId: "price_1SGKezGwvNoo6Q8zqFoPV1vU",
+    productId: "prod_TCk9FVGSQYsfdV",
     price: 29,
     currency: "USD",
     interval: "month",
@@ -68,8 +68,8 @@ export const STRIPE_PRODUCTS = {
   },
   professional: {
     name: "Professional",
-    priceId: "price_professional", // Replace with actual Stripe price ID
-    productId: "prod_professional",
+    priceId: "price_1SGKjmGwvNoo6Q8zyJZRgyvi",
+    productId: "prod_TCkEnLBpXd1ttM",
     price: 79,
     currency: "USD",
     interval: "month",
@@ -96,8 +96,8 @@ export const STRIPE_PRODUCTS = {
   },
   enterprise: {
     name: "Enterprise",
-    priceId: "price_enterprise", // Replace with actual Stripe price ID
-    productId: "prod_enterprise",
+    priceId: "price_1SGKjsGwvNoo6Q8z0fSOesVI",
+    productId: "prod_TCkEtHuWycEz84",
     price: 199,
     currency: "USD",
     interval: "month",

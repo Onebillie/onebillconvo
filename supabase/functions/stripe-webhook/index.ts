@@ -34,9 +34,16 @@ serve(async (req) => {
     const body = await req.text();
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
-    const event = webhookSecret
-      ? stripe.webhooks.constructEvent(body, signature, webhookSecret)
-      : JSON.parse(body);
+    // SECURITY: Enforce webhook secret - fail hard if missing
+    if (!webhookSecret) {
+      logStep("ERROR: STRIPE_WEBHOOK_SECRET not configured - rejecting webhook");
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
 
     logStep("Webhook event received", { type: event.type, id: event.id });
 
@@ -186,15 +193,43 @@ serve(async (req) => {
 
         if (!businessUser) break;
 
+        // Unfreeze account and clear grace period
         await supabaseClient
           .from("businesses")
           .update({
             subscription_status: "active",
             is_frozen: false,
+            grace_period_end: null,
           })
           .eq("id", businessUser.business_id);
 
-        logStep("Account unfrozen after successful payment");
+        // Record invoice in database
+        await supabaseClient.from("invoices").upsert({
+          business_id: businessUser.business_id,
+          stripe_invoice_id: invoice.id,
+          amount_due: invoice.amount_due,
+          amount_paid: invoice.amount_paid,
+          currency: invoice.currency,
+          status: invoice.status || 'paid',
+          invoice_pdf: invoice.invoice_pdf,
+          hosted_invoice_url: invoice.hosted_invoice_url,
+          period_start: new Date(invoice.period_start! * 1000).toISOString(),
+          period_end: new Date(invoice.period_end! * 1000).toISOString(),
+        }, {
+          onConflict: 'stripe_invoice_id'
+        });
+
+        // Send invoice email
+        await supabaseClient.functions.invoke("send-transactional-email", {
+          body: {
+            to: email,
+            subject: "Payment Successful - Invoice Receipt",
+            html: `<h1>Payment Successful</h1><p>Thank you for your payment. <a href="${invoice.hosted_invoice_url}">View Invoice</a></p>`,
+            type: "invoice",
+          },
+        });
+
+        logStep("Account unfrozen, invoice recorded, email sent");
         break;
       }
 
@@ -220,24 +255,46 @@ serve(async (req) => {
 
         if (!businessUser) break;
 
+        // Set grace period (3 days from now) and update status, but DON'T freeze yet
+        const gracePeriodEnd = new Date();
+        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 3);
+
         await supabaseClient
           .from("businesses")
           .update({
             subscription_status: "past_due",
-            is_frozen: true,
+            grace_period_end: gracePeriodEnd.toISOString(),
+            // Do NOT set is_frozen: true here - let grace period expire first
           })
           .eq("id", businessUser.business_id);
 
-        // Send notification email
-        await supabaseClient.functions.invoke("send-payment-notification", {
+        // Record failed invoice
+        await supabaseClient.from("invoices").upsert({
+          business_id: businessUser.business_id,
+          stripe_invoice_id: invoice.id,
+          amount_due: invoice.amount_due,
+          amount_paid: invoice.amount_paid,
+          currency: invoice.currency,
+          status: invoice.status || 'open',
+          invoice_pdf: invoice.invoice_pdf,
+          hosted_invoice_url: invoice.hosted_invoice_url,
+          period_start: new Date(invoice.period_start! * 1000).toISOString(),
+          period_end: new Date(invoice.period_end! * 1000).toISOString(),
+        }, {
+          onConflict: 'stripe_invoice_id'
+        });
+
+        // Send payment warning email
+        await supabaseClient.functions.invoke("send-transactional-email", {
           body: {
-            email: email,
-            type: "payment_failed",
-            customerPortalUrl: invoice.hosted_invoice_url,
+            to: email,
+            subject: "Payment Failed - Action Required",
+            html: `<h1>Payment Failed</h1><p>Your payment could not be processed. You have 3 days to update your payment method before your account is suspended. <a href="${invoice.hosted_invoice_url}">Update Payment</a></p>`,
+            type: "notification",
           },
         });
 
-        logStep("Account frozen due to payment failure, notification sent");
+        logStep("Grace period set, invoice recorded, warning email sent");
         break;
       }
     }
