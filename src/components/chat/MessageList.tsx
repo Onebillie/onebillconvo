@@ -117,7 +117,7 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
   }, {});
 
   return (
-    <ScrollArea className="h-full p-4">
+    <div className="h-full overflow-y-auto p-4">
       <div className="space-y-6" ref={scrollRef}>
         {Object.entries(groupedMessages).map(([date, dateMessages]) => (
           <div key={date}>
@@ -260,6 +260,6 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
           }}
         />
       )}
-    </ScrollArea>
+    </div>
   );
 };

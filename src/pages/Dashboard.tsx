@@ -626,14 +626,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
-              {/* Messages */}
-              <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            {/* Messages area - scrollable middle section */}
+            <div className="flex-1 overflow-hidden">
+              <div className="h-full flex flex-col">
                 <LimitReachedBanner />
-                
-                {/* Messages - scrollable middle section */}
-                <div className="flex-1 overflow-hidden">
-                  <MessageList 
+                <div className="flex-1 overflow-y-auto">
+                  <MessageList
                     messages={messages}
                     onCreateTask={(message) => {
                       setSelectedMessageForTask(message);
@@ -642,9 +640,11 @@ const Dashboard = () => {
                     onMessageUpdate={() => fetchMessages(selectedConversation.id)}
                   />
                 </div>
-                
-                {/* AI Suggestions & Message Input - sticky at bottom */}
-                <div className="flex-shrink-0">
+              </div>
+            </div>
+            
+            {/* AI Suggestions & Message Input - Fixed at bottom */}
+            <div className="flex-shrink-0 bg-background border-t shadow-sm">
                   <AIResponseSuggestions
                     conversationId={selectedConversation.id}
                     latestMessage={latestInboundMessage}
@@ -667,11 +667,10 @@ const Dashboard = () => {
                     customer={selectedConversation.customer}
                     initialMessage=""
                   />
-                </div>
-              </div>
+            </div>
 
-              {/* Contact Details Panel - Desktop Sidebar */}
-              {showContactDetails && !isMobile && (
+            {/* Contact Details Panel - Desktop Sidebar */}
+            {showContactDetails && !isMobile && (
                 <div className="w-80 border-l border-border overflow-y-auto">
                   <ContactDetails
                     customer={selectedConversation.customer}
@@ -691,7 +690,6 @@ const Dashboard = () => {
                   </SheetContent>
                 </Sheet>
               )}
-            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center p-4">

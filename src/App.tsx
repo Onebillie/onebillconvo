@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
-import { NotificationBanner } from "@/components/ui/notification-banner";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -29,14 +27,10 @@ import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 const queryClient = new QueryClient();
 
 function AppContent() {
-  const { unreadCount } = useGlobalNotifications();
-
   return (
     <>
       <AccountFrozenBanner />
-      <NotificationBanner unreadCount={unreadCount} />
-      <div className={unreadCount > 0 ? "pt-10 md:pt-14" : ""}>
-        <Routes>
+      <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/signup" element={<SignUp />} />
@@ -70,7 +64,6 @@ function AppContent() {
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </div>
     </>
   );
 }
