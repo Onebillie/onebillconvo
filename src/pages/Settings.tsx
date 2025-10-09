@@ -8,20 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, Settings as SettingsIcon, MessageSquare } from "lucide-react";
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { StaffManagement } from "@/components/settings/StaffManagement";
-import { TemplateManagement } from "@/components/settings/TemplateManagement";
 import { StatusManagement } from "@/components/settings/StatusManagement";
 import { TaskSettings } from "@/components/settings/TaskSettings";
 import { BusinessSettings } from "@/components/settings/BusinessSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
-import { WhatsAppTemplateManagement } from "@/components/settings/WhatsAppTemplateManagement";
-import { WhatsAppAccountManagement } from "@/components/settings/WhatsAppAccountManagement";
 import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
-import { EmailAccountManagement } from "@/components/settings/EmailAccountManagement";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
-import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
-import { SmsAccountManagement } from "@/components/settings/SmsAccountManagement";
+import { ChannelSettings } from "@/components/settings/ChannelSettings";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -85,16 +80,11 @@ export default function Settings() {
 
       {/* Content */}
       <div className="container mx-auto p-6">
-        <Tabs defaultValue="staff" className="space-y-6">
+        <Tabs defaultValue={isSuperAdmin ? "staff" : "subscription"} className="space-y-6">
           <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
             {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff</TabsTrigger>}
             <TabsTrigger value="subscription" className="shrink-0">Subscription</TabsTrigger>
-            <TabsTrigger value="templates" className="shrink-0">Templates</TabsTrigger>
-            <TabsTrigger value="whatsapp-templates" className="shrink-0">WA Templates</TabsTrigger>
-            <TabsTrigger value="whatsapp-accounts" className="shrink-0">WA Accounts</TabsTrigger>
-            <TabsTrigger value="email" className="shrink-0">Email</TabsTrigger>
-            <TabsTrigger value="sms" className="shrink-0">SMS</TabsTrigger>
-            <TabsTrigger value="email-template" className="shrink-0">Email Template</TabsTrigger>
+            <TabsTrigger value="channels" className="shrink-0">Channels</TabsTrigger>
             <TabsTrigger value="statuses" className="shrink-0">Statuses</TabsTrigger>
             <TabsTrigger value="tasks" className="shrink-0">Tasks</TabsTrigger>
             <TabsTrigger value="business" className="shrink-0">Business</TabsTrigger>
@@ -113,28 +103,8 @@ export default function Settings() {
             <SubscriptionSettings />
           </TabsContent>
 
-          <TabsContent value="templates" forceMount>
-            <TemplateManagement />
-          </TabsContent>
-
-          <TabsContent value="whatsapp-templates" forceMount>
-            <WhatsAppTemplateManagement />
-          </TabsContent>
-
-          <TabsContent value="whatsapp-accounts" forceMount>
-            <WhatsAppAccountManagement />
-          </TabsContent>
-
-          <TabsContent value="email" forceMount>
-            <EmailAccountManagement />
-          </TabsContent>
-
-          <TabsContent value="sms" forceMount>
-            <SmsAccountManagement />
-          </TabsContent>
-
-          <TabsContent value="email-template" forceMount>
-            <EmailTemplateSettings />
+          <TabsContent value="channels" forceMount>
+            <ChannelSettings />
           </TabsContent>
 
           <TabsContent value="statuses" forceMount>
