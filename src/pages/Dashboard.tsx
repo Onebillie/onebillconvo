@@ -83,7 +83,8 @@ const Dashboard = () => {
   }, [conversations]);
 
   const fetchConversations = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    // Build server-side filter query
+    let query = supabase
       .from('conversations')
       .select(`
         *,
@@ -105,13 +106,20 @@ const Dashboard = () => {
           )
         ),
         assigned_user:profiles!fk_conversations_assigned_to(id, full_name, department),
-        messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at)
+        messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at, is_read)
       `)
-      .eq('is_archived', false)
+      .eq('is_archived', false);
+
+    // Apply server-side filters
+    if (filters.statusIds.length > 0) {
+      query = query.in('status_tag_id', filters.statusIds);
+    }
+
+    const { data, error } = await query
       .order('updated_at', { ascending: false })
       .order('created_at', { foreignTable: 'messages', ascending: false })
-      .limit(100)
-      .limit(1, { foreignTable: 'messages' }); // Get only the latest message
+      .limit(30) // Reduced from 100 to 30 for faster initial load
+      .limit(5, { foreignTable: 'messages' }); // Get 5 recent messages for unread calculation
 
     if (error) {
       console.error('Error fetching conversations:', error);
@@ -126,41 +134,32 @@ const Dashboard = () => {
       return acc;
     }, []);
 
-    // Fetch unread counts for all conversations in a single query
-    const conversationIds = uniqueConvs.map(conv => conv.id);
-    if (conversationIds.length === 0) {
+    if (uniqueConvs.length === 0) {
       setConversations([]);
       setFilteredConversations([]);
       return;
     }
 
-    const { data: unreadData } = await supabase
-      .from('messages')
-      .select('conversation_id')
-      .in('conversation_id', conversationIds)
-      .eq('direction', 'inbound')
-      .eq('is_read', false);
+    // Calculate unread counts from fetched messages (more efficient than separate query)
+    const conversations = uniqueConvs.map(conv => {
+      const unreadCount = conv.messages?.filter((m: any) => 
+        m.direction === 'inbound' && !m.is_read
+      ).length || 0;
 
-    // Count unread messages per conversation
-    const unreadCounts = (unreadData || []).reduce((acc: Record<string, number>, msg: any) => {
-      acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Transform data to match interface
-    const conversations = uniqueConvs.map(conv => ({
-      ...conv,
-      customer: conv.customers,
-      status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || [],
-      unread_count: unreadCounts[conv.id] || 0,
-      last_message: conv.messages?.[0] ? {
-        content: conv.messages[0].content,
-        subject: conv.messages[0].subject,
-        platform: conv.messages[0].platform,
-        direction: conv.messages[0].direction,
-        created_at: conv.messages[0].created_at
-      } : undefined
-    }));
+      return {
+        ...conv,
+        customer: conv.customers,
+        status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || [],
+        unread_count: unreadCount,
+        last_message: conv.messages?.[0] ? {
+          content: conv.messages[0].content,
+          subject: conv.messages[0].subject,
+          platform: conv.messages[0].platform,
+          direction: conv.messages[0].direction,
+          created_at: conv.messages[0].created_at
+        } : undefined
+      };
+    });
     
     setConversations(conversations);
     applyFilters(conversations, filters);

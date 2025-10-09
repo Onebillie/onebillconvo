@@ -6,13 +6,13 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
   const lastUpdateRef = useRef<number>(0);
   const isSubscribedRef = useRef<boolean>(true);
   
-  // Debounce updates to prevent excessive refetching
+  // Optimized debounce - reduced frequency from every 1-2s to every 8s
   const debouncedUpdate = useCallback(() => {
     if (!isSubscribedRef.current) return;
     
     const now = Date.now();
-    // Only allow updates every 2 seconds minimum
-    if (now - lastUpdateRef.current < 2000) {
+    // Only allow updates every 8 seconds minimum (reduced from 2s)
+    if (now - lastUpdateRef.current < 8000) {
       return;
     }
     
@@ -25,7 +25,7 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
         lastUpdateRef.current = Date.now();
         onUpdate();
       }
-    }, 1000); // Wait 1s before updating
+    }, 3000); // Wait 3s before updating (increased from 1s)
   }, [onUpdate]);
 
   useEffect(() => {
