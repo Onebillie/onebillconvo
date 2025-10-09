@@ -185,7 +185,7 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/app/onboarding`;
+      const redirectUrl = `${window.location.origin}/app/dashboard`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -206,11 +206,26 @@ export default function SignUp() {
 
       if (authError) throw authError;
 
+      // Store pending subscription for payment completion after email verification
+      if (authData.user && formData.selectedPlan && formData.selectedPlan !== 'free') {
+        const { error: pendingError } = await supabase
+          .from('pending_subscriptions')
+          .insert({
+            user_id: authData.user.id,
+            email: formData.email,
+            selected_plan: formData.selectedPlan,
+          });
+
+        if (pendingError) {
+          console.error('Error storing pending subscription:', pendingError);
+        }
+      }
+
       // Check if we have a valid session (depends on email confirmation settings)
       if (!authData.session) {
         toast({
           title: "Email verification required",
-          description: "Please verify your email address by clicking the verification link we just sent you. Then sign in to complete your payment.",
+          description: "Please verify your email by clicking the link we sent. After verification, sign in to complete your payment.",
           variant: "default",
         });
         // Redirect to sign in page

@@ -36,6 +36,7 @@ import { RefreshButton } from "@/components/chat/RefreshButton";
 import { AIToggle } from "@/components/chat/AIToggle";
 import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
+import { PendingPaymentBanner } from "@/components/PendingPaymentBanner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 const Dashboard = () => {
@@ -544,6 +545,11 @@ const Dashboard = () => {
           {/* Center: Main Chat Area */}
           <ResizablePanel minSize={35}>
             <div className="h-full flex flex-col overflow-hidden">
+              {/* Pending Payment Banner */}
+              <div className="p-3 border-b border-border">
+                <PendingPaymentBanner />
+              </div>
+              
               {selectedConversation ? (
                 <>
                   {/* Chat Header */}

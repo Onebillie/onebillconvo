@@ -101,3 +101,6 @@ verify_jwt = true
 
 [functions.reset-message-counters]
 verify_jwt = false
+
+[functions.scan-attachment]
+verify_jwt = true

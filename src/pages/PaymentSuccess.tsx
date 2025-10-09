@@ -33,6 +33,16 @@ export default function PaymentSuccess() {
         console.log('Payment verification:', data);
 
         if (data.success && data.subscriptionActive) {
+          // Mark pending subscription as completed
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('pending_subscriptions')
+              .update({ completed: true, stripe_session_id: sessionId })
+              .eq('user_id', user.id)
+              .eq('completed', false);
+          }
+
           // Refresh subscription state
           await checkSubscription();
           toast({

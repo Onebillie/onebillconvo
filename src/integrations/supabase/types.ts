@@ -1691,6 +1691,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_subscriptions: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          selected_plan: string
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          selected_plan: string
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          selected_plan?: string
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_costs: {
         Row: {
           created_at: string | null
@@ -1810,6 +1843,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          severity: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          severity?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_accounts: {
         Row: {
