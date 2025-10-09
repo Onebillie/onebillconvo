@@ -98,7 +98,7 @@ const Dashboard = () => {
             color
           )
         ),
-        assigned_user:profiles!conversations_assigned_to_fkey(id, full_name, department),
+        assigned_user:profiles!fk_conversations_assigned_to(id, full_name, department),
         messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at)
       `)
       .eq('is_archived', false)
