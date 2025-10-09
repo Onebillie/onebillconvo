@@ -31,7 +31,11 @@ export default function CreateSuperAdmin() {
 
       console.log("SuperAdmin creation response:", data);
       
-      toast.success("SuperAdmin account created! You can now log in with your password.");
+      const message = data?.status === "updated"
+        ? "Password updated! You can now log in."
+        : "SuperAdmin account created! You can now log in with your password.";
+      
+      toast.success(message);
       setCreated(true);
     } catch (error: any) {
       console.error("Error creating superadmin:", error);

@@ -29,45 +29,89 @@ serve(async (req) => {
       throw new Error("Email is required");
     }
 
-    console.log(`Creating superadmin account: ${email}`);
+    console.log(`Processing superadmin account: ${email}`);
 
-    // Create the user with admin API
-    const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: password || undefined, // If no password, user will need to reset
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        full_name: "SuperAdmin"
-      }
-    });
-
-    if (createError) {
-      console.error("Error creating user:", createError);
-      throw createError;
-    }
-
-    console.log(`User created: ${user.user.id}`);
-
-    // Create profile
-    const { error: profileError } = await supabaseAdmin
+    // Check if user already exists
+    const { data: existingProfile } = await supabaseAdmin
       .from("profiles")
-      .insert({
-        id: user.user.id,
-        full_name: "SuperAdmin",
-        email: email
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    let userId: string;
+    let status: "created" | "updated";
+
+    if (existingProfile) {
+      // User exists - update password if provided
+      userId = existingProfile.id;
+      console.log(`User already exists: ${userId}`);
+
+      if (password) {
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { password }
+        );
+
+        if (updateError) {
+          console.error("Error updating password:", updateError);
+          throw new Error(`Failed to update password: ${updateError.message}`);
+        }
+
+        console.log("Password updated successfully");
+        status = "updated";
+      } else {
+        throw new Error("Password is required to update existing account");
+      }
+    } else {
+      // User doesn't exist - create new account
+      console.log(`Creating new superadmin account: ${email}`);
+
+      if (!password) {
+        throw new Error("Password is required to create new account");
+      }
+
+      const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: "SuperAdmin"
+        }
       });
 
-    if (profileError) {
-      console.error("Error creating profile:", profileError);
-      // Don't throw - profile might already exist
+      if (createError) {
+        console.error("Error creating user:", createError);
+        throw createError;
+      }
+
+      userId = user.user.id;
+      console.log(`User created: ${userId}`);
+
+      // Create profile
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .insert({
+          id: userId,
+          full_name: "SuperAdmin",
+          email: email
+        });
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        // Don't throw - might be a race condition
+      }
+
+      status = "created";
     }
 
-    // Assign superadmin role
+    // Ensure superadmin role exists
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
-      .insert({
-        user_id: user.user.id,
+      .upsert({
+        user_id: userId,
         role: "superadmin"
+      }, {
+        onConflict: "user_id,role"
       });
 
     if (roleError) {
@@ -75,37 +119,19 @@ serve(async (req) => {
       throw new Error(`Failed to assign superadmin role: ${roleError.message}`);
     }
 
-    console.log(`Superadmin role assigned to ${email}`);
-
-    // Send password reset email if no password was provided
-    let resetSent = false;
-    if (!password) {
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: email,
-        options: {
-          redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}.supabase.co/admin/login`
-        }
-      });
-
-      if (resetError) {
-        console.error("Error generating reset link:", resetError);
-      } else {
-        resetSent = true;
-        console.log("Password reset email sent");
-      }
-    }
+    console.log(`Superadmin role ensured for ${email}`);
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: true,
+        status,
         user: {
-          id: user.user.id,
-          email: user.user.email
+          id: userId,
+          email: email
         },
-        message: resetSent 
-          ? "Superadmin created. Password reset email sent."
-          : "Superadmin created. Please check your email."
+        message: status === "created" 
+          ? "Superadmin account created. You can now log in with your password."
+          : "Password updated. You can now log in with your new password."
       }),
       {
         status: 200,
