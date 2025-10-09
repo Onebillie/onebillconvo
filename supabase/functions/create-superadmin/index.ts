@@ -49,7 +49,7 @@ serve(async (req) => {
       if (password) {
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
           userId,
-          { password }
+          { password, email_confirm: true }
         );
 
         if (updateError) {
