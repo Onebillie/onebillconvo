@@ -2,21 +2,28 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export default function CreateSuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState(false);
+  const [password, setPassword] = useState("");
 
   const handleCreateSuperAdmin = async () => {
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    
     setLoading(true);
     
     try {
       const { data, error } = await supabase.functions.invoke("create-superadmin", {
         body: {
-          email: "hello@alacartesaas.com"
-          // No password - will trigger password reset email
+          email: "hello@alacartesaas.com",
+          password: password
         }
       });
 
@@ -24,7 +31,7 @@ export default function CreateSuperAdmin() {
 
       console.log("SuperAdmin creation response:", data);
       
-      toast.success("Success! Check hello@alacartesaas.com for password reset email");
+      toast.success("SuperAdmin account created! You can now log in with your password.");
       setCreated(true);
     } catch (error: any) {
       console.error("Error creating superadmin:", error);
@@ -50,7 +57,7 @@ export default function CreateSuperAdmin() {
                 ✅ SuperAdmin account created successfully!
               </p>
               <p className="text-sm">
-                Check <strong>hello@alacartesaas.com</strong> for the password reset email.
+                You can now log in as <strong>hello@alacartesaas.com</strong> with your password.
               </p>
               <Button
                 onClick={() => window.location.href = "/admin/login"}
@@ -60,21 +67,36 @@ export default function CreateSuperAdmin() {
               </Button>
             </div>
           ) : (
-            <Button
-              onClick={handleCreateSuperAdmin}
-              disabled={loading}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create SuperAdmin Account"
-              )}
-            </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter password (min 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <Button
+                onClick={handleCreateSuperAdmin}
+                disabled={loading || !password}
+                className="w-full"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create SuperAdmin Account"
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
