@@ -16,7 +16,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"auth" | "forgot" | "reset">("auth");
+  const [mode, setMode] = useState<"auth" | "forgot" | "reset" | "magic-link">("auth");
   const { signIn, signUp, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -65,13 +65,13 @@ export default function Auth() {
         // Check if user is superadmin
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .single();
+          const { data: isSuperadmin } = await supabase
+            .rpc('has_role', { 
+              _user_id: user.id, 
+              _role: 'superadmin' 
+            });
 
-          if (roleData?.role === 'superadmin') {
+          if (isSuperadmin) {
             await supabase.auth.signOut();
             toast({
               title: "Access Denied",
@@ -143,6 +143,46 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({ title: "Error", description: "Please enter your email address", variant: "destructive" });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({ title: "Error", description: "Please enter a valid email address", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/app/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Magic link sent!", 
+        description: "Check your email and click the link to sign in." 
+      });
+      setMode("auth");
+    } catch (error: any) {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to send magic link", 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -183,9 +223,15 @@ export default function Auth() {
                 </Button>
               </div>
               <div className="text-center space-y-2">
-                <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
-                  Forgot your password?
-                </Button>
+                <div className="flex gap-2 justify-center">
+                  <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
+                    Forgot password?
+                  </Button>
+                  <span className="text-muted-foreground">•</span>
+                  <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("magic-link")}>
+                    Use magic link
+                  </Button>
+                </div>
                 <div className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Link to="/signup" className="text-primary hover:underline font-medium">
@@ -215,6 +261,31 @@ export default function Auth() {
                   {loading ? "Sending..." : "Send reset link"}
                 </Button>
               </div>
+            </form>
+          )}
+
+          {mode === "magic-link" && (
+            <form onSubmit={handleMagicLink} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="magic-email">Email</Label>
+                <Input
+                  id="magic-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setMode("auth")}>Back</Button>
+                <Button type="submit" className="flex-1" disabled={loading}>
+                  {loading ? "Sending..." : "Send magic link"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                We'll send you an email with a link to sign in instantly
+              </p>
             </form>
           )}
 

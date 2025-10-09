@@ -3,17 +3,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { z } from "zod";
+
+const superAdminSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
 export default function CreateSuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState(false);
+  const [email, setEmail] = useState("hello@onebill.ie");
   const [password, setPassword] = useState("");
 
   const handleCreateSuperAdmin = async () => {
-    if (!password || password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    const validation = superAdminSchema.safeParse({ email, password });
+    
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
     
@@ -22,7 +32,7 @@ export default function CreateSuperAdmin() {
     try {
       const { data, error } = await supabase.functions.invoke("create-superadmin", {
         body: {
-          email: "hello@alacartesaas.com",
+          email: email,
           password: password
         }
       });
@@ -52,7 +62,7 @@ export default function CreateSuperAdmin() {
           <CardTitle>Create SuperAdmin Account</CardTitle>
           <CardDescription>
             {!created 
-              ? "Set password and assign superadmin role to hello@alacartesaas.com"
+              ? "Set password and assign superadmin role"
               : "Setup complete! You can now log in to the admin portal."
             }
           </CardDescription>
@@ -65,7 +75,7 @@ export default function CreateSuperAdmin() {
                   ✓ SuperAdmin Setup Complete
                 </p>
                 <p className="text-xs text-green-700 dark:text-green-300 mb-1">
-                  Email: <strong>hello@alacartesaas.com</strong>
+                  Email: <strong>{email}</strong>
                 </p>
                 <p className="text-xs text-green-700 dark:text-green-300">
                   Role: <strong>superadmin</strong> ✓
@@ -85,9 +95,18 @@ export default function CreateSuperAdmin() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -99,7 +118,7 @@ export default function CreateSuperAdmin() {
               </div>
               <Button
                 onClick={handleCreateSuperAdmin}
-                disabled={loading || !password}
+                disabled={loading || !email || !password}
                 className="w-full"
                 size="lg"
               >

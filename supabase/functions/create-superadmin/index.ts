@@ -25,8 +25,25 @@ serve(async (req) => {
 
     const { email, password } = await req.json();
 
-    if (!email) {
-      throw new Error("Email is required");
+    // Input validation
+    if (!email || typeof email !== "string") {
+      throw new Error("Valid email is required");
+    }
+    
+    if (!password || typeof password !== "string" || password.length < 6) {
+      throw new Error("Password must be at least 6 characters");
+    }
+
+    // Email allowlist to prevent abuse
+    const allowedEmails = ["hello@onebill.ie", "hello@alacartesaas.com"];
+    if (!allowedEmails.includes(email.toLowerCase())) {
+      throw new Error("This email is not authorized for superadmin access");
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
     }
 
     console.log(`Processing superadmin account: ${email}`);
