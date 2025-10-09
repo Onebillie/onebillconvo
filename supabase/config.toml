@@ -115,7 +115,10 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.admin-login-alert]
-verify_jwt = true
+verify_jwt = false
+
+[functions.create-superadmin]
+verify_jwt = false
 
 [functions.check-api-limits]
 verify_jwt = true
