@@ -10,6 +10,8 @@ export const useRealtimeMessages = (
   useEffect(() => {
     if (!conversationId) return;
 
+    let isSubscribed = true;
+
     const channel = supabase
       .channel(`conversation-${conversationId}`)
       .on(
@@ -21,7 +23,9 @@ export const useRealtimeMessages = (
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          onNewMessage(payload.new as Message);
+          if (isSubscribed) {
+            onNewMessage(payload.new as Message);
+          }
         }
       )
       .on(
@@ -33,12 +37,15 @@ export const useRealtimeMessages = (
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          onMessageUpdate(payload.new as Message);
+          if (isSubscribed) {
+            onMessageUpdate(payload.new as Message);
+          }
         }
       )
       .subscribe();
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
   }, [conversationId, onNewMessage, onMessageUpdate]);

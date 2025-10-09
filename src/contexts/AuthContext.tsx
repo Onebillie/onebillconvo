@@ -135,6 +135,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Only trigger navigation on actual sign-in/sign-out events, not token refreshes
+        const shouldNavigate = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
+        
         if (session?.user) {
           setLoading(true);
           setTimeout(() => {
@@ -169,9 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
     });
     
-    if (!error) {
-      navigate("/app/dashboard");
-    }
+    // Navigation is handled by onAuthStateChange for SIGNED_IN event
     
     return { error };
   };

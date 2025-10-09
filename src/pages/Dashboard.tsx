@@ -34,6 +34,7 @@ import { LimitReachedBanner } from "@/components/LimitReachedBanner";
 import { RefreshButton } from "@/components/chat/RefreshButton";
 import { AIToggle } from "@/components/chat/AIToggle";
 import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
@@ -57,6 +58,8 @@ const Dashboard = () => {
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [latestInboundMessage, setLatestInboundMessage] = useState<string>("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isTabVisible, setIsTabVisible] = useState(true);
   const navigate = useNavigate();
 
   // Handle URL parameters to auto-select conversation
@@ -258,14 +261,45 @@ const Dashboard = () => {
     });
   }, []);
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions (only when tab is visible)
   useRealtimeMessages(
-    selectedConversation?.id || null,
+    isTabVisible ? (selectedConversation?.id || null) : null,
     handleNewMessage,
     handleMessageUpdate
   );
 
-  useRealtimeConversations(fetchConversations);
+  useRealtimeConversations(() => {
+    if (isTabVisible) {
+      fetchConversations();
+    }
+  });
+
+  // Handle tab visibility for pausing updates when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Track unsaved changes (if there's a draft in sessionStorage)
+  useEffect(() => {
+    if (selectedConversation?.id) {
+      const storageKey = `message-draft-${selectedConversation.id}`;
+      const checkDraft = () => {
+        const draft = sessionStorage.getItem(storageKey);
+        setHasUnsavedChanges(!!draft?.trim());
+      };
+      
+      checkDraft();
+      const interval = setInterval(checkDraft, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  }, [selectedConversation?.id]);
 
   // Initial fetch
   useEffect(() => {
@@ -442,7 +476,12 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background">
+    <>
+      <UnsavedChangesGuard 
+        hasUnsavedChanges={hasUnsavedChanges}
+        message="You have an unsaved message. Are you sure you want to leave?"
+      />
+      <div className="h-screen flex flex-col md:flex-row bg-background">
       {/* Mobile: Sheet/Drawer for Sidebar */}
       {isMobile ? (
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -712,7 +751,8 @@ const Dashboard = () => {
           });
         }}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

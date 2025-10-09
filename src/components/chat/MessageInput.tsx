@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Paperclip, X, Image as ImageIcon, Mail } from "lucide-react";
@@ -32,19 +32,46 @@ export const MessageInput = ({
   customer,
   initialMessage,
 }: MessageInputProps) => {
-  const [newMessage, setNewMessage] = useState(initialMessage || "");
+  const storageKey = `message-draft-${conversationId}`;
+  const [newMessage, setNewMessage] = useState(() => {
+    // Try to restore from sessionStorage first, then use initialMessage
+    const saved = sessionStorage.getItem(storageKey);
+    return saved || initialMessage || "";
+  });
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sendVia, setSendVia] = useState<"whatsapp" | "email">(lastContactMethod);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Auto-save message to sessionStorage with debounce
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      if (newMessage.trim()) {
+        sessionStorage.setItem(storageKey, newMessage);
+      } else {
+        sessionStorage.removeItem(storageKey);
+      }
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [newMessage, storageKey]);
 
   // Update message when initialMessage prop changes
-  useState(() => {
-    if (initialMessage) {
+  useEffect(() => {
+    if (initialMessage && !newMessage) {
       setNewMessage(initialMessage);
     }
-  });
+  }, [initialMessage]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -226,6 +253,7 @@ export const MessageInput = ({
       setNewMessage("");
       setAttachments([]);
       setVoiceNote(null);
+      sessionStorage.removeItem(storageKey); // Clear saved draft
       onMessageSent();
       
       toast({

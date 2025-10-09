@@ -4,9 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 export const useRealtimeConversations = (onUpdate: () => void) => {
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const lastUpdateRef = useRef<number>(0);
+  const isSubscribedRef = useRef<boolean>(true);
   
   // Debounce updates to prevent excessive refetching
   const debouncedUpdate = useCallback(() => {
+    if (!isSubscribedRef.current) return;
+    
     const now = Date.now();
     // Only allow updates every 2 seconds minimum
     if (now - lastUpdateRef.current < 2000) {
@@ -18,12 +21,16 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
     }
     
     updateTimeoutRef.current = setTimeout(() => {
-      lastUpdateRef.current = Date.now();
-      onUpdate();
+      if (isSubscribedRef.current) {
+        lastUpdateRef.current = Date.now();
+        onUpdate();
+      }
     }, 1000); // Wait 1s before updating
   }, [onUpdate]);
 
   useEffect(() => {
+    isSubscribedRef.current = true;
+    
     const channel = supabase
       .channel('conversations-updates')
       .on(
@@ -40,6 +47,7 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
       .subscribe();
 
     return () => {
+      isSubscribedRef.current = false;
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
