@@ -492,7 +492,7 @@ const Dashboard = () => {
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         {/* Left: Conversations list - resizable and collapsible */}
         <ResizablePanel 
-          defaultSize={isMobile ? 100 : 30} 
+          defaultSize={isMobile ? 100 : 35} 
           minSize={isMobile ? 35 : 22} 
           maxSize={isMobile ? 100 : 45} 
           collapsible
