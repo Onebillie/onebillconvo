@@ -377,29 +377,47 @@ const Dashboard = () => {
     <div className="h-full flex flex-col">
       {/* Sidebar Content */}
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-3 md:p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
-            <MessageSquare className="w-6 h-6 text-primary" />
-            <h1 className="font-semibold text-sm md:text-base">Customer Service</h1>
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="ml-2 text-xs">
-                {unreadCount}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <GlobalNotificationCenter />
-            <TaskNotifications />
-            {isAdmin && (
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <SettingsIcon className="w-4 h-4" />
+            {isMobile && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <X className="w-4 h-4" />
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+            <h1 className="font-semibold text-sm md:text-base">Customer Service</h1>
+            {unreadCount > 0 && !isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilters({ unread: true, statusIds: [] })}
+                className="text-xs gap-1 h-6 px-2"
+              >
+                <Bell className="w-3 h-3" />
+                {unreadCount}
+              </Button>
+            )}
           </div>
+          {!isMobile && (
+            <div className="flex items-center gap-2">
+              <GlobalNotificationCenter />
+              <TaskNotifications />
+              {isAdmin && (
+                <Button variant="ghost" size="sm" onClick={handleBack}>
+                  <SettingsIcon className="w-4 h-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <CreateContactDialog onContactCreated={fetchConversations} />
@@ -489,36 +507,48 @@ const Dashboard = () => {
       {/* Mobile: Sheet/Drawer for Sidebar */}
       {isMobile ? (
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <div className="w-full border-b border-border md:hidden">
-            <div className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Menu className="w-4 h-4" />
+          {!selectedConversation && (
+            <div className="w-full border-b border-border md:hidden">
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Menu className="w-4 h-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  <h1 className="text-sm font-semibold">Conversations</h1>
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilters({ unread: true, statusIds: [] });
+                        setMobileMenuOpen(true);
+                      }}
+                      className="h-6 px-2 text-xs gap-1 ml-1"
+                    >
+                      <Bell className="w-3 h-3" />
+                      {unreadCount}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <GlobalNotificationCenter />
+                  <TaskNotifications />
+                  {isAdmin && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+                      <SettingsIcon className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
+                    <LogOut className="w-4 h-4" />
                   </Button>
-                </SheetTrigger>
-                <MessageSquare className="w-4 h-4 text-primary" />
-                <h1 className="text-sm font-semibold">Conversations</h1>
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                <TaskNotifications />
-                {isAdmin && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-                    <SettingsIcon className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
+                </div>
               </div>
             </div>
-          </div>
-          <SheetContent side="left" className="w-80 p-0">
+          )}
+          <SheetContent side="left" className="w-full sm:w-[85vw] p-0 max-w-md">
             {conversationSidebar}
           </SheetContent>
         </Sheet>
