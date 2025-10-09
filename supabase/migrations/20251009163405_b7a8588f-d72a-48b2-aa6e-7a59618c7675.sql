@@ -1,0 +1,19 @@
+-- Fix function search paths for security (set to 'public' for safety)
+ALTER FUNCTION public.update_conversation_last_message() SET search_path = 'public';
+ALTER FUNCTION public.update_businesses_updated_at() SET search_path = 'public';
+ALTER FUNCTION public.cleanup_expired_oauth_states() SET search_path = 'public';
+ALTER FUNCTION public.user_belongs_to_business(uuid, uuid) SET search_path = 'public';
+ALTER FUNCTION public.get_user_business_ids(uuid) SET search_path = 'public';
+ALTER FUNCTION public.increment_message_count(uuid) SET search_path = 'public';
+ALTER FUNCTION public.trigger_email_sync() SET search_path = 'public';
+ALTER FUNCTION public.is_business_owner(uuid, uuid) SET search_path = 'public';
+ALTER FUNCTION public.auto_create_task_from_status() SET search_path = 'public';
+ALTER FUNCTION public.normalize_phone(text) SET search_path = 'public';
+ALTER FUNCTION public.get_or_create_user_business(uuid) SET search_path = 'public';
+ALTER FUNCTION public.normalize_customer_phone_trigger() SET search_path = 'public';
+ALTER FUNCTION public.is_account_frozen(uuid) SET search_path = 'public';
+ALTER FUNCTION public.update_updated_at_column() SET search_path = 'public';
+ALTER FUNCTION public.create_task_notification() SET search_path = 'public';
+ALTER FUNCTION public.sync_all_email_accounts() SET search_path = 'public';
+ALTER FUNCTION public.has_role(uuid, app_role) SET search_path = 'public';
+ALTER FUNCTION public.handle_new_user() SET search_path = 'public';
