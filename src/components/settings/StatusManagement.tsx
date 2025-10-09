@@ -26,6 +26,12 @@ export const StatusManagement = () => {
     name: "",
     color: "#3b82f6",
     icon: "",
+    auto_create_task: false,
+    default_priority: "medium",
+    priority_score: 5,
+    task_title_template: "",
+    task_description_template: "",
+    default_assignee_role: "",
   });
 
   useEffect(() => {
@@ -58,6 +64,12 @@ export const StatusManagement = () => {
             name: formData.name,
             color: formData.color,
             icon: formData.icon,
+            auto_create_task: formData.auto_create_task,
+            default_priority: formData.default_priority,
+            priority_score: formData.priority_score,
+            task_title_template: formData.task_title_template || null,
+            task_description_template: formData.task_description_template || null,
+            default_assignee_role: formData.default_assignee_role || null,
           })
           .eq("id", editingStatus.id);
 
@@ -71,6 +83,12 @@ export const StatusManagement = () => {
             name: formData.name,
             color: formData.color,
             icon: formData.icon || null,
+            auto_create_task: formData.auto_create_task,
+            default_priority: formData.default_priority,
+            priority_score: formData.priority_score,
+            task_title_template: formData.task_title_template || null,
+            task_description_template: formData.task_description_template || null,
+            default_assignee_role: formData.default_assignee_role || null,
           });
 
         if (error) throw error;
@@ -80,7 +98,17 @@ export const StatusManagement = () => {
 
       setDialogOpen(false);
       setEditingStatus(null);
-      setFormData({ name: "", color: "#3b82f6", icon: "" });
+      setFormData({
+        name: "",
+        color: "#3b82f6",
+        icon: "",
+        auto_create_task: false,
+        default_priority: "medium",
+        priority_score: 5,
+        task_title_template: "",
+        task_description_template: "",
+        default_assignee_role: "",
+      });
       fetchStatuses();
     } catch (error: any) {
       toast({
@@ -112,12 +140,18 @@ export const StatusManagement = () => {
     fetchStatuses();
   };
 
-  const handleEditStatus = (status: StatusTag) => {
+  const handleEditStatus = (status: any) => {
     setEditingStatus(status);
     setFormData({
       name: status.name,
       color: status.color,
       icon: status.icon || "",
+      auto_create_task: status.auto_create_task || false,
+      default_priority: status.default_priority || "medium",
+      priority_score: status.priority_score || 5,
+      task_title_template: status.task_title_template || "",
+      task_description_template: status.task_description_template || "",
+      default_assignee_role: status.default_assignee_role || "",
     });
     setDialogOpen(true);
   };
