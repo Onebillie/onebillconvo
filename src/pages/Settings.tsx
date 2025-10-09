@@ -21,6 +21,7 @@ import { EmailAccountManagement } from "@/components/settings/EmailAccountManage
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { EmailTemplateSettings } from "@/components/settings/EmailTemplateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
+import { SmsAccountManagement } from "@/components/settings/SmsAccountManagement";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -92,6 +93,7 @@ export default function Settings() {
             <TabsTrigger value="whatsapp-templates" className="shrink-0">WA Templates</TabsTrigger>
             <TabsTrigger value="whatsapp-accounts" className="shrink-0">WA Accounts</TabsTrigger>
             <TabsTrigger value="email" className="shrink-0">Email</TabsTrigger>
+            <TabsTrigger value="sms" className="shrink-0">SMS</TabsTrigger>
             <TabsTrigger value="email-template" className="shrink-0">Email Template</TabsTrigger>
             <TabsTrigger value="statuses" className="shrink-0">Statuses</TabsTrigger>
             <TabsTrigger value="tasks" className="shrink-0">Tasks</TabsTrigger>
@@ -125,6 +127,10 @@ export default function Settings() {
 
           <TabsContent value="email" forceMount>
             <EmailAccountManagement />
+          </TabsContent>
+
+          <TabsContent value="sms" forceMount>
+            <SmsAccountManagement />
           </TabsContent>
 
           <TabsContent value="email-template" forceMount>

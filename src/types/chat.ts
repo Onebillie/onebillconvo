@@ -12,7 +12,7 @@ export interface Customer {
   avatar?: string;
   last_active?: string;
   notes?: string;
-  last_contact_method?: "whatsapp" | "email";
+  last_contact_method?: "whatsapp" | "email" | "sms";
 }
 
 export interface Conversation {

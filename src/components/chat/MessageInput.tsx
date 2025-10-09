@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -16,7 +16,7 @@ interface MessageInputProps {
   customerId: string;
   customerPhone: string;
   customerEmail?: string;
-  lastContactMethod?: "whatsapp" | "email";
+  lastContactMethod?: "whatsapp" | "email" | "sms";
   onMessageSent: () => void;
   customer?: Customer;
   initialMessage?: string;
@@ -41,7 +41,7 @@ export const MessageInput = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [sendVia, setSendVia] = useState<"whatsapp" | "email">(lastContactMethod);
+  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms">(lastContactMethod || "whatsapp");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -184,6 +184,17 @@ export const MessageInput = ({
         });
 
         if (error) throw error;
+      } else if (sendVia === "sms") {
+        // Send via SMS
+        const { error } = await supabase.functions.invoke("sms-send", {
+          body: {
+            customer_id: customerId,
+            content: processedMessage,
+            conversation_id: conversationId,
+          },
+        });
+
+        if (error) throw error;
       } else {
         // Send via WhatsApp
         let attachmentUrls: any[] = [];
@@ -315,19 +326,20 @@ export const MessageInput = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Channel selector */}
-        {customerEmail && (
-          <div className="flex border rounded-md overflow-hidden" >
-            <button
-              onClick={() => setSendVia("whatsapp")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors",
-                sendVia === "whatsapp"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              )}
-            >
-              <span className="text-xs font-bold">W</span>
-            </button>
+        <div className="flex border rounded-md overflow-hidden">
+          <button
+            onClick={() => setSendVia("whatsapp")}
+            className={cn(
+              "px-3 py-2 text-sm font-medium transition-colors",
+              sendVia === "whatsapp"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted"
+            )}
+            title="WhatsApp"
+          >
+            <span className="text-xs font-bold">W</span>
+          </button>
+          {customerEmail && (
             <button
               onClick={() => setSendVia("email")}
               className={cn(
@@ -336,11 +348,24 @@ export const MessageInput = ({
                   ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted"
               )}
+              title="Email"
             >
               <Mail className="h-4 w-4" />
             </button>
-          </div>
-        )}
+          )}
+          <button
+            onClick={() => setSendVia("sms")}
+            className={cn(
+              "px-3 py-2 text-sm font-medium transition-colors border-l",
+              sendVia === "sms"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted"
+            )}
+            title="SMS"
+          >
+            <Phone className="h-4 w-4" />
+          </button>
+        </div>
         
         <input
           ref={fileInputRef}
@@ -372,7 +397,11 @@ export const MessageInput = ({
         )}
         
         <Input
-          placeholder={sendVia === "email" ? "Type email message..." : "Type WhatsApp message..."}
+          placeholder={
+            sendVia === "email" ? "Type email message..." :
+            sendVia === "sms" ? "Type SMS message..." :
+            "Type WhatsApp message..."
+          }
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && !uploading && sendMessage()}

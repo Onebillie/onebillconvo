@@ -777,28 +777,46 @@ export type Database = {
       }
       conversation_status_tags: {
         Row: {
+          auto_create_task: boolean | null
           business_id: string | null
           color: string
           created_at: string | null
+          default_assignee_role: string | null
+          default_priority: string | null
           icon: string | null
           id: string
           name: string
+          priority_score: number | null
+          task_description_template: string | null
+          task_title_template: string | null
         }
         Insert: {
+          auto_create_task?: boolean | null
           business_id?: string | null
           color?: string
           created_at?: string | null
+          default_assignee_role?: string | null
+          default_priority?: string | null
           icon?: string | null
           id?: string
           name: string
+          priority_score?: number | null
+          task_description_template?: string | null
+          task_title_template?: string | null
         }
         Update: {
+          auto_create_task?: boolean | null
           business_id?: string | null
           color?: string
           created_at?: string | null
+          default_assignee_role?: string | null
+          default_priority?: string | null
           icon?: string | null
           id?: string
           name?: string
+          priority_score?: number | null
+          task_description_template?: string | null
+          task_title_template?: string | null
         }
         Relationships: [
           {
@@ -1039,6 +1057,7 @@ export type Database = {
       }
       email_accounts: {
         Row: {
+          auth_method: string | null
           business_id: string
           created_at: string
           created_by: string | null
@@ -1059,6 +1078,11 @@ export type Database = {
           last_synced_at: string | null
           mark_as_read: boolean
           name: string
+          oauth_access_token: string | null
+          oauth_provider: string | null
+          oauth_refresh_token: string | null
+          oauth_scopes: Json | null
+          oauth_token_expires_at: string | null
           pop3_host: string | null
           pop3_password: string | null
           pop3_port: number | null
@@ -1070,10 +1094,12 @@ export type Database = {
           smtp_use_ssl: boolean
           smtp_username: string
           sync_enabled: boolean
+          sync_from_date: string | null
           sync_interval_minutes: number
           updated_at: string
         }
         Insert: {
+          auth_method?: string | null
           business_id: string
           created_at?: string
           created_by?: string | null
@@ -1094,6 +1120,11 @@ export type Database = {
           last_synced_at?: string | null
           mark_as_read?: boolean
           name: string
+          oauth_access_token?: string | null
+          oauth_provider?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: Json | null
+          oauth_token_expires_at?: string | null
           pop3_host?: string | null
           pop3_password?: string | null
           pop3_port?: number | null
@@ -1105,10 +1136,12 @@ export type Database = {
           smtp_use_ssl?: boolean
           smtp_username: string
           sync_enabled?: boolean
+          sync_from_date?: string | null
           sync_interval_minutes?: number
           updated_at?: string
         }
         Update: {
+          auth_method?: string | null
           business_id?: string
           created_at?: string
           created_by?: string | null
@@ -1129,6 +1162,11 @@ export type Database = {
           last_synced_at?: string | null
           mark_as_read?: boolean
           name?: string
+          oauth_access_token?: string | null
+          oauth_provider?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: Json | null
+          oauth_token_expires_at?: string | null
           pop3_host?: string | null
           pop3_password?: string | null
           pop3_port?: number | null
@@ -1140,6 +1178,7 @@ export type Database = {
           smtp_use_ssl?: boolean
           smtp_username?: string
           sync_enabled?: boolean
+          sync_from_date?: string | null
           sync_interval_minutes?: number
           updated_at?: string
         }
@@ -1493,6 +1532,106 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_dismissed: boolean | null
+          is_read: boolean | null
+          link_url: string | null
+          message: string
+          priority: number | null
+          read_at: string | null
+          related_conversation_id: string | null
+          related_message_id: string | null
+          related_task_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          link_url?: string | null
+          message: string
+          priority?: number | null
+          read_at?: string | null
+          related_conversation_id?: string | null
+          related_message_id?: string | null
+          related_task_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          link_url?: string | null
+          message?: string
+          priority?: number | null
+          read_at?: string | null
+          related_conversation_id?: string | null
+          related_message_id?: string | null
+          related_task_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_conversation_id_fkey"
+            columns: ["related_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_message_id_fkey"
+            columns: ["related_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_states: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          provider: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          provider?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_costs: {
         Row: {
           created_at: string | null
@@ -1613,6 +1752,62 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_accounts: {
+        Row: {
+          account_sid: string | null
+          api_key: string | null
+          api_secret: string | null
+          auth_token: string | null
+          business_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone_number: string
+          provider: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_sid?: string | null
+          api_key?: string | null
+          api_secret?: string | null
+          auth_token?: string | null
+          business_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone_number: string
+          provider: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_sid?: string | null
+          api_key?: string | null
+          api_secret?: string | null
+          auth_token?: string | null
+          business_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone_number?: string
+          provider?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_accounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           business_id: string
@@ -1710,6 +1905,7 @@ export type Database = {
           id: string
           message_id: string | null
           priority: string | null
+          priority_score: number | null
           status: string | null
           title: string
           updated_at: string | null
@@ -1727,6 +1923,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           priority?: string | null
+          priority_score?: number | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -1744,6 +1941,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           priority?: string | null
+          priority_score?: number | null
           status?: string | null
           title?: string
           updated_at?: string | null
@@ -2049,6 +2247,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_or_create_user_business: {
         Args: { _user_id: string }
         Returns: string
