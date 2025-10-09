@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, Trash2, RefreshCw, Download } from "lucide-react";
+import { FormMessage } from "@/components/ui/form";
 
 interface TemplateFormData {
   name: string;
@@ -44,7 +45,7 @@ export const WhatsAppTemplateManagement = () => {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   
-  const { register, handleSubmit, reset, watch, setValue } = useForm<TemplateFormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TemplateFormData>({
     defaultValues: {
       category: "MARKETING",
       language: "en",
@@ -248,7 +249,11 @@ export const WhatsAppTemplateManagement = () => {
       setTimeout(() => fetchMetaTemplates(), 2000);
     } catch (error: any) {
       console.error("Error submitting template:", error);
-      toast.error(error.message || "Failed to submit template");
+      if (error.message?.toLowerCase().includes('invalid parameter') || error.message?.toLowerCase().includes('name')) {
+        toast.error("Template name must be lowercase letters and underscores only (e.g., welcome_message)");
+      } else {
+        toast.error(error.message || "Failed to submit template");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -371,9 +376,24 @@ export const WhatsAppTemplateManagement = () => {
               <Label htmlFor="name">Template Name</Label>
               <Input
                 id="name"
-                {...register("name", { required: true })}
+                {...register("name", { 
+                  required: "Template name is required",
+                  pattern: {
+                    value: /^[a-z][a-z0-9_]*$/,
+                    message: "Must start with lowercase letter and contain only lowercase letters, numbers, and underscores"
+                  }
+                })}
                 placeholder="welcome_message"
+                onChange={(e) => {
+                  const sanitized = e.target.value
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-z0-9_]/g, '');
+                  setValue('name', sanitized);
+                }}
+                className={errors.name ? "border-destructive" : ""}
               />
+              {errors.name && <FormMessage>{errors.name.message}</FormMessage>}
               <p className="text-xs text-muted-foreground">
                 Lowercase only, use underscores instead of spaces. No special characters except underscore.
               </p>
