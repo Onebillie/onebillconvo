@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ import { RefreshButton } from "@/components/chat/RefreshButton";
 import { AIToggle } from "@/components/chat/AIToggle";
 import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
@@ -520,165 +522,294 @@ const Dashboard = () => {
             {conversationSidebar}
           </SheetContent>
         </Sheet>
-      ) : (
-        /* Desktop: Fixed Sidebar */
-        <div className="w-80 border-r border-border">
-          {conversationSidebar}
-        </div>
-      )}
+      ) : null}
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedConversation ? (
-          <>
-            {/* Chat Header */}
-            <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
-              <div className="flex items-center justify-between gap-1 md:gap-2">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedConversation(null)}
-                    className="flex-shrink-0 h-8 w-8"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                )}
-                <div 
-                  className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
-                  onClick={() => setShowContactDetails(!showContactDetails)}
-                >
-                  <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
-                    <AvatarImage src={selectedConversation.customer.avatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {selectedConversation.customer.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-semibold text-xs md:text-base truncate">
-                      {selectedConversation.customer.name}
-                    </h2>
-                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">
-                      {selectedConversation.customer.phone}
-                    </p>
+      {/* Desktop: Resizable layout */}
+      {!isMobile ? (
+        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+          {/* Left: Conversations list - resizable and collapsible */}
+          <ResizablePanel defaultSize={30} minSize={22} maxSize={45} collapsible>
+            <div className="h-full border-r border-border">
+              {conversationSidebar}
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+
+          {/* Center: Main Chat Area */}
+          <ResizablePanel minSize={35}>
+            <div className="h-full flex flex-col overflow-hidden">
+              {selectedConversation ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
+                    <div className="flex items-center justify-between gap-1 md:gap-2">
+                      {isMobile && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedConversation(null)}
+                          className="flex-shrink-0 h-8 w-8"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <div 
+                        className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
+                        onClick={() => setShowContactDetails(!showContactDetails)}
+                      >
+                        <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
+                          <AvatarImage src={selectedConversation.customer.avatar} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {selectedConversation.customer.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="font-semibold text-xs md:text-base truncate">
+                            {selectedConversation.customer.name}
+                          </h2>
+                          <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                            {selectedConversation.customer.phone}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                        <AIToggle conversationId={selectedConversation.id} />
+                        
+                        <RefreshButton
+                          onRefresh={async () => {
+                            await fetchMessages(selectedConversation.id);
+                            await fetchConversations();
+                            toast({
+                              title: "Refreshed",
+                              description: "Messages updated"
+                            });
+                          }}
+                        />
+                        
+                        <EmailSyncButton onSyncComplete={() => {
+                          if (selectedConversation) {
+                            fetchMessages(selectedConversation.id);
+                          }
+                          fetchConversations();
+                        }} />
+                        
+                        <div className="hidden lg:block">
+                          <EnhancedTemplateSelector
+                            conversationId={selectedConversation.id}
+                            customerId={selectedConversation.customer.id}
+                            customerPhone={selectedConversation.customer.phone}
+                            customerEmail={selectedConversation.customer.email}
+                            onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                          />
+                        </div>
+                        
+                        <div className="hidden xl:block w-48">
+                          <AdminAssignment
+                            conversationId={selectedConversation.id}
+                            currentAssignee={selectedConversation.assigned_to}
+                            onAssignmentChange={fetchConversations}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Mobile: Second row for additional controls */}
+                    <div className="flex lg:hidden items-center gap-1 mt-1.5">
+                      <div className="flex-1">
+                        <EnhancedTemplateSelector
+                          conversationId={selectedConversation.id}
+                          customerId={selectedConversation.customer.id}
+                          customerPhone={selectedConversation.customer.phone}
+                          customerEmail={selectedConversation.customer.email}
+                          onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                        />
+                      </div>
+                      <div className="flex-1 xl:hidden">
+                        <AdminAssignment
+                          conversationId={selectedConversation.id}
+                          currentAssignee={selectedConversation.assigned_to}
+                          onAssignmentChange={fetchConversations}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                  <AIToggle conversationId={selectedConversation.id} />
+
+                  {/* Messages area - scrollable middle section */}
+                  <div className="flex-1 overflow-hidden">
+                    <div className="h-full flex flex-col">
+                      <LimitReachedBanner />
+                      <div className="flex-1 overflow-y-auto">
+                        <MessageList
+                          messages={messages}
+                          onCreateTask={(message) => {
+                            setSelectedMessageForTask(message);
+                            setTaskDialogOpen(true);
+                          }}
+                          onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   
-                  <RefreshButton
-                    onRefresh={async () => {
-                      await fetchMessages(selectedConversation.id);
-                      await fetchConversations();
-                      toast({
-                        title: "Refreshed",
-                        description: "Messages updated"
-                      });
-                    }}
-                  />
-                  
-                  <EmailSyncButton onSyncComplete={() => {
-                    if (selectedConversation) {
-                      fetchMessages(selectedConversation.id);
-                    }
-                    fetchConversations();
-                  }} />
-                  
-                  <div className="hidden lg:block">
-                    <EnhancedTemplateSelector
+                  {/* AI Suggestions & Message Input - Fixed at bottom */}
+                  <div className="flex-shrink-0 bg-background border-t shadow-sm">
+                    <AIResponseSuggestions
+                      conversationId={selectedConversation.id}
+                      latestMessage={latestInboundMessage}
+                      onSelectSuggestion={(suggestion) => {
+                        setShowAISuggestions(false);
+                      }}
+                      isVisible={showAISuggestions}
+                    />
+                    <MessageInput
                       conversationId={selectedConversation.id}
                       customerId={selectedConversation.customer.id}
-                      customerPhone={selectedConversation.customer.phone}
+                      customerPhone={selectedConversation.customer.phone || ""}
                       customerEmail={selectedConversation.customer.email}
-                      onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                      lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+                      onMessageSent={() => {
+                        fetchMessages(selectedConversation.id);
+                        setShowAISuggestions(false);
+                      }}
+                      customer={selectedConversation.customer}
+                      initialMessage=""
                     />
                   </div>
-                  
-                  <div className="hidden xl:block w-48">
-                    <AdminAssignment
-                      conversationId={selectedConversation.id}
-                      currentAssignee={selectedConversation.assigned_to}
-                      onAssignmentChange={fetchConversations}
-                    />
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center">
+                    <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-base md:text-lg font-medium text-muted-foreground">
+                      {isMobile ? "Select a conversation" : "Select a conversation to start messaging"}
+                    </h3>
+                    {isMobile && (
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => setMobileMenuOpen(true)}
+                      >
+                        <Menu className="w-4 h-4 mr-2" />
+                        View Conversations
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </div>
-              
-              {/* Mobile: Second row for additional controls */}
-              <div className="flex lg:hidden items-center gap-1 mt-1.5">
-                <div className="flex-1">
-                  <EnhancedTemplateSelector
-                    conversationId={selectedConversation.id}
-                    customerId={selectedConversation.customer.id}
-                    customerPhone={selectedConversation.customer.phone}
-                    customerEmail={selectedConversation.customer.email}
-                    onTemplateSent={() => fetchMessages(selectedConversation.id)}
-                  />
-                </div>
-                <div className="flex-1 xl:hidden">
-                  <AdminAssignment
-                    conversationId={selectedConversation.id}
-                    currentAssignee={selectedConversation.assigned_to}
-                    onAssignmentChange={fetchConversations}
-                  />
-                </div>
-              </div>
+              )}
             </div>
+          </ResizablePanel>
 
-            {/* Messages area - scrollable middle section */}
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full flex flex-col">
-                <LimitReachedBanner />
-                <div className="flex-1 overflow-y-auto">
-                  <MessageList
-                    messages={messages}
-                    onCreateTask={(message) => {
-                      setSelectedMessageForTask(message);
-                      setTaskDialogOpen(true);
-                    }}
-                    onMessageUpdate={() => fetchMessages(selectedConversation.id)}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* AI Suggestions & Message Input - Fixed at bottom */}
-            <div className="flex-shrink-0 bg-background border-t shadow-sm">
-                  <AIResponseSuggestions
-                    conversationId={selectedConversation.id}
-                    latestMessage={latestInboundMessage}
-                    onSelectSuggestion={(suggestion) => {
-                      // Pass suggestion to MessageInput
-                      setShowAISuggestions(false);
-                    }}
-                    isVisible={showAISuggestions}
-                  />
-                  <MessageInput
-                    conversationId={selectedConversation.id}
-                    customerId={selectedConversation.customer.id}
-                    customerPhone={selectedConversation.customer.phone || ""}
-                    customerEmail={selectedConversation.customer.email}
-                    lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
-                    onMessageSent={() => {
-                      fetchMessages(selectedConversation.id);
-                      setShowAISuggestions(false);
-                    }}
-                    customer={selectedConversation.customer}
-                    initialMessage=""
-                  />
-            </div>
-
-            {/* Contact Details Panel - Desktop Sidebar */}
-            {showContactDetails && !isMobile && (
-                <div className="w-80 border-l border-border overflow-y-auto">
+          {/* Right: Contact details (optional) */}
+          {showContactDetails && selectedConversation && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={25} minSize={18} maxSize={40} collapsible>
+                <div className="h-full border-l border-border overflow-y-auto">
                   <ContactDetails
                     customer={selectedConversation.customer}
                     onUpdate={fetchConversations}
                   />
                 </div>
-              )}
-              
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      ) : (
+        // Mobile: Main Chat Area
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {selectedConversation ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
+                <div className="flex items-center justify-between gap-1 md:gap-2">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedConversation(null)}
+                      className="flex-shrink-0 h-8 w-8"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <div 
+                    className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
+                    onClick={() => setShowContactDetails(!showContactDetails)}
+                  >
+                    <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
+                      <AvatarImage src={selectedConversation.customer.avatar} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {selectedConversation.customer.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold text-xs md:text-base truncate">
+                        {selectedConversation.customer.name}
+                      </h2>
+                      <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                        {selectedConversation.customer.phone}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <AIToggle conversationId={selectedConversation.id} />
+                    <RefreshButton
+                      onRefresh={async () => {
+                        await fetchMessages(selectedConversation.id);
+                        await fetchConversations();
+                        toast({ title: "Refreshed", description: "Messages updated" });
+                      }}
+                    />
+                    <EmailSyncButton onSyncComplete={() => {
+                      if (selectedConversation) fetchMessages(selectedConversation.id);
+                      fetchConversations();
+                    }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages area - scrollable middle section */}
+              <div className="flex-1 overflow-hidden">
+                <div className="h-full flex flex-col">
+                  <LimitReachedBanner />
+                  <div className="flex-1 overflow-y-auto">
+                    <MessageList
+                      messages={messages}
+                      onCreateTask={(message) => {
+                        setSelectedMessageForTask(message);
+                        setTaskDialogOpen(true);
+                      }}
+                      onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Suggestions & Message Input - Fixed at bottom */}
+              <div className="flex-shrink-0 bg-background border-t shadow-sm">
+                <AIResponseSuggestions
+                  conversationId={selectedConversation.id}
+                  latestMessage={latestInboundMessage}
+                  onSelectSuggestion={() => setShowAISuggestions(false)}
+                  isVisible={showAISuggestions}
+                />
+                <MessageInput
+                  conversationId={selectedConversation.id}
+                  customerId={selectedConversation.customer.id}
+                  customerPhone={selectedConversation.customer.phone || ""}
+                  customerEmail={selectedConversation.customer.email}
+                  lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+                  onMessageSent={() => {
+                    fetchMessages(selectedConversation.id);
+                    setShowAISuggestions(false);
+                  }}
+                  customer={selectedConversation.customer}
+                  initialMessage=""
+                />
+              </div>
+
               {/* Contact Details Panel - Mobile Sheet */}
               {showContactDetails && isMobile && (
                 <Sheet open={showContactDetails} onOpenChange={setShowContactDetails}>
@@ -690,28 +821,26 @@ const Dashboard = () => {
                   </SheetContent>
                 </Sheet>
               )}
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="text-center">
-              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-base md:text-lg font-medium text-muted-foreground">
-                {isMobile ? "Select a conversation" : "Select a conversation to start messaging"}
-              </h3>
-              {isMobile && (
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => setMobileMenuOpen(true)}
-                >
-                  <Menu className="w-4 h-4 mr-2" />
-                  View Conversations
-                </Button>
-              )}
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-base md:text-lg font-medium text-muted-foreground">
+                  {isMobile ? "Select a conversation" : "Select a conversation to start messaging"}
+                </h3>
+                {isMobile && (
+                  <Button variant="outline" className="mt-4" onClick={() => setMobileMenuOpen(true)}>
+                    <Menu className="w-4 h-4 mr-2" />
+                    View Conversations
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+
 
       {/* Dialogs */}
       {contextMenuConversation && (
