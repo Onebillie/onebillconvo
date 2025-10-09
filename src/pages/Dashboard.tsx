@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, Menu, ArrowLeft, X, RefreshCw } from "lucide-react";
+import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Conversation, Message, Customer } from "@/types/chat";
 import { ContactList } from "@/components/chat/ContactList";
 import { MessageList } from "@/components/chat/MessageList";
@@ -57,7 +56,6 @@ const Dashboard = () => {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [contextMenuConversation, setContextMenuConversation] = useState<Conversation | null>(null);
   const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [latestInboundMessage, setLatestInboundMessage] = useState<string>("");
@@ -75,7 +73,6 @@ const Dashboard = () => {
       if (conv) {
         setSelectedConversation(conv);
         setShowContactDetails(false);
-        setMobileMenuOpen(false);
         // Clear URL parameter
         window.history.replaceState({}, '', '/app/dashboard');
       }
@@ -378,18 +375,8 @@ const Dashboard = () => {
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            {isMobile && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-            <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+        <div className="flex items-center space-x-2">
+          <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             <h1 className="font-semibold text-sm md:text-base">Customer Service</h1>
             {unreadCount > 0 && !isMobile && (
               <Button
@@ -448,7 +435,6 @@ const Dashboard = () => {
                   status_tags: [],
                   unread_count: 0,
                 });
-                setMobileMenuOpen(false);
               }
               await fetchConversations();
             }}
@@ -472,7 +458,6 @@ const Dashboard = () => {
           onSelectConversation={(conv) => {
             setSelectedConversation(conv);
             setShowContactDetails(false);
-            setMobileMenuOpen(false);
           }}
           contextMenu={(conversation) => (
             <ConversationContextMenu
@@ -502,67 +487,59 @@ const Dashboard = () => {
         hasUnsavedChanges={hasUnsavedChanges}
         message="You have an unsaved message. Are you sure you want to leave?"
       />
-      <div className="h-screen flex flex-col md:flex-row bg-background">
-      {/* Mobile: Sheet/Drawer for Sidebar */}
-      {isMobile ? (
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          {!selectedConversation && (
-            <div className="w-full border-b border-border md:hidden">
-              <div className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Menu className="w-4 h-4" />
+      <div className="h-screen flex flex-col bg-background">
+      {/* Unified Resizable layout for all screen sizes */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+        {/* Left: Conversations list - resizable and collapsible */}
+        <ResizablePanel 
+          defaultSize={isMobile ? 100 : 30} 
+          minSize={isMobile ? 35 : 22} 
+          maxSize={isMobile ? 100 : 45} 
+          collapsible
+          collapsedSize={0}
+          className={isMobile && selectedConversation ? "hidden" : ""}
+        >
+          <div className="h-full border-r border-border flex flex-col">
+            {/* Mobile Header */}
+            {isMobile && (
+              <div className="w-full border-b border-border flex-shrink-0">
+                <div className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <h1 className="text-sm font-semibold">Conversations</h1>
+                    {unreadCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFilters({ unread: true, statusIds: [] });
+                        }}
+                        className="h-6 px-2 text-xs gap-1 ml-1"
+                      >
+                        <Bell className="w-3 h-3" />
+                        {unreadCount}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <GlobalNotificationCenter />
+                    <TaskNotifications />
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+                        <SettingsIcon className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
+                      <LogOut className="w-4 h-4" />
                     </Button>
-                  </SheetTrigger>
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  <h1 className="text-sm font-semibold">Conversations</h1>
-                  {unreadCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setFilters({ unread: true, statusIds: [] });
-                        setMobileMenuOpen(true);
-                      }}
-                      className="h-6 px-2 text-xs gap-1 ml-1"
-                    >
-                      <Bell className="w-3 h-3" />
-                      {unreadCount}
-                    </Button>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <GlobalNotificationCenter />
-                  <TaskNotifications />
-                  {isAdmin && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-                      <SettingsIcon className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
-                    <LogOut className="w-4 h-4" />
-                  </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <SheetContent side="left" className="w-full sm:w-[85vw] p-0 max-w-md">
+            )}
             {conversationSidebar}
-          </SheetContent>
-        </Sheet>
-      ) : null}
-
-      {/* Desktop: Resizable layout */}
-      {!isMobile ? (
-        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-          {/* Left: Conversations list - resizable and collapsible */}
-          <ResizablePanel defaultSize={30} minSize={22} maxSize={45} collapsible>
-            <div className="h-full border-r border-border">
-              {conversationSidebar}
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle className={isMobile && !selectedConversation ? "hidden" : ""} />
 
           {/* Center: Main Chat Area */}
           <ResizablePanel minSize={35}>
@@ -707,22 +684,12 @@ const Dashboard = () => {
                   </div>
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center p-4">
+                 <div className="flex-1 flex items-center justify-center p-4">
                   <div className="text-center">
                     <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-base md:text-lg font-medium text-muted-foreground">
-                      {isMobile ? "Select a conversation" : "Select a conversation to start messaging"}
+                      Select a conversation to start messaging
                     </h3>
-                    {isMobile && (
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => setMobileMenuOpen(true)}
-                      >
-                        <Menu className="w-4 h-4 mr-2" />
-                        View Conversations
-                      </Button>
-                    )}
                   </div>
                 </div>
               )}
@@ -744,131 +711,6 @@ const Dashboard = () => {
             </>
           )}
         </ResizablePanelGroup>
-      ) : (
-        // Mobile: Main Chat Area
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {selectedConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
-                <div className="flex items-center justify-between gap-1 md:gap-2">
-                  {isMobile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedConversation(null)}
-                      className="flex-shrink-0 h-8 w-8"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <div 
-                    className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
-                    onClick={() => setShowContactDetails(!showContactDetails)}
-                  >
-                    <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
-                      <AvatarImage src={selectedConversation.customer.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {selectedConversation.customer.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="font-semibold text-xs md:text-base truncate">
-                        {selectedConversation.customer.name}
-                      </h2>
-                      <p className="text-[10px] md:text-xs text-muted-foreground truncate">
-                        {selectedConversation.customer.phone}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                    <AIToggle conversationId={selectedConversation.id} />
-                    <RefreshButton
-                      onRefresh={async () => {
-                        await fetchMessages(selectedConversation.id);
-                        await fetchConversations();
-                        toast({ title: "Refreshed", description: "Messages updated" });
-                      }}
-                    />
-                    <EmailSyncButton onSyncComplete={() => {
-                      if (selectedConversation) fetchMessages(selectedConversation.id);
-                      fetchConversations();
-                    }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Messages area - scrollable middle section */}
-              <div className="flex-1 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <LimitReachedBanner />
-                  <div className="flex-1 overflow-y-auto">
-                    <MessageList
-                      messages={messages}
-                      onCreateTask={(message) => {
-                        setSelectedMessageForTask(message);
-                        setTaskDialogOpen(true);
-                      }}
-                      onMessageUpdate={() => fetchMessages(selectedConversation.id)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Suggestions & Message Input - Fixed at bottom */}
-              <div className="flex-shrink-0 bg-background border-t shadow-sm">
-                <AIResponseSuggestions
-                  conversationId={selectedConversation.id}
-                  latestMessage={latestInboundMessage}
-                  onSelectSuggestion={() => setShowAISuggestions(false)}
-                  isVisible={showAISuggestions}
-                />
-                <MessageInput
-                  conversationId={selectedConversation.id}
-                  customerId={selectedConversation.customer.id}
-                  customerPhone={selectedConversation.customer.phone || ""}
-                  customerEmail={selectedConversation.customer.email}
-                  lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
-                  onMessageSent={() => {
-                    fetchMessages(selectedConversation.id);
-                    setShowAISuggestions(false);
-                  }}
-                  customer={selectedConversation.customer}
-                  initialMessage=""
-                />
-              </div>
-
-              {/* Contact Details Panel - Mobile Sheet */}
-              {showContactDetails && isMobile && (
-                <Sheet open={showContactDetails} onOpenChange={setShowContactDetails}>
-                  <SheetContent side="right" className="w-full sm:w-80 p-0">
-                    <ContactDetails
-                      customer={selectedConversation.customer}
-                      onUpdate={fetchConversations}
-                    />
-                  </SheetContent>
-                </Sheet>
-              )}
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-4">
-              <div className="text-center">
-                <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-base md:text-lg font-medium text-muted-foreground">
-                  {isMobile ? "Select a conversation" : "Select a conversation to start messaging"}
-                </h3>
-                {isMobile && (
-                  <Button variant="outline" className="mt-4" onClick={() => setMobileMenuOpen(true)}>
-                    <Menu className="w-4 h-4 mr-2" />
-                    View Conversations
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
 
       {/* Dialogs */}
