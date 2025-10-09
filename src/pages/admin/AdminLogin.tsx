@@ -36,13 +36,12 @@ export default function AdminLogin() {
       }
 
       // Check if user has superadmin role
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", authData.user.id)
-        .single();
+        .eq("user_id", authData.user.id);
 
-      if (roleError || roleData?.role !== 'superadmin') {
+      if (rolesError || !roles?.some(r => r.role === 'superadmin')) {
         // Not a superadmin - sign them out and show error
         await supabase.auth.signOut();
         toast({
