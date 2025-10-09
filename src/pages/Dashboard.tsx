@@ -31,6 +31,9 @@ import { ConversationFilters } from "@/components/chat/ConversationFilters";
 import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
 import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 import { LimitReachedBanner } from "@/components/LimitReachedBanner";
+import { RefreshButton } from "@/components/chat/RefreshButton";
+import { AIToggle } from "@/components/chat/AIToggle";
+import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
@@ -51,6 +54,9 @@ const Dashboard = () => {
   const [contextMenuConversation, setContextMenuConversation] = useState<Conversation | null>(null);
   const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [latestInboundMessage, setLatestInboundMessage] = useState<string>("");
   const navigate = useNavigate();
 
   // Handle URL parameters to auto-select conversation
@@ -221,18 +227,35 @@ const Dashboard = () => {
       .eq("direction", "inbound");
   }, []);
 
-  // Real-time message handlers
+  // Real-time message handlers with deduplication
   const handleNewMessage = useCallback((newMessage: Message) => {
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => {
+      // Check if message already exists by ID or external_message_id
+      const exists = prev.some(
+        msg => msg.id === newMessage.id || 
+        (msg.external_message_id && msg.external_message_id === newMessage.external_message_id)
+      );
+      if (exists) return prev;
+      return [...prev, newMessage];
+    });
+    
     if (newMessage.direction === 'inbound' && selectedConversation) {
       markAsRead(selectedConversation.id);
+      setLatestInboundMessage(newMessage.content);
+      setShowAISuggestions(true);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, markAsRead]);
 
   const handleMessageUpdate = useCallback((updatedMessage: Message) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === updatedMessage.id ? updatedMessage : msg
-    ));
+    setMessages(prev => {
+      // Deduplicate while updating
+      const existingIndex = prev.findIndex(msg => msg.id === updatedMessage.id);
+      if (existingIndex === -1) return prev;
+      
+      const newMessages = [...prev];
+      newMessages[existingIndex] = updatedMessage;
+      return newMessages;
+    });
   }, []);
 
   // Set up real-time subscriptions
@@ -263,6 +286,8 @@ const Dashboard = () => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
       markAsRead(selectedConversation.id);
+      setShowAISuggestions(false);
+      setLatestInboundMessage("");
     }
   }, [selectedConversation, fetchMessages, markAsRead]);
 
@@ -499,10 +524,10 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
+                  <AIToggle conversationId={selectedConversation.id} />
+                  
+                  <RefreshButton
+                    onRefresh={async () => {
                       await fetchMessages(selectedConversation.id);
                       await fetchConversations();
                       toast({
@@ -510,11 +535,7 @@ const Dashboard = () => {
                         description: "Messages updated"
                       });
                     }}
-                    className="h-9 px-2 md:px-3"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span className="hidden md:inline ml-1">Refresh</span>
-                  </Button>
+                  />
                   
                   <EmailSyncButton onSyncComplete={() => {
                     if (selectedConversation) {
@@ -576,14 +597,27 @@ const Dashboard = () => {
                   }}
                   onMessageUpdate={() => fetchMessages(selectedConversation.id)}
                 />
+                <AIResponseSuggestions
+                  conversationId={selectedConversation.id}
+                  latestMessage={latestInboundMessage}
+                  onSelectSuggestion={(suggestion) => {
+                    // Pass suggestion to MessageInput
+                    setShowAISuggestions(false);
+                  }}
+                  isVisible={showAISuggestions}
+                />
                 <MessageInput
                   conversationId={selectedConversation.id}
                   customerId={selectedConversation.customer.id}
                   customerPhone={selectedConversation.customer.phone || ""}
                   customerEmail={selectedConversation.customer.email}
                   lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
-                  onMessageSent={() => fetchMessages(selectedConversation.id)}
+                  onMessageSent={() => {
+                    fetchMessages(selectedConversation.id);
+                    setShowAISuggestions(false);
+                  }}
                   customer={selectedConversation.customer}
+                  initialMessage=""
                 />
               </div>
 

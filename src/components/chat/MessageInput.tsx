@@ -19,6 +19,7 @@ interface MessageInputProps {
   lastContactMethod?: "whatsapp" | "email";
   onMessageSent: () => void;
   customer?: Customer;
+  initialMessage?: string;
 }
 
 export const MessageInput = ({
@@ -29,13 +30,21 @@ export const MessageInput = ({
   lastContactMethod = "whatsapp",
   onMessageSent,
   customer,
+  initialMessage,
 }: MessageInputProps) => {
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState(initialMessage || "");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sendVia, setSendVia] = useState<"whatsapp" | "email">(lastContactMethod);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update message when initialMessage prop changes
+  useState(() => {
+    if (initialMessage) {
+      setNewMessage(initialMessage);
+    }
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

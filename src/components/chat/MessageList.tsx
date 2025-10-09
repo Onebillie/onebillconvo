@@ -7,6 +7,7 @@ import { FilePreview } from "./FilePreview";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
+import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { Pencil, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -189,7 +190,17 @@ export const MessageList = ({ messages, onCreateTask, onMessageUpdate }: Message
                             </div>
                           )}
 
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1">{message.content}</p>
+                          {/* Email content with smart formatting */}
+                          {message.platform === 'email' ? (
+                            <EmailMessageRenderer 
+                              content={message.content} 
+                              subject={message.subject}
+                            />
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1">
+                              {message.content}
+                            </p>
+                          )}
                           
                           {/* Attachments */}
                           {message.message_attachments &&

@@ -56,6 +56,7 @@ export interface Message {
   platform: string;
   status?: string;
   replied_to_message_id?: string | null;
+  external_message_id?: string | null;
   message_attachments?: Array<{
     id: string;
     filename: string;

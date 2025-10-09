@@ -89,3 +89,6 @@ verify_jwt = true
 
 [functions.purchase-credits]
 verify_jwt = true
+
+[functions.ai-suggest-response]
+verify_jwt = true

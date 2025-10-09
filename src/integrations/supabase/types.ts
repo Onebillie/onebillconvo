@@ -854,8 +854,10 @@ export type Database = {
           customer_id: string | null
           id: string
           is_archived: boolean | null
+          is_pinned: boolean | null
           labels: string[] | null
           last_message_at: string | null
+          pinned_at: string | null
           status: string | null
           status_tag_id: string | null
           updated_at: string | null
@@ -868,8 +870,10 @@ export type Database = {
           customer_id?: string | null
           id?: string
           is_archived?: boolean | null
+          is_pinned?: boolean | null
           labels?: string[] | null
           last_message_at?: string | null
+          pinned_at?: string | null
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
@@ -882,8 +886,10 @@ export type Database = {
           customer_id?: string | null
           id?: string
           is_archived?: boolean | null
+          is_pinned?: boolean | null
           labels?: string[] | null
           last_message_at?: string | null
+          pinned_at?: string | null
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
@@ -1387,6 +1393,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          ai_confidence: number | null
           business_id: string | null
           channel: string | null
           content: string
@@ -1397,6 +1404,7 @@ export type Database = {
           external_message_id: string | null
           forwarded_from_message_id: string | null
           id: string
+          is_ai_generated: boolean | null
           is_read: boolean | null
           platform: string | null
           replied_to_message_id: string | null
@@ -1406,6 +1414,7 @@ export type Database = {
           thread_id: string | null
         }
         Insert: {
+          ai_confidence?: number | null
           business_id?: string | null
           channel?: string | null
           content: string
@@ -1416,6 +1425,7 @@ export type Database = {
           external_message_id?: string | null
           forwarded_from_message_id?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           is_read?: boolean | null
           platform?: string | null
           replied_to_message_id?: string | null
@@ -1425,6 +1435,7 @@ export type Database = {
           thread_id?: string | null
         }
         Update: {
+          ai_confidence?: number | null
           business_id?: string | null
           channel?: string | null
           content?: string
@@ -1435,6 +1446,7 @@ export type Database = {
           external_message_id?: string | null
           forwarded_from_message_id?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           is_read?: boolean | null
           platform?: string | null
           replied_to_message_id?: string | null

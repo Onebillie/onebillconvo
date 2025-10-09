@@ -19,13 +19,16 @@ export const ContactList = ({
 }: ContactListProps) => {
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
-    if (isToday(date)) {
-      return format(date, "HH:mm");
-    } else if (isYesterday(date)) {
-      return "Yesterday";
-    } else {
-      return format(date, "dd/MM/yyyy");
-    }
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24 && isToday(date)) return format(date, "HH:mm");
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "dd/MM/yyyy");
   };
 
   return (
@@ -33,12 +36,16 @@ export const ContactList = ({
       {conversations.map((conversation) => (
         <div
           key={conversation.id}
-          className={`px-2 py-1.5 md:px-3 md:py-2 cursor-pointer transition-all border-b border-border/40 ${
+          className={`px-3 py-2.5 cursor-pointer transition-all border-b border-border/30 hover:shadow-sm ${
             selectedConversation?.id === conversation.id
-              ? "bg-accent/50"
-              : "hover:bg-accent/20"
+              ? "bg-accent/60 border-l-4 border-l-primary"
+              : "hover:bg-accent/30"
           }`}
           onClick={() => onSelectConversation(conversation)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <div className="flex items-start gap-2 md:gap-3">
             <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
