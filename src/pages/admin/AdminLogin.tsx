@@ -7,12 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { Shield, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { startAdminSession } = useAuth();
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,38 +37,29 @@ export default function AdminLogin() {
         return;
       }
 
-      // Check if user has superadmin role
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", authData.user.id);
+      // Check if user has superadmin role using secure RPC
+      const { data: isSuperadmin, error: roleCheckError } = await supabase.rpc('has_role', {
+        _user_id: authData.user.id,
+        _role: 'superadmin'
+      });
 
-      if (rolesError || !roles?.some(r => r.role === 'superadmin')) {
+      if (roleCheckError || !isSuperadmin) {
         // Not a superadmin - sign them out and show error
         await supabase.auth.signOut();
         toast({
           title: "Access Denied",
-          description: "This login is for superadmins only. Please use the regular login.",
+          description: roleCheckError?.message || "Superadmin role required. Please use the regular login.",
           variant: "destructive",
         });
         setLoading(false);
         return;
       }
 
-      // Create admin session
-      const { error: sessionError } = await supabase
-        .from("admin_sessions")
-        .insert({
-          user_id: authData.user.id,
-          ip_address: await fetch('https://api.ipify.org?format=json')
-            .then(r => r.json())
-            .then(data => data.ip)
-            .catch(() => 'unknown'),
-          user_agent: navigator.userAgent,
-        });
-
-      if (sessionError) {
-        console.error("Failed to create admin session:", sessionError);
+      // Start admin session via AuthContext (updates state)
+      try {
+        await startAdminSession();
+      } catch (e) {
+        console.warn("Admin session start warning:", e);
       }
 
       // Send security alert

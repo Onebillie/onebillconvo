@@ -105,21 +105,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(profileData as Profile);
     }
 
-    // Fetch user roles and set highest privilege
+    // Fetch user roles and set highest privilege with fallback to RPC
+    let roleSet: string[] = [];
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
 
     if (!rolesError && roles?.length) {
-      const roleSet = roles.map(r => r.role);
-      if (roleSet.includes('superadmin')) {
-        setUserRole('superadmin');
-      } else if (roleSet.includes('admin')) {
-        setUserRole('admin');
-      } else {
-        setUserRole('agent');
-      }
+      roleSet = roles.map(r => r.role);
+    } else {
+      // Fallback: use secure RPC checks that bypass RLS via SECURITY DEFINER
+      const [{ data: isSuper }, { data: isAdmin }] = await Promise.all([
+        supabase.rpc('has_role', { _user_id: userId, _role: 'superadmin' }),
+        supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })
+      ]);
+      if (isSuper) roleSet.push('superadmin');
+      else if (isAdmin) roleSet.push('admin');
+      else roleSet.push('agent');
+    }
+
+    if (roleSet.includes('superadmin')) {
+      setUserRole('superadmin');
+    } else if (roleSet.includes('admin')) {
+      setUserRole('admin');
+    } else {
+      setUserRole('agent');
     }
 
     // Fetch user's business (first business they're a member of)
