@@ -532,7 +532,7 @@ const Dashboard = () => {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-2 md:p-4 border-b border-border bg-background">
+            <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between gap-1 md:gap-2">
                 {isMobile && (
                   <Button
@@ -628,38 +628,46 @@ const Dashboard = () => {
 
             <div className="flex flex-1 overflow-hidden">
               {/* Messages */}
-              <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 <LimitReachedBanner />
-                <MessageList 
-                  messages={messages}
-                  onCreateTask={(message) => {
-                    setSelectedMessageForTask(message);
-                    setTaskDialogOpen(true);
-                  }}
-                  onMessageUpdate={() => fetchMessages(selectedConversation.id)}
-                />
-                <AIResponseSuggestions
-                  conversationId={selectedConversation.id}
-                  latestMessage={latestInboundMessage}
-                  onSelectSuggestion={(suggestion) => {
-                    // Pass suggestion to MessageInput
-                    setShowAISuggestions(false);
-                  }}
-                  isVisible={showAISuggestions}
-                />
-                <MessageInput
-                  conversationId={selectedConversation.id}
-                  customerId={selectedConversation.customer.id}
-                  customerPhone={selectedConversation.customer.phone || ""}
-                  customerEmail={selectedConversation.customer.email}
-                  lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
-                  onMessageSent={() => {
-                    fetchMessages(selectedConversation.id);
-                    setShowAISuggestions(false);
-                  }}
-                  customer={selectedConversation.customer}
-                  initialMessage=""
-                />
+                
+                {/* Messages - scrollable middle section */}
+                <div className="flex-1 overflow-hidden">
+                  <MessageList 
+                    messages={messages}
+                    onCreateTask={(message) => {
+                      setSelectedMessageForTask(message);
+                      setTaskDialogOpen(true);
+                    }}
+                    onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                  />
+                </div>
+                
+                {/* AI Suggestions & Message Input - sticky at bottom */}
+                <div className="flex-shrink-0">
+                  <AIResponseSuggestions
+                    conversationId={selectedConversation.id}
+                    latestMessage={latestInboundMessage}
+                    onSelectSuggestion={(suggestion) => {
+                      // Pass suggestion to MessageInput
+                      setShowAISuggestions(false);
+                    }}
+                    isVisible={showAISuggestions}
+                  />
+                  <MessageInput
+                    conversationId={selectedConversation.id}
+                    customerId={selectedConversation.customer.id}
+                    customerPhone={selectedConversation.customer.phone || ""}
+                    customerEmail={selectedConversation.customer.email}
+                    lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+                    onMessageSent={() => {
+                      fetchMessages(selectedConversation.id);
+                      setShowAISuggestions(false);
+                    }}
+                    customer={selectedConversation.customer}
+                    initialMessage=""
+                  />
+                </div>
               </div>
 
               {/* Contact Details Panel - Desktop Sidebar */}
