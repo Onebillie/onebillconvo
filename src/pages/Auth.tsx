@@ -61,6 +61,27 @@ export default function Auth() {
           description: errorMessage,
           variant: "destructive",
         });
+      } else {
+        // Check if user is superadmin
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .single();
+
+          if (roleData?.role === 'superadmin') {
+            await supabase.auth.signOut();
+            toast({
+              title: "Access Denied",
+              description: "SuperAdmin accounts must use the admin login portal",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+        }
       }
     } catch (error: any) {
       toast({

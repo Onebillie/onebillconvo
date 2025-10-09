@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
 import SystemHealth from "./pages/admin/SystemHealth";
@@ -59,6 +60,7 @@ function AppContent() {
           <Route path="/onebillchat/settings" element={<Settings />} />
           
           {/* Platform Owner (SuperAdmin) Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />

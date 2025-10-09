@@ -114,5 +114,8 @@ verify_jwt = false
 [functions.run-system-tests]
 verify_jwt = true
 
+[functions.admin-login-alert]
+verify_jwt = true
+
 [functions.check-api-limits]
 verify_jwt = true

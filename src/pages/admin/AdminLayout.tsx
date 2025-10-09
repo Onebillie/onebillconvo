@@ -5,15 +5,19 @@ import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, Doll
 import { useEffect } from "react";
 
 export default function AdminLayout() {
-  const { isSuperAdmin, signOut, loading } = useAuth();
+  const { isSuperAdmin, isAdminSession, signOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !isSuperAdmin) {
-      navigate("/app/dashboard");
+    if (!loading) {
+      if (!isSuperAdmin) {
+        navigate("/app/dashboard");
+      } else if (!isAdminSession) {
+        navigate("/admin/login");
+      }
     }
-  }, [isSuperAdmin, loading, navigate]);
+  }, [isSuperAdmin, isAdminSession, loading, navigate]);
 
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -47,8 +51,13 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Admin Mode Banner */}
+      <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-4 py-2 text-center text-sm font-medium">
+        🔐 SuperAdmin Mode Active - System Management Access
+      </div>
+      
       {/* Top Navigation */}
-      <header className="border-b bg-card">
+      <header className="border-b bg-card border-red-900/10">
         <div className="flex h-16 items-center px-6 gap-4">
           <Button
             variant="ghost"

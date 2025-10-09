@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_assistant_config: {
         Row: {
           ai_provider_id: string | null
@@ -2497,6 +2527,10 @@ export type Database = {
       }
       is_account_frozen: {
         Args: { _business_id: string }
+        Returns: boolean
+      }
+      is_admin_session: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_business_owner: {

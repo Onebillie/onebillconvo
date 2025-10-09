@@ -616,7 +616,10 @@ ai.response.completed`}</code>
             </div>
           </div>
           <div className="border-t border-border pt-8 text-center text-sm text-foreground/60">
-            <p className="mb-2">© 2025 À La Carte Chat. All rights reserved.</p>
+            <div className="flex justify-between items-center mb-2">
+              <p>© 2025 À La Carte Chat. All rights reserved.</p>
+              <a href="/admin/login" className="text-xs hover:text-primary">Admin</a>
+            </div>
             <p className="text-xs">WhatsApp Business API | Meta Business Platform | Combined Inbox | Aggregated Messaging | Customer Message Management</p>
           </div>
         </div>

@@ -40,6 +40,9 @@ interface AuthContextType {
   userRole: 'superadmin' | 'admin' | 'agent' | null;
   subscriptionState: SubscriptionState;
   checkSubscription: () => Promise<void>;
+  isAdminSession: boolean;
+  startAdminSession: () => Promise<void>;
+  endAdminSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'superadmin' | 'admin' | 'agent' | null>(null);
+  const [isAdminSession, setIsAdminSession] = useState(false);
   const [subscriptionState, setSubscriptionState] = useState<SubscriptionState>({
     subscribed: false,
     tier: 'starter',
@@ -158,6 +162,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         fetchProfile(session.user.id).finally(() => setLoading(false));
+        
+        // Check for active admin session
+        supabase
+          .from('admin_sessions')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .gt('expires_at', new Date().toISOString())
+          .single()
+          .then(({ data }) => {
+            setIsAdminSession(!!data);
+          });
       } else {
         setLoading(false);
       }
@@ -204,10 +220,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const startAdminSession = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('admin_sessions')
+      .insert({ user_id: user.id })
+      .select()
+      .single();
+    
+    if (data) setIsAdminSession(true);
+  };
+
+  const endAdminSession = async () => {
+    if (!user) return;
+    
+    await supabase
+      .from('admin_sessions')
+      .update({ is_active: false })
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+    
+    setIsAdminSession(false);
+  };
+
   const signOut = async () => {
+    // End admin session if active
+    if (isAdminSession) {
+      await endAdminSession();
+    }
+    
     await supabase.auth.signOut();
     setProfile(null);
-    navigate("/auth");
+    
+    // Redirect based on session type
+    navigate(isAdminSession ? "/admin/login" : "/auth");
   };
 
   const isSuperAdmin = userRole === 'superadmin';
@@ -240,6 +287,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userRole,
         subscriptionState,
         checkSubscription,
+        isAdminSession,
+        startAdminSession,
+        endAdminSession,
       }}
     >
       {children}
