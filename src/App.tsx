@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
 import { NotificationBanner } from "@/components/ui/notification-banner";
@@ -50,6 +50,7 @@ function AppContent() {
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/settings" element={<Settings />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
           
           {/* Legacy routes - redirect to /app */}
           <Route path="/onebillchat" element={<Index />} />

@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 import { Conversation } from "@/types/chat";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Mail, MessageSquare } from "lucide-react";
 
 interface ContactListProps {
   conversations: Conversation[];
@@ -68,6 +68,25 @@ export const ContactList = ({
                   </Badge>
                 )}
               </div>
+
+              {/* Message preview */}
+              {conversation.last_message && (
+                <div className="flex items-center gap-1 mb-1">
+                  {conversation.last_message.platform === 'email' && (
+                    <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  )}
+                  {conversation.last_message.platform === 'whatsapp' && (
+                    <MessageSquare className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <p className="text-[10px] text-muted-foreground truncate flex-1">
+                    {conversation.last_message.direction === 'outbound' && 'You: '}
+                    {conversation.last_message.platform === 'email' && conversation.last_message.subject 
+                      ? conversation.last_message.subject
+                      : conversation.last_message.content.substring(0, 50)}
+                    {conversation.last_message.content.length > 50 && '...'}
+                  </p>
+                </div>
+              )}
               
               {/* Status tags row */}
               {conversation.status_tags && conversation.status_tags.length > 0 && (

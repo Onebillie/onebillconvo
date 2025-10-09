@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, Menu, ArrowLeft, X } from "lucide-react";
+import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, Menu, ArrowLeft, X, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -92,11 +92,14 @@ const Dashboard = () => {
             color
           )
         ),
-        assigned_user:profiles!assigned_to(id, full_name, department)
+        assigned_user:profiles!assigned_to(id, full_name, department),
+        messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at)
       `)
       .eq('is_archived', false)
       .order('updated_at', { ascending: false })
-      .limit(100); // Limit to 100 most recent conversations
+      .order('created_at', { foreignTable: 'messages', ascending: false })
+      .limit(100)
+      .limit(1, { foreignTable: 'messages' }); // Get only the latest message
 
     if (error) {
       console.error('Error fetching conversations:', error);
@@ -137,7 +140,14 @@ const Dashboard = () => {
       ...conv,
       customer: conv.customers,
       status_tags: conv.conversation_statuses?.map((cs: any) => cs.conversation_status_tags) || [],
-      unread_count: unreadCounts[conv.id] || 0
+      unread_count: unreadCounts[conv.id] || 0,
+      last_message: conv.messages?.[0] ? {
+        content: conv.messages[0].content,
+        subject: conv.messages[0].subject,
+        platform: conv.messages[0].platform,
+        direction: conv.messages[0].direction,
+        created_at: conv.messages[0].created_at
+      } : undefined
     }));
     
     setConversations(conversations);
@@ -489,6 +499,23 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      await fetchMessages(selectedConversation.id);
+                      await fetchConversations();
+                      toast({
+                        title: "Refreshed",
+                        description: "Messages updated"
+                      });
+                    }}
+                    className="h-9 px-2 md:px-3"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span className="hidden md:inline ml-1">Refresh</span>
+                  </Button>
+                  
                   <EmailSyncButton onSyncComplete={() => {
                     if (selectedConversation) {
                       fetchMessages(selectedConversation.id);

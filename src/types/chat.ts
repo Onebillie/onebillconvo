@@ -35,11 +35,19 @@ export interface Conversation {
     name: string;
     color: string;
   }>;
+  last_message?: {
+    content: string;
+    subject?: string;
+    platform: string;
+    direction: "inbound" | "outbound";
+    created_at: string;
+  };
 }
 
 export interface Message {
   id: string;
   content: string;
+  subject?: string;
   direction: "inbound" | "outbound";
   created_at: string;
   customer_id: string;

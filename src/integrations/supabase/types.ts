@@ -1402,6 +1402,7 @@ export type Database = {
           replied_to_message_id: string | null
           scheduled_at: string | null
           status: string | null
+          subject: string | null
           thread_id: string | null
         }
         Insert: {
@@ -1420,6 +1421,7 @@ export type Database = {
           replied_to_message_id?: string | null
           scheduled_at?: string | null
           status?: string | null
+          subject?: string | null
           thread_id?: string | null
         }
         Update: {
@@ -1438,6 +1440,7 @@ export type Database = {
           replied_to_message_id?: string | null
           scheduled_at?: string | null
           status?: string | null
+          subject?: string | null
           thread_id?: string | null
         }
         Relationships: [

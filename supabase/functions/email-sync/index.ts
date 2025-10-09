@@ -586,6 +586,7 @@ async function processIncomingEmail(
       conversation_id: conversation.id,
       customer_id: customer.id,
       content: email.html || email.body || email.subject,
+      subject: email.subject,
       direction: 'inbound',
       platform: 'email',
       channel: 'email',

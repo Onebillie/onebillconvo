@@ -460,18 +460,14 @@ async function processIncomingEmail(
     messageContent = email.html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
   }
   
-  // Prepend subject if exists
-  const fullContent = email.subject 
-    ? `Subject: ${email.subject}\n\n${messageContent}` 
-    : messageContent;
-  
   const { data: message, error: messageError } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversationId,
       customer_id: customerId,
       business_id: businessId,
-      content: fullContent.substring(0, 5000),
+      content: messageContent.substring(0, 5000),
+      subject: email.subject,
       direction: 'inbound',
       status: 'delivered',
       channel: 'email',
