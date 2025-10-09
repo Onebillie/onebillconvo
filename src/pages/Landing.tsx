@@ -603,18 +603,15 @@ ai.response.completed`}</code>
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-sm text-foreground/70">
-                <li>How to Manage WhatsApp Business</li>
-                <li>API Documentation</li>
-                <li>Pricing</li>
-                <li>Use Cases</li>
+                <li><a href="/pricing" className="hover:text-primary">Pricing</a></li>
+                <li><a href="/api-docs" className="hover:text-primary">API Docs</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
+              <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-foreground/70">
-                <li>Email: hello@alacartesaas.com</li>
-                <li>Knowledge Base</li>
-                <li>Contact Us</li>
+                <li><a href="/privacy" className="hover:text-primary">Privacy Policy</a></li>
+                <li><a href="/terms" className="hover:text-primary">Terms of Service</a></li>
               </ul>
             </div>
           </div>

@@ -54,6 +54,30 @@ serve(async (req) => {
       throw new Error('No active SMS account configured');
     }
 
+    // Check message limit
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('subscription_tier, message_count_current_period')
+      .eq('id', customer.business_id)
+      .single();
+
+    if (business) {
+      const limits: Record<string, number> = {
+        free: 0,
+        starter: 1000,
+        professional: 10000,
+        enterprise: 999999
+      };
+      const limit = limits[business.subscription_tier] || 0;
+
+      if (business.message_count_current_period >= limit) {
+        throw new Error(`Message limit reached. Upgrade your plan.`);
+      }
+
+      // Increment message count
+      await supabase.rpc('increment_message_count', { business_uuid: customer.business_id });
+    }
+
     // Send SMS via Twilio
     if (smsAccount.provider === 'twilio') {
       const accountSid = smsAccount.account_sid;

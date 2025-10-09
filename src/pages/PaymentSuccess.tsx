@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -12,16 +14,55 @@ export default function PaymentSuccess() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const sessionId = searchParams.get("session_id");
-    if (sessionId) {
-      // Give Stripe webhook time to process
-      setTimeout(async () => {
-        await checkSubscription();
+    const verifyPayment = async () => {
+      const sessionId = searchParams.get("session_id");
+
+      if (!sessionId) {
         setLoading(false);
-      }, 2000);
-    } else {
-      setLoading(false);
-    }
+        return;
+      }
+
+      try {
+        console.log('Verifying payment session:', sessionId);
+        const { data, error } = await supabase.functions.invoke('verify-payment-session', {
+          body: { session_id: sessionId }
+        });
+
+        if (error) throw error;
+
+        console.log('Payment verification:', data);
+
+        if (data.success && data.subscriptionActive) {
+          // Refresh subscription state
+          await checkSubscription();
+          toast({
+            title: "Payment Successful",
+            description: `Your ${data.tier} subscription is now active!`,
+          });
+        } else if (data.status === 'processing') {
+          // Poll again after a delay
+          setTimeout(verifyPayment, 3000);
+          return;
+        } else {
+          toast({
+            title: "Payment Issue",
+            description: "Your payment is being processed. Please check back shortly.",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error('Payment verification error:', error);
+        toast({
+          title: "Verification Error",
+          description: "Could not verify payment status. Please contact support.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyPayment();
   }, [searchParams, checkSubscription]);
 
   const handleContinue = () => {

@@ -109,6 +109,30 @@ serve(async (req) => {
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
 
+    // Check message limit
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('subscription_tier, message_count_current_period')
+      .eq('id', account.business_id)
+      .single();
+
+    if (business) {
+      const limits: Record<string, number> = {
+        free: 0, // Free tier: email receiving only, no sending
+        starter: 1000,
+        professional: 10000,
+        enterprise: 999999
+      };
+      const limit = limits[business.subscription_tier] || 0;
+
+      if (business.message_count_current_period >= limit) {
+        throw new Error(`Message limit reached. You've sent ${business.message_count_current_period}/${limit} messages this period. Upgrade your plan.`);
+      }
+
+      // Increment message count
+      await supabase.rpc('increment_message_count', { business_uuid: account.business_id });
+    }
+
     // Build HTML from template
     let htmlTemplate = settings?.email_html_template || `
 <!DOCTYPE html>

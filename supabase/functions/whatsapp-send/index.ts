@@ -81,6 +81,44 @@ serve(async (req) => {
       );
     }
 
+    // Check message limit
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('business_id')
+      .eq('phone', cleanPhoneNumber)
+      .single();
+
+    if (customer) {
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('subscription_tier, message_count_current_period')
+        .eq('id', customer.business_id)
+        .single();
+
+      if (business) {
+        const limits: Record<string, number> = {
+          free: 100,
+          starter: 1000,
+          professional: 10000,
+          enterprise: 999999
+        };
+        const limit = limits[business.subscription_tier] || 0;
+
+        if (business.message_count_current_period >= limit) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Message limit reached',
+              details: `You've reached your ${limit} message limit. Upgrade at ${req.headers.get('origin')}/pricing`
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Increment message count
+        await supabase.rpc('increment_message_count', { business_uuid: customer.business_id });
+      }
+    }
+
     if (!to) {
       return new Response(
         JSON.stringify({ error: 'Missing required field: to' }),

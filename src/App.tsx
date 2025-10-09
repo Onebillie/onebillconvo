@@ -15,6 +15,8 @@ import SignUp from "./pages/SignUp";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import ApiDocs from "./pages/ApiDocs";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
@@ -23,6 +25,7 @@ import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
+import { CookieConsent } from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +33,7 @@ function AppContent() {
   return (
     <>
       <AccountFrozenBanner />
+      <CookieConsent />
       <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -37,6 +41,8 @@ function AppContent() {
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/api-docs" element={<ApiDocs />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/app/onboarding" element={<Onboarding />} />
           
           {/* Customer Business App Routes */}
