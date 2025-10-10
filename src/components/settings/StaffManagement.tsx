@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Edit, CheckCircle, Mail } from "lucide-react";
+import { UserPlus, Trash2, Edit, CheckCircle, Mail, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Staff {
   id: string;
@@ -22,6 +24,7 @@ interface Staff {
 }
 
 export const StaffManagement = () => {
+  const { isSuperAdmin } = useAuth();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -218,6 +221,16 @@ export const StaffManagement = () => {
   };
 
   const handleUpdateRole = async (staffId: string, newRole: "agent" | "admin" | "superadmin") => {
+    // Only superadmins can modify roles
+    if (!isSuperAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only superadmins can modify user roles",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Delete existing role
       await supabase
@@ -241,7 +254,7 @@ export const StaffManagement = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update role",
+        description: error.message || "Failed to update role. Only superadmins can modify roles.",
         variant: "destructive",
       });
     }
@@ -279,7 +292,10 @@ export const StaffManagement = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Staff Management</CardTitle>
-            <CardDescription>Manage your team members and their roles</CardDescription>
+            <CardDescription>
+              Manage your team members and their roles
+              {!isSuperAdmin && " (Role changes require superadmin privileges)"}
+            </CardDescription>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -364,6 +380,14 @@ export const StaffManagement = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {!isSuperAdmin && (
+          <Alert className="mb-4 border-amber-500/20 bg-amber-500/10">
+            <Shield className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-600 dark:text-amber-400">
+              You can view staff members, but only superadmins can modify roles and permissions.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -386,19 +410,27 @@ export const StaffManagement = () => {
                   <Badge variant="outline">{member.department || 'Not set'}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={member.user_role || 'agent'}
-                    onValueChange={(value: "agent" | "admin" | "superadmin") => handleUpdateRole(member.id, value)}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="agent">Agent</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="superadmin">Super Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isSuperAdmin ? (
+                    <Select
+                      value={member.user_role || 'agent'}
+                      onValueChange={(value: "agent" | "admin" | "superadmin") => handleUpdateRole(member.id, value)}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="agent">Agent</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="superadmin">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="outline" className="gap-1">
+                      {member.user_role === 'superadmin' && <Shield className="w-3 h-3" />}
+                      {member.user_role === 'superadmin' ? 'Super Admin' : 
+                       member.user_role === 'admin' ? 'Admin' : 'Agent'}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   {member.email_confirmed_at ? (
