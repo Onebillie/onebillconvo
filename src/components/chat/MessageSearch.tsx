@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MessageSearchProps {
   searchTerm: string;
@@ -25,6 +26,7 @@ export const MessageSearch = ({
   onClose,
 }: MessageSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,42 +53,44 @@ export const MessageSearch = ({
   }, [searchTerm, onNext, onPrevious, onClear, onClose]);
 
   return (
-    <div className="flex items-center gap-2 p-2 border-b border-border bg-muted/30">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center gap-1 md:gap-2 p-2 border-b border-border bg-muted/30">
+      <div className="relative flex-1 min-w-0">
+        <Search className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
         <Input
           ref={inputRef}
           type="text"
-          placeholder="Search in conversation... (Ctrl+F)"
+          placeholder={isMobile ? "Search..." : "Search in conversation... (Ctrl+F)"}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 pr-4 h-9 bg-background"
+          className="pl-7 md:pl-9 pr-2 h-8 md:h-9 bg-background text-sm"
         />
       </div>
       
       {searchTerm && (
         <>
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {matchCount > 0 ? `${currentIndex + 1}/${matchCount}` : 'No matches'}
+          <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">
+            {matchCount > 0 ? `${currentIndex + 1}/${matchCount}` : 'None'}
           </span>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 md:gap-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={onPrevious}
               disabled={matchCount === 0}
-              className="h-8 w-8 p-0"
+              className="h-7 w-7 md:h-8 md:w-8 p-0"
+              title="Previous match"
             >
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onNext}
               disabled={matchCount === 0}
-              className="h-8 w-8 p-0"
+              className="h-7 w-7 md:h-8 md:w-8 p-0"
+              title="Next match"
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
             </Button>
           </div>
           <Button
@@ -96,9 +100,10 @@ export const MessageSearch = ({
               onClear();
               onClose?.();
             }}
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 md:h-8 md:w-8 p-0 flex-shrink-0"
+            title="Close search"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3 md:h-4 md:w-4" />
           </Button>
         </>
       )}

@@ -501,57 +501,192 @@ const Dashboard = () => {
               if (conversation) {
                 setSelectedConversation({
                   ...conversation,
-                  customer: conversation.customers,
+                  customer: conversation.customers as Customer,
                   status_tags: [],
-                  unread_count: 0,
                 });
               }
-              await fetchConversations();
             }}
           />
         </div>
       </div>
-
-      {/* Filters */}
-      <ConversationFilters 
-        onFilterChange={handleFilterChange} 
+      
+      <DuplicateContactsBanner />
+      
+      <ConversationFilters
+        onFilterChange={handleFilterChange}
         currentFilters={filters}
       />
 
-      {/* Duplicate Contacts Banner */}
-      <div className="px-4 py-2">
-        <DuplicateContactsBanner />
-      </div>
-
-      {/* Conversations List */}
+      {/* Contacts list */}
       <ScrollArea className="flex-1">
         <ContactList
           conversations={filteredConversations}
           selectedConversation={selectedConversation}
-          onSelectConversation={(conv) => {
-            setSelectedConversation(conv);
-            setShowContactDetails(false);
-          }}
-          contextMenu={(conversation) => (
-            <ConversationContextMenu
-              onAssign={() => {
-                setContextMenuConversation(conversation);
-                setAssignDialogOpen(true);
-              }}
-              onChangeStatus={() => {
-                setContextMenuConversation(conversation);
-                setStatusDialogOpen(true);
-              }}
-              onCreateTask={() => {
-                setContextMenuConversation(conversation);
-                setTaskDialogOpen(true);
-              }}
-              onDelete={() => handleDeleteConversation(conversation.id)}
-            />
-          )}
+          onSelectConversation={setSelectedConversation}
         />
       </ScrollArea>
     </div>
+  );
+
+  // Render chat area (shared between mobile and desktop)
+  const renderChatArea = () => (
+    <>
+      {selectedConversation ? (
+        <>
+          {/* Chat Header */}
+          <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
+            <div className="flex items-center justify-between gap-1 md:gap-2">
+              {isMobile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedConversation(null)}
+                  className="flex-shrink-0 h-8 w-8"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              )}
+              <div 
+                className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
+                onClick={() => setShowContactDetails(!showContactDetails)}
+              >
+                <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
+                  <AvatarImage src={selectedConversation.customer.avatar} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {selectedConversation.customer.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-xs md:text-base truncate">
+                    {selectedConversation.customer.name}
+                  </h2>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                    {selectedConversation.customer.phone}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                <AIToggle conversationId={selectedConversation.id} />
+                
+                <RefreshButton
+                  onRefresh={async () => {
+                    await fetchMessages(selectedConversation.id);
+                    await fetchConversations();
+                    toast({
+                      title: "Refreshed",
+                      description: "Messages updated"
+                    });
+                  }}
+                />
+                
+                <EmailSyncButton onSyncComplete={() => {
+                  if (selectedConversation) {
+                    fetchMessages(selectedConversation.id);
+                  }
+                  fetchConversations();
+                }} />
+                
+                {!isMobile && (
+                  <div className="hidden lg:block">
+                    <EnhancedTemplateSelector
+                      conversationId={selectedConversation.id}
+                      customerId={selectedConversation.customer.id}
+                      customerPhone={selectedConversation.customer.phone}
+                      customerEmail={selectedConversation.customer.email}
+                      onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                    />
+                  </div>
+                )}
+                
+                {!isMobile && (
+                  <div className="hidden xl:block w-48">
+                    <AdminAssignment
+                      conversationId={selectedConversation.id}
+                      currentAssignee={selectedConversation.assigned_to}
+                      onAssignmentChange={fetchConversations}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Mobile: Second row for additional controls */}
+            {isMobile && (
+              <div className="flex items-center gap-1 mt-1.5">
+                <div className="flex-1">
+                  <EnhancedTemplateSelector
+                    conversationId={selectedConversation.id}
+                    customerId={selectedConversation.customer.id}
+                    customerPhone={selectedConversation.customer.phone}
+                    customerEmail={selectedConversation.customer.email}
+                    onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <AdminAssignment
+                    conversationId={selectedConversation.id}
+                    currentAssignee={selectedConversation.assigned_to}
+                    onAssignmentChange={fetchConversations}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Messages area - scrollable middle section */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full flex flex-col">
+              <LimitReachedBanner />
+              <div className="flex-1 overflow-y-auto">
+                <MessageList
+                  messages={messages}
+                  onCreateTask={(message) => {
+                    setSelectedMessageForTask(message);
+                    setTaskDialogOpen(true);
+                  }}
+                  onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* AI Suggestions & Message Input - Fixed at bottom */}
+          <div className="flex-shrink-0 bg-background border-t shadow-sm">
+            <AIResponseSuggestions
+              conversationId={selectedConversation.id}
+              latestMessage={latestInboundMessage}
+              onSelectSuggestion={(suggestion) => {
+                setShowAISuggestions(false);
+              }}
+              isVisible={showAISuggestions}
+            />
+            <MessageInput
+              conversationId={selectedConversation.id}
+              customerId={selectedConversation.customer.id}
+              customerPhone={selectedConversation.customer.phone || ""}
+              customerEmail={selectedConversation.customer.email}
+              lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+              onMessageSent={() => {
+                fetchMessages(selectedConversation.id);
+                setShowAISuggestions(false);
+              }}
+              customer={selectedConversation.customer}
+              initialMessage=""
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-base md:text-lg font-medium text-muted-foreground">
+              Select a conversation to start messaging
+            </h3>
+          </div>
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -561,290 +696,155 @@ const Dashboard = () => {
         message="You have an unsaved message. Are you sure you want to leave?"
       />
       <div className="h-screen flex flex-col bg-background">
-      {/* Unified Resizable layout for all screen sizes */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        {/* Left: Conversations list - resizable and collapsible */}
-        <ResizablePanel 
-          defaultSize={isMobile ? 100 : 35} 
-          minSize={isMobile ? 35 : 22} 
-          maxSize={isMobile ? 100 : 45} 
-          collapsible
-          collapsedSize={0}
-          className={isMobile && selectedConversation ? "hidden" : ""}
-        >
-          <div className="h-full border-r border-border flex flex-col">
-            {/* Mobile Header */}
-            {isMobile && (
-              <div className="w-full border-b border-border flex-shrink-0">
-                <div className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <h1 className="text-sm font-semibold">Conversations</h1>
-                    {unreadCount > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setFilters({ 
-                            search: '',
-                            unread: true, 
-                            statusIds: [],
-                            dateRange: { from: null, to: null },
-                            sortBy: 'newest',
-                            platforms: [],
-                            assignedTo: null,
-                          });
-                        }}
-                        className="h-6 px-2 text-xs gap-1 ml-1"
-                      >
-                        <Bell className="w-3 h-3" />
-                        {unreadCount}
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <GlobalNotificationCenter />
-                    <TaskNotifications />
-                    {isAdmin && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-                        <SettingsIcon className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {conversationSidebar}
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle className={isMobile && !selectedConversation ? "hidden" : ""} />
-
-          {/* Center: Main Chat Area */}
-          <ResizablePanel minSize={35}>
-            <div className="h-full flex flex-col overflow-hidden">
-              {/* Pending Payment Banner */}
-              <div className="p-3 border-b border-border">
-                <PendingPaymentBanner />
-              </div>
-              
-              {selectedConversation ? (
-                <>
-                  {/* Chat Header */}
-                  <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
-                    <div className="flex items-center justify-between gap-1 md:gap-2">
-                      {isMobile && (
+        {isMobile ? (
+          /* Mobile: Simple toggle layout */
+          <div className="flex-1 min-h-0 flex flex-col">
+            {!selectedConversation ? (
+              /* Show conversation list on mobile */
+              <>
+                <div className="w-full border-b border-border flex-shrink-0">
+                  <div className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      <h1 className="text-sm font-semibold">Conversations</h1>
+                      {unreadCount > 0 && (
                         <Button
                           variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedConversation(null)}
-                          className="flex-shrink-0 h-8 w-8"
-                        >
-                          <ArrowLeft className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <div 
-                        className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
-                        onClick={() => setShowContactDetails(!showContactDetails)}
-                      >
-                        <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
-                          <AvatarImage src={selectedConversation.customer.avatar} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {selectedConversation.customer.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <h2 className="font-semibold text-xs md:text-base truncate">
-                            {selectedConversation.customer.name}
-                          </h2>
-                          <p className="text-[10px] md:text-xs text-muted-foreground truncate">
-                            {selectedConversation.customer.phone}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                        <AIToggle conversationId={selectedConversation.id} />
-                        
-                        <RefreshButton
-                          onRefresh={async () => {
-                            await fetchMessages(selectedConversation.id);
-                            await fetchConversations();
-                            toast({
-                              title: "Refreshed",
-                              description: "Messages updated"
+                          size="sm"
+                          onClick={() => {
+                            setFilters({ 
+                              search: '',
+                              unread: true, 
+                              statusIds: [],
+                              dateRange: { from: null, to: null },
+                              sortBy: 'newest',
+                              platforms: [],
+                              assignedTo: null,
                             });
                           }}
-                        />
-                        
-                        <EmailSyncButton onSyncComplete={() => {
-                          if (selectedConversation) {
-                            fetchMessages(selectedConversation.id);
-                          }
-                          fetchConversations();
-                        }} />
-                        
-                        <div className="hidden lg:block">
-                          <EnhancedTemplateSelector
-                            conversationId={selectedConversation.id}
-                            customerId={selectedConversation.customer.id}
-                            customerPhone={selectedConversation.customer.phone}
-                            customerEmail={selectedConversation.customer.email}
-                            onTemplateSent={() => fetchMessages(selectedConversation.id)}
-                          />
-                        </div>
-                        
-                        <div className="hidden xl:block w-48">
-                          <AdminAssignment
-                            conversationId={selectedConversation.id}
-                            currentAssignee={selectedConversation.assigned_to}
-                            onAssignmentChange={fetchConversations}
-                          />
-                        </div>
-                      </div>
+                          className="h-6 px-2 text-xs gap-1 ml-1"
+                        >
+                          <Bell className="w-3 h-3" />
+                          {unreadCount}
+                        </Button>
+                      )}
                     </div>
-                    
-                    {/* Mobile: Second row for additional controls */}
-                    <div className="flex lg:hidden items-center gap-1 mt-1.5">
-                      <div className="flex-1">
-                        <EnhancedTemplateSelector
-                          conversationId={selectedConversation.id}
-                          customerId={selectedConversation.customer.id}
-                          customerPhone={selectedConversation.customer.phone}
-                          customerEmail={selectedConversation.customer.email}
-                          onTemplateSent={() => fetchMessages(selectedConversation.id)}
-                        />
-                      </div>
-                      <div className="flex-1 xl:hidden">
-                        <AdminAssignment
-                          conversationId={selectedConversation.id}
-                          currentAssignee={selectedConversation.assigned_to}
-                          onAssignmentChange={fetchConversations}
-                        />
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <GlobalNotificationCenter />
+                      <TaskNotifications />
+                      {isAdmin && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+                          <SettingsIcon className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
+                        <LogOut className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
+                </div>
+                <div className="flex-1 min-h-0">
+                  {conversationSidebar}
+                </div>
+              </>
+            ) : (
+              /* Show selected conversation on mobile */
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="p-3 border-b border-border">
+                  <PendingPaymentBanner />
+                </div>
+                {renderChatArea()}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Desktop: Resizable layout */
+          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+            {/* Left: Conversations list */}
+            <ResizablePanel 
+              defaultSize={35} 
+              minSize={22} 
+              maxSize={45}
+            >
+              <div className="h-full border-r border-border flex flex-col">
+                {conversationSidebar}
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
 
-                  {/* Messages area - scrollable middle section */}
-                  <div className="flex-1 overflow-hidden">
-                    <div className="h-full flex flex-col">
-                      <LimitReachedBanner />
-                      <div className="flex-1 overflow-y-auto">
-                        <MessageList
-                          messages={messages}
-                          onCreateTask={(message) => {
-                            setSelectedMessageForTask(message);
-                            setTaskDialogOpen(true);
-                          }}
-                          onMessageUpdate={() => fetchMessages(selectedConversation.id)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* AI Suggestions & Message Input - Fixed at bottom */}
-                  <div className="flex-shrink-0 bg-background border-t shadow-sm">
-                    <AIResponseSuggestions
-                      conversationId={selectedConversation.id}
-                      latestMessage={latestInboundMessage}
-                      onSelectSuggestion={(suggestion) => {
-                        setShowAISuggestions(false);
-                      }}
-                      isVisible={showAISuggestions}
-                    />
-                    <MessageInput
-                      conversationId={selectedConversation.id}
-                      customerId={selectedConversation.customer.id}
-                      customerPhone={selectedConversation.customer.phone || ""}
-                      customerEmail={selectedConversation.customer.email}
-                      lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
-                      onMessageSent={() => {
-                        fetchMessages(selectedConversation.id);
-                        setShowAISuggestions(false);
-                      }}
+            {/* Center: Main Chat Area */}
+            <ResizablePanel minSize={35}>
+              <div className="h-full flex flex-col overflow-hidden">
+                <div className="p-3 border-b border-border">
+                  <PendingPaymentBanner />
+                </div>
+                {renderChatArea()}
+              </div>
+            </ResizablePanel>
+
+            {/* Right: Contact details (optional, desktop only) */}
+            {showContactDetails && selectedConversation && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={25} minSize={18} maxSize={40} collapsible>
+                  <div className="h-full border-l border-border overflow-y-auto">
+                    <ContactDetails
                       customer={selectedConversation.customer}
-                      initialMessage=""
+                      onUpdate={fetchConversations}
                     />
                   </div>
-                </>
-              ) : (
-                 <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="text-center">
-                    <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-base md:text-lg font-medium text-muted-foreground">
-                      Select a conversation to start messaging
-                    </h3>
-                  </div>
-                </div>
-              )}
-            </div>
-          </ResizablePanel>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+        )}
 
-          {/* Right: Contact details (optional) */}
-          {showContactDetails && selectedConversation && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={25} minSize={18} maxSize={40} collapsible>
-                <div className="h-full border-l border-border overflow-y-auto">
-                  <ContactDetails
-                    customer={selectedConversation.customer}
-                    onUpdate={fetchConversations}
-                  />
-                </div>
-              </ResizablePanel>
-            </>
-          )}
-        </ResizablePanelGroup>
-
-
-      {/* Dialogs */}
-      {contextMenuConversation && (
-        <>
-          <AssignDialog
-            open={assignDialogOpen}
-            onOpenChange={setAssignDialogOpen}
-            conversationId={contextMenuConversation.id}
-            currentAssignedTo={contextMenuConversation.assigned_to || undefined}
-            onAssignmentChange={() => {
-              fetchConversations();
-              if (selectedConversation?.id === contextMenuConversation.id) {
-                setSelectedConversation({ ...contextMenuConversation });
-              }
-            }}
-          />
-          {/* Multi Status Dialog */}
-          <MultiStatusDialog
-            open={statusDialogOpen}
-            onOpenChange={setStatusDialogOpen}
-            conversationId={contextMenuConversation.id}
-            currentStatuses={contextMenuConversation.status_tags?.map(t => t.id) || []}
-            onStatusChange={fetchConversations}
-          />
-        </>
-      )}
-      
-      <TaskDialog
-        open={taskDialogOpen}
-        onOpenChange={(open) => {
-          setTaskDialogOpen(open);
-          if (!open) {
-            setSelectedMessageForTask(null);
-            setContextMenuConversation(null);
-          }
-        }}
-        conversationId={contextMenuConversation?.id || selectedConversation?.id}
-        customerId={contextMenuConversation?.customer_id || selectedConversation?.customer_id}
-        messageId={selectedMessageForTask?.id}
-        messageContent={selectedMessageForTask?.content}
-        onTaskCreated={() => {
-          toast({
-            title: "Task Created",
-            description: "The task has been created successfully",
-          });
-        }}
-      />
+        {/* Dialogs */}
+        {contextMenuConversation && (
+          <>
+            <AssignDialog
+              open={assignDialogOpen}
+              onOpenChange={setAssignDialogOpen}
+              conversationId={contextMenuConversation.id}
+              currentAssignedTo={contextMenuConversation.assigned_to || undefined}
+              onAssignmentChange={() => {
+                fetchConversations();
+                if (selectedConversation?.id === contextMenuConversation.id) {
+                  setSelectedConversation({ ...contextMenuConversation });
+                }
+              }}
+            />
+            {/* Multi Status Dialog */}
+            <MultiStatusDialog
+              open={statusDialogOpen}
+              onOpenChange={setStatusDialogOpen}
+              conversationId={contextMenuConversation.id}
+              currentStatuses={contextMenuConversation.status_tags?.map(t => t.id) || []}
+              onStatusChange={fetchConversations}
+            />
+          </>
+        )}
+        
+        <TaskDialog
+          open={taskDialogOpen}
+          onOpenChange={(open) => {
+            setTaskDialogOpen(open);
+            if (!open) {
+              setSelectedMessageForTask(null);
+              setContextMenuConversation(null);
+            }
+          }}
+          conversationId={contextMenuConversation?.id || selectedConversation?.id}
+          customerId={contextMenuConversation?.customer_id || selectedConversation?.customer_id}
+          messageId={selectedMessageForTask?.id}
+          messageContent={selectedMessageForTask?.content}
+          onTaskCreated={() => {
+            toast({
+              title: "Task Created",
+              description: "The task has been created successfully",
+            });
+          }}
+        />
       </div>
     </>
   );
