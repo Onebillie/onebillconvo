@@ -121,7 +121,8 @@ serve(async (req) => {
         };
         const limit = limits[business.subscription_tier] || 0;
 
-        if (business.message_count_current_period >= limit) {
+        const currentCount = business.message_count_current_period || 0;
+        if (currentCount >= limit) {
           return new Response(
             JSON.stringify({ 
               error: 'Message limit reached',

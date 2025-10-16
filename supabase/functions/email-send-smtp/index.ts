@@ -118,7 +118,7 @@ serve(async (req) => {
 
     if (business) {
       const limits: Record<string, number> = {
-        free: 0, // Free tier: email receiving only, no sending
+        free: 100,
         starter: 1000,
         professional: 10000,
         enterprise: 999999
