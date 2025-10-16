@@ -98,12 +98,14 @@ serve(async (req) => {
     // Clean phone number (remove + and leading zeros)
     const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
 
-    // Check message limit
+    // Check message limit (but don't increment yet - will do after success)
     const { data: customerForLimit } = await supabase
       .from('customers')
       .select('business_id')
       .eq('phone', cleanPhoneNumber)
       .single();
+
+    let businessIdForIncrement: string | null = null;
 
     if (customerForLimit) {
       const { data: business } = await supabase
@@ -125,9 +127,12 @@ serve(async (req) => {
 
           const currentCount = business.message_count_current_period || 0;
           if (currentCount >= limit) {
+            console.log(`Message limit reached for business ${customerForLimit.business_id}: ${currentCount}/${limit}`);
             return new Response(
               JSON.stringify({ 
                 error: 'Message limit reached',
+                code: 'LIMIT_REACHED',
+                title: 'Message Limit Exceeded',
                 details: `You've reached your ${limit} message limit. Upgrade at ${req.headers.get('origin')}/pricing`
               }),
               { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -135,8 +140,8 @@ serve(async (req) => {
           }
         }
 
-        // Increment message count
-        await supabase.rpc('increment_message_count', { business_uuid: customerForLimit.business_id });
+        // Store business_id to increment after successful send
+        businessIdForIncrement = customerForLimit.business_id;
       }
     }
 
@@ -226,12 +231,32 @@ serve(async (req) => {
     const responseData = await whatsappResponse.json();
 
     if (!whatsappResponse.ok) {
-      console.error('WhatsApp API error:', responseData);
+      const errorCode = responseData?.error?.code || 'UNKNOWN';
+      const errorMessage = responseData?.error?.message || 'Unknown error';
+      console.error('WhatsApp API error:', {
+        to: cleanPhoneNumber,
+        accountId,
+        conversationId: conversation_id,
+        errorCode,
+        errorMessage,
+        fullResponse: responseData
+      });
       console.error('Request payload:', JSON.stringify(whatsappPayload, null, 2));
       return new Response(
-        JSON.stringify({ error: 'Failed to send message', details: responseData }),
+        JSON.stringify({ 
+          error: 'Failed to send WhatsApp message',
+          code: errorCode,
+          title: 'WhatsApp Send Failed',
+          details: responseData
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Increment message count only after successful send
+    if (businessIdForIncrement) {
+      console.log(`Incrementing message count for business: ${businessIdForIncrement}`);
+      await supabase.rpc('increment_message_count', { business_uuid: businessIdForIncrement });
     }
 
     // Find customer and conversation

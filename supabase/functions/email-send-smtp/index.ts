@@ -109,12 +109,14 @@ serve(async (req) => {
       throw new Error(`Email account not found: ${accountError?.message}`);
     }
 
-    // Check message limit
+    // Check message limit (but don't increment yet - will do after success)
     const { data: business } = await supabase
       .from('businesses')
       .select('subscription_tier, message_count_current_period, is_unlimited')
       .eq('id', account.business_id)
       .single();
+
+    let businessIdForIncrement: string | null = null;
 
     if (business) {
       // Skip limit check for unlimited accounts
@@ -126,14 +128,22 @@ serve(async (req) => {
           enterprise: 999999
         };
         const limit = limits[business.subscription_tier] || 0;
+        const currentCount = business.message_count_current_period || 0;
 
-        if (business.message_count_current_period >= limit) {
-          throw new Error(`Message limit reached. You've sent ${business.message_count_current_period}/${limit} messages this period. Upgrade your plan.`);
+        if (currentCount >= limit) {
+          console.error(`Message limit reached for business ${account.business_id}: ${currentCount}/${limit}`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Message limit reached',
+              details: `You've sent ${currentCount}/${limit} messages this period. Upgrade your plan.`
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
       }
 
-      // Increment message count
-      await supabase.rpc('increment_message_count', { business_uuid: account.business_id });
+      // Store business_id to increment after successful send
+      businessIdForIncrement = account.business_id;
     }
 
     // Build HTML from template
@@ -225,6 +235,12 @@ serve(async (req) => {
       throw new Error('Failed to send email via SMTP');
     }
 
+    // Increment message count only after successful send
+    if (businessIdForIncrement) {
+      console.log(`Incrementing message count for business: ${businessIdForIncrement}`);
+      await supabase.rpc('increment_message_count', { business_uuid: businessIdForIncrement });
+    }
+
     // Update the most recent pending message to 'sent' (instead of inserting a new one)
     // This prevents duplicate messages from appearing in the chat
     const { data: pendingMessage, error: fetchError } = await supabase
@@ -312,11 +328,22 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error in email-send-smtp function:', error);
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.error(`[${requestId}] Error in email-send-smtp function:`, error);
+    
+    // Determine if this is a known error type
+    const isKnownError = error.message.includes('limit reached') || 
+                         error.message.includes('account not found') ||
+                         error.message.includes('SMTP');
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack,
+        requestId
+      }),
       { 
-        status: 500, 
+        status: isKnownError ? 400 : 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );

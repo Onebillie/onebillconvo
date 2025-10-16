@@ -1,9 +1,9 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 import { Conversation } from "@/types/chat";
-import { Mail, MessageSquare } from "lucide-react";
+import { Mail, MessageSquare, Edit3 } from "lucide-react";
 
 interface ConversationListItemProps {
   conversation: Conversation;
@@ -41,6 +41,16 @@ export const ConversationListItem = memo(({
   onSelect,
   contextMenu,
 }: ConversationListItemProps) => {
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    // Check if draft exists for this conversation
+    if (typeof window !== 'undefined') {
+      const draft = sessionStorage.getItem(`message-draft-${conversation.id}`);
+      setHasDraft(!!draft && draft.trim().length > 0);
+    }
+  }, [conversation.id]);
+
   return (
     <div
       className={`px-3 py-2.5 cursor-pointer transition-all border-b border-border/30 hover:shadow-sm ${
@@ -83,8 +93,13 @@ export const ConversationListItem = memo(({
             )}
           </div>
 
-          {/* Message preview */}
-          {conversation.last_message && (
+          {/* Message preview or draft indicator */}
+          {hasDraft ? (
+            <div className="flex items-center gap-1 mb-1">
+              <Edit3 className="w-3 h-3 text-orange-500 flex-shrink-0" />
+              <p className="text-[10px] text-orange-500 font-medium">Draft</p>
+            </div>
+          ) : conversation.last_message ? (
             <div className="flex items-center gap-1 mb-1">
               {conversation.last_message.platform === 'email' && (
                 <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -100,7 +115,7 @@ export const ConversationListItem = memo(({
                 {conversation.last_message.content.length > 50 && '...'}
               </p>
             </div>
-          )}
+          ) : null}
           
           {/* Status tags row */}
           {conversation.status_tags && conversation.status_tags.length > 0 && (

@@ -66,12 +66,14 @@ export const MessageInput = ({
     };
   }, [newMessage, storageKey]);
 
-  // Update message when initialMessage prop changes
+  // Load draft when conversationId changes
   useEffect(() => {
-    if (initialMessage && !newMessage) {
-      setNewMessage(initialMessage);
-    }
-  }, [initialMessage]);
+    const saved = sessionStorage.getItem(storageKey);
+    setNewMessage(saved || initialMessage || "");
+    setAttachments([]);
+    setVoiceNote(null);
+    setSendVia(lastContactMethod || "whatsapp");
+  }, [conversationId, storageKey, initialMessage, lastContactMethod]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -272,9 +274,29 @@ export const MessageInput = ({
         description: `Your message has been sent via ${sendVia}.`,
       });
     } catch (error: any) {
+      console.error("Send message error:", error);
+      
+      // Try to parse detailed error from function response
+      let errorTitle = "Error";
+      let errorDescription = "Failed to send message";
+      
+      try {
+        // Check if error has context body (from Supabase function invoke)
+        if (error.context?.body) {
+          const parsed = JSON.parse(error.context.body);
+          errorTitle = parsed.title || parsed.code || "Error";
+          errorDescription = parsed.details?.error?.message || parsed.error || parsed.details || error.message;
+        } else if (error.message) {
+          errorDescription = error.message;
+        }
+      } catch (parseError) {
+        // Fallback to original error
+        errorDescription = error.message || "Failed to send message";
+      }
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {
