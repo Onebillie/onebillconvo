@@ -46,10 +46,28 @@ export const TemplateSelector = ({
         templateLanguage: template.language || "en",
       };
 
-      // Only add templateVariables if template actually has variables
-      // DO NOT send empty array for templates without variables
-      if (hasVariables) {
-        payload.templateVariables = [];
+      // If template has variables, collect them from the user in order {{1}}, {{2}}, ...
+      if (hasVariables && variableMatches) {
+        // Collect unique, sorted variable indices
+        const indices = Array.from(new Set(variableMatches.map((v) => parseInt(v.replace(/\{|\}/g, ""), 10))))
+          .sort((a, b) => a - b);
+
+        const values: string[] = [];
+        for (const idx of indices) {
+          const val = window.prompt(`Enter value for {{${idx}}}`, "");
+          if (!val) {
+            toast({
+              title: "Template variables required",
+              description: `You must provide a value for {{${idx}}} to send this template.`,
+              variant: "destructive",
+            });
+            setSending(null);
+            return;
+          }
+          values.push(val);
+        }
+
+        payload.templateVariables = values;
       }
 
       const { error } = await supabase.functions.invoke("whatsapp-send", {

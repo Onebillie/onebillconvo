@@ -87,18 +87,37 @@ export const EnhancedTemplateSelector = ({
           throw new Error("Customer phone number not available");
         }
         
-        // Extract metadata for WhatsApp templates
-        const metadata = template.variables as any;
-        const templateName = metadata?.meta_template_name;
-        const templateLanguage = metadata?.template_language || 'en';
+        // Detect variables in template content like {{1}}, {{2}}, ...
+        const variableMatches = (template.content || '').match(/\{\{(\d+)\}\}/g);
+        const hasVariables = variableMatches && variableMatches.length > 0;
+
+        const payload: any = {
+          to: customerPhone,
+          templateName: (template.variables as any)?.meta_template_name || template.name,
+          templateLanguage: (template.variables as any)?.template_language || 'en',
+        };
+
+        if (hasVariables && variableMatches) {
+          const indices = Array.from(new Set(variableMatches.map((v) => parseInt(v.replace(/\{|\}/g, ''), 10)))).sort((a,b)=>a-b);
+          const values: string[] = [];
+          for (const idx of indices) {
+            const val = window.prompt(`Enter value for {{${idx}}}`, '');
+            if (!val) {
+              toast({
+                title: 'Template variables required',
+                description: `You must provide a value for {{${idx}}} to send this template.`,
+                variant: 'destructive',
+              });
+              setSending(null);
+              return;
+            }
+            values.push(val);
+          }
+          payload.templateVariables = values;
+        }
         
         const { error } = await supabase.functions.invoke("whatsapp-send", {
-          body: {
-            to: customerPhone,
-            message: template.content,
-            templateName: templateName,
-            templateLanguage: templateLanguage,
-          },
+          body: payload,
         });
 
         if (error) throw error;
