@@ -13,7 +13,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.whatsapp-send]
-verify_jwt = true
+verify_jwt = false
 
 [functions.whatsapp-templates]
 verify_jwt = true
@@ -28,7 +28,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.email-send-smtp]
-verify_jwt = true
+verify_jwt = false
 
 [functions.email-sync]
 verify_jwt = false
