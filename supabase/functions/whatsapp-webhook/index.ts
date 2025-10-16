@@ -127,17 +127,20 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
   let whatsappAccountId = accountId;
   let businessId = null;
   
-  // If no account_id provided, try to find default account
+  // If no account_id provided, try to find default account (deterministic)
   if (!whatsappAccountId) {
     const { data: defaultAccount } = await supabase
       .from('whatsapp_accounts')
-      .select('id, business_id')
+      .select('id, business_id, created_at')
       .eq('is_default', true)
       .eq('is_active', true)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     
     whatsappAccountId = defaultAccount?.id;
     businessId = defaultAccount?.business_id;
+    console.log(`Using default WhatsApp account for webhook: ${whatsappAccountId}`);
   } else {
     // Get business_id for the specified account
     const { data: account } = await supabase

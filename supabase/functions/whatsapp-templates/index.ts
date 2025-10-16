@@ -41,19 +41,21 @@ serve(async (req) => {
       }
     }
 
-    // Fall back to default account if not found
+    // Fall back to default account if not found (deterministic)
     if (!accessToken || !businessAccountId) {
       const { data: defaultAccount } = await supabase
         .from('whatsapp_accounts')
-        .select('access_token, business_account_id, is_active')
+        .select('access_token, business_account_id, is_active, created_at')
         .eq('is_default', true)
         .eq('is_active', true)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (defaultAccount) {
         accessToken = defaultAccount.access_token;
         businessAccountId = defaultAccount.business_account_id;
-        console.log('Using default WhatsApp account');
+        console.log('Using default WhatsApp account for templates');
       }
     }
 

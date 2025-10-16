@@ -44,10 +44,23 @@ export const ConversationListItem = memo(({
   const [hasDraft, setHasDraft] = useState(false);
 
   useEffect(() => {
-    // Check if draft exists for this conversation
     if (typeof window !== 'undefined') {
+      // Initial check for draft
       const draft = sessionStorage.getItem(`message-draft-${conversation.id}`);
-      setHasDraft(!!draft && draft.trim().length > 0);
+      setHasDraft(!!draft?.trim());
+      
+      // Listen for draft changes
+      const handleDraftChange = (event: CustomEvent) => {
+        if (event.detail.conversationId === conversation.id) {
+          setHasDraft(event.detail.hasDraft);
+        }
+      };
+      
+      window.addEventListener('draft-changed', handleDraftChange as EventListener);
+      
+      return () => {
+        window.removeEventListener('draft-changed', handleDraftChange as EventListener);
+      };
     }
   }, [conversation.id]);
 

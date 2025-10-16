@@ -17,6 +17,7 @@ serve(async (req) => {
   }
 
   try {
+    const requestId = `whatsapp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const { to, message, attachments, whatsapp_account_id, conversation_id, templateName, templateLanguage, templateVariables } = await req.json();
 
     const supabase = createClient(
@@ -24,62 +25,90 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Get WhatsApp account credentials with deterministic selection
     let accessToken: string | null = null;
     let phoneNumberId: string | null = null;
-    let accountId = whatsapp_account_id;
+    let whatsappAccountId: string | null = null;
+    let businessId: string | null = null;
 
-    // If no account_id provided but conversation_id is, fetch from conversation
-    if (!accountId && conversation_id) {
+    // Priority 1: Get from conversation if conversation_id provided
+    if (conversation_id) {
       const { data: conversation } = await supabase
         .from('conversations')
         .select('whatsapp_account_id, business_id')
         .eq('id', conversation_id)
-        .single();
-      
-      accountId = conversation?.whatsapp_account_id;
+        .maybeSingle();
+
+      if (conversation?.whatsapp_account_id) {
+        const { data: account } = await supabase
+          .from('whatsapp_accounts')
+          .select('id, access_token, phone_number_id, is_active')
+          .eq('id', conversation.whatsapp_account_id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (account) {
+          accessToken = account.access_token;
+          phoneNumberId = account.phone_number_id;
+          whatsappAccountId = account.id;
+          businessId = conversation.business_id;
+          console.log(`[${requestId}] Using WhatsApp account from conversation: ${whatsappAccountId}`);
+        }
+      }
     }
 
-    // If we have an account_id, fetch credentials from database
-    if (accountId) {
-      const { data: account, error: accountError } = await supabase
+    // Priority 2: Use specified whatsapp_account_id
+    if (!accessToken && whatsapp_account_id) {
+      const { data: account } = await supabase
         .from('whatsapp_accounts')
-        .select('access_token, phone_number_id, is_active')
-        .eq('id', accountId)
+        .select('id, access_token, phone_number_id, is_active, business_id')
+        .eq('id', whatsapp_account_id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (account) {
         accessToken = account.access_token;
         phoneNumberId = account.phone_number_id;
-        console.log('Using account-specific credentials for account:', accountId);
+        whatsappAccountId = account.id;
+        businessId = account.business_id;
+        console.log(`[${requestId}] Using specified WhatsApp account: ${whatsappAccountId}`);
       }
     }
 
-    // Fall back to default account if no specific account found
+    // Priority 3: Fall back to default account (deterministic: most recently created)
     if (!accessToken || !phoneNumberId) {
       const { data: defaultAccount } = await supabase
         .from('whatsapp_accounts')
-        .select('access_token, phone_number_id, is_active, id')
+        .select('id, access_token, phone_number_id, is_active, business_id, created_at')
         .eq('is_default', true)
         .eq('is_active', true)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (defaultAccount) {
         accessToken = defaultAccount.access_token;
         phoneNumberId = defaultAccount.phone_number_id;
-        accountId = defaultAccount.id;
-        console.log('Using default WhatsApp account');
+        whatsappAccountId = defaultAccount.id;
+        businessId = businessId || defaultAccount.business_id;
+        console.log(`[${requestId}] Using default WhatsApp account: ${whatsappAccountId}`);
       }
     }
 
     if (!accessToken || !phoneNumberId) {
+      console.error(`[${requestId}] No WhatsApp credentials found. conversation_id: ${conversation_id}, whatsapp_account_id: ${whatsapp_account_id}, to: ${to}`);
       return new Response(
         JSON.stringify({ 
-          error: 'No WhatsApp account configured. Please add a WhatsApp account in Settings > WA Accounts.' 
+          error: 'No active WhatsApp account found',
+          code: 'NO_WHATSAPP_ACCOUNT',
+          title: 'WhatsApp Not Configured',
+          details: 'Please configure a WhatsApp account in Settings > WA Accounts and ensure it is set as default.'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`[${requestId}] Using WhatsApp account: ${whatsappAccountId}, to: ${to}, conversation_id: ${conversation_id || 'none'}, templateName: ${templateName || 'none'}`);
 
     if (!to) {
       return new Response(
@@ -103,11 +132,12 @@ serve(async (req) => {
       .from('customers')
       .select('business_id')
       .eq('phone', cleanPhoneNumber)
-      .single();
+      .maybeSingle();
 
-    let businessIdForIncrement: string | null = null;
+    let businessIdForIncrement: string | null = businessId;
 
     if (customerForLimit) {
+      businessIdForIncrement = customerForLimit.business_id;
       const { data: business } = await supabase
         .from('businesses')
         .select('subscription_tier, message_count_current_period, is_unlimited')
@@ -127,21 +157,18 @@ serve(async (req) => {
 
           const currentCount = business.message_count_current_period || 0;
           if (currentCount >= limit) {
-            console.log(`Message limit reached for business ${customerForLimit.business_id}: ${currentCount}/${limit}`);
+            console.log(`[${requestId}] Message limit reached for business ${customerForLimit.business_id}: ${currentCount}/${limit}`);
             return new Response(
               JSON.stringify({ 
                 error: 'Message limit reached',
                 code: 'LIMIT_REACHED',
                 title: 'Message Limit Exceeded',
-                details: `You've reached your ${limit} message limit. Upgrade at ${req.headers.get('origin')}/pricing`
+                details: `You've reached your ${limit} message limit. Upgrade your plan to continue sending.`
               }),
               { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
         }
-
-        // Store business_id to increment after successful send
-        businessIdForIncrement = customerForLimit.business_id;
       }
     }
 
@@ -233,18 +260,18 @@ serve(async (req) => {
     if (!whatsappResponse.ok) {
       const errorCode = responseData?.error?.code || 'UNKNOWN';
       const errorMessage = responseData?.error?.message || 'Unknown error';
-      console.error('WhatsApp API error:', {
+      console.error(`[${requestId}] WhatsApp API error:`, {
         to: cleanPhoneNumber,
-        accountId,
+        accountId: whatsappAccountId,
         conversationId: conversation_id,
         errorCode,
         errorMessage,
-        fullResponse: responseData
+        fullResponse: JSON.stringify(responseData)
       });
-      console.error('Request payload:', JSON.stringify(whatsappPayload, null, 2));
+      console.error(`[${requestId}] Request payload:`, JSON.stringify(whatsappPayload, null, 2));
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to send WhatsApp message',
+          error: `Meta API Error: ${errorMessage}`,
           code: errorCode,
           title: 'WhatsApp Send Failed',
           details: responseData
@@ -255,8 +282,10 @@ serve(async (req) => {
 
     // Increment message count only after successful send
     if (businessIdForIncrement) {
-      console.log(`Incrementing message count for business: ${businessIdForIncrement}`);
+      console.log(`[${requestId}] Incrementing message count for business: ${businessIdForIncrement}`);
       await supabase.rpc('increment_message_count', { business_uuid: businessIdForIncrement });
+    } else {
+      console.log(`[${requestId}] No business_id found for message count increment`);
     }
 
     // Find customer and conversation
@@ -281,12 +310,12 @@ serve(async (req) => {
       }
 
       if (!conversation) {
-        const { data: newConv, error: newConvError } = await supabase
+          const { data: newConv, error: newConvError } = await supabase
           .from('conversations')
           .insert({ 
             customer_id: customer.id, 
             status: 'active',
-            whatsapp_account_id: accountId,
+            whatsapp_account_id: whatsappAccountId,
             business_id: customer.business_id
           })
           .select()

@@ -45,17 +45,24 @@ export const MessageInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Auto-save message to sessionStorage with debounce
+  // Auto-save draft and dispatch event
   useEffect(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
     saveTimeoutRef.current = setTimeout(() => {
-      if (newMessage.trim()) {
+      const trimmed = newMessage.trim();
+      if (trimmed) {
         sessionStorage.setItem(storageKey, newMessage);
+        window.dispatchEvent(new CustomEvent('draft-changed', { 
+          detail: { conversationId, hasDraft: true } 
+        }));
       } else {
         sessionStorage.removeItem(storageKey);
+        window.dispatchEvent(new CustomEvent('draft-changed', { 
+          detail: { conversationId, hasDraft: false } 
+        }));
       }
     }, 500);
 
@@ -64,14 +71,16 @@ export const MessageInput = ({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [newMessage, storageKey]);
+  }, [newMessage, storageKey, conversationId]);
 
-  // Load draft when conversationId changes
+  // Load draft and reset state on conversation change
   useEffect(() => {
     const saved = sessionStorage.getItem(storageKey);
     setNewMessage(saved || initialMessage || "");
+    // Clear attachments and voice notes when switching conversations
     setAttachments([]);
     setVoiceNote(null);
+    // Reset channel based on customer's last contact method
     setSendVia(lastContactMethod || "whatsapp");
   }, [conversationId, storageKey, initialMessage, lastContactMethod]);
 
@@ -252,21 +261,64 @@ export const MessageInput = ({
           }
 
         // Send message via WhatsApp API
-        const { error } = await supabase.functions.invoke("whatsapp-send", {
+        const { data, error } = await supabase.functions.invoke("whatsapp-send", {
           body: {
             to: customerPhone,
             message: processedMessage,
             attachments: attachmentUrls,
+            conversation_id: conversationId,
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error sending WhatsApp message:', error);
+          // Try to parse detailed error from function response
+          let errorTitle = "Failed to send WhatsApp message";
+          let errorDetails = error.message || "Please try again";
+          
+          try {
+            if (error.context?.body) {
+              const errorBody = typeof error.context.body === 'string' 
+                ? JSON.parse(error.context.body) 
+                : error.context.body;
+              
+              if (errorBody.title) errorTitle = errorBody.title;
+              if (errorBody.details) {
+                // Check if details is an object with error.message
+                if (typeof errorBody.details === 'object' && errorBody.details.error?.message) {
+                  errorDetails = errorBody.details.error.message;
+                } else if (typeof errorBody.details === 'string') {
+                  errorDetails = errorBody.details;
+                } else {
+                  errorDetails = JSON.stringify(errorBody.details);
+                }
+              } else if (errorBody.error) {
+                errorDetails = errorBody.error;
+              }
+              
+              console.error('WhatsApp API error details:', errorBody);
+            }
+          } catch (parseError) {
+            console.error('Could not parse error details:', parseError);
+          }
+          
+          toast({
+            title: errorTitle,
+            description: errorDetails,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       setNewMessage("");
       setAttachments([]);
       setVoiceNote(null);
       sessionStorage.removeItem(storageKey); // Clear saved draft
+      // Dispatch draft-changed event to update UI
+      window.dispatchEvent(new CustomEvent('draft-changed', { 
+        detail: { conversationId, hasDraft: false } 
+      }));
       onMessageSent();
       
       toast({
