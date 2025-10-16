@@ -112,21 +112,24 @@ serve(async (req) => {
     // Check message limit
     const { data: business } = await supabase
       .from('businesses')
-      .select('subscription_tier, message_count_current_period')
+      .select('subscription_tier, message_count_current_period, is_unlimited')
       .eq('id', account.business_id)
       .single();
 
     if (business) {
-      const limits: Record<string, number> = {
-        free: 100,
-        starter: 1000,
-        professional: 10000,
-        enterprise: 999999
-      };
-      const limit = limits[business.subscription_tier] || 0;
+      // Skip limit check for unlimited accounts
+      if (!business.is_unlimited) {
+        const limits: Record<string, number> = {
+          free: 100,
+          starter: 1000,
+          professional: 10000,
+          enterprise: 999999
+        };
+        const limit = limits[business.subscription_tier] || 0;
 
-      if (business.message_count_current_period >= limit) {
-        throw new Error(`Message limit reached. You've sent ${business.message_count_current_period}/${limit} messages this period. Upgrade your plan.`);
+        if (business.message_count_current_period >= limit) {
+          throw new Error(`Message limit reached. You've sent ${business.message_count_current_period}/${limit} messages this period. Upgrade your plan.`);
+        }
       }
 
       // Increment message count

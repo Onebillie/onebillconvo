@@ -505,6 +505,7 @@ export type Database = {
           grace_period_end: string | null
           id: string
           is_frozen: boolean | null
+          is_unlimited: boolean | null
           message_count_current_period: number | null
           name: string
           onboarding_completed: boolean | null
@@ -531,6 +532,7 @@ export type Database = {
           grace_period_end?: string | null
           id?: string
           is_frozen?: boolean | null
+          is_unlimited?: boolean | null
           message_count_current_period?: number | null
           name: string
           onboarding_completed?: boolean | null
@@ -557,6 +559,7 @@ export type Database = {
           grace_period_end?: string | null
           id?: string
           is_frozen?: boolean | null
+          is_unlimited?: boolean | null
           message_count_current_period?: number | null
           name?: string
           onboarding_completed?: boolean | null
@@ -1022,6 +1025,68 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_bundles: {
+        Row: {
+          created_at: string | null
+          credits: number
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      credit_warnings: {
+        Row: {
+          business_id: string | null
+          id: string
+          sent_at: string | null
+          threshold_percent: number
+          warning_type: string
+        }
+        Insert: {
+          business_id?: string | null
+          id?: string
+          sent_at?: string | null
+          threshold_percent: number
+          warning_type: string
+        }
+        Update: {
+          business_id?: string | null
+          id?: string
+          sent_at?: string | null
+          threshold_percent?: number
+          warning_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_warnings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1850,6 +1915,45 @@ export type Database = {
           total_cost?: number | null
           updated_at?: string | null
           whatsapp_api_cost?: number | null
+        }
+        Relationships: []
+      }
+      pricing_config: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          message_limit: number
+          monthly_price: number
+          seat_limit: number
+          tier: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          message_limit?: number
+          monthly_price?: number
+          seat_limit?: number
+          tier: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          message_limit?: number
+          monthly_price?: number
+          seat_limit?: number
+          tier?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

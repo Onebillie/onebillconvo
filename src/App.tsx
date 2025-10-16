@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CreditWarningDialog } from "./components/CreditWarningDialog";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +26,7 @@ import UsersManagement from "./pages/admin/UsersManagement";
 import SystemHealth from "./pages/admin/SystemHealth";
 import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import PricingConfiguration from "./pages/admin/PricingConfiguration";
+import PricingConfig from "./pages/admin/PricingConfig";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
@@ -37,6 +39,7 @@ function AppContent() {
     <>
       <AccountFrozenBanner />
       <CookieConsent />
+      <CreditWarningDialog />
       <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -67,6 +70,7 @@ function AppContent() {
             <Route index element={<AdminDashboard />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
             <Route path="pricing" element={<PricingConfiguration />} />
+            <Route path="pricing-config" element={<PricingConfig />} />
             <Route path="payments" element={<PaymentsTracking />} />
             <Route path="users" element={<UsersManagement />} />
             <Route path="system" element={<SystemHealth />} />

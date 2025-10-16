@@ -108,28 +108,31 @@ serve(async (req) => {
     if (customerForLimit) {
       const { data: business } = await supabase
         .from('businesses')
-        .select('subscription_tier, message_count_current_period')
+        .select('subscription_tier, message_count_current_period, is_unlimited')
         .eq('id', customerForLimit.business_id)
         .single();
 
       if (business) {
-        const limits: Record<string, number> = {
-          free: 100,
-          starter: 1000,
-          professional: 10000,
-          enterprise: 999999
-        };
-        const limit = limits[business.subscription_tier] || 0;
+        // Skip limit check for unlimited accounts
+        if (!business.is_unlimited) {
+          const limits: Record<string, number> = {
+            free: 100,
+            starter: 1000,
+            professional: 10000,
+            enterprise: 999999
+          };
+          const limit = limits[business.subscription_tier] || 0;
 
-        const currentCount = business.message_count_current_period || 0;
-        if (currentCount >= limit) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Message limit reached',
-              details: `You've reached your ${limit} message limit. Upgrade at ${req.headers.get('origin')}/pricing`
-            }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          const currentCount = business.message_count_current_period || 0;
+          if (currentCount >= limit) {
+            return new Response(
+              JSON.stringify({ 
+                error: 'Message limit reached',
+                details: `You've reached your ${limit} message limit. Upgrade at ${req.headers.get('origin')}/pricing`
+              }),
+              { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
 
         // Increment message count

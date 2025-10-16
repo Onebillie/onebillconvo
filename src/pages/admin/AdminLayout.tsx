@@ -22,7 +22,7 @@ export default function AdminLayout() {
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
-    { path: "/admin/pricing", label: "Pricing Config", icon: DollarSign },
+    { path: "/admin/pricing-config", label: "Pricing Config", icon: DollarSign },
     { path: "/admin/payments", label: "Payments", icon: Receipt },
     { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/system", label: "System Health", icon: Activity },
