@@ -81,8 +81,7 @@ serve(async (req) => {
         body: {
           to: customer.phone,
           message: content,
-          conversationId: conversation.id,
-          customerId: customer.id,
+          conversation_id: conversation.id,
         },
       });
 
@@ -92,13 +91,14 @@ serve(async (req) => {
         throw new Error('Customer has no email address');
       }
 
-      const { error: emailError } = await supabase.functions.invoke('send-email', {
+      // Use the SMTP email sender which handles templating and bundling
+      const { error: emailError } = await supabase.functions.invoke('email-send-smtp', {
         body: {
           to: customer.email,
           subject: subject || 'Message from your team',
-          content,
-          conversationId: conversation.id,
-          customerId: customer.id,
+          html: content,
+          conversation_id: conversation.id,
+          customer_id: customer.id,
         },
       });
 

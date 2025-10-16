@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +49,9 @@ export default function SystemTesting() {
   const [apiUsage, setApiUsage] = useState<ApiUsage[]>([]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [emailStatus, setEmailStatus] = useState<string>("unknown");
+  const [waPhone, setWaPhone] = useState<string>("");
+  const [waSending, setWaSending] = useState<boolean>(false);
+  const [waStatus, setWaStatus] = useState<string>("unknown");
 
   useEffect(() => {
     loadApiUsage();
@@ -104,6 +108,30 @@ export default function SystemTesting() {
       setEmailStatus("error");
     } finally {
       setLoading({ ...loading, [key]: false });
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!waPhone) {
+      toast({ title: "Phone required", description: "Enter a recipient phone number (E.164 or local).", variant: "destructive" });
+      return;
+    }
+    setWaSending(true);
+    try {
+      const { error } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          to: waPhone,
+          message: `System test message at ${new Date().toISOString()}`,
+        },
+      });
+      if (error) throw error;
+      toast({ title: "✅ WhatsApp Sent", description: `Test message sent to ${waPhone}` });
+      setWaStatus("working");
+    } catch (error: any) {
+      toast({ title: "❌ WhatsApp Failed", description: error.message, variant: "destructive" });
+      setWaStatus("error");
+    } finally {
+      setWaSending(false);
     }
   };
 
@@ -319,6 +347,52 @@ export default function SystemTesting() {
                   <AlertTriangle className="h-4 w-4 mr-2" />
                 )}
                 Usage Alert
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* WhatsApp System Tests */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            WhatsApp System Tests
+          </CardTitle>
+          <CardDescription>Send a test WhatsApp message</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {waStatus === "working" && (
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  WhatsApp sending is working
+                </AlertDescription>
+              </Alert>
+            )}
+            {waStatus === "error" && (
+              <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>
+                  WhatsApp test failed
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="Recipient phone (e.g. +353... or 085...)"
+                value={waPhone}
+                onChange={(e) => setWaPhone(e.target.value)}
+              />
+              <Button onClick={handleTestWhatsApp} disabled={waSending} variant="outline">
+                {waSending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Send Test
               </Button>
             </div>
           </div>
