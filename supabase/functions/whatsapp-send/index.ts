@@ -81,18 +81,35 @@ serve(async (req) => {
       );
     }
 
+    if (!to) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: to' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!templateName && !message) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: message or templateName' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Clean phone number (remove + and leading zeros)
+    const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
+
     // Check message limit
-    const { data: customer } = await supabase
+    const { data: customerForLimit } = await supabase
       .from('customers')
       .select('business_id')
       .eq('phone', cleanPhoneNumber)
       .single();
 
-    if (customer) {
+    if (customerForLimit) {
       const { data: business } = await supabase
         .from('businesses')
         .select('subscription_tier, message_count_current_period')
-        .eq('id', customer.business_id)
+        .eq('id', customerForLimit.business_id)
         .single();
 
       if (business) {
@@ -115,26 +132,9 @@ serve(async (req) => {
         }
 
         // Increment message count
-        await supabase.rpc('increment_message_count', { business_uuid: customer.business_id });
+        await supabase.rpc('increment_message_count', { business_uuid: customerForLimit.business_id });
       }
     }
-
-    if (!to) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required field: to' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    if (!templateName && !message) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required field: message or templateName' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Clean phone number (remove + and leading zeros)
-    const cleanPhoneNumber = to.replace(/^\+/, '').replace(/^00/, '');
 
     let whatsappPayload: any;
 
