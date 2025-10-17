@@ -37,6 +37,28 @@ export default function Auth() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }, 0);
     }
+    
+    // Check for auth errors in URL (expired tokens, etc.)
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    
+    if (error) {
+      let errorMessage = errorDescription || error;
+      
+      if (error === 'access_denied' && errorDescription?.includes('expired')) {
+        errorMessage = "Email verification link has expired. Please request a new verification email by trying to sign in, or contact support for assistance.";
+      }
+      
+      toast({
+        title: "Authentication Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -51,9 +73,11 @@ export default function Auth() {
         let errorMessage = error.message;
         
         if (error.message === "Email not confirmed") {
-          errorMessage = "Please check your email and click the confirmation link to verify your account.";
+          errorMessage = "Please check your email and click the confirmation link to verify your account. If the link expired, contact support.";
         } else if (error.message.includes("Invalid login credentials")) {
           errorMessage = "Invalid email or password. Please check your credentials and try again.";
+        } else if (error.message.includes("Email link is invalid or has expired")) {
+          errorMessage = "Email verification link has expired. Please request a new verification email or contact support.";
         }
         
         toast({
