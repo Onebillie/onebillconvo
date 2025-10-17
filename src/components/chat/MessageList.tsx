@@ -10,7 +10,8 @@ import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
-import { Pencil, Reply, Search } from "lucide-react";
+import { EmailDetailModal } from "./EmailDetailModal";
+import { Pencil, Reply, Search, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +25,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [emailDetailMessage, setEmailDetailMessage] = useState<Message | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({});
   const [showSearch, setShowSearch] = useState(false);
   
@@ -237,13 +239,14 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                           {message.platform === 'email' ? '@' : 'W'}
                         </div>
                       )}
-                      <div className="relative max-w-[90%] lg:max-w-[75%]">
+                        <div className="relative max-w-[90%] lg:max-w-[75%]">
                         <div
                           className={`w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 ${
                             message.direction === "outbound"
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted"
-                          }`}
+                          } ${message.platform === 'email' ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all' : ''}`}
+                          onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
                         >
                           {/* Replied message preview */}
                           {repliedToMessage && (
@@ -262,22 +265,32 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
 
                           {/* Email content with smart formatting */}
                           {message.platform === 'email' ? (
-                            <EmailMessageRenderer 
-                              content={message.content} 
-                              subject={message.subject}
-                            />
+                            <>
+                              <EmailMessageRenderer 
+                                content={message.content} 
+                                subject={message.subject}
+                                compact={true}
+                              />
+                              {message.message_attachments && message.message_attachments.length > 0 && (
+                                <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
+                                  <Paperclip className="w-3 h-3" />
+                                  <span>{message.message_attachments.length} attachment{message.message_attachments.length > 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                            </>
                           ) : (
-                            <p 
-                              className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
-                              dangerouslySetInnerHTML={{ __html: searchTerm ? highlightText(message.content) : message.content }}
-                            />
+                            <>
+                              <p 
+                                className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
+                                dangerouslySetInnerHTML={{ __html: searchTerm ? highlightText(message.content) : message.content }}
+                              />
+                              {/* Attachments for non-email */}
+                              {message.message_attachments &&
+                                message.message_attachments.map((attachment) =>
+                                  renderAttachment(attachment)
+                                )}
+                            </>
                           )}
-                          
-                          {/* Attachments */}
-                          {message.message_attachments &&
-                            message.message_attachments.map((attachment) =>
-                              renderAttachment(attachment)
-                            )}
                           
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs opacity-70">
@@ -329,6 +342,13 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
           onSuccess={() => {
             if (onMessageUpdate) onMessageUpdate();
           }}
+        />
+      )}
+      {emailDetailMessage && (
+        <EmailDetailModal
+          open={!!emailDetailMessage}
+          onOpenChange={(open) => !open && setEmailDetailMessage(null)}
+          message={emailDetailMessage}
         />
       )}
     </>

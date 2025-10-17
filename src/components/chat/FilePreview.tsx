@@ -35,13 +35,23 @@ export const FilePreview = ({ attachment, onClick }: FilePreviewProps) => {
 
   if (isImage) {
     return (
-      <div className="mt-2">
+      <div className="mt-2 group relative">
         <img
           src={attachment.url}
           alt={attachment.filename}
-          className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+          className="max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover"
           onClick={onClick || (() => window.open(attachment.url, '_blank'))}
         />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <Button
+            size="icon"
+            variant="secondary"
+            className="shadow-lg"
+            onClick={() => window.open(attachment.url, '_blank')}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     );
   }

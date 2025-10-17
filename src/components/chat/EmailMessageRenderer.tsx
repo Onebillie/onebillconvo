@@ -42,7 +42,7 @@ const QUOTE_PATTERNS = [
   /^&gt;/im, // HTML encoded quotes
 ];
 
-export const EmailMessageRenderer = ({ content, subject }: EmailMessageRendererProps) => {
+export const EmailMessageRenderer = ({ content, subject, compact = false }: EmailMessageRendererProps & { compact?: boolean }) => {
   const [showSignature, setShowSignature] = useState(false);
   const [showQuoted, setShowQuoted] = useState(false);
 
@@ -140,6 +140,20 @@ export const EmailMessageRenderer = ({ content, subject }: EmailMessageRendererP
 
   const { mainContent, signature, quotedText, isHtml } = parseEmailContent(content);
 
+  // Compact mode: show first 2-3 lines only
+  const getCompactContent = (content: string) => {
+    if (isHtml) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
+      const text = tempDiv.textContent || '';
+      const lines = text.split('\n').filter(line => line.trim());
+      return lines.slice(0, 2).join(' ').substring(0, 150) + (lines.length > 2 ? '...' : '');
+    } else {
+      const lines = content.split('\n').filter(line => line.trim());
+      return lines.slice(0, 2).join(' ').substring(0, 150) + (lines.length > 2 ? '...' : '');
+    }
+  };
+
   return (
     <div className="space-y-2">
       {subject && (
@@ -149,7 +163,11 @@ export const EmailMessageRenderer = ({ content, subject }: EmailMessageRendererP
       )}
       
       {/* Main message content */}
-      {isHtml ? (
+      {compact ? (
+        <div className="text-sm opacity-90">
+          {getCompactContent(mainContent)}
+        </div>
+      ) : isHtml ? (
         <div 
           className="email-content leading-relaxed prose prose-sm max-w-none dark:prose-invert"
           dangerouslySetInnerHTML={{ __html: mainContent }}
