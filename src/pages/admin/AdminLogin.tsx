@@ -24,57 +24,24 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const { startAdminSession } = useAuth();
 
-  // Check for trusted device on mount
+  // Initialize device fingerprint on mount (no auto-redirect)
   useEffect(() => {
-    checkTrustedDevice();
-  }, []);
-
-  const checkTrustedDevice = async () => {
-    try {
-      setCheckingTrustedDevice(true);
-      
-      // Get or generate device fingerprint
-      let fingerprint = getStoredDeviceFingerprint();
-      if (!fingerprint) {
-        fingerprint = await generateDeviceFingerprint();
-        storeDeviceFingerprint(fingerprint);
-      }
-      setDeviceFingerprint(fingerprint);
-
-      // Check if current session exists and device is trusted
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Check if this device is trusted
-        const { data: isTrusted } = await supabase
-          .rpc('is_device_trusted', {
-            _user_id: user.id,
-            _device_fingerprint: fingerprint
-          });
-
-        if (isTrusted) {
-          // Verify superadmin role
-          const { data: isSuperadmin } = await supabase
-            .rpc('has_role', { 
-              _user_id: user.id, 
-              _role: 'superadmin' 
-            });
-
-          if (isSuperadmin) {
-            // Auto-login - device is trusted
-            await startAdminSession();
-            toast.success("Welcome back! Trusted device authenticated.");
-            navigate('/admin');
-            return;
-          }
+    const initFingerprint = async () => {
+      try {
+        let fingerprint = getStoredDeviceFingerprint();
+        if (!fingerprint) {
+          fingerprint = await generateDeviceFingerprint();
+          storeDeviceFingerprint(fingerprint);
         }
+        setDeviceFingerprint(fingerprint);
+      } catch (error) {
+        console.error('Error initializing device fingerprint:', error);
+      } finally {
+        setCheckingTrustedDevice(false);
       }
-    } catch (error) {
-      console.error('Error checking trusted device:', error);
-    } finally {
-      setCheckingTrustedDevice(false);
-    }
-  };
+    };
+    initFingerprint();
+  }, []);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
