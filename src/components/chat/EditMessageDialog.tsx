@@ -31,9 +31,24 @@ export const EditMessageDialog = ({
 
     setIsSaving(true);
     try {
+      const user = await supabase.auth.getUser();
+      
+      // Get the current message to store original content if not already stored
+      const { data: currentMessage } = await supabase
+        .from('messages')
+        .select('original_content')
+        .eq('id', messageId)
+        .single();
+      
       const { error } = await supabase
         .from('messages')
-        .update({ content: content.trim() })
+        .update({ 
+          content: content.trim(),
+          is_edited: true,
+          edited_at: new Date().toISOString(),
+          edited_by: user.data.user?.id,
+          original_content: currentMessage?.original_content || currentContent
+        })
         .eq('id', messageId);
 
       if (error) throw error;

@@ -57,6 +57,20 @@ export interface Message {
   status?: string;
   replied_to_message_id?: string | null;
   external_message_id?: string | null;
+  is_edited?: boolean;
+  edited_at?: string;
+  edited_by?: string;
+  is_deleted?: boolean;
+  deleted_at?: string;
+  deleted_by?: string;
+  is_starred?: boolean;
+  starred_at?: string;
+  starred_by?: string;
+  is_pinned?: boolean;
+  pinned_at?: string;
+  pinned_by?: string;
+  forwarded_from?: string;
+  original_content?: string;
   message_attachments?: Array<{
     id: string;
     filename: string;

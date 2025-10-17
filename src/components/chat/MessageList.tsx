@@ -11,9 +11,14 @@ import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
-import { Pencil, Reply, Search, Paperclip } from "lucide-react";
+import { MessageContextMenu } from "./MessageContextMenu";
+import { MessageInfoDialog } from "./MessageInfoDialog";
+import { EmojiPicker } from "./EmojiPicker";
+import { Pencil, Reply, Search, Paperclip, Star, Pin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface MessageListProps {
   messages: Message[];
@@ -28,6 +33,10 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
   const [emailDetailMessage, setEmailDetailMessage] = useState<Message | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({});
   const [showSearch, setShowSearch] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<Message | null>(null);
+  const [deleteConfirmMessage, setDeleteConfirmMessage] = useState<Message | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const { toast } = useToast();
   
   const {
     searchTerm,
@@ -105,6 +114,147 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
       supabase.removeChannel(channel);
     };
   }, [messages]);
+
+  // Message action handlers
+  const handleStar = async (message: Message) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          is_starred: !message.is_starred,
+          starred_at: !message.is_starred ? new Date().toISOString() : null,
+          starred_by: !message.is_starred ? (await supabase.auth.getUser()).data.user?.id : null
+        })
+        .eq('id', message.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: message.is_starred ? "Unstarred message" : "Starred message",
+      });
+      
+      if (onMessageUpdate) onMessageUpdate();
+    } catch (error) {
+      console.error('Error starring message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePin = async (message: Message) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          is_pinned: !message.is_pinned,
+          pinned_at: !message.is_pinned ? new Date().toISOString() : null,
+          pinned_by: !message.is_pinned ? (await supabase.auth.getUser()).data.user?.id : null
+        })
+        .eq('id', message.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: message.is_pinned ? "Unpinned message" : "Pinned message",
+      });
+      
+      if (onMessageUpdate) onMessageUpdate();
+    } catch (error) {
+      console.error('Error pinning message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReact = async (message: Message, emoji: string) => {
+    try {
+      const user = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('message_reactions')
+        .insert({
+          message_id: message.id,
+          user_id: user.data.user?.id,
+          emoji: emoji
+        });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Reaction added",
+      });
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add reaction",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopy = async (message: Message) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      toast({
+        title: "Copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Error copying message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmMessage) return;
+    
+    try {
+      const user = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.data.user?.id,
+          original_content: deleteConfirmMessage.content,
+          content: "This message was deleted"
+        })
+        .eq('id', deleteConfirmMessage.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Message deleted",
+      });
+      
+      if (onMessageUpdate) onMessageUpdate();
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteConfirmMessage(null);
+    }
+  };
+
+  const handleForward = (message: Message) => {
+    toast({
+      title: "Forward",
+      description: "Forward functionality coming soon",
+    });
+  };
 
   const renderAttachment = (attachment: any) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
@@ -210,44 +360,52 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                 const isMatch = searchTerm && currentMatch?.id === message.id;
 
                 return (
-                  <div
+                  <MessageContextMenu
                     key={message.id}
-                    ref={(el) => { if (el) messageRefs.current[message.id] = el; }}
-                    className={`flex ${
-                      message.direction === "outbound" ? "justify-end" : "justify-start"
-                    } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
-                    onContextMenu={(e) => {
-                      if (onCreateTask) {
-                        e.preventDefault();
-                        onCreateTask(message);
-                      }
-                    }}
+                    message={message}
+                    onReply={(msg) => setReplyToMessage(msg)}
+                    onReact={(msg) => {}}
+                    onStar={handleStar}
+                    onPin={handlePin}
+                    onForward={handleForward}
+                    onCopy={handleCopy}
+                    onEdit={(msg) => setEditingMessage(msg)}
+                    onInfo={(msg) => setInfoMessage(msg)}
+                    onDelete={(msg) => setDeleteConfirmMessage(msg)}
+                    onSelectMessages={() => {}}
                   >
-                    <div className="flex items-start gap-2 relative group">
-                      {message.direction === "outbound" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
-                          onClick={() => setEditingMessage(message)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {message.direction === "inbound" && (
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold mt-1">
-                          {message.platform === 'email' ? '@' : 'W'}
-                        </div>
-                      )}
+                    <div
+                      ref={(el) => { if (el) messageRefs.current[message.id] = el; }}
+                      className={`flex ${
+                        message.direction === "outbound" ? "justify-end" : "justify-start"
+                      } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
+                    >
+                      <div className="flex items-start gap-2 relative group">
+                        {/* Star indicator */}
+                        {message.is_starred && (
+                          <Star className="absolute -top-2 -left-2 h-4 w-4 fill-yellow-500 text-yellow-500 z-10" />
+                        )}
+                        
+                        {/* Pin indicator */}
+                        {message.is_pinned && (
+                          <Pin className="absolute -top-2 -right-2 h-4 w-4 fill-primary text-primary z-10 rotate-45" />
+                        )}
+                        
+                        {message.direction === "inbound" && (
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold mt-1">
+                            {message.platform === 'email' ? '@' : 'W'}
+                          </div>
+                        )}
+                        
                         <div className="relative max-w-[90%] lg:max-w-[75%]">
-                        <div
-                          className={`w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 ${
-                            message.direction === "outbound"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          } ${message.platform === 'email' ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all' : ''}`}
-                          onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
-                        >
+                          <div
+                            className={`w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 ${
+                              message.direction === "outbound"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            } ${message.is_deleted ? 'opacity-60 italic' : ''} ${message.platform === 'email' ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all' : ''}`}
+                            onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
+                          >
                           {/* Replied message preview */}
                           {repliedToMessage && (
                             <div className="mb-2 pb-2 border-b border-current/20 opacity-70">
@@ -292,21 +450,24 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                             </>
                           )}
                           
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs opacity-70">
-                              {new Date(message.created_at).toLocaleString([], {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                            {message.direction === "outbound" && (
-                              <MessageStatusIndicator status={message.status} />
-                            )}
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-xs opacity-70">
+                                {new Date(message.created_at).toLocaleString([], {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {message.direction === "outbound" && (
+                                <MessageStatusIndicator status={message.status} />
+                              )}
+                              {message.is_edited && (
+                                <span className="text-xs opacity-60">Edited</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
                         {/* Reactions */}
                         {reactions.length > 0 && (
@@ -319,19 +480,20 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                           </div>
                         )}
                       </div>
-                      {message.direction === "outbound" && (
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold mt-1">
-                          {message.platform === 'email' ? '@' : 'W'}
+                          {message.direction === "outbound" && (
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold mt-1">
+                              {message.platform === 'email' ? '@' : 'W'}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                      </div>
+                    </MessageContextMenu>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
+          ))}
+          <div ref={messagesEndRef} />
       </div>
       {editingMessage && (
         <EditMessageDialog
@@ -351,6 +513,31 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
           message={emailDetailMessage}
         />
       )}
+      
+      {infoMessage && (
+        <MessageInfoDialog
+          open={!!infoMessage}
+          onOpenChange={(open) => !open && setInfoMessage(null)}
+          message={infoMessage}
+        />
+      )}
+      
+      <AlertDialog open={!!deleteConfirmMessage} onOpenChange={(open) => !open && setDeleteConfirmMessage(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the message as deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 });

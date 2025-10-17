@@ -1688,15 +1688,29 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           customer_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           direction: string
+          edited_at: string | null
+          edited_by: string | null
           external_message_id: string | null
+          forwarded_from: string | null
           forwarded_from_message_id: string | null
           id: string
           is_ai_generated: boolean | null
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          is_pinned: boolean | null
           is_read: boolean | null
+          is_starred: boolean | null
+          original_content: string | null
+          pinned_at: string | null
+          pinned_by: string | null
           platform: string | null
           replied_to_message_id: string | null
           scheduled_at: string | null
+          starred_at: string | null
+          starred_by: string | null
           status: string | null
           subject: string | null
           thread_id: string | null
@@ -1709,15 +1723,29 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           direction: string
+          edited_at?: string | null
+          edited_by?: string | null
           external_message_id?: string | null
+          forwarded_from?: string | null
           forwarded_from_message_id?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_starred?: boolean | null
+          original_content?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           platform?: string | null
           replied_to_message_id?: string | null
           scheduled_at?: string | null
+          starred_at?: string | null
+          starred_by?: string | null
           status?: string | null
           subject?: string | null
           thread_id?: string | null
@@ -1730,15 +1758,29 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           direction?: string
+          edited_at?: string | null
+          edited_by?: string | null
           external_message_id?: string | null
+          forwarded_from?: string | null
           forwarded_from_message_id?: string | null
           id?: string
           is_ai_generated?: boolean | null
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_starred?: boolean | null
+          original_content?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           platform?: string | null
           replied_to_message_id?: string | null
           scheduled_at?: string | null
+          starred_at?: string | null
+          starred_by?: string | null
           status?: string | null
           subject?: string | null
           thread_id?: string | null
@@ -1763,6 +1805,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_forwarded_from_fkey"
+            columns: ["forwarded_from"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
