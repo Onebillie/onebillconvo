@@ -451,14 +451,8 @@ async function processIncomingEmail(
     conversationId = newConv?.id;
   }
 
-  // Insert message with subject and better content handling
-  let messageContent = '';
-  if (email.text) {
-    messageContent = email.text;
-  } else if (email.html) {
-    // Strip HTML tags but keep line breaks
-    messageContent = email.html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
-  }
+  // Insert message - prefer HTML over text to preserve formatting
+  const messageContent = email.html || email.text || email.subject;
   
   const { data: message, error: messageError } = await supabase
     .from('messages')
@@ -466,7 +460,7 @@ async function processIncomingEmail(
       conversation_id: conversationId,
       customer_id: customerId,
       business_id: businessId,
-      content: messageContent.substring(0, 5000),
+      content: messageContent,
       subject: email.subject,
       direction: 'inbound',
       status: 'delivered',
@@ -483,10 +477,13 @@ async function processIncomingEmail(
     throw messageError;
   }
 
-  // Handle attachments with better logging
+  // Handle attachments - separate inline from regular attachments
   if (email.attachments && email.attachments.length > 0) {
     console.log(`📎 Processing ${email.attachments.length} attachments for email: ${email.subject}`);
     await logger.logSuccess('Processing attachments', { count: email.attachments.length });
+    
+    // Map to store CID to URL mapping for inline images
+    const cidMap = new Map<string, string>();
     
     for (const attachment of email.attachments) {
       try {
@@ -498,8 +495,9 @@ async function processIncomingEmail(
 
         const fileName = `${Date.now()}-${attachment.filename || 'attachment'}`;
         const filePath = `${businessId}/${fileName}`;
+        const isInline = attachment.contentDisposition === 'inline' || attachment.contentId;
 
-        console.log(`Uploading attachment: ${fileName} (${attachment.content.length} bytes, type: ${attachment.mimeType})`);
+        console.log(`Uploading ${isInline ? 'inline' : 'regular'} attachment: ${fileName} (${attachment.content.length} bytes, type: ${attachment.mimeType})`);
 
         const { error: uploadError } = await supabase.storage
           .from('customer_media')
@@ -521,23 +519,32 @@ async function processIncomingEmail(
           .from('customer_media')
           .getPublicUrl(filePath);
 
-        const { error: insertError } = await supabase.from('message_attachments').insert({
-          message_id: message.id,
-          filename: attachment.filename || 'attachment',
-          url: urlData.publicUrl,
-          type: attachment.mimeType || 'application/octet-stream',
-          size: attachment.content?.length || 0,
-        });
+        // Store CID mapping for inline images
+        if (isInline && attachment.contentId) {
+          const cid = attachment.contentId.replace(/^<|>$/g, '');
+          cidMap.set(cid, urlData.publicUrl);
+        }
 
-        if (insertError) {
-          console.error('Attachment insert error:', insertError);
-          await logger.logWarning('Attachment DB insert failed', { 
-            filename: attachment.filename, 
-            error: insertError.message 
+        // Only create attachment records for non-inline attachments
+        if (!isInline) {
+          const { error: insertError } = await supabase.from('message_attachments').insert({
+            message_id: message.id,
+            filename: attachment.filename || 'attachment',
+            url: urlData.publicUrl,
+            type: attachment.mimeType || 'application/octet-stream',
+            size: attachment.content?.length || 0,
           });
-        } else {
-          console.log(`✅ Attachment uploaded: ${fileName}`);
-          await logger.logSuccess('Attachment uploaded', { filename: fileName });
+
+          if (insertError) {
+            console.error('Attachment insert error:', insertError);
+            await logger.logWarning('Attachment DB insert failed', { 
+              filename: attachment.filename, 
+              error: insertError.message 
+            });
+          } else {
+            console.log(`✅ Attachment uploaded: ${fileName}`);
+            await logger.logSuccess('Attachment uploaded', { filename: fileName });
+          }
         }
       } catch (err: any) {
         console.error('Attachment upload failed:', err);
@@ -546,6 +553,22 @@ async function processIncomingEmail(
           error: err.message 
         });
       }
+    }
+
+    // Replace CID references in HTML content with actual URLs
+    if (cidMap.size > 0 && email.html) {
+      let updatedContent = messageContent;
+      for (const [cid, url] of cidMap.entries()) {
+        updatedContent = updatedContent.replace(new RegExp(`cid:${cid}`, 'gi'), url);
+      }
+      
+      // Update message content with resolved inline images
+      await supabase
+        .from('messages')
+        .update({ content: updatedContent })
+        .eq('id', message.id);
+      
+      await logger.logSuccess('Inline images resolved', { count: cidMap.size });
     }
   }
 

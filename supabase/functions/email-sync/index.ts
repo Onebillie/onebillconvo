@@ -601,8 +601,10 @@ async function processIncomingEmail(
 
   if (messageError) throw messageError;
 
-  // Handle attachments
+  // Handle attachments - separate inline from regular attachments
   if (email.attachments && email.attachments.length > 0) {
+    const cidMap = new Map<string, string>();
+    
     for (const attachment of email.attachments) {
       try {
         const now = new Date();
@@ -610,6 +612,7 @@ async function processIncomingEmail(
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const filename = `${Date.now()}-${attachment.filename}`;
         const storagePath = `customers/${customer.id}/email/${year}/${month}/${filename}`;
+        const isInline = attachment.disposition === 'inline' || attachment.contentId;
 
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -629,20 +632,42 @@ async function processIncomingEmail(
           .from('customer_media')
           .getPublicUrl(storagePath);
 
-        // Insert attachment record
-        await supabase
-          .from('message_attachments')
-          .insert({
-            message_id: insertedMessage.id,
-            filename: attachment.filename,
-            url: publicUrl,
-            type: attachment.contentType,
-            size: attachment.content.byteLength
-          });
+        // Store CID mapping for inline images
+        if (isInline && attachment.contentId) {
+          const cid = attachment.contentId.replace(/^<|>$/g, '');
+          cidMap.set(cid, publicUrl);
+        }
+
+        // Only create attachment records for non-inline attachments
+        if (!isInline) {
+          await supabase
+            .from('message_attachments')
+            .insert({
+              message_id: insertedMessage.id,
+              filename: attachment.filename,
+              url: publicUrl,
+              type: attachment.contentType,
+              size: attachment.content.byteLength
+            });
+        }
 
       } catch (error) {
         console.error('Error processing attachment:', error);
       }
+    }
+
+    // Replace CID references in HTML content with actual URLs
+    if (cidMap.size > 0) {
+      let updatedContent = email.html || email.body || email.subject;
+      for (const [cid, url] of cidMap.entries()) {
+        updatedContent = updatedContent.replace(new RegExp(`cid:${cid}`, 'gi'), url);
+      }
+      
+      // Update message content with resolved inline images
+      await supabase
+        .from('messages')
+        .update({ content: updatedContent })
+        .eq('id', insertedMessage.id);
     }
   }
 
