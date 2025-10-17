@@ -344,39 +344,38 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
         continue;
       }
 
-      // Handle attachments (store in customer-specific folder)
-      if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
-        await handleAttachment(message, newMessage.id, customer.id, supabase, whatsappAccountId);
-      }
-
       console.log('Message processed successfully:', newMessage.id);
 
-      // Send push notification to all active users
-      try {
-        const customerName = customer.name || customer.whatsapp_name || 'Unknown';
-        const preview = messageContent.length > 50 
-          ? messageContent.substring(0, 50) + '...' 
-          : messageContent;
-        
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            payload: {
-              title: `[WhatsApp] ${customerName}`,
-              body: preview,
-              icon: '/icon-192.png',
-              badge: '/badge-72.png',
-              tag: `whatsapp-${conversation.id}`,
-              data: {
-                type: 'whatsapp',
-                conversationId: conversation.id,
-                customerId: customer.id
-              }
+      // Handle attachments in background (non-blocking)
+      if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
+        handleAttachment(message, newMessage.id, customer.id, supabase, whatsappAccountId)
+          .catch(err => console.error('Attachment processing error:', err));
+      }
+
+      // Send push notification immediately (non-blocking)
+      const customerName = customer.name || customer.whatsapp_name || 'Unknown';
+      const preview = messageContent.length > 50 
+        ? messageContent.substring(0, 50) + '...' 
+        : messageContent;
+      
+      // Fire-and-forget push notification
+      supabase.functions.invoke('send-push-notification', {
+        body: {
+          payload: {
+            title: `[WhatsApp] ${customerName}`,
+            body: preview,
+            icon: '/icon-192.png',
+            badge: '/badge-72.png',
+            tag: `whatsapp-${conversation.id}`,
+            data: {
+              type: 'whatsapp',
+              conversationId: conversation.id,
+              customerId: customer.id,
+              messageType: message.type
             }
           }
-        });
-      } catch (pushError) {
-        console.error('Error sending push notification:', pushError);
-      }
+        }
+      }).catch(pushError => console.error('Push notification error:', pushError));
     } catch (error) {
       console.error('Error processing message:', error);
     }
@@ -384,6 +383,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 }
 
 async function handleAttachment(message: any, messageId: string, customerId: string, supabase: any, whatsappAccountId?: string) {
+  const startTime = Date.now();
   try {
     let mediaId, filename, mimeType, duration;
     
@@ -407,7 +407,12 @@ async function handleAttachment(message: any, messageId: string, customerId: str
       duration = Math.floor(audioData.duration || 0);
     }
 
-    if (!mediaId) return;
+    if (!mediaId) {
+      console.error('No media ID found for attachment');
+      return;
+    }
+
+    console.log(`Processing attachment: ${filename} (${mimeType}), mediaId: ${mediaId}`);
 
     // Get access token (prefer account-specific, fallback to env)
     let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
@@ -442,58 +447,79 @@ async function handleAttachment(message: any, messageId: string, customerId: str
     const mediaData = await mediaResponse.json();
     const mediaUrl = mediaData.url;
 
-    // Download media file
-    const fileResponse = await fetch(mediaUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    });
+    // Download media file with timeout
+    const downloadStart = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-    if (!fileResponse.ok) {
-      console.error('Failed to download media file');
-      return;
-    }
-
-    const fileBuffer = await fileResponse.arrayBuffer();
-    const file = new Uint8Array(fileBuffer);
-
-    // Upload to Supabase Storage in customer-specific folder
-    const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('customer_bills')
-      .upload(filePath, file, {
-        contentType: mimeType,
-        upsert: false,
+    try {
+      const fileResponse = await fetch(mediaUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        signal: controller.signal,
       });
 
-    if (uploadError) {
-      console.error('Error uploading file:', uploadError);
-      return;
+      clearTimeout(timeoutId);
+
+      if (!fileResponse.ok) {
+        console.error(`Failed to download media file: ${fileResponse.status} ${fileResponse.statusText}`);
+        return;
+      }
+
+      const fileBuffer = await fileResponse.arrayBuffer();
+      const file = new Uint8Array(fileBuffer);
+      console.log(`Downloaded ${file.length} bytes in ${Date.now() - downloadStart}ms`);
+
+      // Upload to Supabase Storage in customer-specific folder
+      const uploadStart = Date.now();
+      const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('customer_bills')
+        .upload(filePath, file, {
+          contentType: mimeType,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Error uploading file to storage:', uploadError);
+        return;
+      }
+
+      console.log(`Uploaded to storage in ${Date.now() - uploadStart}ms`);
+
+      // Create attachment record with public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('customer_bills')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData?.publicUrl || null;
+
+      const { error: attachmentError } = await supabase
+        .from('message_attachments')
+        .insert({
+          message_id: messageId,
+          filename,
+          url: publicUrl ?? filePath,
+          type: mimeType,
+          size: file.length,
+          duration_seconds: duration || null,
+        });
+
+      if (attachmentError) {
+        console.error('Error creating attachment record:', attachmentError);
+        return;
+      }
+
+      const totalTime = Date.now() - startTime;
+      console.log(`Attachment processed successfully: ${filename} (${file.length} bytes) in ${totalTime}ms`);
+    } catch (fetchError: any) {
+      if (fetchError.name === 'AbortError') {
+        console.error('Media download timeout after 30s');
+      } else {
+        throw fetchError;
+      }
     }
-
-    // Create attachment record with public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('customer_bills')
-      .getPublicUrl(filePath);
-
-    const publicUrl = publicUrlData?.publicUrl || null;
-
-    const { error: attachmentError } = await supabase
-      .from('message_attachments')
-      .insert({
-        message_id: messageId,
-        filename,
-        url: publicUrl ?? filePath,
-        type: mimeType,
-        size: file.length,
-        duration_seconds: duration || null,
-      });
-
-    if (attachmentError) {
-      console.error('Error creating attachment record:', attachmentError);
-    }
-
-    console.log('Attachment processed successfully:', filename);
   } catch (error) {
     console.error('Error handling attachment:', error);
   }

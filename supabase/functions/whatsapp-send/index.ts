@@ -218,7 +218,38 @@ serve(async (req) => {
             caption: message
           }
         };
+      } else if (attachment.type.startsWith('video/')) {
+        whatsappPayload = {
+          messaging_product: 'whatsapp',
+          to: cleanPhoneNumber,
+          type: 'video',
+          video: {
+            link: attachment.url,
+            caption: message
+          }
+        };
+      } else if (attachment.type.startsWith('audio/')) {
+        whatsappPayload = {
+          messaging_product: 'whatsapp',
+          to: cleanPhoneNumber,
+          type: 'audio',
+          audio: {
+            link: attachment.url
+          }
+        };
       } else if (attachment.type === 'application/pdf' || attachment.type.startsWith('application/')) {
+        whatsappPayload = {
+          messaging_product: 'whatsapp',
+          to: cleanPhoneNumber,
+          type: 'document',
+          document: {
+            link: attachment.url,
+            caption: message,
+            filename: attachment.filename
+          }
+        };
+      } else {
+        console.log(`[${requestId}] Unsupported attachment type: ${attachment.type}, sending as document`);
         whatsappPayload = {
           messaging_product: 'whatsapp',
           to: cleanPhoneNumber,
@@ -329,7 +360,7 @@ serve(async (req) => {
 
       if (conversation) {
         // Store outbound message in database
-        await supabase
+        const { data: outboundMsg, error: msgError } = await supabase
           .from('messages')
           .insert({
             conversation_id: conversation.id,
@@ -341,7 +372,31 @@ serve(async (req) => {
             thread_id: conversation.id,
             is_read: true,
             business_id: customer.business_id
-          });
+          })
+          .select()
+          .single();
+
+        if (msgError) {
+          console.error(`[${requestId}] Error creating message record:`, msgError);
+        } else if (attachments && attachments.length > 0 && outboundMsg) {
+          // Create attachment records for outbound media
+          const attachment = attachments[0];
+          const { error: attachError } = await supabase
+            .from('message_attachments')
+            .insert({
+              message_id: outboundMsg.id,
+              filename: attachment.filename,
+              url: attachment.url,
+              type: attachment.type,
+              size: attachment.size || 0,
+            });
+          
+          if (attachError) {
+            console.error(`[${requestId}] Error creating attachment record:`, attachError);
+          } else {
+            console.log(`[${requestId}] Attachment record created for outbound message`);
+          }
+        }
 
         // Update conversation timestamp
         await supabase
