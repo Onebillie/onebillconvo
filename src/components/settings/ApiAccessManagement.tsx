@@ -282,35 +282,76 @@ export function ApiAccessManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Embed / iFrame Integration</CardTitle>
-          <CardDescription>Embed the chat interface in your external systems</CardDescription>
+          <CardTitle>SSO Integration (Embed)</CardTitle>
+          <CardDescription>
+            Embed conversations directly into your CRM or application with secure Single Sign-On
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>iFrame Code</Label>
-            <div className="relative">
-              <pre className="text-sm bg-muted p-4 rounded overflow-x-auto">
-{`<iframe 
-  src="${window.location.origin}/dashboard" 
-  width="100%" 
-  height="800px" 
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="font-semibold mb-2">Generate SSO Token</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Generate a secure token to embed individual customer conversations or a full inbox view.
+            </p>
+            <div className="bg-muted p-4 rounded-lg">
+              <code className="text-sm">
+                POST {projectUrl}/functions/v1/api-sso-generate-token<br/>
+                Headers: x-api-key: YOUR_API_KEY<br/>
+                Body: {`{`}<br/>
+                &nbsp;&nbsp;"customer_id": "uuid",  // Required for conversation scope<br/>
+                &nbsp;&nbsp;"scope": "conversation",  // or "inbox"<br/>
+                &nbsp;&nbsp;"expires_in_minutes": 60  // Optional, default 60<br/>
+                {`}`}
+              </code>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Response</h3>
+            <div className="bg-muted p-4 rounded-lg">
+              <code className="text-sm">
+                {`{`}<br/>
+                &nbsp;&nbsp;"token": "uuid-uuid",<br/>
+                &nbsp;&nbsp;"embed_url": "{window.location.origin}/embed/conversation?token=...",<br/>
+                &nbsp;&nbsp;"expires_at": "2025-01-01T12:00:00Z",<br/>
+                &nbsp;&nbsp;"scope": "conversation"<br/>
+                {`}`}
+              </code>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Embedding Options</h3>
+            <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+              <li><strong>Customer View:</strong> Use scope="conversation" to embed a specific customer's chat</li>
+              <li><strong>Inbox View:</strong> Use scope="inbox" to embed the full conversation list and chat interface</li>
+              <li>Tokens expire after the specified duration (default 60 minutes)</li>
+              <li>Each token is tied to your business and validates access automatically</li>
+            </ul>
+          </div>
+
+          <div>
+            <Label>Example iFrame Embed</Label>
+            <div className="relative mt-2">
+              <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-sm">
+{`<iframe
+  src="${window.location.origin}/embed/conversation?token=YOUR_SSO_TOKEN"
+  width="100%"
+  height="600"
   frameborder="0"
-  allow="clipboard-write"
+  style="border: 1px solid #e2e8f0; border-radius: 8px;"
 ></iframe>`}
               </pre>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(`<iframe src="${window.location.origin}/dashboard" width="100%" height="800px" frameborder="0" allow="clipboard-write"></iframe>`)}
+                onClick={() => copyToClipboard(`<iframe src="${window.location.origin}/embed/conversation?token=YOUR_SSO_TOKEN" width="100%" height="600" frameborder="0" style="border: 1px solid #e2e8f0; border-radius: 8px;"></iframe>`)}
               >
-                <Copy className="w-4 h-4" />
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Note: Users will need to authenticate. For seamless SSO integration, contact support.
-          </p>
         </CardContent>
       </Card>
     </div>

@@ -29,6 +29,8 @@ import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PricingConfig from "./pages/admin/PricingConfig";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
+import EmbedConversation from "./pages/embed/EmbedConversation";
+import EmbedInbox from "./pages/embed/EmbedInbox";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
 
@@ -76,6 +78,10 @@ function AppContent() {
             <Route path="system" element={<SystemHealth />} />
             <Route path="testing" element={<SystemTesting />} />
           </Route>
+          
+          {/* Embed Routes - No Auth Required */}
+          <Route path="/embed/conversation" element={<EmbedConversation />} />
+          <Route path="/embed/inbox" element={<EmbedInbox />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

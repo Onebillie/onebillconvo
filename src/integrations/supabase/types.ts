@@ -2114,6 +2114,67 @@ export type Database = {
           },
         ]
       }
+      sso_tokens: {
+        Row: {
+          api_key_id: string
+          business_id: string
+          created_at: string | null
+          customer_id: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          metadata: Json | null
+          scope: string
+          token: string
+        }
+        Insert: {
+          api_key_id: string
+          business_id: string
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          scope?: string
+          token: string
+        }
+        Update: {
+          api_key_id?: string
+          business_id?: string
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          scope?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sso_tokens_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sso_tokens_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sso_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           business_id: string
@@ -2614,6 +2675,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_expired_sso_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
