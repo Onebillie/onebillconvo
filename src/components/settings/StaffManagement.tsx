@@ -144,14 +144,46 @@ export const StaffManagement = () => {
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('User creation failed');
+
+      // FALLBACK: Explicitly ensure user is added to business
+      // This handles race conditions where the trigger might not catch the metadata
+      const { error: businessUserError } = await supabase
+        .from('business_users')
+        .upsert({
+          business_id: currentBusinessUser.business_id,
+          user_id: authData.user.id,
+          role: 'member'
+        }, {
+          onConflict: 'user_id,business_id',
+          ignoreDuplicates: false
+        });
+
+      if (businessUserError) {
+        console.error('Error adding user to business:', businessUserError);
+        throw businessUserError;
+      }
+
+      // Ensure user has the correct role in user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: authData.user.id,
+          role: formData.role
+        }, {
+          onConflict: 'user_id,role',
+          ignoreDuplicates: false
+        });
+
+      if (roleError) {
+        console.error('Error assigning role:', roleError);
+      }
 
       // Update the profile with department
-      if (authData.user) {
-        await supabase
-          .from('profiles')
-          .update({ department: formData.department })
-          .eq('id', authData.user.id);
-      }
+      await supabase
+        .from('profiles')
+        .update({ department: formData.department })
+        .eq('id', authData.user.id);
 
       // Update seat count after adding new staff
       const { data: business } = await supabase
