@@ -12,7 +12,11 @@ export interface Customer {
   avatar?: string;
   last_active?: string;
   notes?: string;
-  last_contact_method?: "whatsapp" | "email" | "sms";
+  last_contact_method?: "whatsapp" | "email" | "sms" | "facebook" | "instagram";
+  facebook_psid?: string;
+  facebook_username?: string;
+  instagram_id?: string;
+  instagram_username?: string;
 }
 
 export interface Conversation {

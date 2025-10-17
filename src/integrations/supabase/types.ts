@@ -1132,8 +1132,12 @@ export type Database = {
           business_id: string
           created_at: string | null
           email: string | null
+          facebook_psid: string | null
+          facebook_username: string | null
           first_name: string | null
           id: string
+          instagram_id: string | null
+          instagram_username: string | null
           is_blocked: boolean | null
           last_active: string | null
           last_contact_method: string | null
@@ -1152,8 +1156,12 @@ export type Database = {
           business_id: string
           created_at?: string | null
           email?: string | null
+          facebook_psid?: string | null
+          facebook_username?: string | null
           first_name?: string | null
           id?: string
+          instagram_id?: string | null
+          instagram_username?: string | null
           is_blocked?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
@@ -1172,8 +1180,12 @@ export type Database = {
           business_id?: string
           created_at?: string | null
           email?: string | null
+          facebook_psid?: string | null
+          facebook_username?: string | null
           first_name?: string | null
           id?: string
+          instagram_id?: string | null
+          instagram_username?: string | null
           is_blocked?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
@@ -1477,6 +1489,100 @@ export type Database = {
             foreignKeyName: "embed_customizations_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facebook_accounts: {
+        Row: {
+          access_token: string
+          business_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          page_id: string
+          page_name: string
+          sync_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          page_id: string
+          page_name: string
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          page_id?: string
+          page_name?: string
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_accounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_accounts: {
+        Row: {
+          access_token: string
+          business_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          instagram_account_id: string
+          is_active: boolean
+          sync_enabled: boolean
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          access_token: string
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instagram_account_id: string
+          is_active?: boolean
+          sync_enabled?: boolean
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          access_token?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instagram_account_id?: string
+          is_active?: boolean
+          sync_enabled?: boolean
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_accounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },

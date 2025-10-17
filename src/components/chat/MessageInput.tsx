@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -16,7 +16,7 @@ interface MessageInputProps {
   customerId: string;
   customerPhone: string;
   customerEmail?: string;
-  lastContactMethod?: "whatsapp" | "email" | "sms";
+  lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram";
   onMessageSent: () => void;
   customer?: Customer;
   initialMessage?: string;
@@ -41,7 +41,7 @@ export const MessageInput = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms">(lastContactMethod || "whatsapp");
+  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram">(lastContactMethod || "whatsapp");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -439,6 +439,34 @@ export const MessageInput = ({
           >
             <Phone className="h-4 w-4" />
           </button>
+          {customer?.facebook_username && (
+            <button
+              onClick={() => setSendVia("facebook")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-l",
+                sendVia === "facebook"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+              title="Facebook Messenger"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </button>
+          )}
+          {customer?.instagram_username && (
+            <button
+              onClick={() => setSendVia("instagram")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-l",
+                sendVia === "instagram"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+              title="Instagram"
+            >
+              <Instagram className="h-4 w-4" />
+            </button>
+          )}
         </div>
         
         <input
