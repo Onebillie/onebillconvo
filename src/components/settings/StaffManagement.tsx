@@ -114,7 +114,21 @@ export const StaffManagement = () => {
     setLoading(true);
 
     try {
-      // Create auth user
+      // Get current user's business_id FIRST
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("Not authenticated");
+
+      const { data: currentBusinessUser } = await supabase
+        .from("business_users")
+        .select("business_id")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (!currentBusinessUser?.business_id) {
+        throw new Error("No business found for current user");
+      }
+
+      // Create auth user with business_id in metadata so trigger adds them to existing business
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -123,6 +137,8 @@ export const StaffManagement = () => {
             full_name: formData.fullName,
             role: formData.role,
             department: formData.department,
+            business_id: currentBusinessUser.business_id, // Pass business_id to trigger
+            business_role: 'member', // Set as member, not owner
           },
         },
       });
@@ -138,43 +154,35 @@ export const StaffManagement = () => {
       }
 
       // Update seat count after adding new staff
-      const { data: businessData } = await supabase
-        .from("business_users")
-        .select("business_id")
-        .eq("user_id", authData.user!.id)
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("seat_count, stripe_subscription_id")
+        .eq("id", currentBusinessUser.business_id)
         .single();
 
-      if (businessData) {
-        const { data: business } = await supabase
-          .from("businesses")
-          .select("seat_count, stripe_subscription_id")
-          .eq("id", businessData.business_id)
-          .single();
-
-        if (business?.stripe_subscription_id) {
-          // Update subscription seats
-          try {
-            const { data: seatUpdateData, error: seatError } = await supabase.functions.invoke(
-              "update-subscription-seats",
-              {
-                body: {
-                  businessId: businessData.business_id,
-                  newSeatCount: (business.seat_count || 1) + 1,
-                },
-              }
-            );
-
-            if (seatError) {
-              console.error("Failed to update seats:", seatError);
-            } else if (seatUpdateData) {
-              toast({
-                title: "Subscription Updated",
-                description: seatUpdateData.message,
-              });
+      if (business?.stripe_subscription_id) {
+        // Update subscription seats
+        try {
+          const { data: seatUpdateData, error: seatError } = await supabase.functions.invoke(
+            "update-subscription-seats",
+            {
+              body: {
+                businessId: currentBusinessUser.business_id,
+                newSeatCount: (business.seat_count || 1) + 1,
+              },
             }
-          } catch (err) {
-            console.error("Error updating seats:", err);
+          );
+
+          if (seatError) {
+            console.error("Failed to update seats:", seatError);
+          } else if (seatUpdateData) {
+            toast({
+              title: "Subscription Updated",
+              description: seatUpdateData.message,
+            });
           }
+        } catch (err) {
+          console.error("Error updating seats:", err);
         }
       }
 
