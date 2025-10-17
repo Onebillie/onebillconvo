@@ -8,6 +8,17 @@ import { MessageList } from '@/components/chat/MessageList';
 import { MessageInput } from '@/components/chat/MessageInput';
 import { Message } from '@/types/chat';
 
+interface EmbedCustomization {
+  primary_color?: string;
+  secondary_color?: string;
+  background_color?: string;
+  text_color?: string;
+  font_family?: string;
+  border_radius?: string;
+  logo_url?: string;
+  custom_css?: string;
+}
+
 export default function EmbedInbox() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -18,6 +29,7 @@ export default function EmbedInbox() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [customization, setCustomization] = useState<EmbedCustomization>({});
 
   useEffect(() => {
     if (!token) {
@@ -31,7 +43,6 @@ export default function EmbedInbox() {
 
   const validateTokenAndLoadData = async () => {
     try {
-      // Validate SSO token by passing token as query parameter
       const supabaseUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
       const url = `${supabaseUrl}/functions/v1/api-sso-validate-token?token=${encodeURIComponent(token || '')}`;
       const response = await fetch(url, {
@@ -56,6 +67,18 @@ export default function EmbedInbox() {
       }
 
       setBusinessId(validation.business_id);
+
+      // Load customization
+      const { data: customizationData } = await supabase
+        .from('embed_customizations')
+        .select('*')
+        .eq('business_id', validation.business_id)
+        .maybeSingle();
+
+      if (customizationData) {
+        setCustomization(customizationData);
+      }
+
       await loadConversations(validation.business_id);
       setLoading(false);
     } catch (err: any) {
@@ -116,20 +139,29 @@ export default function EmbedInbox() {
     );
   };
 
+  const customStyle = {
+    '--primary-color': customization.primary_color || '#3b82f6',
+    '--secondary-color': customization.secondary_color || '#8b5cf6',
+    '--background-color': customization.background_color || '#ffffff',
+    '--text-color': customization.text_color || '#1f2937',
+    '--border-radius': customization.border_radius || '0.5rem',
+    fontFamily: customization.font_family || 'system-ui',
+  } as React.CSSProperties;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center h-screen" style={customStyle}>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
+      <div className="flex items-center justify-center h-screen" style={customStyle}>
         <div className="text-center">
-          <p className="text-destructive font-semibold mb-2">Authentication Error</p>
-          <p className="text-muted-foreground">{error}</p>
+          <p className="font-semibold mb-2" style={{ color: 'var(--text-color)' }}>Authentication Error</p>
+          <p style={{ color: 'var(--text-color)', opacity: 0.7 }}>{error}</p>
         </div>
       </div>
     );
@@ -138,49 +170,63 @@ export default function EmbedInbox() {
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
 
   return (
-    <div className="flex h-screen bg-background">
-      <div className="w-80 border-r bg-card overflow-hidden flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold text-foreground">Conversations</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <ContactList
-            conversations={conversations}
-            selectedConversation={selectedConv || null}
-            onSelectConversation={handleConversationSelect}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col">
-        {selectedConversation && selectedConv ? (
-          <>
-            <div className="border-b px-4 py-3 bg-card">
-              <h2 className="font-semibold text-foreground">{selectedConv.customer?.name}</h2>
-              {selectedConv.customer?.email && (
-                <p className="text-sm text-muted-foreground">{selectedConv.customer.email}</p>
-              )}
-            </div>
-            
-            <div className="flex-1 overflow-hidden">
-              <MessageList messages={messages} />
-            </div>
-
-            <div className="border-t bg-card">
-              <MessageInput
-                conversationId={selectedConversation}
-                customerId={selectedConv.customer_id}
-                customerPhone={selectedConv.customer?.phone || ''}
-                onMessageSent={() => loadMessages(selectedConversation)}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Select a conversation to start messaging</p>
+    <>
+      {customization.custom_css && (
+        <style dangerouslySetInnerHTML={{ __html: customization.custom_css }} />
+      )}
+      <div className="flex h-screen" style={customStyle}>
+        <div className="w-80 border-r overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--background-color)' }}>
+          <div className="p-4 border-b flex items-center gap-3">
+            {customization.logo_url && (
+              <img src={customization.logo_url} alt="Logo" className="h-8 w-auto" />
+            )}
+            <h2 className="font-semibold" style={{ color: 'var(--text-color)' }}>Conversations</h2>
           </div>
-        )}
+          <div className="flex-1 overflow-y-auto">
+            <ContactList
+              conversations={conversations}
+              selectedConversation={selectedConv || null}
+              onSelectConversation={handleConversationSelect}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col" style={{ backgroundColor: 'var(--background-color)' }}>
+          {selectedConversation && selectedConv ? (
+            <>
+              <div className="border-b px-4 py-3">
+                <h2 className="font-semibold" style={{ color: 'var(--text-color)' }}>
+                  {selectedConv.customer?.name}
+                </h2>
+                {selectedConv.customer?.email && (
+                  <p className="text-sm" style={{ color: 'var(--text-color)', opacity: 0.7 }}>
+                    {selectedConv.customer.email}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex-1 overflow-hidden">
+                <MessageList messages={messages} />
+              </div>
+
+              <div className="border-t">
+                <MessageInput
+                  conversationId={selectedConversation}
+                  customerId={selectedConv.customer_id}
+                  customerPhone={selectedConv.customer?.phone || ''}
+                  onMessageSent={() => loadMessages(selectedConversation)}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p style={{ color: 'var(--text-color)', opacity: 0.7 }}>
+                Select a conversation to start messaging
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

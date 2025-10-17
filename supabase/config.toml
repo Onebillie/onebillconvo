@@ -128,3 +128,15 @@ verify_jwt = false
 
 [functions.api-sso-validate-token]
 verify_jwt = false
+
+[functions.api-provision-users]
+verify_jwt = false
+
+[functions.api-sync-statuses]
+verify_jwt = false
+
+[functions.api-download-media]
+verify_jwt = false
+
+[functions.webhook-trigger]
+verify_jwt = false

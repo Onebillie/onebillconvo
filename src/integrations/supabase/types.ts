@@ -1429,6 +1429,59 @@ export type Database = {
           },
         ]
       }
+      embed_customizations: {
+        Row: {
+          background_color: string | null
+          border_radius: string | null
+          business_id: string
+          created_at: string
+          custom_css: string | null
+          font_family: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          text_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string | null
+          border_radius?: string | null
+          business_id: string
+          created_at?: string
+          custom_css?: string | null
+          font_family?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          text_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string | null
+          border_radius?: string | null
+          business_id?: string
+          created_at?: string
+          custom_css?: string | null
+          font_family?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          text_color?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embed_customizations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_due: number
@@ -2562,6 +2615,106 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      webhook_configs: {
+        Row: {
+          business_id: string
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          name: string
+          retry_count: number
+          secret: string
+          timeout_seconds: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          name: string
+          retry_count?: number
+          secret: string
+          timeout_seconds?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          name?: string
+          retry_count?: number
+          secret?: string
+          timeout_seconds?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_configs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_deliveries: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          status: string
+          webhook_config_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          status?: string
+          webhook_config_id: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          status?: string
+          webhook_config_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_webhook_config_id_fkey"
+            columns: ["webhook_config_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhooks: {
         Row: {

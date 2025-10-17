@@ -7,6 +7,17 @@ import { Message, Customer } from '@/types/chat';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface EmbedCustomization {
+  primary_color?: string;
+  secondary_color?: string;
+  background_color?: string;
+  text_color?: string;
+  font_family?: string;
+  border_radius?: string;
+  logo_url?: string;
+  custom_css?: string;
+}
+
 export default function EmbedConversation() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -17,6 +28,7 @@ export default function EmbedConversation() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [customization, setCustomization] = useState<EmbedCustomization>({});
 
   useEffect(() => {
     if (!token) {
@@ -30,7 +42,6 @@ export default function EmbedConversation() {
 
   const validateTokenAndLoadData = async () => {
     try {
-      // Validate SSO token by passing token as query parameter
       const supabaseUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
       const url = `${supabaseUrl}/functions/v1/api-sso-validate-token?token=${encodeURIComponent(token || '')}`;
       const response = await fetch(url, {
@@ -57,6 +68,17 @@ export default function EmbedConversation() {
       setBusinessId(validation.business_id);
       setCustomer(validation.customer);
 
+      // Load customization
+      const { data: customizationData } = await supabase
+        .from('embed_customizations')
+        .select('*')
+        .eq('business_id', validation.business_id)
+        .maybeSingle();
+
+      if (customizationData) {
+        setCustomization(customizationData);
+      }
+
       // Get or create conversation
       const { data: conversations } = await supabase
         .from('conversations')
@@ -69,7 +91,6 @@ export default function EmbedConversation() {
       let convId = conversations?.[0]?.id;
 
       if (!convId) {
-        // Create new conversation
         const { data: newConv, error: convError } = await supabase
           .from('conversations')
           .insert({
@@ -85,10 +106,7 @@ export default function EmbedConversation() {
       }
 
       setConversationId(convId);
-
-      // Load messages
       await loadMessages(convId);
-
       setLoading(false);
     } catch (err: any) {
       console.error('Error validating token:', err);
@@ -126,20 +144,29 @@ export default function EmbedConversation() {
     );
   };
 
+  const customStyle = {
+    '--primary-color': customization.primary_color || '#3b82f6',
+    '--secondary-color': customization.secondary_color || '#8b5cf6',
+    '--background-color': customization.background_color || '#ffffff',
+    '--text-color': customization.text_color || '#1f2937',
+    '--border-radius': customization.border_radius || '0.5rem',
+    fontFamily: customization.font_family || 'system-ui',
+  } as React.CSSProperties;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center h-screen" style={customStyle}>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
+      <div className="flex items-center justify-center h-screen" style={customStyle}>
         <div className="text-center">
-          <p className="text-destructive font-semibold mb-2">Authentication Error</p>
-          <p className="text-muted-foreground">{error}</p>
+          <p className="font-semibold mb-2" style={{ color: 'var(--text-color)' }}>Authentication Error</p>
+          <p style={{ color: 'var(--text-color)', opacity: 0.7 }}>{error}</p>
         </div>
       </div>
     );
@@ -150,26 +177,42 @@ export default function EmbedConversation() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <div className="border-b px-4 py-3 bg-card">
-        <h2 className="font-semibold text-foreground">{customer.name}</h2>
-        {customer.email && (
-          <p className="text-sm text-muted-foreground">{customer.email}</p>
-        )}
-      </div>
-      
-      <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} />
-      </div>
+    <>
+      {customization.custom_css && (
+        <style dangerouslySetInnerHTML={{ __html: customization.custom_css }} />
+      )}
+      <div className="flex flex-col h-screen" style={customStyle}>
+        <div className="border-b px-4 py-3" style={{ backgroundColor: 'var(--background-color)' }}>
+          <div className="flex items-center gap-3">
+            {customization.logo_url && (
+              <img src={customization.logo_url} alt="Logo" className="h-8 w-auto" />
+            )}
+            <div>
+              <h2 className="font-semibold" style={{ color: 'var(--text-color)' }}>
+                {customer.name}
+              </h2>
+              {customer.email && (
+                <p className="text-sm" style={{ color: 'var(--text-color)', opacity: 0.7 }}>
+                  {customer.email}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-hidden" style={{ backgroundColor: 'var(--background-color)' }}>
+          <MessageList messages={messages} />
+        </div>
 
-      <div className="border-t bg-card">
-        <MessageInput
-          conversationId={conversationId}
-          customerId={customer.id}
-          customerPhone={customer.phone || ''}
-          onMessageSent={() => loadMessages(conversationId)}
-        />
+        <div className="border-t" style={{ backgroundColor: 'var(--background-color)' }}>
+          <MessageInput
+            conversationId={conversationId}
+            customerId={customer.id}
+            customerPhone={customer.phone || ''}
+            onMessageSent={() => loadMessages(conversationId)}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
