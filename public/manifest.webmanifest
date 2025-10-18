@@ -1,10 +1,10 @@
 {
-  "name": "OnebillConvo",
-  "short_name": "OnebillConvo",
-  "start_url": "/",
+  "name": "OnebillConvo Admin",
+  "short_name": "Admin",
+  "start_url": "/admin/login",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "theme_color": "#991b1b",
   "icons": [
     {
       "src": "/favicon.png",

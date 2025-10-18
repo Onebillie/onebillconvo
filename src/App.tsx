@@ -42,8 +42,9 @@ function AppContent() {
       <AccountFrozenBanner />
       <CookieConsent />
       <CreditWarningDialog />
-      <Routes>
-          <Route path="/" element={<Landing />} />
+        <Routes>
+          <Route path="/" element={<Navigate to="/admin/login" replace />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
