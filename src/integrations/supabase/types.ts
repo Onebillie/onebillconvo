@@ -445,6 +445,47 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_usage: {
+        Row: {
+          business_id: string
+          conversations_resolved: number | null
+          created_at: string | null
+          id: string
+          messages_sent: number | null
+          period_end: string
+          period_start: string
+          total_charge: number | null
+        }
+        Insert: {
+          business_id: string
+          conversations_resolved?: number | null
+          created_at?: string | null
+          id?: string
+          messages_sent?: number | null
+          period_end: string
+          period_start: string
+          total_charge?: number | null
+        }
+        Update: {
+          business_id?: string
+          conversations_resolved?: number | null
+          created_at?: string | null
+          id?: string
+          messages_sent?: number | null
+          period_end?: string
+          period_start?: string
+          total_charge?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_usage_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_settings: {
         Row: {
           company_logo: string | null
@@ -548,9 +589,13 @@ export type Database = {
           is_frozen: boolean | null
           is_unlimited: boolean | null
           message_count_current_period: number | null
+          monthly_base_fee: number | null
           name: string
           onboarding_completed: boolean | null
           owner_id: string
+          price_per_message: number | null
+          price_per_resolution: number | null
+          pricing_model: string | null
           seat_count: number | null
           slug: string
           stripe_customer_id: string | null
@@ -575,9 +620,13 @@ export type Database = {
           is_frozen?: boolean | null
           is_unlimited?: boolean | null
           message_count_current_period?: number | null
+          monthly_base_fee?: number | null
           name: string
           onboarding_completed?: boolean | null
           owner_id: string
+          price_per_message?: number | null
+          price_per_resolution?: number | null
+          pricing_model?: string | null
           seat_count?: number | null
           slug: string
           stripe_customer_id?: string | null
@@ -602,9 +651,13 @@ export type Database = {
           is_frozen?: boolean | null
           is_unlimited?: boolean | null
           message_count_current_period?: number | null
+          monthly_base_fee?: number | null
           name?: string
           onboarding_completed?: boolean | null
           owner_id?: string
+          price_per_message?: number | null
+          price_per_resolution?: number | null
+          pricing_model?: string | null
           seat_count?: number | null
           slug?: string
           stripe_customer_id?: string | null
@@ -1042,6 +1095,9 @@ export type Database = {
           labels: string[] | null
           last_message_at: string | null
           pinned_at: string | null
+          resolution_type: string | null
+          resolution_value: number | null
+          resolved_at: string | null
           status: string | null
           status_tag_id: string | null
           updated_at: string | null
@@ -1058,6 +1114,9 @@ export type Database = {
           labels?: string[] | null
           last_message_at?: string | null
           pinned_at?: string | null
+          resolution_type?: string | null
+          resolution_value?: number | null
+          resolved_at?: string | null
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
@@ -1074,6 +1133,9 @@ export type Database = {
           labels?: string[] | null
           last_message_at?: string | null
           pinned_at?: string | null
+          resolution_type?: string | null
+          resolution_value?: number | null
+          resolved_at?: string | null
           status?: string | null
           status_tag_id?: string | null
           updated_at?: string | null
@@ -1577,6 +1639,50 @@ export type Database = {
             foreignKeyName: "embed_customizations_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      embed_tokens: {
+        Row: {
+          allowed_domains: string[] | null
+          business_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          name: string
+          token: string
+          usage_count: number | null
+        }
+        Insert: {
+          allowed_domains?: string[] | null
+          business_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name: string
+          token: string
+          usage_count?: number | null
+        }
+        Update: {
+          allowed_domains?: string[] | null
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name?: string
+          token?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embed_tokens_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
@@ -3117,6 +3223,14 @@ export type Database = {
       is_device_trusted: {
         Args: { _device_fingerprint: string; _user_id: string }
         Returns: boolean
+      }
+      mark_conversation_resolved: {
+        Args: {
+          _conversation_id: string
+          _resolution_type: string
+          _resolution_value?: number
+        }
+        Returns: undefined
       }
       normalize_phone: {
         Args: { phone_num: string }
