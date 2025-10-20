@@ -21,6 +21,9 @@ import { UsageDashboard } from "@/components/settings/UsageDashboard";
 import { CannedResponses } from "@/components/settings/CannedResponses";
 import { AIApprovalQueue } from "@/components/chat/AIApprovalQueue";
 import { AutoTopUpSettings } from "@/components/settings/AutoTopUpSettings";
+import { TeamManagement } from "@/components/settings/TeamManagement";
+import { PermissionManager } from "@/components/settings/PermissionManager";
+import { InMailInbox } from "@/components/inmail/InMailInbox";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -87,6 +90,9 @@ export default function Settings() {
         <Tabs defaultValue={isSuperAdmin ? "staff" : "subscription"} className="space-y-6">
           <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
             {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="teams" className="shrink-0">Teams</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="permissions" className="shrink-0">Permissions</TabsTrigger>}
+            <TabsTrigger value="inmail" className="shrink-0">In-Mail</TabsTrigger>
             <TabsTrigger value="subscription" className="shrink-0">Subscription</TabsTrigger>
             <TabsTrigger value="channels" className="shrink-0">Channels</TabsTrigger>
             <TabsTrigger value="statuses" className="shrink-0">Statuses</TabsTrigger>
@@ -105,6 +111,22 @@ export default function Settings() {
               <StaffManagement />
             </TabsContent>
           )}
+
+          {isSuperAdmin && (
+            <TabsContent value="teams" forceMount>
+              <TeamManagement />
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="permissions" forceMount>
+              <PermissionManager />
+            </TabsContent>
+          )}
+
+          <TabsContent value="inmail" forceMount>
+            <InMailInbox />
+          </TabsContent>
 
           <TabsContent value="subscription" forceMount className="space-y-6">
             <UsageDashboard />

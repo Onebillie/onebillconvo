@@ -17,6 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Repeat } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -44,6 +48,7 @@ export const AssignDialog = ({
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<string>(currentAssignedTo || "unassigned");
   const [loading, setLoading] = useState(false);
+  const [isTransfer, setIsTransfer] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -105,13 +110,31 @@ export const AssignDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign Conversation</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isTransfer ? 'Transfer' : 'Assign'} Conversation
+            {isTransfer && <Repeat className="w-4 h-4" />}
+          </DialogTitle>
           <DialogDescription>
-            Assign this conversation to a team member
+            {isTransfer 
+              ? 'Transfer this conversation to another team member'
+              : 'Assign this conversation to a team member'
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {currentAssignedTo && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="transfer-mode"
+                checked={isTransfer}
+                onCheckedChange={setIsTransfer}
+              />
+              <Label htmlFor="transfer-mode" className="cursor-pointer">
+                Transfer mode (will notify recipient)
+              </Label>
+            </div>
+          )}
           <Select value={selectedMember} onValueChange={setSelectedMember}>
             <SelectTrigger>
               <SelectValue placeholder="Select team member" />
@@ -120,13 +143,17 @@ export const AssignDialog = ({
               <SelectItem value="unassigned">Unassigned</SelectItem>
               {teamMembers.map((member) => {
                 const firstName = member.full_name.split(' ')[0];
-                const displayText = member.department 
-                  ? `${firstName} (${member.department})`
-                  : firstName;
                 
                 return (
                   <SelectItem key={member.id} value={member.id}>
-                    {displayText}
+                    <div className="flex items-center gap-2">
+                      <span>{firstName}</span>
+                      {member.department && (
+                        <Badge variant="secondary" className="text-xs">
+                          {member.department}
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 );
               })}

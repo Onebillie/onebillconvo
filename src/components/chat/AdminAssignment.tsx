@@ -9,7 +9,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { UserCog } from "lucide-react";
+import { UserCog, Repeat } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TransferDialog } from "@/components/conversations/TransferDialog";
 
 interface AdminAssignmentProps {
   conversationId: string;
@@ -33,6 +35,7 @@ export const AdminAssignment = ({
 }: AdminAssignmentProps) => {
   const [updating, setUpdating] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -83,36 +86,58 @@ export const AdminAssignment = ({
   };
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="admin-assignment" className="text-xs flex items-center gap-1">
-        <UserCog className="w-3 h-3" />
-        Assigned To
-      </Label>
-      <Select
-        value={(currentAssignee && members.some((m) => m.id === currentAssignee)) ? (currentAssignee as string) : "unassigned"}
-        onValueChange={handleAssignmentChange}
-        disabled={updating}
-      >
-        <SelectTrigger id="admin-assignment" className="h-8 text-xs">
-          <SelectValue placeholder="Select assignee" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-          {members.map((m) => {
-            const firstName = m.full_name.split(' ')[0];
-            const displayText = m.department 
-              ? `${firstName} (${m.department})`
-              : firstName;
-            
-            return (
-              <SelectItem key={m.id} value={m.id} className="text-xs">
-                {displayText}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="admin-assignment" className="text-xs flex items-center gap-1">
+          <UserCog className="w-3 h-3" />
+          Assigned To
+        </Label>
+        <div className="flex gap-2">
+          <Select
+            value={(currentAssignee && members.some((m) => m.id === currentAssignee)) ? (currentAssignee as string) : "unassigned"}
+            onValueChange={handleAssignmentChange}
+            disabled={updating}
+          >
+            <SelectTrigger id="admin-assignment" className="h-8 text-xs flex-1">
+              <SelectValue placeholder="Select assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+              {members.map((m) => {
+                const firstName = m.full_name.split(' ')[0];
+                const displayText = m.department 
+                  ? `${firstName} (${m.department})`
+                  : firstName;
+                
+                return (
+                  <SelectItem key={m.id} value={m.id} className="text-xs">
+                    {displayText}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          {currentAssignee && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setTransferDialogOpen(true)}
+              title="Transfer conversation"
+            >
+              <Repeat className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      </div>
 
-    </div>
+      <TransferDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        conversationId={conversationId}
+        currentAssignee={currentAssignee}
+        onTransferComplete={onAssignmentChange}
+      />
+    </>
   );
 };
