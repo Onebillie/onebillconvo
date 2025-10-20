@@ -823,8 +823,8 @@ const Dashboard = () => {
               {/* Left: Conversations list - fixed size on load */}
               <ResizablePanel 
                 ref={leftPanelRef}
-                defaultSize={30} 
-                minSize={20} 
+                defaultSize={38} 
+                minSize={30} 
                 maxSize={50}
                 collapsible
               >
