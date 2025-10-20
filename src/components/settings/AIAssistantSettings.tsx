@@ -68,17 +68,26 @@ export function AIAssistantSettings() {
           <CardDescription>Configure the AI assistant for automated customer support</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Enable AI Assistant</Label>
-            <Switch checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label>Out of Hours Only</Label>
-            <Switch checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
-          </div>
-          <div className="space-y-2">
-            <Label>System Prompt</Label>
-            <Textarea value={config?.system_prompt} onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} onBlur={() => updateConfig({ system_prompt: config.system_prompt })} rows={4} />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Enable AI Assistant</Label>
+              <Switch checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Out of Hours Only</Label>
+              <Switch checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Require Approval Before Sending</Label>
+              <Switch 
+                checked={config?.require_approval || false} 
+                onCheckedChange={(checked) => updateConfig({ require_approval: checked })} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>System Prompt</Label>
+              <Textarea value={config?.system_prompt} onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} onBlur={() => updateConfig({ system_prompt: config.system_prompt })} rows={4} />
+            </div>
           </div>
         </CardContent>
       </Card>

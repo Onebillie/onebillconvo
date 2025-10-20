@@ -33,6 +33,7 @@ import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ function AppContent() {
       <AccountFrozenBanner />
       <CookieConsent />
       <CreditWarningDialog />
+      <PWAInstallPrompt />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/landing" element={<Landing />} />

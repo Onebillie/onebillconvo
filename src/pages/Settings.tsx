@@ -18,6 +18,8 @@ import { NotificationSettings } from "@/components/settings/NotificationSettings
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { ChannelSettings } from "@/components/settings/ChannelSettings";
 import { UsageDashboard } from "@/components/settings/UsageDashboard";
+import { CannedResponses } from "@/components/settings/CannedResponses";
+import { AIApprovalQueue } from "@/components/chat/AIApprovalQueue";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -91,6 +93,8 @@ export default function Settings() {
             <TabsTrigger value="business" className="shrink-0">Business</TabsTrigger>
             <TabsTrigger value="calendar" className="shrink-0">Calendar</TabsTrigger>
             <TabsTrigger value="ai" className="shrink-0">AI Assistant</TabsTrigger>
+            <TabsTrigger value="canned" className="shrink-0">Quick Replies</TabsTrigger>
+            <TabsTrigger value="ai-approval" className="shrink-0">AI Approval</TabsTrigger>
             {isSuperAdmin && <TabsTrigger value="api" className="shrink-0">API Access</TabsTrigger>}
           </TabsList>
 
@@ -128,6 +132,14 @@ export default function Settings() {
 
           <TabsContent value="ai" forceMount>
             <AIAssistantSettings />
+          </TabsContent>
+
+          <TabsContent value="canned" forceMount>
+            <CannedResponses />
+          </TabsContent>
+
+          <TabsContent value="ai-approval" forceMount>
+            <AIApprovalQueue />
           </TabsContent>
 
           {isSuperAdmin && (
