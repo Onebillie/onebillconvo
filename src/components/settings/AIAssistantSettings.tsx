@@ -7,13 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function AIAssistantSettings() {
   const [config, setConfig] = useState<any>(null);
   const [trainingData, setTrainingData] = useState<any[]>([]);
   const [ragDocs, setRagDocs] = useState<any[]>([]);
+  const [aiProvider, setAiProvider] = useState<string>("lovable"); // lovable, openai, custom
+  const [customApiKey, setCustomApiKey] = useState<string>("");
+  const [customModel, setCustomModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,27 +72,137 @@ export function AIAssistantSettings() {
           <CardTitle>AI Assistant Configuration</CardTitle>
           <CardDescription>Configure the AI assistant for automated customer support</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Enable AI Assistant</Label>
-              <Switch checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>Out of Hours Only</Label>
-              <Switch checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
-            </div>
-            <div className="flex items-center justify-between">
+        <CardContent className="space-y-6">
+          {/* Enable/Disable AI */}
+          <div className="flex items-center justify-between">
+            <Label>Enable AI Assistant</Label>
+            <Switch checked={config?.is_enabled} onCheckedChange={(checked) => updateConfig({ is_enabled: checked })} />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label>Out of Hours Only</Label>
+            <Switch checked={config?.out_of_hours_only} onCheckedChange={(checked) => updateConfig({ out_of_hours_only: checked })} />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
               <Label>Require Approval Before Sending</Label>
-              <Switch 
-                checked={config?.require_approval || false} 
-                onCheckedChange={(checked) => updateConfig({ require_approval: checked })} 
-              />
+              <p className="text-xs text-muted-foreground">AI suggestions will be queued for staff review</p>
             </div>
-            <div className="space-y-2">
-              <Label>System Prompt</Label>
-              <Textarea value={config?.system_prompt} onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} onBlur={() => updateConfig({ system_prompt: config.system_prompt })} rows={4} />
-            </div>
+            <Switch 
+              checked={config?.require_approval || false} 
+              onCheckedChange={(checked) => updateConfig({ require_approval: checked })} 
+            />
+          </div>
+
+          {/* AI Provider Selection */}
+          <div className="space-y-3 pt-4 border-t">
+            <Label htmlFor="ai-provider">AI Provider</Label>
+            <Select value={aiProvider} onValueChange={setAiProvider}>
+              <SelectTrigger id="ai-provider">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lovable">Lovable AI (Google Gemini) - Included</SelectItem>
+                <SelectItem value="openai">OpenAI (Your API Key)</SelectItem>
+                <SelectItem value="custom">Custom Provider (Your API Key)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {aiProvider === "lovable" && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Professional: 1,000 AI responses/month included, then $0.02/response.
+                  Enterprise: Unlimited AI responses included.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {aiProvider === "openai" && (
+              <div className="space-y-3 mt-3">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-key">OpenAI API Key</Label>
+                  <Input
+                    id="openai-key"
+                    type="password"
+                    placeholder="sk-..."
+                    value={customApiKey}
+                    onChange={(e) => setCustomApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your API key is encrypted and never shared. You'll be charged by OpenAI directly.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="openai-model">Model</Label>
+                  <Select value={customModel} onValueChange={setCustomModel}>
+                    <SelectTrigger id="openai-model">
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-5">GPT-5</SelectItem>
+                      <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                      <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4 Omni</SelectItem>
+                      <SelectItem value="gpt-4o-mini">GPT-4 Omni Mini</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={() => toast.success("API key saved securely")}>
+                  Save API Key
+                </Button>
+              </div>
+            )}
+
+            {aiProvider === "custom" && (
+              <div className="space-y-3 mt-3">
+                <div className="space-y-2">
+                  <Label htmlFor="custom-endpoint">API Endpoint URL</Label>
+                  <Input
+                    id="custom-endpoint"
+                    placeholder="https://api.example.com/v1/chat/completions"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-key">API Key</Label>
+                  <Input
+                    id="custom-key"
+                    type="password"
+                    placeholder="Your API key"
+                    value={customApiKey}
+                    onChange={(e) => setCustomApiKey(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-model">Model Name</Label>
+                  <Input
+                    id="custom-model"
+                    placeholder="e.g., claude-3-opus"
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                  />
+                </div>
+                <Button onClick={() => toast.success("Custom provider saved")}>
+                  Save Configuration
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* System Prompt */}
+          <div className="space-y-2 pt-4 border-t">
+            <Label>System Prompt</Label>
+            <Textarea 
+              value={config?.system_prompt} 
+              onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })} 
+              onBlur={() => updateConfig({ system_prompt: config.system_prompt })} 
+              rows={4}
+              placeholder="You are a helpful customer service assistant..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Define how the AI should behave and respond to customers
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -15,7 +15,7 @@ const Landing = () => {
     document.title = "À La Carte Chat - WhatsApp Business API & Combined Inbox Platform | Manage All Customer Messages";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Manage WhatsApp Business API, email, and all customer messages in one aggregated inbox. Meta Business integration for multi-agent teams. Talk to your customers in one place with AI-powered responses.');
+      metaDescription.setAttribute('content', 'Unified inbox for WhatsApp Business API, Email, SMS, Facebook Messenger & Instagram DMs. Multi-agent collaboration, AI chatbot, full API access. Install as PWA on any device.');
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
@@ -46,7 +46,7 @@ const Landing = () => {
       content: 'website'
     }, {
       property: 'og:image',
-      content: '/placeholder.svg'
+      content: `${window.location.origin}/favicon-192x192.png`
     }];
     ogTags.forEach(tag => {
       let element = document.querySelector(`meta[property="${tag.property}"]`);
@@ -84,20 +84,35 @@ const Landing = () => {
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
   const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration with unlimited receiving" },
-    { icon: Mail, title: "Email Integration", description: "Multiple IMAP/SMTP accounts, Gmail OAuth, unlimited inbox aggregation" },
-    { icon: MessageSquare, title: "SMS Messaging", description: "Send/receive SMS via Twilio with conversation threading" },
-    { icon: MessageSquare, title: "Facebook Messenger", description: "Manage Facebook Page messages in unified inbox" },
-    { icon: MessageSquare, title: "Instagram DMs", description: "Handle Instagram Direct Messages alongside other channels" },
-    { icon: Users, title: "Multi-Agent Collaboration", description: "Up to 10 agents (Pro) or unlimited (Enterprise) manage conversations simultaneously" },
-    { icon: MessageSquare, title: "AI Assistant", description: "Train custom AI chatbot on your FAQs, auto-respond during business hours or 24/7" },
-    { icon: MessageSquare, title: "Full REST API", description: "Sync customer data, send/receive messages, manage contacts via API (Professional+)" },
-    { icon: MessageSquare, title: "Embeddable Widget", description: "Add live chat to your website via iframe with full branding control" },
-    { icon: MessageSquare, title: "File Attachments", description: "Send/receive images, PDFs, videos, voice notes across all channels" },
-    { icon: Calendar, title: "Task & Calendar Sync", description: "Auto-create tasks from statuses, export to Google Calendar/Outlook" },
-    { icon: Bell, title: "Real-Time Notifications", description: "Web Push, email alerts, never miss a customer message" },
+    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration • Unlimited receiving • Template management • Button click tracking" },
+    { icon: Mail, title: "Email Integration", description: "Multiple IMAP/SMTP accounts • Gmail OAuth 2.0 • Unlimited inbox aggregation • Auto-sync every 5 minutes" },
+    { icon: MessageSquare, title: "SMS Messaging", description: "Send/receive SMS via Twilio • Conversation threading • Global reach to 200+ countries" },
+    { icon: MessageSquare, title: "Facebook Messenger", description: "Manage Facebook Page messages • Unified inbox • Automated responses" },
+    { icon: MessageSquare, title: "Instagram DMs", description: "Handle Instagram Direct Messages • Story replies • Business account integration" },
+    { icon: Users, title: "Multi-Agent Collaboration", description: "Up to 10 agents (Professional) or unlimited (Enterprise) • Conversation assignment • Team workload balancing" },
+    { icon: MessageSquare, title: "AI Assistant", description: "Train custom AI chatbot on your FAQs • Auto-respond 24/7 or business hours only • Approval queue for sensitive responses" },
+    { icon: MessageSquare, title: "Full REST API", description: "Sync customer data • Send/receive messages • Manage contacts • 1000 req/hour (Professional+)" },
+    { icon: MessageSquare, title: "Embeddable Widget", description: "Add live chat iframe to your website • Full branding control • SSO integration • Mobile responsive" },
+    { icon: MessageSquare, title: "Voice Notes & Files", description: "Send/receive voice recordings • Images, PDFs, videos, documents • All formats supported • Malware scanning" },
+    { icon: Calendar, title: "Task & Calendar Sync", description: "Auto-create tasks from conversation statuses • Export to Google Calendar • Outlook sync • ICS download" },
+    { icon: Bell, title: "Progressive Web App", description: "Install on any device • iPhone, Android, Desktop • Works offline • Push notifications • No app store needed" },
   ];
   const pricingTiers = [{
+    name: "Free",
+    price: "Free",
+    period: "forever",
+    description: "Get started",
+    features: [
+      "1 team member",
+      "100 WhatsApp messages/month",
+      "Unlimited receiving",
+      "Email integration",
+      "Community support"
+    ],
+    cta: "Start Free",
+    highlighted: false,
+    tier: "free"
+  }, {
     name: "Starter",
     price: "$29",
     period: "/month",
@@ -105,12 +120,13 @@ const Landing = () => {
     features: [
       "2 team members",
       "1,000 messages/month",
-      "Basic templates",
+      "All channels",
       "Email support",
-      "WhatsApp integration"
+      "Basic templates"
     ],
     cta: "Subscribe",
-    highlighted: false
+    highlighted: true,
+    tier: "starter"
   }, {
     name: "Professional",
     price: "$79",
@@ -119,31 +135,28 @@ const Landing = () => {
     features: [
       "10 team members",
       "10,000 messages/month",
-      "Advanced templates",
-      "AI assistant",
-      "Priority support",
+      "AI assistant (1,000 responses)",
       "API access",
-      "Email integration"
+      "Priority support"
     ],
     cta: "Subscribe",
-    highlighted: true
+    highlighted: false,
+    tier: "professional"
   }, {
     name: "Enterprise",
     price: "$199",
     period: "/month",
     description: "per seat",
     features: [
-      "Unlimited team members",
-      "Unlimited messages",
-      "Custom templates",
-      "AI assistant",
-      "24/7 premium support",
-      "Full API access",
+      "Unlimited everything",
+      "AI assistant (unlimited)",
+      "Dedicated support",
       "Custom integrations",
-      "Dedicated account manager"
+      "Account manager"
     ],
-    cta: "Subscribe",
-    highlighted: false
+    cta: "Contact Sales",
+    highlighted: false,
+    tier: "enterprise"
   }];
   return <div className="min-h-screen bg-background">
       {/* Header */}
@@ -178,10 +191,13 @@ const Landing = () => {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            WhatsApp / Email / AI ChatBot
+            All Customer Messages in One Inbox
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-foreground">
-            The ultimate combined inbox for WhatsApp Business, Emails and customer conversations with your personally trained AI chatbot Built-in! Allow your team to talk to customers from one aggregated inbox
+            WhatsApp Business • Email • SMS • Facebook Messenger • Instagram DMs • AI Chatbot
+          </p>
+          <p className="text-lg mb-8 max-w-3xl mx-auto text-muted-foreground">
+            Manage all customer conversations from one aggregated inbox. Train your AI assistant, enable your team, and never miss a message across any channel.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/signup")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
