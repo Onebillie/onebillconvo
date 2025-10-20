@@ -71,17 +71,32 @@ const Dashboard = () => {
   const [isTabVisible, setIsTabVisible] = useState(true);
   const navigate = useNavigate();
 
-  // Compute an initial left panel size in % based on a target pixel width for the conversation list
+  // Compute a responsive left panel size/min/max based on desired pixel widths
   const [leftPanelSize] = useState<number>(() => {
     if (typeof window === "undefined") return 35;
     const containerWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
-    const desiredPx = 360; // target width for conversation list
-    const minPx = 280;
-    const maxPx = 520;
-    const px = Math.min(Math.max(desiredPx, minPx), maxPx);
+    const desiredPx = 360; // ideal width for conversation tools to be fully visible
+    const px = Math.min(Math.max(desiredPx, 320), 560);
     const percent = Math.round((px / Math.max(containerWidth, 1)) * 100);
-    return Math.max(22, Math.min(percent, 45));
+    return Math.max(22, Math.min(percent, 55));
   });
+  const [leftPanelMin, setLeftPanelMin] = useState<number>(22);
+  const [leftPanelMax, setLeftPanelMax] = useState<number>(55);
+
+  useEffect(() => {
+    const recalc = () => {
+      const containerWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
+      const minPx = 320; // never let the list shrink below this
+      const maxPx = 560; // allow expanding to comfortably show filters/buttons
+      const toPct = (px: number) => Math.round((px / Math.max(containerWidth, 1)) * 100);
+      setLeftPanelMin(Math.max(18, Math.min(toPct(minPx), 65)));
+      setLeftPanelMax(Math.max(leftPanelMin + 5, Math.min(toPct(maxPx), 70)));
+    };
+    recalc();
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, []);
+
 
   // Handle URL parameters to auto-select conversation
   useEffect(() => {
@@ -803,12 +818,13 @@ const Dashboard = () => {
           </div>
         ) : (
           /* Desktop: Resizable layout */
-          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0" autoSaveId="dashboard-panels-v1">
             {/* Left: Conversations list */}
             <ResizablePanel 
               defaultSize={leftPanelSize} 
-              minSize={22} 
-              maxSize={45}
+              minSize={leftPanelMin} 
+              maxSize={leftPanelMax}
+              collapsible
             >
               <div className="h-full border-r border-border flex flex-col">
                 {conversationSidebar}
