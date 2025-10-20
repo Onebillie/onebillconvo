@@ -60,16 +60,24 @@ export const InMailComposer = ({
   const fetchTeamMembers = async () => {
     if (!currentBusinessId) return;
 
+    // First get business user IDs
+    const { data: businessUsers } = await supabase
+      .from('business_users')
+      .select('user_id')
+      .eq('business_id', currentBusinessId);
+
+    if (!businessUsers || businessUsers.length === 0) {
+      setTeamMembers([]);
+      return;
+    }
+
+    const userIds = businessUsers.map(bu => bu.user_id);
+
+    // Then get profiles for those users
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, email')
-      .in(
-        'id',
-        supabase
-          .from('business_users')
-          .select('user_id')
-          .eq('business_id', currentBusinessId)
-      );
+      .in('id', userIds);
 
     setTeamMembers(data || []);
   };

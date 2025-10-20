@@ -1124,6 +1124,58 @@ export type Database = {
           },
         ]
       }
+      conversation_transfers: {
+        Row: {
+          conversation_id: string
+          from_user_id: string
+          id: string
+          notes: string | null
+          reason: string | null
+          to_user_id: string
+          transferred_at: string | null
+        }
+        Insert: {
+          conversation_id: string
+          from_user_id: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          to_user_id: string
+          transferred_at?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          from_user_id?: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          to_user_id?: string
+          transferred_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_transfers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transfers_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transfers_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           assigned_to: string | null
@@ -1141,6 +1193,9 @@ export type Database = {
           resolved_at: string | null
           status: string | null
           status_tag_id: string | null
+          transfer_reason: string | null
+          transferred_at: string | null
+          transferred_from: string | null
           updated_at: string | null
           whatsapp_account_id: string | null
         }
@@ -1160,6 +1215,9 @@ export type Database = {
           resolved_at?: string | null
           status?: string | null
           status_tag_id?: string | null
+          transfer_reason?: string | null
+          transferred_at?: string | null
+          transferred_from?: string | null
           updated_at?: string | null
           whatsapp_account_id?: string | null
         }
@@ -1179,6 +1237,9 @@ export type Database = {
           resolved_at?: string | null
           status?: string | null
           status_tag_id?: string | null
+          transfer_reason?: string | null
+          transferred_at?: string | null
+          transferred_from?: string | null
           updated_at?: string | null
           whatsapp_account_id?: string | null
         }
@@ -1202,6 +1263,13 @@ export type Database = {
             columns: ["status_tag_id"]
             isOneToOne: false
             referencedRelation: "conversation_status_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_transferred_from_fkey"
+            columns: ["transferred_from"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1823,6 +1891,131 @@ export type Database = {
           },
         ]
       }
+      internal_message_attachments: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_messages: {
+        Row: {
+          business_id: string
+          content: string
+          created_at: string | null
+          deleted_by_recipient: boolean | null
+          deleted_by_sender: boolean | null
+          id: string
+          is_read: boolean | null
+          priority: string | null
+          read_at: string | null
+          recipient_id: string
+          related_conversation_id: string | null
+          related_task_id: string | null
+          sender_id: string
+          subject: string
+        }
+        Insert: {
+          business_id: string
+          content: string
+          created_at?: string | null
+          deleted_by_recipient?: boolean | null
+          deleted_by_sender?: boolean | null
+          id?: string
+          is_read?: boolean | null
+          priority?: string | null
+          read_at?: string | null
+          recipient_id: string
+          related_conversation_id?: string | null
+          related_task_id?: string | null
+          sender_id: string
+          subject: string
+        }
+        Update: {
+          business_id?: string
+          content?: string
+          created_at?: string | null
+          deleted_by_recipient?: boolean | null
+          deleted_by_sender?: boolean | null
+          id?: string
+          is_read?: boolean | null
+          priority?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          related_conversation_id?: string | null
+          related_task_id?: string | null
+          sender_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_messages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_messages_related_conversation_id_fkey"
+            columns: ["related_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_messages_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_due: number
@@ -2174,6 +2367,80 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          email_assignment: boolean | null
+          email_daily_summary: boolean | null
+          email_new_message: boolean | null
+          email_team_message: boolean | null
+          email_transfer: boolean | null
+          id: string
+          inapp_assignment: boolean | null
+          inapp_mention: boolean | null
+          inapp_new_message: boolean | null
+          inapp_team_message: boolean | null
+          inapp_transfer: boolean | null
+          push_assignment: boolean | null
+          push_new_message: boolean | null
+          push_urgent_only: boolean | null
+          quiet_hours_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          email_assignment?: boolean | null
+          email_daily_summary?: boolean | null
+          email_new_message?: boolean | null
+          email_team_message?: boolean | null
+          email_transfer?: boolean | null
+          id?: string
+          inapp_assignment?: boolean | null
+          inapp_mention?: boolean | null
+          inapp_new_message?: boolean | null
+          inapp_team_message?: boolean | null
+          inapp_transfer?: boolean | null
+          push_assignment?: boolean | null
+          push_new_message?: boolean | null
+          push_urgent_only?: boolean | null
+          quiet_hours_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          email_assignment?: boolean | null
+          email_daily_summary?: boolean | null
+          email_new_message?: boolean | null
+          email_team_message?: boolean | null
+          email_transfer?: boolean | null
+          id?: string
+          inapp_assignment?: boolean | null
+          inapp_mention?: boolean | null
+          inapp_new_message?: boolean | null
+          inapp_team_message?: boolean | null
+          inapp_transfer?: boolean | null
+          push_assignment?: boolean | null
+          push_new_message?: boolean | null
+          push_urgent_only?: boolean | null
+          quiet_hours_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -2304,6 +2571,30 @@ export type Database = {
           selected_plan?: string
           stripe_session_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -2465,6 +2756,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          business_id: string
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_logs: {
         Row: {
@@ -2875,6 +3222,60 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      teams: {
+        Row: {
+          business_id: string
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          department: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usage_alerts_sent: {
         Row: {
