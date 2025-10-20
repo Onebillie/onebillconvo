@@ -5,6 +5,10 @@ import { MessageSquare, Users, Mail, Bell, Calendar, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import heroCollaboration from "@/assets/hero-collaboration.jpg";
+import unifiedInboxDashboard from "@/assets/unified-inbox-dashboard.jpg";
+import aiChatbotInterface from "@/assets/ai-chatbot-interface.jpg";
+import mobilePwaApp from "@/assets/mobile-pwa-app.jpg";
 const Landing = () => {
   const navigate = useNavigate();
   const {
@@ -84,18 +88,18 @@ const Landing = () => {
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
   const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration • Unlimited receiving • Template management • Button click tracking" },
-    { icon: Mail, title: "Email Integration", description: "Multiple IMAP/SMTP accounts • Gmail OAuth 2.0 • Unlimited inbox aggregation • Auto-sync every 5 minutes" },
-    { icon: MessageSquare, title: "SMS Messaging", description: "Send/receive SMS via Twilio • Conversation threading • Global reach to 200+ countries" },
-    { icon: MessageSquare, title: "Facebook Messenger", description: "Manage Facebook Page messages • Unified inbox • Automated responses" },
-    { icon: MessageSquare, title: "Instagram DMs", description: "Handle Instagram Direct Messages • Story replies • Business account integration" },
-    { icon: Users, title: "Multi-Agent Collaboration", description: "Up to 10 agents (Professional) or unlimited (Enterprise) • Conversation assignment • Team workload balancing" },
-    { icon: MessageSquare, title: "AI Assistant", description: "Train custom AI chatbot on your FAQs • Auto-respond 24/7 or business hours only • Approval queue for sensitive responses" },
-    { icon: MessageSquare, title: "Full REST API", description: "Sync customer data • Send/receive messages • Manage contacts • 1000 req/hour (Professional+)" },
-    { icon: MessageSquare, title: "Embeddable Widget", description: "Add live chat iframe to your website • Full branding control • SSO integration • Mobile responsive" },
-    { icon: MessageSquare, title: "Voice Notes & Files", description: "Send/receive voice recordings • Images, PDFs, videos, documents • All formats supported • Malware scanning" },
-    { icon: Calendar, title: "Task & Calendar Sync", description: "Auto-create tasks from conversation statuses • Export to Google Calendar • Outlook sync • ICS download" },
-    { icon: Bell, title: "Progressive Web App", description: "Install on any device • iPhone, Android, Desktop • Works offline • Push notifications • No app store needed" },
+    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta verification • Send 100,000+ messages/month • Template management with approval tracking • Button click analytics • Unlimited receiving" },
+    { icon: Mail, title: "Email Integration", description: "Connect unlimited Gmail, Outlook, custom domains • OAuth 2.0 security • Auto-sync every 5 min • Rich HTML support • Attachment handling" },
+    { icon: MessageSquare, title: "SMS Messaging", description: "Global SMS via Twilio • Reach 200+ countries • Automatic cost calculator • Conversation threading • Delivery tracking" },
+    { icon: MessageSquare, title: "Facebook Messenger", description: "Facebook Page integration • Auto-sync messages • Automated responses • File sharing • Typing indicators" },
+    { icon: MessageSquare, title: "Instagram DMs", description: "Business account integration • Story reply handling • Media support • Auto-assignment to agents" },
+    { icon: Users, title: "Multi-Agent Collaboration", description: "10 agents (Professional) or unlimited (Enterprise) • Smart assignment rules • Workload balancing • Performance metrics • Internal notes" },
+    { icon: MessageSquare, title: "AI Assistant That Learns", description: "Train on YOUR FAQs and docs • Auto-respond instantly or queue for approval • Works 24/7 or business hours • Supports 50+ languages • Custom personality" },
+    { icon: MessageSquare, title: "Full REST API", description: "Sync CRM data bidirectionally • Send/receive programmatically • Webhook notifications • 1000 req/hour (Pro) • OpenAPI documentation" },
+    { icon: MessageSquare, title: "Embeddable Chat Widget", description: "Add live chat to ANY website • Match your brand colors • SSO login • Mobile responsive • Works with WordPress, Shopify, custom sites" },
+    { icon: MessageSquare, title: "Voice Notes & All Files", description: "Voice recordings • Images • PDFs • Videos • Documents up to 100MB • Automatic malware scanning • Cloud storage" },
+    { icon: Calendar, title: "Task & Calendar Automation", description: "Auto-create tasks from statuses • Export to Google Calendar • Outlook sync • ICS download • Follow-up reminders" },
+    { icon: Bell, title: "Install as Mobile App (PWA)", description: "Works on iPhone, Android, Desktop • Add to home screen • Push notifications • Works offline • No app store downloads" },
   ];
   const pricingTiers = [{
     name: "Free",
@@ -188,34 +192,84 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            All Customer Messages in One Inbox
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-foreground">
-            WhatsApp Business • Email • SMS • Facebook Messenger • Instagram DMs • AI Chatbot
-          </p>
-          <p className="text-lg mb-8 max-w-3xl mx-auto text-muted-foreground">
-            Manage all customer conversations from one aggregated inbox. Train your AI assistant, enable your team, and never miss a message across any channel.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/signup")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 rounded-2xl">
-              Watch Demo
-            </Button>
+      <section className="py-20 md:py-32 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-left">
+              <Badge className="mb-4 text-sm px-4 py-2">Trusted by 1,000+ businesses worldwide</Badge>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Stop Juggling Apps. Start Closing Deals.
+              </h1>
+              <p className="text-xl md:text-2xl mb-4 text-foreground font-semibold">
+                WhatsApp Business API • Email • SMS • Facebook • Instagram • AI Chatbot
+              </p>
+              <p className="text-lg mb-8 text-muted-foreground leading-relaxed">
+                <strong>Your customers message you everywhere.</strong> WhatsApp for quick questions, email for quotes, SMS for confirmations, Instagram for inquiries. You're drowning in tabs, missing messages, and losing sales.
+              </p>
+              <p className="text-lg mb-8 text-muted-foreground leading-relaxed">
+                <strong>À La Carte Chat fixes this.</strong> Every channel flows into ONE unified inbox. Your team sees every conversation, AI handles routine questions 24/7, and you never miss another opportunity.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button size="lg" onClick={() => navigate("/signup")} className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+                  Start Free - No Credit Card
+                </Button>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 rounded-2xl">
+                  See How It Works
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                ⚡ 5-minute setup • 💰 Cancel anytime • 🚀 100 free messages
+              </p>
+            </div>
+            <div className="relative">
+              <img 
+                src={heroCollaboration} 
+                alt="Team collaborating on unified customer inbox dashboard"
+                className="rounded-2xl shadow-2xl w-full"
+              />
+              <div className="absolute -bottom-6 -left-6 bg-card border-2 border-primary rounded-xl p-4 shadow-xl">
+                <p className="text-sm font-semibold text-primary">↑ 127% faster response time</p>
+              </div>
+              <div className="absolute -top-6 -right-6 bg-card border-2 border-green-500 rounded-xl p-4 shadow-xl">
+                <p className="text-sm font-semibold text-green-600">↑ 43% more conversions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Problem/Solution Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">The Real Cost of Scattered Messages</h2>
+            <div className="grid md:grid-cols-3 gap-8 text-left">
+              <div className="bg-card p-6 rounded-xl border-2 border-destructive/20">
+                <div className="text-4xl mb-3">❌</div>
+                <h3 className="font-semibold text-lg mb-2">Missed Revenue</h3>
+                <p className="text-muted-foreground">Customer asks about pricing on WhatsApp. You see it 3 hours later. They bought from a competitor.</p>
+              </div>
+              <div className="bg-card p-6 rounded-xl border-2 border-destructive/20">
+                <div className="text-4xl mb-3">😓</div>
+                <h3 className="font-semibold text-lg mb-2">Team Chaos</h3>
+                <p className="text-muted-foreground">Sarah checks email, Tom monitors WhatsApp, Lisa watches Instagram. Nobody knows who's handling what.</p>
+              </div>
+              <div className="bg-card p-6 rounded-xl border-2 border-destructive/20">
+                <div className="text-4xl mb-3">⏰</div>
+                <h3 className="font-semibold text-lg mb-2">Wasted Time</h3>
+                <p className="text-muted-foreground">Your team spends 2+ hours daily switching between apps, copying messages, and hunting for conversations.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-secondary/5">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Everything You Need to Manage Customer Messages</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">One Platform. Every Channel. Zero Chaos.</h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Our aggregated inbox combines WhatsApp Business, email, and all channels. Talk to your customers in one place with powerful Meta Business integration.
+            Stop switching tabs. À La Carte Chat brings WhatsApp Business API, email, SMS, Facebook, Instagram, and AI into one powerful unified inbox.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2">
@@ -227,26 +281,105 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Visual Demo Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+            <div>
+              <Badge className="mb-4">SEE IT IN ACTION</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Your Entire Inbox. One Beautiful Dashboard.</h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                WhatsApp messages appear next to emails. Instagram DMs thread with SMS. Your team sees everything without switching apps.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Unified conversation view:</strong> See all messages from a customer across every channel in one thread
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Smart agent assignment:</strong> Automatically route conversations to the right team member
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Real-time collaboration:</strong> See who's typing, mark conversations as resolved, leave internal notes
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div className="relative">
+              <img 
+                src={unifiedInboxDashboard} 
+                alt="Unified inbox dashboard showing WhatsApp, email, and social media messages aggregated"
+                className="rounded-2xl shadow-2xl w-full"
+              />
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1 relative">
+              <img 
+                src={aiChatbotInterface} 
+                alt="AI chatbot providing automated customer support responses"
+                className="rounded-2xl shadow-2xl w-full"
+              />
+            </div>
+            <div className="order-1 lg:order-2">
+              <Badge className="mb-4">AI THAT WORKS FOR YOU</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Your AI Assistant Answers While You Sleep</h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                Train the AI on YOUR business docs, FAQs, and policies. It responds instantly to common questions—even at 2 AM—while you decide if sensitive replies need human approval.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Instant training:</strong> Upload your FAQ, paste your knowledge base, and the AI learns your business
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Approval queue:</strong> AI drafts responses for pricing/refunds, you approve before sending
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <strong>Multi-language support:</strong> Automatically responds in 50+ languages to reach global customers
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">How to Manage WhatsApp Business in 3 Steps</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Get Started in 5 Minutes</h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Set up your combined inbox and start managing all customer messages from WhatsApp Business API, email, and more
+            No technical skills required. Connect your WhatsApp Business API, email, and other channels in minutes—not weeks.
           </p>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[{
             step: "1",
-            title: "Connect WhatsApp Business API",
-            description: "Link your Meta Business Platform account and WhatsApp Business API to your aggregated inbox"
+            title: "Connect Your Channels",
+            description: "Link WhatsApp Business API, Gmail, SMS, Facebook, Instagram—all in under 5 minutes with step-by-step wizards"
           }, {
             step: "2",
-            title: "Add Your Team Agents",
-            description: "Invite up to 10 agents to manage messages and talk to customers collaboratively"
+            title: "Train Your AI & Add Team",
+            description: "Upload FAQs to train AI assistant. Invite team members. Set up auto-assignment rules. You're ready to go."
           }, {
             step: "3",
-            title: "Manage All Messages",
-            description: "Handle WhatsApp, email, and all customer communications from one combined inbox with AI assistance"
+            title: "Start Converting Faster",
+            description: "Messages pour into ONE inbox. AI handles routine questions. Your team focuses on closing deals. Watch revenue grow."
           }].map((step, index) => <div key={index} className="text-center">
                 <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 mx-auto" aria-label={`Step ${step.step}`}>
                   {step.step}
@@ -640,9 +773,9 @@ ai.response.completed`}</code>
       {/* Pricing Section */}
       <section className="py-20 bg-gradient-to-br from-secondary/5 to-primary/5">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Choose Your Plan</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Pricing That Grows With You</h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Select the perfect plan for your business needs
+            Start free. Upgrade when ready. Cancel anytime. No contracts, no surprises.
           </p>
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {pricingTiers.map((tier, index) => <Card key={index} className={`p-8 rounded-xl transition-all hover:shadow-xl ${tier.highlighted ? "border-primary border-2 shadow-lg" : "border"}`}>
@@ -684,7 +817,7 @@ ai.response.completed`}</code>
                 <span className="font-semibold">À La Carte Chat</span>
               </div>
               <p className="text-sm text-foreground/70">
-                The leading combined inbox platform for WhatsApp Business API and customer message management. Talk to your customers in one place with Meta Business integration.
+                Transform customer conversations into revenue. À La Carte Chat aggregates WhatsApp, email, SMS, Facebook, Instagram into one powerful platform. Never miss a message. Never lose a sale.
               </p>
             </div>
             <div>
@@ -717,7 +850,7 @@ ai.response.completed`}</code>
               <p>© 2025 À La Carte Chat. All rights reserved.</p>
               <a href="/admin/login" className="text-xs hover:text-primary">Admin</a>
             </div>
-            <p className="text-xs">WhatsApp Business API | Meta Business Platform | Combined Inbox | Aggregated Messaging | Customer Message Management</p>
+            <p className="text-xs">Unified Inbox • WhatsApp Business API • Email Aggregation • SMS Messaging • Facebook Messenger • Instagram DMs • AI Assistant • Multi-Channel Customer Communication</p>
           </div>
         </div>
       </footer>
