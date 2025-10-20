@@ -22,14 +22,14 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Get businesses with subscriptions expiring in 3 days
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-    const threeDaysFromNowStr = threeDaysFromNow.toISOString().split('T')[0];
+    // Get businesses with subscriptions expiring in 7 days
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const sevenDaysFromNowStr = sevenDaysFromNow.toISOString().split('T')[0];
 
-    const fourDaysFromNow = new Date();
-    fourDaysFromNow.setDate(fourDaysFromNow.getDate() + 4);
-    const fourDaysFromNowStr = fourDaysFromNow.toISOString().split('T')[0];
+    const eightDaysFromNow = new Date();
+    eightDaysFromNow.setDate(eightDaysFromNow.getDate() + 8);
+    const eightDaysFromNowStr = eightDaysFromNow.toISOString().split('T')[0];
 
     const { data: businesses } = await supabaseAdmin
       .from('businesses')
@@ -47,8 +47,8 @@ serve(async (req) => {
         )
       `)
       .eq('subscription_status', 'active')
-      .gte('subscription_end_date', threeDaysFromNowStr)
-      .lt('subscription_end_date', fourDaysFromNowStr);
+      .gte('subscription_end_date', sevenDaysFromNowStr)
+      .lt('subscription_end_date', eightDaysFromNowStr);
 
     if (!businesses || businesses.length === 0) {
       return new Response(
@@ -80,13 +80,13 @@ serve(async (req) => {
         await supabaseAdmin.functions.invoke('send-transactional-email', {
           body: {
             to: adminEmail,
-            subject: `Your ${business.subscription_tier} subscription renews in 3 days`,
+            subject: `Your ${business.subscription_tier} subscription renews in 7 days`,
             html: `
               <h2>Subscription Renewal Reminder</h2>
               
               <p>Hi ${business.name} team,</p>
               
-              <p>This is a friendly reminder that your <strong>${business.subscription_tier}</strong> subscription will automatically renew in 3 days.</p>
+              <p>This is a friendly reminder that your <strong>${business.subscription_tier}</strong> subscription will automatically renew in 7 days.</p>
               
               <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="margin-top: 0;">Renewal Details</h3>

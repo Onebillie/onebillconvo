@@ -441,7 +441,34 @@ export const MessageInput = ({
             </button>
           )}
           <button
-            onClick={() => setSendVia("sms")}
+            onClick={async () => {
+              // Check if SMS is configured before allowing selection
+              const { data: { user } } = await supabase.auth.getUser();
+              const { data: businessData } = await supabase
+                .from('business_users')
+                .select('business_id')
+                .eq('user_id', user?.id)
+                .maybeSingle();
+              
+              if (businessData?.business_id) {
+                const { data: smsAccounts } = await supabase
+                  .from('sms_accounts')
+                  .select('id')
+                  .eq('business_id', businessData.business_id)
+                  .eq('is_active', true)
+                  .limit(1);
+                
+                if (!smsAccounts || smsAccounts.length === 0) {
+                  toast({
+                    title: "SMS Not Configured",
+                    description: "Please configure your SMS account in Settings → Channels first.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+              }
+              setSendVia("sms");
+            }}
             className={cn(
               "px-3 py-2 text-sm font-medium transition-colors border-l",
               sendVia === "sms"

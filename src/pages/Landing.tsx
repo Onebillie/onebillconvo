@@ -19,7 +19,7 @@ const Landing = () => {
     document.title = "À La Carte Chat - WhatsApp Business API & Combined Inbox Platform | Manage All Customer Messages";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Unified inbox for WhatsApp Business API, Email, SMS, Facebook Messenger & Instagram DMs. Multi-agent collaboration, AI chatbot, full API access. Install as PWA on any device.');
+      metaDescription.setAttribute('content', 'Unified inbox for WhatsApp Business API, Email, and SMS. Multi-agent collaboration, AI chatbot, full API access. Facebook & Instagram coming Q1 2026. Install as PWA on any device.');
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
@@ -88,18 +88,18 @@ const Landing = () => {
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
   const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta verification • Send 100,000+ messages/month • Template management with approval tracking • Button click analytics • Unlimited receiving" },
-    { icon: Mail, title: "Email Integration", description: "Connect unlimited Gmail, Outlook, custom domains • OAuth 2.0 security • Auto-sync every 5 min • Rich HTML support • Attachment handling" },
-    { icon: MessageSquare, title: "SMS Messaging", description: "Global SMS via Twilio • Reach 200+ countries • Automatic cost calculator • Conversation threading • Delivery tracking" },
-    { icon: MessageSquare, title: "Facebook Messenger", description: "Facebook Page integration • Auto-sync messages • Automated responses • File sharing • Typing indicators" },
-    { icon: MessageSquare, title: "Instagram DMs", description: "Business account integration • Story reply handling • Media support • Auto-assignment to agents" },
-    { icon: Users, title: "Multi-Agent Collaboration", description: "10 agents (Professional) or unlimited (Enterprise) • Smart assignment rules • Workload balancing • Performance metrics • Internal notes" },
-    { icon: MessageSquare, title: "AI Assistant That Learns", description: "Train on YOUR FAQs and docs • Auto-respond instantly or queue for approval • Works 24/7 or business hours • Supports 50+ languages • Custom personality" },
-    { icon: MessageSquare, title: "Full REST API", description: "Sync CRM data bidirectionally • Send/receive programmatically • Webhook notifications • 1000 req/hour (Pro) • OpenAPI documentation" },
-    { icon: MessageSquare, title: "Embeddable Chat Widget", description: "Add live chat to ANY website • Match your brand colors • SSO login • Mobile responsive • Works with WordPress, Shopify, custom sites" },
-    { icon: MessageSquare, title: "Voice Notes & All Files", description: "Voice recordings • Images • PDFs • Videos • Documents up to 100MB • Automatic malware scanning • Cloud storage" },
-    { icon: Calendar, title: "Task & Calendar Automation", description: "Auto-create tasks from statuses • Export to Google Calendar • Outlook sync • ICS download • Follow-up reminders" },
-    { icon: Bell, title: "Install as Mobile App (PWA)", description: "Works on iPhone, Android, Desktop • Add to home screen • Push notifications • Works offline • No app store downloads" },
+    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta verification • Send 100,000+ messages/month • Template management with approval tracking • Button click analytics • Unlimited receiving", status: "active" },
+    { icon: Mail, title: "Email Integration", description: "Connect unlimited Gmail, Outlook, custom domains • OAuth 2.0 security • Auto-sync every 5 min • Rich HTML support • Attachment handling", status: "active" },
+    { icon: MessageSquare, title: "SMS Messaging", description: "Global SMS via Twilio • Reach 200+ countries • Automatic cost calculator • Conversation threading • Delivery tracking", status: "active" },
+    { icon: MessageSquare, title: "Facebook Messenger", description: "Facebook Page integration • Auto-sync messages • Automated responses • File sharing • Typing indicators", status: "coming_soon" },
+    { icon: MessageSquare, title: "Instagram DMs", description: "Business account integration • Story reply handling • Media support • Auto-assignment to agents", status: "coming_soon" },
+    { icon: Users, title: "Multi-Agent Collaboration", description: "10 agents (Professional) or unlimited (Enterprise) • Smart assignment rules • Workload balancing • Performance metrics • Internal notes", status: "active" },
+    { icon: MessageSquare, title: "AI Assistant That Learns", description: "Train on YOUR FAQs and docs • Auto-respond instantly or queue for approval • Works 24/7 or business hours • Supports 50+ languages • Custom personality", status: "active" },
+    { icon: MessageSquare, title: "Full REST API", description: "Sync CRM data bidirectionally • Send/receive programmatically • Webhook notifications • 1000 req/hour (Pro) • OpenAPI documentation", status: "active" },
+    { icon: MessageSquare, title: "Embeddable Chat Widget", description: "Add live chat to ANY website • Match your brand colors • SSO login • Mobile responsive • Works with WordPress, Shopify, custom sites", status: "active" },
+    { icon: MessageSquare, title: "Voice Notes & All Files", description: "Voice recordings • Images • PDFs • Videos • Documents up to 100MB • Automatic malware scanning • Cloud storage", status: "active" },
+    { icon: Calendar, title: "Task & Calendar Automation", description: "Auto-create tasks from statuses • Export to Google Calendar • Outlook sync • ICS download • Follow-up reminders", status: "active" },
+    { icon: Bell, title: "Install as Mobile App (PWA)", description: "Works on iPhone, Android, Desktop • Add to home screen • Push notifications • Works offline • No app store downloads", status: "active" },
   ];
   const pricingTiers = [{
     name: "Free",
@@ -201,7 +201,7 @@ const Landing = () => {
                 Stop Juggling Apps. Start Closing Deals.
               </h1>
               <p className="text-xl md:text-2xl mb-4 text-foreground font-semibold">
-                WhatsApp Business API • Email • SMS • Facebook • Instagram • AI Chatbot
+                WhatsApp Business API • Email • SMS • AI Chatbot <span className="text-muted-foreground text-lg">• Facebook & Instagram (Q1 2026)</span>
               </p>
               <p className="text-lg mb-8 text-muted-foreground leading-relaxed">
                 <strong>Your customers message you everywhere.</strong> WhatsApp for quick questions, email for quotes, SMS for confirmations, Instagram for inquiries. You're drowning in tabs, missing messages, and losing sales.
@@ -272,9 +272,14 @@ const Landing = () => {
             Stop switching tabs. À La Carte Chat brings WhatsApp Business API, email, SMS, Facebook, Instagram, and AI into one powerful unified inbox.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2">
+            {features.map((feature, index) => <Card key={index} className="p-6 hover:shadow-lg transition-all rounded-2xl border-2 relative">
                 <feature.icon className="w-12 h-12 text-primary mb-4" aria-hidden="true" />
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-xl font-semibold">{feature.title}</h3>
+                  {feature.status === 'coming_soon' && (
+                    <Badge variant="secondary" className="text-xs">COMING Q1 2026</Badge>
+                  )}
+                </div>
                 <p className="text-muted-foreground">{feature.description}</p>
               </Card>)}
           </div>
@@ -801,6 +806,49 @@ ai.response.completed`}</code>
                   {tier.cta}
                 </Button>
               </Card>)}
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge className="mb-4">PRODUCT ROADMAP</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">What's Coming Next</h2>
+            <p className="text-lg text-muted-foreground mb-12">
+              We're constantly improving À La Carte Chat. Here's what we're working on:
+            </p>
+            <div className="grid md:grid-cols-2 gap-6 text-left">
+              <Card className="p-6 border-2">
+                <Badge variant="secondary" className="mb-3">Q1 2026</Badge>
+                <h3 className="text-xl font-semibold mb-2">Facebook Messenger Integration</h3>
+                <p className="text-muted-foreground">
+                  Connect your Facebook Business Pages • Auto-sync messages • Automated responses • Full conversation history
+                </p>
+              </Card>
+              <Card className="p-6 border-2">
+                <Badge variant="secondary" className="mb-3">Q1 2026</Badge>
+                <h3 className="text-xl font-semibold mb-2">Instagram Direct Messages</h3>
+                <p className="text-muted-foreground">
+                  Business account integration • Story reply handling • Media support • Smart agent assignment
+                </p>
+              </Card>
+              <Card className="p-6 border-2">
+                <Badge variant="outline" className="mb-3">Q2 2026</Badge>
+                <h3 className="text-xl font-semibold mb-2">Advanced Analytics Dashboard</h3>
+                <p className="text-muted-foreground">
+                  Response time metrics • Agent performance tracking • Customer satisfaction scores • Revenue attribution
+                </p>
+              </Card>
+              <Card className="p-6 border-2">
+                <Badge variant="outline" className="mb-3">Q2 2026</Badge>
+                <h3 className="text-xl font-semibold mb-2">Telegram & WeChat Support</h3>
+                <p className="text-muted-foreground">
+                  Expand to global messaging platforms • Reach international customers • Unified inbox for all channels
+                </p>
+              </Card>
+            </div>
           </div>
         </div>
       </section>

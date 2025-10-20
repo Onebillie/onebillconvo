@@ -140,3 +140,57 @@ verify_jwt = false
 
 [functions.webhook-trigger]
 verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.send-trial-ending-email]
+verify_jwt = false
+
+[functions.send-renewal-reminder]
+verify_jwt = false
+
+[functions.check-auto-topup]
+verify_jwt = false
+
+[functions.check-credit-warning]
+verify_jwt = false
+
+[functions.send-weekly-usage-report]
+verify_jwt = false
+
+[functions.list-users-status]
+verify_jwt = true
+
+[functions.oauth-google-init]
+verify_jwt = true
+
+[functions.oauth-google-callback]
+verify_jwt = false
+
+[functions.oauth-refresh-tokens]
+verify_jwt = false
+
+[functions.calendar-sync]
+verify_jwt = true
+
+[functions.sms-send]
+verify_jwt = true
+
+[functions.sms-webhook]
+verify_jwt = false
+
+[functions.sms-status-callback]
+verify_jwt = false
+
+[functions.embed-auth]
+verify_jwt = false
+
+[functions.embed-message]
+verify_jwt = false
+
+[functions.confirm-user-email]
+verify_jwt = false
+
+[functions.whatsapp-seed-from-secrets]
+verify_jwt = false
