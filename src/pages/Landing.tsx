@@ -589,6 +589,54 @@ ai.response.completed`}</code>
         </div>
       </section>
 
+      {/* Screenshots Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">See It in Action</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Screenshots from our platform</p>
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              { title: "Unified Inbox", description: "All channels in one place", icon: "🖼️" },
+              { title: "AI Assistant", description: "Auto-respond feature", icon: "🤖" },
+              { title: "Team Collaboration", description: "Work together", icon: "👥" },
+              { title: "Button Analytics", description: "Track engagement", icon: "📊" },
+              { title: "Mobile PWA", description: "Any device", icon: "📱" },
+              { title: "API Dashboard", description: "Monitor integrations", icon: "⚡" }
+            ].map((item, i) => (
+              <Card key={i} className="p-6">
+                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg mb-4 flex items-center justify-center text-6xl">{item.icon}</div>
+                <h3 className="font-semibold mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Customer Reviews</h2>
+          <p className="text-center text-muted-foreground mb-12">What businesses say about us</p>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              { name: "Sarah J.", role: "Manager", avatar: "👩‍💼", quote: "All channels in one inbox. AI handles 80% automatically!" },
+              { name: "Michael C.", role: "Director", avatar: "👨‍💻", quote: "Seamless WhatsApp API integration. Great analytics." },
+              { name: "Emma R.", role: "CEO", avatar: "👩‍🚀", quote: "Best investment. Easy setup, fair pricing." }
+            ].map((t, i) => (
+              <Card key={i} className="p-6">
+                <div className="flex gap-3 mb-3">
+                  <div className="text-3xl">{t.avatar}</div>
+                  <div><h3 className="font-semibold">{t.name}</h3><p className="text-sm text-muted-foreground">{t.role}</p></div>
+                </div>
+                <div className="flex gap-1 mb-2">{[1,2,3,4,5].map(s => <span key={s}>⭐</span>)}</div>
+                <p className="text-sm italic">"{t.quote}"</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section className="py-20 bg-gradient-to-br from-secondary/5 to-primary/5">
         <div className="container mx-auto px-4">
