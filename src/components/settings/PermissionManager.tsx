@@ -38,12 +38,12 @@ export const PermissionManager = () => {
 
     // Fetch all permissions
     const { data: permsData } = await supabase
-      .from('permissions')
+      .from('permissions' as any)
       .select('*')
       .order('category', { ascending: true })
       .order('name', { ascending: true });
 
-    setPermissions(permsData || []);
+    setPermissions((permsData as unknown as Permission[]) || []);
 
     // Fetch staff with their permissions
     const { data: staffData } = await supabase
@@ -73,7 +73,7 @@ export const PermissionManager = () => {
     if (currentlyHas) {
       // Remove permission
       const { error } = await supabase
-        .from('role_permissions')
+        .from('role_permissions' as any)
         .delete()
         .eq('business_id', currentBusinessId)
         .eq('user_id', userId)
@@ -90,7 +90,7 @@ export const PermissionManager = () => {
     } else {
       // Grant permission
       const { error } = await supabase
-        .from('role_permissions')
+        .from('role_permissions' as any)
         .insert([{
           business_id: currentBusinessId,
           user_id: userId,

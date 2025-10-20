@@ -44,7 +44,7 @@ export const useTeams = () => {
     if (!currentBusinessId) return;
 
     const { data, error } = await supabase
-      .from('teams')
+      .from('teams' as any)
       .select('*')
       .eq('business_id', currentBusinessId)
       .eq('is_active', true)
@@ -61,16 +61,16 @@ export const useTeams = () => {
 
     // Get member counts separately
     const teamsWithCount = await Promise.all(
-      data.map(async (team) => {
+      (data || []).map(async (team: any) => {
         const { count } = await supabase
-          .from('team_members')
+          .from('team_members' as any)
           .select('*', { count: 'exact', head: true })
           .eq('team_id', team.id);
         
         return {
           ...team,
           member_count: count || 0
-        };
+        } as Team;
       })
     );
 
@@ -80,7 +80,7 @@ export const useTeams = () => {
 
   const fetchTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
     const { data: teamMembersData, error } = await supabase
-      .from('team_members')
+      .from('team_members' as any)
       .select('*')
       .eq('team_id', teamId);
 
@@ -99,11 +99,11 @@ export const useTeams = () => {
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('id, full_name, email, avatar_url')
-      .in('id', teamMembersData.map(tm => tm.user_id));
+      .in('id', (teamMembersData as any[]).map((tm: any) => tm.user_id));
 
     const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
 
-    return teamMembersData.map(tm => ({
+    return (teamMembersData as any[]).map((tm: any) => ({
       id: tm.id,
       team_id: tm.team_id,
       user_id: tm.user_id,
@@ -119,7 +119,7 @@ export const useTeams = () => {
     const { data: user } = await supabase.auth.getUser();
 
     const { data, error } = await supabase
-      .from('teams')
+      .from('teams' as any)
       .insert([{
         name: team.name || '',
         description: team.description || null,
@@ -147,12 +147,12 @@ export const useTeams = () => {
     });
 
     fetchTeams();
-    return data;
+    return data as unknown as Team;
   };
 
   const updateTeam = async (teamId: string, updates: Partial<Team>) => {
     const { error } = await supabase
-      .from('teams')
+      .from('teams' as any)
       .update(updates)
       .eq('id', teamId);
 
@@ -176,7 +176,7 @@ export const useTeams = () => {
 
   const deleteTeam = async (teamId: string) => {
     const { error } = await supabase
-      .from('teams')
+      .from('teams' as any)
       .delete()
       .eq('id', teamId);
 
@@ -200,7 +200,7 @@ export const useTeams = () => {
 
   const addTeamMember = async (teamId: string, userId: string, role: string = 'member') => {
     const { error } = await supabase
-      .from('team_members')
+      .from('team_members' as any)
       .insert([{ team_id: teamId, user_id: userId, role }]);
 
     if (error) {
@@ -222,7 +222,7 @@ export const useTeams = () => {
 
   const removeTeamMember = async (teamId: string, userId: string) => {
     const { error } = await supabase
-      .from('team_members')
+      .from('team_members' as any)
       .delete()
       .eq('team_id', teamId)
       .eq('user_id', userId);

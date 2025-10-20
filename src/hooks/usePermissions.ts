@@ -19,15 +19,15 @@ export const usePermissions = () => {
     // Superadmins have all permissions
     if (isSuperAdmin) {
       const { data: allPerms } = await supabase
-        .from('permissions')
+        .from('permissions' as any)
         .select('name');
-      setPermissions(allPerms?.map(p => p.name) || []);
+      setPermissions(allPerms?.map((p: any) => p.name) || []);
       setLoading(false);
       return;
     }
 
     const { data } = await supabase
-      .from('role_permissions')
+      .from('role_permissions' as any)
       .select('permission_id, permissions(name)')
       .eq('user_id', user.id);
 

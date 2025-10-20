@@ -47,12 +47,8 @@ export const useInMail = () => {
     if (!user || !currentBusinessId) return;
 
     const { data, error } = await supabase
-      .from('internal_messages')
-      .select(`
-        *,
-        sender:sender_id (id, full_name, email, avatar_url),
-        recipient:recipient_id (id, full_name, email, avatar_url)
-      `)
+      .from('internal_messages' as any)
+      .select('*')
       .eq('business_id', currentBusinessId)
       .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
@@ -62,10 +58,28 @@ export const useInMail = () => {
       return;
     }
 
-    setMessages(data as any);
+    // Fetch sender and recipient profiles separately
+    const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
+    const recipientIds = [...new Set(data.map((m: any) => m.recipient_id))];
+    const allUserIds = [...new Set([...senderIds, ...recipientIds])];
+
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, avatar_url')
+      .in('id', allUserIds);
+
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+
+    const messagesWithProfiles = data.map((m: any) => ({
+      ...m,
+      sender: profilesMap.get(m.sender_id),
+      recipient: profilesMap.get(m.recipient_id)
+    }));
+
+    setMessages(messagesWithProfiles as InternalMessage[]);
     
-    const unread = data.filter(
-      m => m.recipient_id === user.id && !m.is_read
+    const unread = messagesWithProfiles.filter(
+      (m: any) => m.recipient_id === user.id && !m.is_read
     ).length;
     setUnreadCount(unread);
     setLoading(false);
@@ -106,7 +120,7 @@ export const useInMail = () => {
     if (!user || !currentBusinessId) return null;
 
     const { data, error } = await supabase
-      .from('internal_messages')
+      .from('internal_messages' as any)
       .insert([
         {
           business_id: currentBusinessId,
@@ -141,7 +155,7 @@ export const useInMail = () => {
 
   const markAsRead = async (messageId: string) => {
     const { error } = await supabase
-      .from('internal_messages')
+      .from('internal_messages' as any)
       .update({ is_read: true, read_at: new Date().toISOString() })
       .eq('id', messageId);
 
@@ -158,7 +172,7 @@ export const useInMail = () => {
     const updateField = asRecipient ? 'deleted_by_recipient' : 'deleted_by_sender';
     
     const { error } = await supabase
-      .from('internal_messages')
+      .from('internal_messages' as any)
       .update({ [updateField]: true })
       .eq('id', messageId);
 

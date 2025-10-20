@@ -90,7 +90,7 @@ export const TransferDialog = ({
 
       // Log the transfer
       const { error: logError } = await supabase
-        .from('conversation_transfers')
+        .from('conversation_transfers' as any)
         .insert([{
           conversation_id: conversationId,
           from_user_id: currentAssignee || user?.id,
@@ -118,7 +118,7 @@ export const TransferDialog = ({
       // Send In-Mail if requested
       if (sendInMail) {
         const { error: mailError } = await supabase
-          .from('internal_messages')
+          .from('internal_messages' as any)
           .insert([{
             business_id: currentBusinessId,
             sender_id: user?.id,
