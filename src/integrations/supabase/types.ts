@@ -445,6 +445,47 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_topup_settings: {
+        Row: {
+          bundle_size: string
+          business_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          last_topup_at: string | null
+          threshold_credits: number
+          updated_at: string
+        }
+        Insert: {
+          bundle_size?: string
+          business_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_topup_at?: string | null
+          threshold_credits?: number
+          updated_at?: string
+        }
+        Update: {
+          bundle_size?: string
+          business_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_topup_at?: string | null
+          threshold_credits?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_topup_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_usage: {
         Row: {
           business_id: string

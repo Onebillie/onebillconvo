@@ -297,6 +297,54 @@ serve(async (req) => {
         logStep("Grace period set, invoice recorded, warning email sent");
         break;
       }
+
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        
+        // Check if this is a credit bundle purchase
+        if (paymentIntent.metadata?.type === "credit_purchase" || 
+            paymentIntent.metadata?.type === "credit_bundle_auto") {
+          
+          const businessId = paymentIntent.metadata.business_id;
+          const bundleSize = paymentIntent.metadata.bundle_size || "small";
+          
+          // Determine credits based on bundle size
+          const creditsToAdd = bundleSize === "small" ? 500 : 
+                               bundleSize === "medium" ? 1500 : 5000;
+          
+          logStep("Processing credit bundle purchase", { 
+            businessId, 
+            bundleSize, 
+            credits: creditsToAdd,
+            isAuto: paymentIntent.metadata.type === "credit_bundle_auto"
+          });
+          
+          if (businessId) {
+            // Add credits to business
+            const { data: business } = await supabaseClient
+              .from("businesses")
+              .select("credit_balance")
+              .eq("id", businessId)
+              .single();
+            
+            if (business) {
+              const newCredits = (business.credit_balance || 0) + creditsToAdd;
+              
+              await supabaseClient
+                .from("businesses")
+                .update({ credit_balance: newCredits })
+                .eq("id", businessId);
+              
+              logStep("Credits added successfully", { 
+                previousCredits: business.credit_balance,
+                addedCredits: creditsToAdd,
+                newCredits 
+              });
+            }
+          }
+        }
+        break;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

@@ -20,6 +20,7 @@ import { ChannelSettings } from "@/components/settings/ChannelSettings";
 import { UsageDashboard } from "@/components/settings/UsageDashboard";
 import { CannedResponses } from "@/components/settings/CannedResponses";
 import { AIApprovalQueue } from "@/components/chat/AIApprovalQueue";
+import { AutoTopUpSettings } from "@/components/settings/AutoTopUpSettings";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -108,6 +109,7 @@ export default function Settings() {
           <TabsContent value="subscription" forceMount className="space-y-6">
             <UsageDashboard />
             <SubscriptionSettings />
+            <AutoTopUpSettings />
           </TabsContent>
 
           <TabsContent value="channels" forceMount>
