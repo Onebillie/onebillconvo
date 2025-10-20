@@ -80,6 +80,7 @@ const Dashboard = () => {
   const actionsWrapRef = useRef<HTMLDivElement>(null);
 
   const [leftPanelMin, setLeftPanelMin] = useState<number>(22);
+  const [leftPanelSize, setLeftPanelSize] = useState<number>(35);
 
   // Measure required width for conversation list content
   const measureRequiredPx = useCallback(() => {
@@ -108,6 +109,7 @@ const Dashboard = () => {
     // Also update min size so it can't shrink below content requirements
     const minPct = Math.max(20, Math.min(clampedPct, 65));
     setLeftPanelMin(minPct);
+    setLeftPanelSize(Math.max(clampedPct, minPct)); // Ensure defaultSize >= minSize
   }, [measureRequiredPx]);
 
   // Initial auto-sizing on mount
@@ -871,7 +873,7 @@ const Dashboard = () => {
               {/* Left: Conversations list - auto-sized to fit content */}
               <ResizablePanel 
                 ref={leftPanelRef}
-                defaultSize={35} 
+                defaultSize={leftPanelSize} 
                 minSize={leftPanelMin} 
                 maxSize={65}
                 collapsible
