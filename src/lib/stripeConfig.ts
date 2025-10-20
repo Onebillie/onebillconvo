@@ -198,3 +198,23 @@ export const formatPrice = (price: number, currency: string, currencySymbol: str
   
   return `${currencySymbol}${price.toLocaleString()}`;
 };
+
+// AI Usage Pricing Configuration
+export const AI_PRICING = {
+  professional: {
+    includedResponses: 1000,
+    overagePrice: 0.02, // $0.02 per additional response
+  },
+  enterprise: {
+    includedResponses: 999999, // Unlimited
+    overagePrice: 0,
+  },
+  free: {
+    includedResponses: 0,
+    overagePrice: 0,
+  },
+  starter: {
+    includedResponses: 0,
+    overagePrice: 0,
+  },
+} as const;

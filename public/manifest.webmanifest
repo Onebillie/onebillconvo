@@ -1,10 +1,11 @@
 {
-  "name": "OnebillConvo Admin",
-  "short_name": "Admin",
-  "start_url": "/admin/login",
+  "name": "À La Carte Chat",
+  "short_name": "ÀLCC",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#991b1b",
+  "theme_color": "#3b82f6",
+  "description": "Unified inbox for WhatsApp, Email, SMS, Facebook & Instagram. Manage all customer conversations in one place.",
   "icons": [
     {
       "src": "/favicon.png",

@@ -163,6 +163,8 @@ export const SubscriptionSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      <BillingHistory />
     </div>
   );
 };

@@ -17,6 +17,7 @@ import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { ChannelSettings } from "@/components/settings/ChannelSettings";
+import { UsageDashboard } from "@/components/settings/UsageDashboard";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -99,7 +100,8 @@ export default function Settings() {
             </TabsContent>
           )}
 
-          <TabsContent value="subscription" forceMount>
+          <TabsContent value="subscription" forceMount className="space-y-6">
+            <UsageDashboard />
             <SubscriptionSettings />
           </TabsContent>
 
