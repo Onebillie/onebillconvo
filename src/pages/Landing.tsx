@@ -5,10 +5,6 @@ import { MessageSquare, Users, Mail, Bell, Calendar, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-import heroCollaboration from "@/assets/hero-collaboration.jpg";
-import unifiedInboxDashboard from "@/assets/unified-inbox-dashboard.jpg";
-import aiChatbotInterface from "@/assets/ai-chatbot-interface.jpg";
-import mobilePwaApp from "@/assets/mobile-pwa-app.jpg";
 const Landing = () => {
   const navigate = useNavigate();
   const {
@@ -222,11 +218,13 @@ const Landing = () => {
               </p>
             </div>
             <div className="relative">
-              <img 
-                src={heroCollaboration} 
-                alt="Team collaborating on unified customer inbox dashboard"
-                className="rounded-2xl shadow-2xl w-full"
-              />
+              <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 p-8 aspect-video flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <MessageSquare className="w-20 h-20 text-primary mx-auto" />
+                  <p className="text-2xl font-semibold text-foreground">Unified Inbox Dashboard</p>
+                  <p className="text-muted-foreground">All channels in one place</p>
+                </div>
+              </div>
               <div className="absolute -bottom-6 -left-6 bg-card border-2 border-primary rounded-xl p-4 shadow-xl">
                 <p className="text-sm font-semibold text-primary">↑ 127% faster response time</p>
               </div>
@@ -318,21 +316,25 @@ const Landing = () => {
               </ul>
             </div>
             <div className="relative">
-              <img 
-                src={unifiedInboxDashboard} 
-                alt="Unified inbox dashboard showing WhatsApp, email, and social media messages aggregated"
-                className="rounded-2xl shadow-2xl w-full"
-              />
+              <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-secondary/10 via-background to-muted border-2 border-border p-8 aspect-video flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <Mail className="w-20 h-20 text-primary mx-auto" />
+                  <p className="text-2xl font-semibold text-foreground">Aggregated Messages</p>
+                  <p className="text-muted-foreground">WhatsApp • Email • SMS</p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1 relative">
-              <img 
-                src={aiChatbotInterface} 
-                alt="AI chatbot providing automated customer support responses"
-                className="rounded-2xl shadow-2xl w-full"
-              />
+              <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-primary/5 via-background to-secondary/10 border-2 border-border p-8 aspect-video flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <Users className="w-20 h-20 text-primary mx-auto" />
+                  <p className="text-2xl font-semibold text-foreground">AI-Powered Assistant</p>
+                  <p className="text-muted-foreground">24/7 automated responses</p>
+                </div>
+              </div>
             </div>
             <div className="order-1 lg:order-2">
               <Badge className="mb-4">AI THAT WORKS FOR YOU</Badge>
