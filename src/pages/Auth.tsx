@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { toast } from "@/hooks/use-toast";
 import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -96,14 +96,47 @@ export default function Auth() {
             });
 
           if (isSuperadmin) {
-            await supabase.auth.signOut();
-            toast({
-              title: "Access Denied",
-              description: "SuperAdmin accounts must use the admin login portal",
-              variant: "destructive",
-            });
-            setLoading(false);
-            return;
+            // Start admin session for superadmin
+            try {
+              const fp = await FingerprintJS.load();
+              const result = await fp.get();
+              const deviceFingerprint = result.visitorId;
+
+              const { error: sessionError } = await supabase
+                .from('admin_sessions')
+                .insert({
+                  user_id: user.id,
+                  device_fingerprint: deviceFingerprint,
+                  device_name: navigator.userAgent,
+                  is_trusted: true,
+                  expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                });
+
+              if (sessionError) {
+                console.error('Error creating admin session:', sessionError);
+              }
+
+              // Send security alert
+              await supabase.functions.invoke('admin-login-alert', {
+                body: { userId: user.id, deviceFingerprint }
+              });
+
+              toast({
+                title: "SuperAdmin Access",
+                description: "Redirecting to admin dashboard...",
+              });
+
+              navigate('/admin', { replace: true });
+              setLoading(false);
+              return;
+            } catch (adminError) {
+              console.error('Error setting up admin session:', adminError);
+              toast({
+                title: "Warning",
+                description: "Logged in but failed to initialize admin session",
+                variant: "destructive",
+              });
+            }
           }
         }
       }
