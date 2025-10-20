@@ -41,9 +41,11 @@ export const MessageInput = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram">(lastContactMethod || "whatsapp");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const sendingRef = useRef(false);
 
   // Auto-save draft and dispatch event
   useEffect(() => {
@@ -98,7 +100,16 @@ export const MessageInput = ({
   };
 
   const sendMessage = async () => {
+    // GUARD: Prevent duplicate sends
+    if (sendingRef.current || isSending) {
+      console.log('Message already sending, ignoring duplicate request');
+      return;
+    }
+    
     if (!newMessage.trim() && attachments.length === 0 && !voiceNote) return;
+
+    sendingRef.current = true;
+    setIsSending(true);
 
     // Check message limits for WhatsApp sending (only if sending via WhatsApp)
     if (sendVia === "whatsapp") {
@@ -352,6 +363,8 @@ export const MessageInput = ({
         variant: "destructive",
       });
     } finally {
+      sendingRef.current = false;
+      setIsSending(false);
       setUploading(false);
     }
   };
@@ -506,13 +519,13 @@ export const MessageInput = ({
           }
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && !uploading && sendMessage()}
+          onKeyPress={(e) => e.key === "Enter" && !uploading && !isSending && sendMessage()}
           className="flex-1 min-w-[200px]"
-          disabled={uploading}
+          disabled={uploading || isSending}
         />
         <Button 
           onClick={sendMessage} 
-          disabled={uploading || (!newMessage.trim() && attachments.length === 0 && !voiceNote)}
+          disabled={uploading || isSending || (!newMessage.trim() && attachments.length === 0 && !voiceNote)}
           className="ml-auto"
         >
           <Send className="w-4 h-4" />

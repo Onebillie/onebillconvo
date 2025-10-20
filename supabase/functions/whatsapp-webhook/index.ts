@@ -308,8 +308,24 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 
       // Create message
       let messageContent = '';
+      let metadata = null;
+      
       if (message.type === 'text') {
         messageContent = message.text.body;
+      } else if (message.type === 'button') {
+        // WhatsApp Interactive Button Response
+        const buttonText = message.button?.text || 'Unknown';
+        const buttonPayload = message.button?.payload || '';
+        messageContent = `${buttonText}`;
+        
+        // Store button payload in message metadata
+        metadata = {
+          button_clicked: true,
+          button_text: buttonText,
+          button_payload: buttonPayload
+        };
+        
+        console.log(`Button clicked: ${buttonText} (payload: ${buttonPayload})`);
       } else if (message.type === 'image') {
         messageContent = message.image.caption || 'Image received';
       } else if (message.type === 'document') {
@@ -335,6 +351,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           is_read: false,
           replied_to_message_id: repliedToMessageId,
           business_id: businessId,
+          metadata: metadata,
         })
         .select()
         .single();

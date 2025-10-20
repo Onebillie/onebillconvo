@@ -75,6 +75,11 @@ export interface Message {
   pinned_by?: string;
   forwarded_from?: string;
   original_content?: string;
+  metadata?: {
+    button_clicked?: boolean;
+    button_text?: string;
+    button_payload?: string;
+  };
   message_attachments?: Array<{
     id: string;
     filename: string;

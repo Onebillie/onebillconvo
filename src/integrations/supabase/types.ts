@@ -1897,6 +1897,7 @@ export type Database = {
           is_pinned: boolean | null
           is_read: boolean | null
           is_starred: boolean | null
+          metadata: Json | null
           original_content: string | null
           pinned_at: string | null
           pinned_by: string | null
@@ -1932,6 +1933,7 @@ export type Database = {
           is_pinned?: boolean | null
           is_read?: boolean | null
           is_starred?: boolean | null
+          metadata?: Json | null
           original_content?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
@@ -1967,6 +1969,7 @@ export type Database = {
           is_pinned?: boolean | null
           is_read?: boolean | null
           is_starred?: boolean | null
+          metadata?: Json | null
           original_content?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
