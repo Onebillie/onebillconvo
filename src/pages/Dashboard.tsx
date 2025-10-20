@@ -87,9 +87,8 @@ const Dashboard = () => {
     const header = headerRowRef.current?.scrollWidth || 0;
     const filters = filtersWrapRef.current?.scrollWidth || 0;
     const actions = actionsWrapRef.current?.scrollWidth || 0;
-    const baseline = 360; // fallback minimum
-    const padding = 32; // account for internal padding/margins
-    return Math.max(header, filters, actions, baseline) + padding;
+    const padding = 10; // small padding for breathing room
+    return Math.max(header, filters, actions) + padding;
   }, []);
 
   // Apply auto-sizing to the left panel
@@ -99,17 +98,17 @@ const Dashboard = () => {
     const containerWidth = desktopContainerRef.current.clientWidth || window.innerWidth || 1200;
     const requiredPx = measureRequiredPx();
     
-    // Calculate percentage, ensuring it fits content while staying within reasonable bounds
-    const idealPct = Math.round((requiredPx / Math.max(containerWidth, 1)) * 100);
-    const clampedPct = Math.max(22, Math.min(idealPct, 60));
+    // Calculate exact percentage needed, with soft safety clamping
+    const requiredPct = (requiredPx / Math.max(containerWidth, 1)) * 100;
+    const clampedPct = Math.max(12, Math.min(requiredPct, 70));
     
-    // Resize the panel
+    // Resize the panel to fit content precisely
     leftPanelRef.current.resize(clampedPct);
     
-    // Also update min size so it can't shrink below content requirements
-    const minPct = Math.max(20, Math.min(clampedPct, 65));
+    // Set min size to prevent shrinking below content (with tiny wiggle room)
+    const minPct = Math.max(12, clampedPct - 0.5);
     setLeftPanelMin(minPct);
-    setLeftPanelSize(Math.max(clampedPct, minPct)); // Ensure defaultSize >= minSize
+    setLeftPanelSize(clampedPct); // Ensure defaultSize >= minSize
   }, [measureRequiredPx]);
 
   // Initial auto-sizing on mount
@@ -512,7 +511,7 @@ const Dashboard = () => {
       {/* Sidebar Content */}
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-border">
-        <div ref={headerRowRef} className="flex items-center justify-between mb-3">
+        <div ref={headerRowRef} className="flex items-center justify-between mb-3 whitespace-nowrap">
         <div className="flex items-center space-x-2">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             <h1 className="font-semibold text-sm md:text-base whitespace-nowrap">Customer Service</h1>
@@ -588,7 +587,7 @@ const Dashboard = () => {
       
       <DuplicateContactsBanner />
       
-      <div ref={filtersWrapRef}>
+      <div ref={filtersWrapRef} className="whitespace-nowrap">
         <ConversationFilters
           onFilterChange={handleFilterChange}
           currentFilters={filters}
@@ -869,7 +868,7 @@ const Dashboard = () => {
         ) : (
           /* Desktop: Resizable layout */
           <div ref={desktopContainerRef} className="flex-1 min-h-0">
-            <ResizablePanelGroup direction="horizontal" className="h-full" autoSaveId="dashboard-panels-v2">
+            <ResizablePanelGroup direction="horizontal" className="h-full" autoSaveId="dashboard-panels-v3">
               {/* Left: Conversations list - auto-sized to fit content */}
               <ResizablePanel 
                 ref={leftPanelRef}
