@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,31 +72,76 @@ const Dashboard = () => {
   const [isTabVisible, setIsTabVisible] = useState(true);
   const navigate = useNavigate();
 
-  // Compute a responsive left panel size/min/max based on desired pixel widths
-  const [leftPanelSize] = useState<number>(() => {
-    if (typeof window === "undefined") return 35;
-    const containerWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
-    const desiredPx = 360; // ideal width for conversation tools to be fully visible
-    const px = Math.min(Math.max(desiredPx, 320), 560);
-    const percent = Math.round((px / Math.max(containerWidth, 1)) * 100);
-    return Math.max(22, Math.min(percent, 55));
-  });
-  const [leftPanelMin, setLeftPanelMin] = useState<number>(22);
-  const [leftPanelMax, setLeftPanelMax] = useState<number>(55);
+  // Refs for auto-sizing the left panel
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const leftPanelRef = useRef<ImperativePanelHandle>(null);
+  const headerRowRef = useRef<HTMLDivElement>(null);
+  const filtersWrapRef = useRef<HTMLDivElement>(null);
+  const actionsWrapRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const recalc = () => {
-      const containerWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
-      const minPx = 320; // never let the list shrink below this
-      const maxPx = 560; // allow expanding to comfortably show filters/buttons
-      const toPct = (px: number) => Math.round((px / Math.max(containerWidth, 1)) * 100);
-      setLeftPanelMin(Math.max(18, Math.min(toPct(minPx), 65)));
-      setLeftPanelMax(Math.max(leftPanelMin + 5, Math.min(toPct(maxPx), 70)));
-    };
-    recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
+  const [leftPanelMin, setLeftPanelMin] = useState<number>(22);
+
+  // Measure required width for conversation list content
+  const measureRequiredPx = useCallback(() => {
+    const header = headerRowRef.current?.scrollWidth || 0;
+    const filters = filtersWrapRef.current?.scrollWidth || 0;
+    const actions = actionsWrapRef.current?.scrollWidth || 0;
+    const baseline = 360; // fallback minimum
+    const padding = 32; // account for internal padding/margins
+    return Math.max(header, filters, actions, baseline) + padding;
   }, []);
+
+  // Apply auto-sizing to the left panel
+  const applyAutoSize = useCallback(() => {
+    if (!desktopContainerRef.current || !leftPanelRef.current) return;
+    
+    const containerWidth = desktopContainerRef.current.clientWidth || window.innerWidth || 1200;
+    const requiredPx = measureRequiredPx();
+    
+    // Calculate percentage, ensuring it fits content while staying within reasonable bounds
+    const idealPct = Math.round((requiredPx / Math.max(containerWidth, 1)) * 100);
+    const clampedPct = Math.max(22, Math.min(idealPct, 60));
+    
+    // Resize the panel
+    leftPanelRef.current.resize(clampedPct);
+    
+    // Also update min size so it can't shrink below content requirements
+    const minPct = Math.max(20, Math.min(clampedPct, 65));
+    setLeftPanelMin(minPct);
+  }, [measureRequiredPx]);
+
+  // Initial auto-sizing on mount
+  useLayoutEffect(() => {
+    // Small delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      applyAutoSize();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [applyAutoSize]);
+
+  // Watch for content changes and window resize
+  useEffect(() => {
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedAutoSize = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(applyAutoSize, 150);
+    };
+
+    // Watch for content size changes
+    const observer = new ResizeObserver(debouncedAutoSize);
+    if (headerRowRef.current) observer.observe(headerRowRef.current);
+    if (filtersWrapRef.current) observer.observe(filtersWrapRef.current);
+    if (actionsWrapRef.current) observer.observe(actionsWrapRef.current);
+
+    // Watch for window resize
+    window.addEventListener('resize', debouncedAutoSize);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      observer.disconnect();
+      window.removeEventListener('resize', debouncedAutoSize);
+    };
+  }, [applyAutoSize]);
 
 
   // Handle URL parameters to auto-select conversation
@@ -464,10 +510,10 @@ const Dashboard = () => {
       {/* Sidebar Content */}
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
+        <div ref={headerRowRef} className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            <h1 className="font-semibold text-sm md:text-base">Customer Service</h1>
+            <h1 className="font-semibold text-sm md:text-base whitespace-nowrap">Customer Service</h1>
             {unreadCount > 0 && !isMobile && (
               <Button
                 variant="ghost"
@@ -481,7 +527,7 @@ const Dashboard = () => {
                   platforms: [],
                   assignedTo: null,
                 })}
-                className="text-xs gap-1 h-6 px-2"
+                className="text-xs gap-1 h-6 px-2 whitespace-nowrap"
               >
                 <Bell className="w-3 h-3" />
                 {unreadCount}
@@ -503,7 +549,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2">
+        <div ref={actionsWrapRef} className="flex flex-col gap-2">
           <CreateContactDialog onContactCreated={fetchConversations} />
           <ContactPickerDialog
             onContactSelected={async (customerId) => {
@@ -540,10 +586,12 @@ const Dashboard = () => {
       
       <DuplicateContactsBanner />
       
-      <ConversationFilters
-        onFilterChange={handleFilterChange}
-        currentFilters={filters}
-      />
+      <div ref={filtersWrapRef}>
+        <ConversationFilters
+          onFilterChange={handleFilterChange}
+          currentFilters={filters}
+        />
+      </div>
 
       {/* Contacts list */}
       <ScrollArea className="flex-1">
@@ -818,22 +866,24 @@ const Dashboard = () => {
           </div>
         ) : (
           /* Desktop: Resizable layout */
-          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0" autoSaveId="dashboard-panels-v1">
-            {/* Left: Conversations list */}
-            <ResizablePanel 
-              defaultSize={leftPanelSize} 
-              minSize={leftPanelMin} 
-              maxSize={leftPanelMax}
-              collapsible
-            >
-              <div className="h-full border-r border-border flex flex-col">
-                {conversationSidebar}
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
+          <div ref={desktopContainerRef} className="flex-1 min-h-0">
+            <ResizablePanelGroup direction="horizontal" className="h-full" autoSaveId="dashboard-panels-v2">
+              {/* Left: Conversations list - auto-sized to fit content */}
+              <ResizablePanel 
+                ref={leftPanelRef}
+                defaultSize={35} 
+                minSize={leftPanelMin} 
+                maxSize={65}
+                collapsible
+              >
+                <div className="h-full border-r border-border flex flex-col">
+                  {conversationSidebar}
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
 
-            {/* Center: Main Chat Area */}
-            <ResizablePanel minSize={35}>
+              {/* Center: Main Chat Area */}
+              <ResizablePanel minSize={35}>
               <div className="h-full flex flex-col overflow-hidden">
                 <div className="p-3 border-b border-border">
                   <PendingPaymentBanner />
@@ -857,6 +907,7 @@ const Dashboard = () => {
               </>
             )}
           </ResizablePanelGroup>
+        </div>
         )}
 
         {/* Dialogs */}
