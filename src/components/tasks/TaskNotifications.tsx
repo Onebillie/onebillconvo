@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Bell, Check, X, Clock, AlertCircle, Calendar } from "lucide-react";
+import { CheckSquare, Check, X, Clock, AlertCircle, Calendar } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -171,7 +171,7 @@ export const TaskNotifications = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <CheckSquare className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
@@ -191,7 +191,7 @@ export const TaskNotifications = () => {
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground mb-2" />
+              <CheckSquare className="h-12 w-12 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">No notifications</p>
             </div>
           ) : (
