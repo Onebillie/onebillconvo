@@ -71,6 +71,18 @@ const Dashboard = () => {
   const [isTabVisible, setIsTabVisible] = useState(true);
   const navigate = useNavigate();
 
+  // Compute an initial left panel size in % based on a target pixel width for the conversation list
+  const [leftPanelSize] = useState<number>(() => {
+    if (typeof window === "undefined") return 35;
+    const containerWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
+    const desiredPx = 360; // target width for conversation list
+    const minPx = 280;
+    const maxPx = 520;
+    const px = Math.min(Math.max(desiredPx, minPx), maxPx);
+    const percent = Math.round((px / Math.max(containerWidth, 1)) * 100);
+    return Math.max(22, Math.min(percent, 45));
+  });
+
   // Handle URL parameters to auto-select conversation
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -794,7 +806,7 @@ const Dashboard = () => {
           <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
             {/* Left: Conversations list */}
             <ResizablePanel 
-              defaultSize={35} 
+              defaultSize={leftPanelSize} 
               minSize={22} 
               maxSize={45}
             >
