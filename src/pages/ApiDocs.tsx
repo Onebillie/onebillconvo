@@ -12,7 +12,7 @@ const ApiDocs = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const API_BASE_URL = "https://api.alacartechat.com/v1";
+  const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
   const SUPABASE_URL = "https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1";
 
   const copyToClipboard = (text: string, endpoint: string) => {
