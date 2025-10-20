@@ -39,6 +39,7 @@ import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { PendingPaymentBanner } from "@/components/PendingPaymentBanner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { WhatsAppAnalyticsWidget } from "@/components/dashboard/WhatsAppAnalyticsWidget";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
@@ -699,11 +700,21 @@ const Dashboard = () => {
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-base md:text-lg font-medium text-muted-foreground">
-              Select a conversation to start messaging
-            </h3>
+          <div className="text-center space-y-6 max-w-2xl px-4">
+            <div>
+              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-base md:text-lg font-medium text-muted-foreground mb-2">
+                Select a conversation to start messaging
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Choose from the sidebar or create a new conversation
+              </p>
+            </div>
+            
+            {/* WhatsApp Analytics Widget */}
+            <div className="mt-8 max-w-xl mx-auto">
+              <WhatsAppAnalyticsWidget />
+            </div>
           </div>
         </div>
       )}

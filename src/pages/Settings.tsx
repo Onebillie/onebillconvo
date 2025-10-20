@@ -95,6 +95,7 @@ export default function Settings() {
             <TabsTrigger value="ai" className="shrink-0">AI Assistant</TabsTrigger>
             <TabsTrigger value="canned" className="shrink-0">Quick Replies</TabsTrigger>
             <TabsTrigger value="ai-approval" className="shrink-0">AI Approval</TabsTrigger>
+            <TabsTrigger value="notifications" className="shrink-0">Notifications</TabsTrigger>
             {isSuperAdmin && <TabsTrigger value="api" className="shrink-0">API Access</TabsTrigger>}
           </TabsList>
 
@@ -140,6 +141,10 @@ export default function Settings() {
 
           <TabsContent value="ai-approval" forceMount>
             <AIApprovalQueue />
+          </TabsContent>
+
+          <TabsContent value="notifications" forceMount>
+            <NotificationSettings />
           </TabsContent>
 
           {isSuperAdmin && (

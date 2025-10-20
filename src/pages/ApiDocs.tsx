@@ -33,10 +33,107 @@ const ApiDocs = () => {
           name: "API Key Authentication",
           method: "ALL",
           endpoint: "/",
-          description: "All API requests require authentication using an API key in the header",
+          description: "All API requests require authentication using an API key in the header. Generate your API key in Settings → API Access.",
           request: `curl -H "x-api-key: YOUR_API_KEY" \\
   ${API_BASE_URL}/customers`,
           response: null,
+        },
+        {
+          name: "Rate Limits",
+          method: "INFO",
+          endpoint: "/",
+          description: "API rate limit: 1000 requests per hour per API key. Exceeding this will return 429 Too Many Requests.",
+          request: null,
+          response: `{
+  "error": "Rate limit exceeded",
+  "retry_after": 3600
+}`,
+        },
+      ],
+    },
+    {
+      category: "Webhooks",
+      items: [
+        {
+          name: "Configure Webhooks",
+          method: "POST",
+          endpoint: "/settings",
+          description: "Set up webhook URLs to receive real-time notifications for new messages, conversation status changes, and more. Configure in Settings → Webhook Configuration or via API.",
+          request: `curl -X POST \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "webhook_url": "https://your-domain.com/webhook",
+    "events": ["message.received", "conversation.status_changed"]
+  }' \\
+  ${API_BASE_URL}/settings`,
+          response: `{
+  "success": true,
+  "webhook_url": "https://your-domain.com/webhook",
+  "events": ["message.received", "conversation.status_changed"]
+}`,
+        },
+        {
+          name: "Webhook Events",
+          method: "INFO",
+          endpoint: "/webhooks",
+          description: "Available webhook events: message.received, message.sent, conversation.created, conversation.status_changed, conversation.assigned, task.created, task.completed",
+          request: null,
+          response: `// Example webhook payload
+{
+  "event": "message.received",
+  "timestamp": "2025-10-20T12:00:00Z",
+  "data": {
+    "message_id": "uuid",
+    "conversation_id": "uuid",
+    "customer_id": "uuid",
+    "platform": "whatsapp",
+    "content": "Hello!",
+    "from": "+1234567890"
+  }
+}`,
+        },
+      ],
+    },
+    {
+      category: "SSO Integration",
+      items: [
+        {
+          name: "Generate SSO Token",
+          method: "POST",
+          endpoint: "/sso/generate-token",
+          description: "Generate a single sign-on token to embed À La Carte Chat in your customer portal. Token is valid for 1 hour.",
+          request: `curl -X POST \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "customer_id": "uuid",
+    "return_url": "https://your-app.com/dashboard"
+  }' \\
+  ${SUPABASE_URL}/api-sso-generate-token`,
+          response: `{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expires_at": "2025-10-20T13:00:00Z",
+  "embed_url": "https://alacartechat.com/embed/inbox?token=..."
+}`,
+        },
+        {
+          name: "Validate SSO Token",
+          method: "POST",
+          endpoint: "/sso/validate-token",
+          description: "Validate an SSO token before use (optional - tokens are auto-validated on embed).",
+          request: `curl -X POST \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }' \\
+  ${SUPABASE_URL}/api-sso-validate-token`,
+          response: `{
+  "valid": true,
+  "customer_id": "uuid",
+  "expires_at": "2025-10-20T13:00:00Z"
+}`,
         },
       ],
     },
@@ -47,20 +144,28 @@ const ApiDocs = () => {
           name: "Get All Customers",
           method: "GET",
           endpoint: "/customers",
-          description: "Retrieve all customers with their conversations and messages",
+          description: "Retrieve all customers with their conversations and messages. Supports pagination with ?limit=50&offset=0 parameters.",
           request: `curl -H "x-api-key: YOUR_API_KEY" \\
-  ${API_BASE_URL}/customers`,
-          response: `[
-  {
-    "id": "uuid",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "+1234567890",
-    "whatsapp_phone": "+1234567890",
-    "created_at": "2025-01-01T00:00:00Z",
-    "conversations": [...]
+  "${API_BASE_URL}/customers?limit=50&offset=0"`,
+          response: `{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "whatsapp_phone": "+1234567890",
+      "created_at": "2025-01-01T00:00:00Z",
+      "conversations": [...]
+    }
+  ],
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 245,
+    "has_more": true
   }
-]`,
+}`,
         },
         {
           name: "Get Customer by ID",
