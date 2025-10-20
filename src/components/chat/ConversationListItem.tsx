@@ -121,15 +121,14 @@ export const ConversationListItem = memo(({
               {conversation.last_message.platform === 'whatsapp' && (
                 <MessageSquare className="w-3 h-3 text-muted-foreground flex-shrink-0" />
               )}
-              <p className="text-[10px] text-muted-foreground truncate flex-1">
+              <p className="text-[10px] text-muted-foreground line-clamp-2 flex-1">
                 {conversation.last_message.direction === 'outbound' && 'You: '}
                 {DOMPurify.sanitize(
                   conversation.last_message.platform === 'email' && conversation.last_message.subject 
                     ? conversation.last_message.subject
-                    : conversation.last_message.content.substring(0, 50),
+                    : conversation.last_message.content,
                   { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }
                 )}
-                {conversation.last_message.content.length > 50 && '...'}
               </p>
             </div>
           ) : null}

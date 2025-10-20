@@ -72,77 +72,28 @@ const Dashboard = () => {
   const [isTabVisible, setIsTabVisible] = useState(true);
   const navigate = useNavigate();
 
-  // Refs for auto-sizing the left panel
+  // Refs for resizable panel
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
-  const headerRowRef = useRef<HTMLDivElement>(null);
-  const filtersWrapRef = useRef<HTMLDivElement>(null);
-  const actionsWrapRef = useRef<HTMLDivElement>(null);
 
-  const [leftPanelMin, setLeftPanelMin] = useState<number>(22);
-  const [leftPanelSize, setLeftPanelSize] = useState<number>(35);
-
-  // Measure required width for conversation list content
-  const measureRequiredPx = useCallback(() => {
-    const header = headerRowRef.current?.scrollWidth || 0;
-    const filters = filtersWrapRef.current?.scrollWidth || 0;
-    const actions = actionsWrapRef.current?.scrollWidth || 0;
-    const padding = 10; // small padding for breathing room
-    return Math.max(header, filters, actions) + padding;
-  }, []);
-
-  // Apply auto-sizing to the left panel
-  const applyAutoSize = useCallback(() => {
-    if (!desktopContainerRef.current || !leftPanelRef.current) return;
-    
-    const containerWidth = desktopContainerRef.current.clientWidth || window.innerWidth || 1200;
-    const requiredPx = measureRequiredPx();
-    
-    // Calculate exact percentage needed, with soft safety clamping
-    const requiredPct = (requiredPx / Math.max(containerWidth, 1)) * 100;
-    const clampedPct = Math.max(12, Math.min(requiredPct, 70));
-    
-    // Resize the panel to fit content precisely
-    leftPanelRef.current.resize(clampedPct);
-    
-    // Set min size to prevent shrinking below content (with tiny wiggle room)
-    const minPct = Math.max(12, clampedPct - 0.5);
-    setLeftPanelMin(minPct);
-    setLeftPanelSize(clampedPct); // Ensure defaultSize >= minSize
-  }, [measureRequiredPx]);
-
-  // Initial auto-sizing on mount
+  // Set panel size once on mount and clear any old saved sizes
   useLayoutEffect(() => {
-    // Small delay to ensure content is rendered
+    // Clear any old saved panel sizes from localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('react-resizable-panels:')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Set initial size once
     const timer = setTimeout(() => {
-      applyAutoSize();
+      if (leftPanelRef.current) {
+        leftPanelRef.current.resize(30);
+      }
     }, 100);
     return () => clearTimeout(timer);
-  }, [applyAutoSize]);
-
-  // Watch for content changes and window resize
-  useEffect(() => {
-    let debounceTimer: NodeJS.Timeout;
-    const debouncedAutoSize = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(applyAutoSize, 150);
-    };
-
-    // Watch for content size changes
-    const observer = new ResizeObserver(debouncedAutoSize);
-    if (headerRowRef.current) observer.observe(headerRowRef.current);
-    if (filtersWrapRef.current) observer.observe(filtersWrapRef.current);
-    if (actionsWrapRef.current) observer.observe(actionsWrapRef.current);
-
-    // Watch for window resize
-    window.addEventListener('resize', debouncedAutoSize);
-
-    return () => {
-      clearTimeout(debounceTimer);
-      observer.disconnect();
-      window.removeEventListener('resize', debouncedAutoSize);
-    };
-  }, [applyAutoSize]);
+  }, []); // Run only once on mount
 
 
   // Handle URL parameters to auto-select conversation
@@ -511,7 +462,7 @@ const Dashboard = () => {
       {/* Sidebar Content */}
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-border">
-        <div ref={headerRowRef} className="flex items-center justify-between mb-3 whitespace-nowrap">
+        <div className="flex items-center justify-between mb-3 whitespace-nowrap">
         <div className="flex items-center space-x-2">
           <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             <h1 className="font-semibold text-sm md:text-base whitespace-nowrap">Customer Service</h1>
@@ -550,7 +501,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-        <div ref={actionsWrapRef} className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <CreateContactDialog onContactCreated={fetchConversations} />
           <ContactPickerDialog
             onContactSelected={async (customerId) => {
@@ -587,7 +538,7 @@ const Dashboard = () => {
       
       <DuplicateContactsBanner />
       
-      <div ref={filtersWrapRef} className="whitespace-nowrap">
+      <div className="whitespace-nowrap">
         <ConversationFilters
           onFilterChange={handleFilterChange}
           currentFilters={filters}
@@ -868,13 +819,13 @@ const Dashboard = () => {
         ) : (
           /* Desktop: Resizable layout */
           <div ref={desktopContainerRef} className="flex-1 min-h-0">
-            <ResizablePanelGroup direction="horizontal" className="h-full" autoSaveId="dashboard-panels-v3">
-              {/* Left: Conversations list - auto-sized to fit content */}
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Left: Conversations list - fixed size on load */}
               <ResizablePanel 
                 ref={leftPanelRef}
-                defaultSize={leftPanelSize} 
-                minSize={leftPanelMin} 
-                maxSize={65}
+                defaultSize={30} 
+                minSize={20} 
+                maxSize={50}
                 collapsible
               >
                 <div className="h-full border-r border-border flex flex-col">
