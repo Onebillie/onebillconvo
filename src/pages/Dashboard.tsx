@@ -523,6 +523,27 @@ const Dashboard = () => {
           conversations={filteredConversations}
           selectedConversation={selectedConversation}
           onSelectConversation={setSelectedConversation}
+          contextMenu={(conversation) => (
+            <ConversationContextMenu
+              onAssign={() => {
+                setContextMenuConversation(conversation);
+                setAssignDialogOpen(true);
+              }}
+              onChangeStatus={() => {
+                setContextMenuConversation(conversation);
+                setStatusDialogOpen(true);
+              }}
+              onCreateTask={() => {
+                setContextMenuConversation(conversation);
+                setTaskDialogOpen(true);
+              }}
+              onDelete={() => {
+                if (confirm('Are you sure you want to delete this conversation?')) {
+                  handleDeleteConversation(conversation.id);
+                }
+              }}
+            />
+          )}
         />
       </ScrollArea>
     </div>
