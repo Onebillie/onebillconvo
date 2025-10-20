@@ -15,6 +15,13 @@ export function InstagramAccountManagement() {
 
   return (
     <div className="space-y-4">
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="font-semibold">
+          ⚠️ COMING SOON - Instagram Direct Messages integration is currently under development and not yet functional. This feature will be available in a future update.
+        </AlertDescription>
+      </Alert>
+
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
@@ -36,10 +43,10 @@ export function InstagramAccountManagement() {
           <div className="space-y-2">
             <Button 
               onClick={handleConnect} 
-              disabled={isConnecting}
+              disabled={true}
               className="w-full"
             >
-              {isConnecting ? "Connecting..." : "Connect with Instagram"}
+              Coming Soon - Under Development
             </Button>
           </div>
 

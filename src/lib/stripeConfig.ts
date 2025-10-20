@@ -129,20 +129,20 @@ export const CREDIT_BUNDLES = {
     name: "Small Bundle",
     credits: 500,
     price: 10,
-    priceId: "price_bundle_small",
+    priceId: "price_1SKP4tGwvNoo6Q8zD1T7LQ5n",
   },
   medium: {
     name: "Medium Bundle",
     credits: 1500,
     price: 25,
-    priceId: "price_bundle_medium",
+    priceId: "price_1SKP4tGwvNoo6Q8zg5PYCgi8",
     savings: 15,
   },
   large: {
     name: "Large Bundle",
     credits: 5000,
     price: 75,
-    priceId: "price_bundle_large",
+    priceId: "price_1SKP4uGwvNoo6Q8zc7nYeNTm",
     savings: 25,
   },
 } as const;

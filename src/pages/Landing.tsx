@@ -72,8 +72,8 @@ const Landing = () => {
       "applicationCategory": "BusinessApplication",
       "offers": {
         "@type": "Offer",
-        "price": "30",
-        "priceCurrency": "EUR"
+        "price": "29",
+        "priceCurrency": "USD"
       },
       "description": "Combined inbox platform for managing WhatsApp Business API, email, and all customer messages. Meta Business integration with AI chatbot and multi-agent support.",
       "operatingSystem": "Web Browser",
@@ -854,6 +854,28 @@ ai.response.completed`}</code>
           </div>
         </div>
       </footer>
+
+      {/* Embed Chat Widget for Support */}
+      <div id="alacarte-chat-widget"></div>
+      <script dangerouslySetInnerHTML={{__html: `
+        (function() {
+          var script = document.createElement('script');
+          script.src = '/embed-widget.js';
+          script.onload = function() {
+            if (window.AlacarteChatWidget) {
+              window.AlacarteChatWidget.init({
+                token: 'support-landing-page',
+                apiUrl: 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1',
+                customer: {},
+                position: 'bottom-right',
+                primaryColor: '#6366f1',
+                welcomeMessage: 'Hi! Need help? Chat with our support team.'
+              });
+            }
+          };
+          document.head.appendChild(script);
+        })();
+      `}} />
     </div>;
 };
 export default Landing;
