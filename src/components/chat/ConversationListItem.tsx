@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 import { Conversation } from "@/types/chat";
 import { Mail, MessageSquare, Edit3 } from "lucide-react";
+import DOMPurify from 'dompurify';
 
 interface ConversationListItemProps {
   conversation: Conversation;
@@ -122,9 +123,12 @@ export const ConversationListItem = memo(({
               )}
               <p className="text-[10px] text-muted-foreground truncate flex-1">
                 {conversation.last_message.direction === 'outbound' && 'You: '}
-                {conversation.last_message.platform === 'email' && conversation.last_message.subject 
-                  ? conversation.last_message.subject
-                  : conversation.last_message.content.substring(0, 50)}
+                {DOMPurify.sanitize(
+                  conversation.last_message.platform === 'email' && conversation.last_message.subject 
+                    ? conversation.last_message.subject
+                    : conversation.last_message.content.substring(0, 50),
+                  { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }
+                )}
                 {conversation.last_message.content.length > 50 && '...'}
               </p>
             </div>

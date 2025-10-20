@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Users, Mail, Bell, Calendar, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,31 +83,20 @@ const Landing = () => {
     }
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
-  const features = [{
-    icon: MessageSquare,
-    title: "WhatsApp Business API",
-    description: "Official Meta Business Platform integration for WhatsApp Business API with full message management"
-  }, {
-    icon: Mail,
-    title: "Combined Email Inbox",
-    description: "Manage messages from multiple email accounts in one aggregated inbox"
-  }, {
-    icon: Users,
-    title: "Multi-Agent Support",
-    description: "Up to 10 agents can manage customer conversations from different locations simultaneously"
-  }, {
-    icon: Bell,
-    title: "Real-Time Notifications",
-    description: "Never miss a customer message with instant push notifications across all devices"
-  }, {
-    icon: Calendar,
-    title: "Task & Calendar Sync",
-    description: "Automatically sync customer appointments and follow-ups to your calendar"
-  }, {
-    icon: MessageSquare,
-    title: "AI Chatbot Training",
-    description: "Train your AI assistant to handle customer inquiries and manage WhatsApp Business messages automatically"
-  }];
+  const features = [
+    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta Business Platform integration with unlimited receiving" },
+    { icon: Mail, title: "Email Integration", description: "Multiple IMAP/SMTP accounts, Gmail OAuth, unlimited inbox aggregation" },
+    { icon: MessageSquare, title: "SMS Messaging", description: "Send/receive SMS via Twilio with conversation threading" },
+    { icon: MessageSquare, title: "Facebook Messenger", description: "Manage Facebook Page messages in unified inbox" },
+    { icon: MessageSquare, title: "Instagram DMs", description: "Handle Instagram Direct Messages alongside other channels" },
+    { icon: Users, title: "Multi-Agent Collaboration", description: "Up to 10 agents (Pro) or unlimited (Enterprise) manage conversations simultaneously" },
+    { icon: MessageSquare, title: "AI Assistant", description: "Train custom AI chatbot on your FAQs, auto-respond during business hours or 24/7" },
+    { icon: MessageSquare, title: "Full REST API", description: "Sync customer data, send/receive messages, manage contacts via API (Professional+)" },
+    { icon: MessageSquare, title: "Embeddable Widget", description: "Add live chat to your website via iframe with full branding control" },
+    { icon: MessageSquare, title: "File Attachments", description: "Send/receive images, PDFs, videos, voice notes across all channels" },
+    { icon: Calendar, title: "Task & Calendar Sync", description: "Auto-create tasks from statuses, export to Google Calendar/Outlook" },
+    { icon: Bell, title: "Real-Time Notifications", description: "Web Push, email alerts, never miss a customer message" },
+  ];
   const pricingTiers = [{
     name: "Starter",
     price: "$29",
@@ -536,6 +526,49 @@ ai.response.completed`}</code>
             <a href="#" className="inline-flex items-center gap-2 text-primary hover:underline">
               View Full API Documentation →
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* PWA Section */}
+      <section className="py-16 bg-primary/5">
+        <div className="container mx-auto px-4 text-center">
+          <div className="text-6xl mb-4">📱</div>
+          <h2 className="text-3xl font-bold mb-4">Works as Progressive Web App (PWA)</h2>
+          <p className="text-xl mb-6 max-w-2xl mx-auto">
+            Install À La Carte Chat on any device - iPhone, Android, Windows, Mac, Linux.
+            No app store required. Works offline. Always up-to-date.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Badge variant="outline" className="text-lg py-2 px-4">No App Store</Badge>
+            <Badge variant="outline" className="text-lg py-2 px-4">Works Offline</Badge>
+            <Badge variant="outline" className="text-lg py-2 px-4">Cross-Platform</Badge>
+          </div>
+        </div>
+      </section>
+
+      {/* Competitor Comparison Table */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose À La Carte Chat?</h2>
+          <div className="max-w-4xl mx-auto overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b-2">
+                  <th className="text-left p-4 font-semibold">Feature</th>
+                  <th className="text-center p-4 font-semibold">À La Carte Chat</th>
+                  <th className="text-center p-4 font-semibold">Typical Competitor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b"><td className="p-4">WhatsApp + Email + SMS + FB + IG</td><td className="text-center p-4">✅ All included</td><td className="text-center p-4">❌ Pick 1-2 channels</td></tr>
+                <tr className="border-b"><td className="p-4">AI Chatbot (Custom Training)</td><td className="text-center p-4">✅ Included (Pro+)</td><td className="text-center p-4">💰 Extra $50-200/mo</td></tr>
+                <tr className="border-b"><td className="p-4">Full REST API Access</td><td className="text-center p-4">✅ Free (Pro+)</td><td className="text-center p-4">💰 $99-299/mo</td></tr>
+                <tr className="border-b"><td className="p-4">Embeddable Widget</td><td className="text-center p-4">✅ Included</td><td className="text-center p-4">⚠️ Limited customization</td></tr>
+                <tr className="border-b"><td className="p-4">Works as PWA (No App Store)</td><td className="text-center p-4">✅ Yes</td><td className="text-center p-4">❌ Native apps only</td></tr>
+                <tr className="border-b"><td className="p-4">Voice Notes + File Sharing</td><td className="text-center p-4">✅ All formats</td><td className="text-center p-4">⚠️ Limited formats</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

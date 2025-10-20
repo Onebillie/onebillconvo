@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import DOMPurify from 'dompurify';
 
 interface MessageListProps {
   messages: Message[];
@@ -440,7 +441,12 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                             <>
                               <p 
                                 className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
-                                dangerouslySetInnerHTML={{ __html: searchTerm ? highlightText(message.content) : message.content }}
+                                dangerouslySetInnerHTML={{ 
+                                  __html: DOMPurify.sanitize(
+                                    searchTerm ? highlightText(message.content) : message.content,
+                                    { ALLOWED_TAGS: ['mark', 'br'], ALLOWED_ATTR: ['class'] }
+                                  ) 
+                                }}
                               />
                               {/* Attachments for non-email */}
                               {message.message_attachments &&

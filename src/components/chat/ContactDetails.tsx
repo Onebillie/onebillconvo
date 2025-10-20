@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Pencil, FolderOpen } from "lucide-react";
 import { EditContactDialog } from "./EditContactDialog";
 import { CustomerMediaLibrary } from "./CustomerMediaLibrary";
+import DOMPurify from 'dompurify';
 
 interface ContactDetailsProps {
   customer: Customer;
@@ -57,7 +58,7 @@ export const ContactDetails = ({ customer, onUpdate }: ContactDetailsProps) => {
           </AvatarFallback>
         </Avatar>
         <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-lg">{customer.name}</h2>
+          <h2 className="font-semibold text-lg">{DOMPurify.sanitize(customer.name, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })}</h2>
           <Button
             size="icon"
             variant="ghost"
