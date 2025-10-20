@@ -6,13 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CreditCard, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { STRIPE_PRODUCTS } from "@/lib/stripeConfig";
+import { STRIPE_PRODUCTS, SubscriptionTier } from "@/lib/stripeConfig";
 import { useNavigate } from "react-router-dom";
 import { BillingHistory } from "./BillingHistory";
+import { CreditBundleDialog } from "@/components/CreditBundleDialog";
+import { UpgradeDialog } from "@/components/ui/upgrade-dialog";
 
 export const SubscriptionSettings = () => {
   const { subscriptionState, checkSubscription } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showCreditDialog, setShowCreditDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleManageSubscription = async () => {
@@ -147,6 +151,14 @@ export const SubscriptionSettings = () => {
             <Button variant="outline" onClick={handleRefreshStatus} disabled={loading}>
               Refresh Status
             </Button>
+
+            <Button variant="outline" onClick={() => setShowCreditDialog(true)}>
+              Purchase Credits
+            </Button>
+
+            <Button variant="outline" onClick={() => setShowUpgradeDialog(true)}>
+              Upgrade Plan
+            </Button>
           </div>
 
           {/* Plan Features */}
@@ -165,6 +177,13 @@ export const SubscriptionSettings = () => {
       </Card>
 
       <BillingHistory />
+
+      <CreditBundleDialog open={showCreditDialog} onOpenChange={setShowCreditDialog} />
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        currentTier={subscriptionState.tier as SubscriptionTier} 
+      />
     </div>
   );
 };

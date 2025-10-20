@@ -82,8 +82,7 @@ export function useFeatureGate() {
       onOpenChange={(open) =>
         setUpgradeDialog((prev) => ({ ...prev, open }))
       }
-      feature={upgradeDialog.feature}
-      requiredTier={upgradeDialog.requiredTier}
+      currentTier={currentTier}
     />
   );
 

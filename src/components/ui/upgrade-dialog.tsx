@@ -1,121 +1,89 @@
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown, Zap, Sparkles } from "lucide-react";
-import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
-import { useNavigate } from "react-router-dom";
+import { Check, Zap } from "lucide-react";
+import { STRIPE_PRODUCTS, SubscriptionTier } from "@/lib/stripeConfig";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface UpgradeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  feature: string;
-  requiredTier?: SubscriptionTier;
+  currentTier: SubscriptionTier;
 }
 
-export function UpgradeDialog({
-  open,
-  onOpenChange,
-  feature,
-  requiredTier = "starter",
-}: UpgradeDialogProps) {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+export function UpgradeDialog({ open, onOpenChange, currentTier }: UpgradeDialogProps) {
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const handleUpgrade = () => {
-    setIsLoading(true);
-    navigate("/pricing");
-  };
+  const handleUpgrade = async (tier: SubscriptionTier) => {
+    setLoading(tier);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: STRIPE_PRODUCTS[tier].priceId }
+      });
 
-  const tierConfig = STRIPE_PRODUCTS[requiredTier];
-
-  const getIcon = (tier: SubscriptionTier) => {
-    switch (tier) {
-      case "starter":
-        return <Zap className="w-5 h-5" />;
-      case "professional":
-        return <Crown className="w-5 h-5" />;
-      case "enterprise":
-        return <Sparkles className="w-5 h-5" />;
-      default:
-        return <Crown className="w-5 h-5" />;
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate upgrade");
+    } finally {
+      setLoading(null);
     }
   };
 
+  const availableTiers = Object.entries(STRIPE_PRODUCTS)
+    .filter(([key]) => {
+      const tierOrder = { free: 0, starter: 1, professional: 2, enterprise: 3 };
+      return tierOrder[key as SubscriptionTier] > tierOrder[currentTier];
+    });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-4">
-            {getIcon(requiredTier)}
-          </div>
-          <DialogTitle className="text-center text-2xl">
-            Upgrade to {tierConfig.name}
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            Upgrade Your Plan
           </DialogTitle>
-          <DialogDescription className="text-center">
-            Unlock <strong>{feature}</strong> and more premium features
+          <DialogDescription>
+            Unlock more features and higher limits with a premium plan
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-            <div className="text-center">
-              <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-4xl font-bold">${tierConfig.price}</span>
-                <span className="text-muted-foreground">/{tierConfig.interval}</span>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {availableTiers.map(([key, plan]) => (
+            <Card key={key} className={`p-6 ${plan.popular ? 'border-primary border-2' : ''}`}>
+              {plan.popular && (
+                <Badge className="mb-2">Most Popular</Badge>
+              )}
+              <h3 className="text-2xl font-bold">{plan.name}</h3>
+              <div className="mt-2 mb-4">
+                <span className="text-4xl font-bold">${plan.price}</span>
+                <span className="text-muted-foreground">/{plan.interval}</span>
               </div>
-              <p className="text-sm text-muted-foreground">per seat</p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Includes:</p>
-              <ul className="space-y-2">
-                {tierConfig.features.slice(0, 4).map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span>{feature}</span>
+              
+              <ul className="space-y-2 mb-6">
+                {plan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
-              {tierConfig.features.length > 4 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  + {tierConfig.features.length - 4} more features
-                </p>
-              )}
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handleUpgrade}
-              disabled={isLoading}
-            >
-              Upgrade Now
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={() => onOpenChange(false)}
-            >
-              Maybe Later
-            </Button>
-          </div>
-
-          {requiredTier === "free" && (
-            <div className="text-center">
-              <Badge variant="secondary" className="text-xs">
-                No credit card required
-              </Badge>
-            </div>
-          )}
+              <Button 
+                className="w-full"
+                onClick={() => handleUpgrade(key as SubscriptionTier)}
+                disabled={loading === key}
+              >
+                {loading === key ? "Processing..." : "Upgrade Now"}
+              </Button>
+            </Card>
+          ))}
         </div>
       </DialogContent>
     </Dialog>

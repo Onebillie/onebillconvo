@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { CreditWarningDialog } from "./components/CreditWarningDialog";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -42,7 +41,6 @@ function AppContent() {
     <>
       <AccountFrozenBanner />
       <CookieConsent />
-      <CreditWarningDialog />
       <PWAInstallPrompt />
         <Routes>
           <Route path="/" element={<Landing />} />
