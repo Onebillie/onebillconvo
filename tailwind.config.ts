@@ -67,27 +67,77 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
-        },
-        "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
-        },
-      },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "float-a": "float-a 18s ease-in-out infinite alternate",
+        "float-b": "float-b 22s ease-in-out infinite alternate",
+        "float-c": "float-c 20s ease-in-out infinite alternate-reverse",
+        "float-d": "float-d 26s ease-in-out infinite alternate",
+        "float-e": "float-e 24s ease-in-out infinite alternate",
+        "float-f": "float-f 28s ease-in-out infinite alternate",
+        "scroll": "scroll 22s linear infinite",
+        "marquee": "marquee 30s linear infinite",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "float-a": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(120px,-40px)" },
+          "50%": { transform: "translate(40px,60px)" },
+          "75%": { transform: "translate(-80px,10px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "float-b": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(-100px,40px)" },
+          "50%": { transform: "translate(-30px,-60px)" },
+          "75%": { transform: "translate(60px,-10px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "float-c": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(80px,50px)" },
+          "50%": { transform: "translate(0,90px)" },
+          "75%": { transform: "translate(-60px,10px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "float-d": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(60px,-80px)" },
+          "50%": { transform: "translate(-40px,-20px)" },
+          "75%": { transform: "translate(-100px,50px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "float-e": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(90px,10px)" },
+          "50%": { transform: "translate(30px,-70px)" },
+          "75%": { transform: "translate(-70px,-20px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "float-f": {
+          "0%": { transform: "translate(0,0)" },
+          "25%": { transform: "translate(-120px,-30px)" },
+          "50%": { transform: "translate(-60px,60px)" },
+          "75%": { transform: "translate(50px,40px)" },
+          "100%": { transform: "translate(0,0)" },
+        },
+        "scroll": {
+          "from": { transform: "translateX(100%)" },
+          "to": { transform: "translateX(-100%)" },
+        },
+        "marquee": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
     },
   },

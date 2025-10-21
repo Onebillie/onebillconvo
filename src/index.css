@@ -8,25 +8,25 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* AI Multicolor Rainbow Theme */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    /* Cream/Minimal Theme */
+    --background: 40 30% 95%;
+    --foreground: 240 10% 4%;
     
-    /* Primary: Vibrant Purple */
-    --primary: 280 100% 60%;
+    /* Primary: Black */
+    --primary: 0 0% 7%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary: Cyan */
-    --secondary: 190 95% 55%;
+    /* Secondary: Dark Gray */
+    --secondary: 240 10% 35%;
     --secondary-foreground: 0 0% 100%;
     
-    /* Accent: Pink/Magenta */
-    --accent: 330 85% 60%;
+    /* Accent: Orange CTA */
+    --accent: 20 90% 68%;
     --accent-foreground: 0 0% 100%;
     
-    /* Muted: Light background with dark text */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    /* Muted: Subtle backgrounds */
+    --muted: 40 20% 90%;
+    --muted-foreground: 220 10% 35%;
     
     /* Destructive */
     --destructive: 0 84% 60%;
@@ -39,11 +39,11 @@ All colors MUST be HSL.
     
     /* Card */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 240 10% 4%;
     
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 240 10% 4%;
     
     --radius: 0.75rem;
     
@@ -118,5 +118,9 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  .mask-marquee {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   }
 }
