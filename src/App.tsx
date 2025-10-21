@@ -61,7 +61,7 @@ function AppContent() {
           <Route path="/app" element={<Index />} />
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/settings" element={<Settings />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
           <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
           
           {/* Legacy routes - redirect to /app */}
