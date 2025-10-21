@@ -119,6 +119,12 @@ export function EmbedTokenManagement() {
       .join('');
   };
 
+  const generateSiteId = () => {
+    return 'site_' + Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  };
+
   const handleCreateToken = async () => {
     if (!newTokenData.name.trim()) {
       toast({
@@ -140,27 +146,49 @@ export function EmbedTokenManagement() {
         .eq('user_id', user.id)
         .single();
 
-      if (!businessUsers) return;
+      if (!businessUsers) {
+        throw new Error('No business found for user');
+      }
 
       const token = generateToken();
-      const siteId = generateToken(); // Generate site_id
+      const siteId = generateSiteId();
       const domains = newTokenData.domains
         .split(',')
         .map(d => d.trim())
         .filter(d => d.length > 0);
 
-      // Create token with generated site_id (TypeScript types may be outdated but DB has this column)
-      const { error } = await supabase
+      // Create token with generated site_id
+      const { data: tokenRow, error: tokenError } = await supabase
         .from('embed_tokens')
         .insert({
           business_id: businessUsers.business_id,
           token,
-          site_id: siteId as any,  // Force type, DB schema has this
+          site_id: siteId as any,
           name: newTokenData.name,
           allowed_domains: domains.length > 0 ? domains : null
+        })
+        .select('id')
+        .single();
+
+      if (tokenError) {
+        console.error('Token creation error:', tokenError);
+        throw tokenError;
+      }
+
+      // Create corresponding embed_sites entry
+      const { error: siteError } = await supabase
+        .from('embed_sites')
+        .insert({
+          business_id: businessUsers.business_id,
+          embed_token_id: tokenRow.id,
+          site_id: siteId,
+          name: newTokenData.name
         });
 
-      if (error) throw error;
+      if (siteError) {
+        console.error('Embed site creation error:', siteError);
+        // Don't throw - token is created, site creation is secondary
+      }
 
       toast({
         title: "Success",
@@ -170,11 +198,11 @@ export function EmbedTokenManagement() {
       setNewTokenData({ name: '', domains: '' });
       setShowNewToken(false);
       fetchTokens();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating token:', error);
       toast({
         title: "Error",
-        description: "Failed to create embed token",
+        description: error.message || "Failed to create embed token",
         variant: "destructive"
       });
     } finally {
@@ -259,8 +287,14 @@ export function EmbedTokenManagement() {
     }
   };
   const getCodeForPlatform = (token: EmbedToken, platform: string): string => {
-    const siteId = token.site_id || token.token;
-    const baseCode = `<script src="${window.location.origin}/embed-widget.js"></script>
+    const siteId = token.site_id;
+    if (!siteId) {
+      console.error('Token missing site_id:', token);
+      return '<!-- Error: Token missing site_id. Please recreate the token. -->';
+    }
+    
+    const WIDGET_JS = 'https://6e3a8087-ec6e-43e0-a6a1-d8394f40b390.lovableproject.com/embed-widget.js';
+    const baseCode = `<script src="${WIDGET_JS}"></script>
 <script>
   AlacarteChatWidget.init({
     siteId: '${siteId}',

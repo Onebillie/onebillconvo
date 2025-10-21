@@ -31,22 +31,26 @@ serve(async (req) => {
 
     const { data: siteData, error: siteError } = await supabase
       .from("embed_sites")
-      .select("*, embed_tokens!inner(business_id, status, allowed_domains), businesses!inner(id, name, is_frozen)")
+      .select("*, embed_tokens!inner(business_id, is_active, allowed_domains), businesses!inner(id, name, is_frozen)")
       .eq("site_id", siteId)
       .single();
 
     if (siteError || !siteData) {
+      console.error('Site lookup error:', siteError);
       return new Response(JSON.stringify({ error: "Invalid site ID" }), 
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (siteData.businesses.is_frozen || siteData.embed_tokens.status !== "active") {
+    if (siteData.businesses.is_frozen || siteData.embed_tokens.is_active !== true) {
       return new Response(JSON.stringify({ error: "Service unavailable" }), 
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const body = await req.json();
-    const { name, email, phone, customData } = body;
+    const name = body.customer_name ?? body.name;
+    const email = body.customer_email ?? body.email;
+    const phone = body.customer_phone ?? body.phone;
+    const customData = body.custom_data ?? body.customData;
 
     let customerId: string;
     if (email) {
@@ -98,10 +102,13 @@ serve(async (req) => {
       .single();
 
     return new Response(JSON.stringify({
-      success: true, 
-      session_token: sessionToken, 
-      customer_id: customerId,
-      conversation_id: conversationId, 
+      success: true,
+      session: {
+        session_token: sessionToken,
+        customer_id: customerId,
+        conversation_id: conversationId,
+        expires_at: expiresAt.toISOString()
+      },
       business_name: siteData.businesses.name,
       customization: customization || {
         primary_color: '#6366f1',

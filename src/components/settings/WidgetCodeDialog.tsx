@@ -26,18 +26,19 @@ export const WidgetCodeDialog = ({ open, onClose, token, businessId, onCustomize
     const preset = widgetPresets.find(p => p.id === presetId);
     if (!preset) return '';
 
-    const config = JSON.stringify({
-      ...preset.config,
-      primary_color: preset.config.primary_color,
-      secondary_color: preset.config.secondary_color,
-      text_color: preset.config.text_color,
-    }, null, 2);
+    const siteId = token.site_id;
+    if (!siteId) {
+      console.error('Token missing site_id:', token);
+      return '<!-- Error: Token missing site_id. Please recreate the token. -->';
+    }
 
+    const WIDGET_JS = 'https://6e3a8087-ec6e-43e0-a6a1-d8394f40b390.lovableproject.com/embed-widget.js';
+    
     return `<!-- AlacarteChat Widget - ${preset.name} -->
-<script src="https://6e3a8087-ec6e-43e0-a6a1-d8394f40b390.lovableproject.com/embed-widget.js"></script>
+<script src="${WIDGET_JS}"></script>
 <script>
   AlacarteChatWidget.init({
-    siteId: '${token.site_id || token.id}',
+    siteId: '${siteId}',
     apiUrl: 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1'
   });
 </script>`;
@@ -55,6 +56,8 @@ export const WidgetCodeDialog = ({ open, onClose, token, businessId, onCustomize
           business_id: businessId,
           embed_token_id: token.id,
           ...preset.config,
+        }, {
+          onConflict: 'business_id,embed_token_id'
         });
 
       if (error) {

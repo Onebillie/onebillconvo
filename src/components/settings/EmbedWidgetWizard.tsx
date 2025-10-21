@@ -89,6 +89,8 @@ export const EmbedWidgetWizard = ({
           business_id: businessId,
           embed_token_id: embedTokenId,
           ...config,
+        }, {
+          onConflict: 'business_id,embed_token_id'
         });
 
       if (error) throw error;
