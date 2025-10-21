@@ -199,68 +199,319 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
 
       {/* Pricing */}
       <section className="bg-background py-24 px-6 text-center" id="pricing">
-        <h2 className="text-4xl font-bold mb-8 text-foreground">Simple pricing</h2>
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <h2 className="text-4xl font-bold mb-8 text-foreground">Transparent pricing</h2>
+        <p className="text-muted-foreground max-w-3xl mx-auto mb-12">
+          Choose a plan that fits your needs. All plans include core features with different usage limits.
+        </p>
+        
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
           <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
             <h3 className="font-bold text-xl mb-2 text-card-foreground">Free</h3>
             <div className="text-4xl font-extrabold my-3 text-foreground">$0</div>
-            <ul className="space-y-2 text-card-foreground text-sm">
-              <li>1 team member</li>
-              <li>100 WhatsApp msgs/mo</li>
-              <li>Unlimited receiving</li>
-              <li>5 basic templates</li>
-              <li>Email integration</li>
-              <li>Community support</li>
+            <p className="text-xs text-muted-foreground mb-4">Forever free</p>
+            <ul className="space-y-2 text-card-foreground text-sm mb-4">
+              <li>✓ 1 team member</li>
+              <li>✓ 100 WhatsApp msgs/mo</li>
+              <li>✓ Unlimited receiving</li>
+              <li>✓ 5 basic templates</li>
+              <li>✓ Email integration</li>
+              <li>✓ Community support</li>
             </ul>
+            <div className="border-t border-border pt-3 mb-4">
+              <p className="text-xs text-muted-foreground font-semibold mb-1">Overages:</p>
+              <p className="text-xs text-muted-foreground">Additional messages: $0.10/msg</p>
+            </div>
             <Button onClick={() => navigate("/signup")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               Start Free
             </Button>
           </div>
+          
           <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
             <h3 className="font-bold text-xl mb-2 text-white">Starter</h3>
             <div className="text-4xl font-extrabold my-3 text-white">$29<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-white text-sm">
-              <li>2 team members</li>
-              <li>1,000 WhatsApp msgs/mo</li>
-              <li>Unlimited receiving</li>
-              <li>20 basic templates</li>
-              <li>Email integration</li>
-              <li>Email support</li>
+            <p className="text-xs text-white/70 mb-4">Per account</p>
+            <ul className="space-y-2 text-white text-sm mb-4">
+              <li>✓ 2 team members</li>
+              <li>✓ 1,000 WhatsApp msgs/mo</li>
+              <li>✓ Unlimited receiving</li>
+              <li>✓ 20 templates</li>
+              <li>✓ Email + SMS integration</li>
+              <li>✓ Email support</li>
             </ul>
+            <div className="border-t border-white/20 pt-3 mb-4">
+              <p className="text-xs text-white/90 font-semibold mb-1">Add-ons:</p>
+              <p className="text-xs text-white/70">Extra team member: $10/mo</p>
+              <p className="text-xs text-white/70">Extra 1,000 msgs: $15/mo</p>
+            </div>
             <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
               Get Started
             </Button>
           </div>
+          
           <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
             <h3 className="font-bold text-xl mb-2 text-card-foreground">Professional</h3>
             <div className="text-4xl font-extrabold my-3 text-foreground">$79<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-card-foreground text-sm">
-              <li>10 team members</li>
-              <li>10,000 WhatsApp msgs/mo</li>
-              <li>Unlimited templates</li>
-              <li>AI assistant (1,000 responses)</li>
-              <li>API access</li>
-              <li>Priority support</li>
+            <p className="text-xs text-muted-foreground mb-4">Per account</p>
+            <ul className="space-y-2 text-card-foreground text-sm mb-4">
+              <li>✓ 10 team members</li>
+              <li>✓ 10,000 WhatsApp msgs/mo</li>
+              <li>✓ Unlimited templates</li>
+              <li>✓ AI assistant (1,000 responses)</li>
+              <li>✓ API access (10k calls/mo)</li>
+              <li>✓ Priority support</li>
             </ul>
+            <div className="border-t border-border pt-3 mb-4">
+              <p className="text-xs text-muted-foreground font-semibold mb-1">Add-ons:</p>
+              <p className="text-xs text-muted-foreground">Extra team member: $7/mo</p>
+              <p className="text-xs text-muted-foreground">Extra 5,000 msgs: $30/mo</p>
+              <p className="text-xs text-muted-foreground">AI responses: $0.05/response</p>
+            </div>
             <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               Choose Professional
             </Button>
           </div>
+          
           <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
             <h3 className="font-bold text-xl mb-2 text-card-foreground">Enterprise</h3>
             <div className="text-4xl font-extrabold my-3 text-foreground">$199<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-card-foreground text-sm">
-              <li>Unlimited team members</li>
-              <li>Unlimited messages</li>
-              <li>AI assistant (unlimited)</li>
-              <li>24/7 premium support</li>
-              <li>Custom integrations</li>
-              <li>Account manager</li>
+            <p className="text-xs text-muted-foreground mb-4">Per account</p>
+            <ul className="space-y-2 text-card-foreground text-sm mb-4">
+              <li>✓ Unlimited team members</li>
+              <li>✓ Unlimited messages</li>
+              <li>✓ AI assistant (unlimited)</li>
+              <li>✓ Unlimited API calls</li>
+              <li>✓ Custom integrations</li>
+              <li>✓ 24/7 support + Account manager</li>
             </ul>
+            <div className="border-t border-border pt-3 mb-4">
+              <p className="text-xs text-muted-foreground font-semibold mb-1">Includes:</p>
+              <p className="text-xs text-muted-foreground">Custom SLA</p>
+              <p className="text-xs text-muted-foreground">Dedicated infrastructure</p>
+              <p className="text-xs text-muted-foreground">White-label options available</p>
+            </div>
             <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               Contact Sales
             </Button>
           </div>
+        </div>
+
+        {/* Detailed Pricing Breakdown */}
+        <div className="max-w-5xl mx-auto mt-16 text-left">
+          <h3 className="text-2xl font-bold mb-6 text-foreground text-center">Detailed pricing breakdown</h3>
+          
+          {/* Features & Costs Table */}
+          <div className="bg-card rounded-xl shadow-lg p-6 mb-8">
+            <h4 className="font-bold text-lg mb-4 text-card-foreground">Platform features & costs</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 text-card-foreground font-semibold">Feature</th>
+                    <th className="text-left py-3 text-card-foreground font-semibold">Free</th>
+                    <th className="text-left py-3 text-card-foreground font-semibold">Starter</th>
+                    <th className="text-left py-3 text-card-foreground font-semibold">Professional</th>
+                    <th className="text-left py-3 text-card-foreground font-semibold">Enterprise</th>
+                  </tr>
+                </thead>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Team members</td>
+                    <td className="py-3">1</td>
+                    <td className="py-3">2 (+$10/extra)</td>
+                    <td className="py-3">10 (+$7/extra)</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">WhatsApp messages/mo</td>
+                    <td className="py-3">100</td>
+                    <td className="py-3">1,000</td>
+                    <td className="py-3">10,000</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Message templates</td>
+                    <td className="py-3">5 basic</td>
+                    <td className="py-3">20 basic</td>
+                    <td className="py-3">Unlimited</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">AI assistant responses</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">1,000/mo</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">API calls/month</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">10,000</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Email integration</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">SMS integration</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3">Support level</td>
+                    <td className="py-3">Community</td>
+                    <td className="py-3">Email</td>
+                    <td className="py-3">Priority</td>
+                    <td className="py-3">24/7 + Manager</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Overage & Add-on Costs */}
+          <div className="bg-card rounded-xl shadow-lg p-6 mb-8">
+            <h4 className="font-bold text-lg mb-4 text-card-foreground">Overage & add-on pricing</h4>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">Message overages:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Free plan: $0.10 per message</li>
+                  <li>• Starter plan: $0.015 per message (or $15/1,000 bundle)</li>
+                  <li>• Professional plan: $0.006 per message (or $30/5,000 bundle)</li>
+                  <li>• Enterprise: Unlimited included</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">Extra team members:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Starter: $10/month per user</li>
+                  <li>• Professional: $7/month per user</li>
+                  <li>• Enterprise: Unlimited included</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">AI assistant:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Professional: $0.05 per response after 1,000</li>
+                  <li>• Enterprise: Unlimited included</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">API access:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Professional: $0.002 per call after 10,000</li>
+                  <li>• Enterprise: Unlimited included</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Third-Party Service Provider Costs - IMPORTANT DISCLAIMER */}
+          <div className="bg-accent/10 border-2 border-accent rounded-xl shadow-lg p-6 mb-8">
+            <h4 className="font-bold text-lg mb-4 text-foreground flex items-center gap-2">
+              <span className="text-accent">⚠️</span> Third-party service provider costs
+            </h4>
+            <div className="space-y-4 text-sm text-foreground">
+              <p className="font-semibold">
+                Important: Our platform fees cover access to the À La Carte Chat platform only. 
+                You must pay separately to third-party service providers for message delivery costs.
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-background/50 rounded-lg p-4">
+                  <p className="font-semibold mb-2">WhatsApp Business API (Meta):</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Business-initiated: $0.005-$0.15/msg (varies by country)</li>
+                    <li>• User-initiated (24hr window): Free</li>
+                    <li>• Template messages: Varies by country</li>
+                    <li>• You pay Meta directly via their billing</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-background/50 rounded-lg p-4">
+                  <p className="font-semibold mb-2">SMS (Twilio/Similar):</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• US/Canada: ~$0.0075/msg</li>
+                    <li>• International: $0.05-$0.50/msg</li>
+                    <li>• Short codes: Additional fees apply</li>
+                    <li>• You pay your SMS provider directly</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-background/50 rounded-lg p-4">
+                  <p className="font-semibold mb-2">Email (Your SMTP provider):</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Usually free or very low cost</li>
+                    <li>• Gmail/Outlook: Included with account</li>
+                    <li>• SendGrid/Mailgun: Pay per volume</li>
+                    <li>• You manage your own email accounts</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-background/50 rounded-lg p-4">
+                  <p className="font-semibold mb-2">Facebook & Instagram (Meta):</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Currently free for most use cases</li>
+                    <li>• Subject to Meta's policies</li>
+                    <li>• May incur costs for ads/promotions</li>
+                    <li>• Check Meta's current pricing</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-accent/20 rounded-lg p-4 mt-4">
+                <p className="font-semibold text-foreground mb-2">💡 Cost estimate example:</p>
+                <p className="text-muted-foreground">
+                  A business on the Starter plan ($29/mo) sending 1,000 WhatsApp messages might pay:
+                </p>
+                <ul className="mt-2 space-y-1 text-muted-foreground">
+                  <li>• À La Carte Chat platform: $29/month</li>
+                  <li>• WhatsApp (Meta): ~$50-$150/month (depending on message types & countries)</li>
+                  <li>• <strong className="text-foreground">Total: $79-$179/month</strong></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Extra Features Costs */}
+          <div className="bg-card rounded-xl shadow-lg p-6">
+            <h4 className="font-bold text-lg mb-4 text-card-foreground">Premium features & extras</h4>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">Advanced features:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Custom white-label branding: Contact sales</li>
+                  <li>• Dedicated infrastructure: Contact sales</li>
+                  <li>• Custom SLA agreements: Contact sales</li>
+                  <li>• On-premise deployment: Contact sales</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">Professional services:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Implementation support: $500-$2,000</li>
+                  <li>• Custom integration development: $1,500+</li>
+                  <li>• Team training sessions: $300/session</li>
+                  <li>• Data migration assistance: $500+</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* FAQ Note */}
+        <div className="max-w-3xl mx-auto mt-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            All prices in USD. Billing is monthly. You can upgrade, downgrade, or cancel anytime. 
+            7-day free trial available on all paid plans. No credit card required for Free plan.
+          </p>
         </div>
       </section>
 
