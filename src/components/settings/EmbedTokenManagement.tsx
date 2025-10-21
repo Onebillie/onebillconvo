@@ -124,16 +124,19 @@ export function EmbedTokenManagement() {
       if (!businessUsers) return;
 
       const token = generateToken();
+      const siteId = generateToken(); // Generate site_id
       const domains = newTokenData.domains
         .split(',')
         .map(d => d.trim())
         .filter(d => d.length > 0);
 
+      // Create token with generated site_id (TypeScript types may be outdated but DB has this column)
       const { error } = await supabase
         .from('embed_tokens')
         .insert({
           business_id: businessUsers.business_id,
           token,
+          site_id: siteId as any,  // Force type, DB schema has this
           name: newTokenData.name,
           allowed_domains: domains.length > 0 ? domains : null
         });
@@ -208,12 +211,14 @@ export function EmbedTokenManagement() {
     });
   };
 
-  const showEmbedCode = (token: string) => {
+  const showEmbedCode = (tokenData: any) => {
+    const siteId = tokenData.site_id || tokenData.token;
     const code = `<!-- Add this to your website's <head> or before </body> -->
 <script src="${window.location.origin}/embed-widget.js"></script>
 <script>
   AlacarteChatWidget.init({
-    token: '${token}',
+    siteId: '${siteId}',
+    apiUrl: 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1',
     customer: {
       name: 'User Name',      // Optional
       email: 'user@email.com', // Optional

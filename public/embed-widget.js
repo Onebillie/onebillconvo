@@ -1,24 +1,6 @@
 /**
- * AlacarteChat Embeddable Widget
- * Drop this script into any website to enable live chat
- * 
- * Usage:
- * <script src="https://your-domain.com/embed-widget.js"></script>
- * <script>
- *   AlacarteChatWidget.init({
- *     token: 'your-embed-token',
- *     apiUrl: 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1',
- *     customer: {
- *       name: 'John Doe',
- *       email: 'john@example.com',
- *       phone: '+1234567890'
- *     },
- *     customData: {
- *       userId: '12345',
- *       plan: 'premium'
- *     }
- *   });
- * </script>
+ * AlacarteChat Embeddable Widget - Secure Version
+ * Uses site_id instead of tokens for better security
  */
 
 (function() {
@@ -30,21 +12,19 @@
     isOpen: false,
     unreadCount: 0,
     pollInterval: null,
+    customization: null,
 
     init: function(options) {
-      if (!options.token) {
-        console.error('AlacarteChatWidget: token is required');
+      if (!options.siteId) {
+        console.error('AlacarteChatWidget: siteId is required');
         return;
       }
 
       this.config = {
-        token: options.token,
+        siteId: options.siteId,
         apiUrl: options.apiUrl || 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1',
         customer: options.customer || {},
-        customData: options.customData || {},
-        position: options.position || 'bottom-right',
-        theme: options.theme || 'light',
-        primaryColor: options.primaryColor || '#6366f1'
+        customData: options.customData || {}
       };
 
       this.authenticate();
@@ -56,7 +36,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-embed-token': this.config.token
+            'x-site-id': this.config.siteId
           },
           body: JSON.stringify({
             customer_name: this.config.customer.name,
@@ -70,6 +50,7 @@
 
         if (data.success) {
           this.session = data.session;
+          this.customization = data.customization || {};
           this.injectWidget();
           this.startPolling();
         } else {
@@ -81,15 +62,19 @@
     },
 
     injectWidget: function() {
-      // Create widget container
+      const primaryColor = this.customization.primary_color || '#6366f1';
+      const position = this.customization.widget_position || 'bottom-right';
+      const customCSS = this.customization.custom_css || '';
+
       const widget = document.createElement('div');
       widget.id = 'alacarte-chat-widget';
       widget.innerHTML = `
         <style>
+          ${customCSS}
           #alacarte-chat-widget {
             position: fixed;
-            ${this.config.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
-            ${this.config.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+            ${position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
+            ${position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
             z-index: 999999;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           }
@@ -97,203 +82,155 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: ${this.config.primaryColor};
+            background: ${primaryColor};
+            color: white;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
             position: relative;
+            transition: transform 0.2s;
           }
           #alacarte-chat-button:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
           }
-          #alacarte-chat-button svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-          }
-          #alacarte-unread-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-          }
-          #alacarte-unread-badge.show {
-            display: flex;
-          }
-          #chat-window {
+          #alacarte-chat-window {
             display: none;
             width: 380px;
             height: 600px;
+            max-width: calc(100vw - 40px);
             max-height: calc(100vh - 100px);
             background: white;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            flex-direction: column;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            margin-bottom: 10px;
+            flex-direction: column;
           }
-          #chat-window.open {
+          #alacarte-chat-window.open {
             display: flex;
           }
           #alacarte-chat-header {
-            background: ${this.config.primaryColor};
+            background: ${primaryColor};
             color: white;
-            padding: 16px 20px;
+            padding: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
-          #alacarte-chat-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-          }
-          #close-button {
-            background: transparent;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 24px;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-          }
-          #messages {
+          #alacarte-chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 16px;
             background: #f9fafb;
           }
           .alacarte-message {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             display: flex;
-            gap: 8px;
+          }
+          .alacarte-message.agent {
+            justify-content: flex-start;
           }
           .alacarte-message.customer {
-            flex-direction: row-reverse;
+            justify-content: flex-end;
           }
-          .alacarte-message-bubble {
+          .alacarte-message-content {
             max-width: 70%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 12px;
             word-wrap: break-word;
           }
-          .alacarte-message.agent .alacarte-message-bubble {
+          .alacarte-message.agent .alacarte-message-content {
             background: white;
             color: #1f2937;
-            border: 1px solid #e5e7eb;
           }
-          .alacarte-message.customer .alacarte-message-bubble {
-            background: ${this.config.primaryColor};
+          .alacarte-message.customer .alacarte-message-content {
+            background: ${primaryColor};
             color: white;
           }
-          .alacarte-message-time {
-            font-size: 11px;
-            opacity: 0.6;
-            margin-top: 4px;
-          }
-          #alacarte-input-area {
+          #alacarte-chat-input-area {
             padding: 16px;
-            background: white;
             border-top: 1px solid #e5e7eb;
             display: flex;
             gap: 8px;
           }
-          #message-input {
+          #alacarte-chat-input {
             flex: 1;
             border: 1px solid #d1d5db;
-            border-radius: 8px;
-            padding: 10px 12px;
+            border-radius: 20px;
+            padding: 8px 16px;
             font-size: 14px;
             outline: none;
-            resize: none;
-            font-family: inherit;
           }
-          #alacarte-message-input:focus {
-            border-color: ${this.config.primaryColor};
-          }
-          #alacarte-send-button {
-            background: ${this.config.primaryColor};
+          #alacarte-chat-send {
+            background: ${primaryColor};
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
             cursor: pointer;
-            font-weight: 500;
-            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
-          #alacarte-send-button:hover {
-            opacity: 0.9;
+          #alacarte-chat-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
           }
-          #alacarte-send-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+          .alacarte-unread-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: bold;
           }
         </style>
-        
+        <button id="alacarte-chat-button" onclick="AlacarteChatWidget.toggleChat()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span id="alacarte-unread-badge" class="alacarte-unread-badge" style="display: none;"></span>
+        </button>
         <div id="alacarte-chat-window">
           <div id="alacarte-chat-header">
-            <h3>${this.session.business_name}</h3>
-            <button id="alacarte-close-button">&times;</button>
+            <span>${this.customization.greeting_message || 'Chat with us'}</span>
+            <button id="alacarte-chat-close" onclick="AlacarteChatWidget.toggleChat()">×</button>
           </div>
-          <div id="alacarte-messages"></div>
-          <div id="alacarte-input-area">
-            <textarea id="alacarte-message-input" placeholder="Type your message..." rows="1"></textarea>
-            <button id="alacarte-send-button">Send</button>
+          <div id="alacarte-chat-messages"></div>
+          <div id="alacarte-chat-input-area">
+            <input type="text" id="alacarte-chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') AlacarteChatWidget.sendMessage()">
+            <button id="alacarte-chat-send" onclick="AlacarteChatWidget.sendMessage()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
           </div>
         </div>
-        
-        <button id="alacarte-chat-button">
-          <svg viewBox="0 0 24 24">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-          </svg>
-          <span id="alacarte-unread-badge">0</span>
-        </button>
       `;
-
       document.body.appendChild(widget);
-
-      // Event listeners
-      document.getElementById('alacarte-chat-button').addEventListener('click', () => this.toggleChat());
-      document.getElementById('alacarte-close-button').addEventListener('click', () => this.toggleChat());
-      document.getElementById('alacarte-send-button').addEventListener('click', () => this.sendMessage());
-      
-      const input = document.getElementById('alacarte-message-input');
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          this.sendMessage();
-        }
-      });
-
       this.loadMessages();
     },
 
     toggleChat: function() {
+      const window = document.getElementById('alacarte-chat-window');
       this.isOpen = !this.isOpen;
-      const chatWindow = document.getElementById('alacarte-chat-window');
+      window.classList.toggle('open', this.isOpen);
       
       if (this.isOpen) {
-        chatWindow.classList.add('open');
         this.unreadCount = 0;
         this.updateUnreadBadge();
-        this.loadMessages();
-      } else {
-        chatWindow.classList.remove('open');
+        document.getElementById('alacarte-chat-input').focus();
       }
     },
 
@@ -303,90 +240,57 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-embed-token': this.config.token
+            'x-session-token': this.session.session_token
           },
-          body: JSON.stringify({
-            action: 'get_messages',
-            conversation_id: this.session.conversation_id
-          })
+          body: JSON.stringify({ action: 'get_messages' })
         });
 
         const data = await response.json();
-
-        if (data.success) {
+        if (data.messages) {
           this.renderMessages(data.messages);
         }
       } catch (error) {
-        console.error('AlacarteChatWidget: Error loading messages', error);
+        console.error('AlacarteChatWidget: Load messages error', error);
       }
     },
 
     renderMessages: function(messages) {
-      const container = document.getElementById('alacarte-messages');
-      container.innerHTML = '';
-
-      messages.forEach(msg => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `alacarte-message ${msg.sender_type}`;
-        
-        const time = new Date(msg.created_at).toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
-
-        messageDiv.innerHTML = `
-          <div class="alacarte-message-bubble">
-            ${this.escapeHtml(msg.content)}
-            <div class="alacarte-message-time">${time}</div>
-          </div>
-        `;
-
-        container.appendChild(messageDiv);
-      });
-
+      const container = document.getElementById('alacarte-chat-messages');
+      container.innerHTML = messages.map(msg => `
+        <div class="alacarte-message ${msg.direction === 'outbound' ? 'agent' : 'customer'}">
+          <div class="alacarte-message-content">${this.escapeHtml(msg.content)}</div>
+        </div>
+      `).join('');
       container.scrollTop = container.scrollHeight;
     },
 
     sendMessage: async function() {
-      const input = document.getElementById('alacarte-message-input');
-      const content = input.value.trim();
+      const input = document.getElementById('alacarte-chat-input');
+      const message = input.value.trim();
+      if (!message) return;
 
-      if (!content) return;
-
-      const sendButton = document.getElementById('alacarte-send-button');
-      sendButton.disabled = true;
       input.value = '';
+      
+      const tempMessage = { content: message, direction: 'inbound' };
+      this.renderMessages([...this.getCurrentMessages(), tempMessage]);
 
       try {
-        const response = await fetch(`${this.config.apiUrl}/embed-message`, {
+        await fetch(`${this.config.apiUrl}/embed-message`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-embed-token': this.config.token
+            'x-session-token': this.session.session_token
           },
-          body: JSON.stringify({
-            action: 'send_message',
-            conversation_id: this.session.conversation_id,
-            customer_id: this.session.customer_id,
-            content: content
-          })
+          body: JSON.stringify({ action: 'send_message', message })
         });
-
-        const data = await response.json();
-
-        if (data.success) {
-          this.loadMessages();
-        }
+        
+        this.loadMessages();
       } catch (error) {
-        console.error('AlacarteChatWidget: Error sending message', error);
-        input.value = content;
-      } finally {
-        sendButton.disabled = false;
+        console.error('AlacarteChatWidget: Send message error', error);
       }
     },
 
     startPolling: function() {
-      // Poll for new messages every 3 seconds
       this.pollInterval = setInterval(() => {
         if (!this.isOpen) {
           this.checkForNewMessages();
@@ -400,39 +304,42 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-embed-token': this.config.token
+            'x-session-token': this.session.session_token
           },
-          body: JSON.stringify({
-            action: 'get_messages',
-            conversation_id: this.session.conversation_id
-          })
+          body: JSON.stringify({ action: 'get_messages' })
         });
 
         const data = await response.json();
-
-        if (data.success) {
-          const unreadMessages = data.messages.filter(msg => 
-            msg.sender_type === 'agent' && !msg.is_read
-          );
-          
-          if (unreadMessages.length > this.unreadCount) {
-            this.unreadCount = unreadMessages.length;
+        if (data.messages) {
+          const agentMessages = data.messages.filter(m => m.direction === 'outbound');
+          const newCount = agentMessages.length - (this.lastKnownCount || 0);
+          if (newCount > 0) {
+            this.unreadCount += newCount;
             this.updateUnreadBadge();
           }
+          this.lastKnownCount = agentMessages.length;
         }
       } catch (error) {
-        console.error('AlacarteChatWidget: Error checking messages', error);
+        console.error('AlacarteChatWidget: Check messages error', error);
       }
     },
 
     updateUnreadBadge: function() {
-      const badge = document.getElementById('unread-badge');
+      const badge = document.getElementById('alacarte-unread-badge');
       if (this.unreadCount > 0) {
-        badge.textContent = this.unreadCount;
-        badge.classList.add('show');
+        badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
+        badge.style.display = 'block';
       } else {
-        badge.classList.remove('show');
+        badge.style.display = 'none';
       }
+    },
+
+    getCurrentMessages: function() {
+      const container = document.getElementById('alacarte-chat-messages');
+      return Array.from(container.querySelectorAll('.alacarte-message')).map(el => ({
+        content: el.querySelector('.alacarte-message-content').textContent,
+        direction: el.classList.contains('agent') ? 'outbound' : 'inbound'
+      }));
     },
 
     escapeHtml: function(text) {
@@ -442,6 +349,5 @@
     }
   };
 
-  // Expose to global scope
   window.AlacarteChatWidget = AlacarteChatWidget;
 })();

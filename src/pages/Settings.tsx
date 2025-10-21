@@ -19,9 +19,13 @@ import { QuickRepliesAccordion } from "@/components/settings/QuickRepliesAccordi
 import { AIApprovalAccordion } from "@/components/settings/AIApprovalAccordion";
 import { NotificationsAccordion } from "@/components/settings/NotificationsAccordion";
 import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { EmbedTokenManagement } from "@/components/settings/EmbedTokenManagement";
+import { EmbedWidgetCustomization } from "@/components/settings/EmbedWidgetCustomization";
+import { EmbedAISettings } from "@/components/settings/EmbedAISettings";
 
 export default function Settings() {
-  const { profile, loading, isAdmin, isSuperAdmin } = useAuth();
+  const { profile, loading, isAdmin, isSuperAdmin, currentBusinessId } = useAuth();
   const navigate = useNavigate();
 
   if (loading) {
@@ -78,6 +82,7 @@ export default function Settings() {
             <TabsTrigger value="business" className="shrink-0">Business</TabsTrigger>
             <TabsTrigger value="calendar" className="shrink-0">Calendar</TabsTrigger>
             <TabsTrigger value="ai" className="shrink-0">AI Assistant</TabsTrigger>
+            <TabsTrigger value="widget" className="shrink-0">Widget</TabsTrigger>
             <TabsTrigger value="canned" className="shrink-0">Quick Replies</TabsTrigger>
             <TabsTrigger value="ai-approval" className="shrink-0">AI Approval</TabsTrigger>
             <TabsTrigger value="notifications" className="shrink-0">Notifications</TabsTrigger>
@@ -120,6 +125,31 @@ export default function Settings() {
 
           <TabsContent value="ai" forceMount>
             <AIAccordion />
+          </TabsContent>
+
+          <TabsContent value="widget" forceMount>
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              <AccordionItem value="tokens">
+                <AccordionTrigger>Embed Tokens</AccordionTrigger>
+                <AccordionContent>
+                  <EmbedTokenManagement />
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="customization">
+                <AccordionTrigger>Widget Customization</AccordionTrigger>
+                <AccordionContent>
+                  {currentBusinessId && <EmbedWidgetCustomization businessId={currentBusinessId} />}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="ai-settings">
+                <AccordionTrigger>Widget AI Settings</AccordionTrigger>
+                <AccordionContent>
+                  {currentBusinessId && <EmbedAISettings businessId={currentBusinessId} />}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
 
           <TabsContent value="canned" forceMount>

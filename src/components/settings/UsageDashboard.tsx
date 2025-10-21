@@ -10,7 +10,7 @@ import { AlertCircle, TrendingUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const UsageDashboard = () => {
-  const { subscriptionState } = useAuth();
+  const { subscriptionState, currentBusinessId } = useAuth();
   const navigate = useNavigate();
   const [messageCount, setMessageCount] = useState(0);
   const [creditBalance, setCreditBalance] = useState(0);
@@ -19,7 +19,9 @@ export const UsageDashboard = () => {
   const limit = getMessageLimit(subscriptionState.tier);
 
   useEffect(() => {
-    fetchUsage();
+    if (currentBusinessId) {
+      fetchUsage();
+    }
     
     const channel = supabase
       .channel('usage-updates')
@@ -32,13 +34,16 @@ export const UsageDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentBusinessId]);
 
   const fetchUsage = async () => {
+    if (!currentBusinessId) return;
+    
     try {
       const { data, error } = await supabase
         .from('businesses')
         .select('message_count_current_period, credit_balance')
+        .eq('id', currentBusinessId)
         .single();
         
       if (error) throw error;
