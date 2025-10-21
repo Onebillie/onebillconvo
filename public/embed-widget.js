@@ -62,28 +62,66 @@
     },
 
     injectWidget: function() {
-      const primaryColor = this.customization.primary_color || '#6366f1';
-      const position = this.customization.widget_position || 'bottom-right';
-      const customCSS = this.customization.custom_css || '';
+      const c = this.customization;
+      const primaryColor = c.primary_color || '#6366f1';
+      const secondaryColor = c.secondary_color || '#4f46e5';
+      const textColor = c.text_color || '#ffffff';
+      const position = c.widget_position || 'bottom-right';
+      const size = c.widget_size || 'medium';
+      const showText = c.show_button_text || false;
+      const buttonText = c.button_text || 'Chat';
+      const iconType = c.icon_type || 'chat';
+      const greeting = c.greeting_message || 'Chat with us';
+      
+      // Size mapping
+      const sizeMap = { small: '48px', medium: '60px', large: '72px' };
+      const buttonSize = sizeMap[size];
+      
+      // Icon SVG mapping
+      const icons = {
+        'chat': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        'speech-bubble': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        'headset': '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+        'help-circle': '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+        'phone': '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+        'sparkles': '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>',
+        'smile': '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/>',
+        'shopping': '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+        'lifebuoy': '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" x2="9.17" y1="4.93" y2="9.17"/><line x1="14.83" x2="19.07" y1="14.83" y2="19.07"/><line x1="14.83" x2="19.07" y1="9.17" y2="4.93"/><line x1="4.93" x2="9.17" y1="19.07" y2="14.83"/>'
+      };
+      const iconSvg = icons[iconType] || icons['chat'];
+      
+      const customCSS = c.custom_css || '';
 
       const widget = document.createElement('div');
       widget.id = 'alacarte-chat-widget';
+      
+      // Button HTML - with or without text
+      const buttonContent = showText 
+        ? `<div style="display: flex; align-items: center; gap: 8px; padding: 0 20px;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${iconSvg}</svg>
+             <span style="font-weight: 500;">${buttonText}</span>
+           </div>`
+        : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${iconSvg}</svg>`;
+      
+      const buttonStyle = showText
+        ? `min-width: ${buttonSize}; height: ${buttonSize}; border-radius: 30px; padding: 0 20px;`
+        : `width: ${buttonSize}; height: ${buttonSize}; border-radius: 50%;`;
+
       widget.innerHTML = `
         <style>
           ${customCSS}
           #alacarte-chat-widget {
             position: fixed;
             ${position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
-            ${position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+            ${position.includes('right') ? 'right: 20px;' : position.includes('left') ? 'left: 20px;' : 'left: 50%; transform: translateX(-50%);'}
             z-index: 999999;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           }
           #alacarte-chat-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
+            ${buttonStyle}
             background: ${primaryColor};
-            color: white;
+            color: ${textColor};
             border: none;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -94,116 +132,17 @@
             transition: transform 0.2s;
           }
           #alacarte-chat-button:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
           }
-          #alacarte-chat-window {
-            display: none;
-            width: 380px;
-            height: 600px;
-            max-width: calc(100vw - 40px);
-            max-height: calc(100vh - 100px);
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            flex-direction: column;
-          }
-          #alacarte-chat-window.open {
-            display: flex;
-          }
-          #alacarte-chat-header {
-            background: ${primaryColor};
-            color: white;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          #alacarte-chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            background: #f9fafb;
-          }
-          .alacarte-message {
-            margin-bottom: 12px;
-            display: flex;
-          }
-          .alacarte-message.agent {
-            justify-content: flex-start;
-          }
-          .alacarte-message.customer {
-            justify-content: flex-end;
-          }
-          .alacarte-message-content {
-            max-width: 70%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            word-wrap: break-word;
-          }
-          .alacarte-message.agent .alacarte-message-content {
-            background: white;
-            color: #1f2937;
-          }
-          .alacarte-message.customer .alacarte-message-content {
-            background: ${primaryColor};
-            color: white;
-          }
-          #alacarte-chat-input-area {
-            padding: 16px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            gap: 8px;
-          }
-          #alacarte-chat-input {
-            flex: 1;
-            border: 1px solid #d1d5db;
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 14px;
-            outline: none;
-          }
-          #alacarte-chat-send {
-            background: ${primaryColor};
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          #alacarte-chat-close {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 24px;
-            line-height: 1;
-          }
-          .alacarte-unread-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: white;
-            border-radius: 12px;
-            padding: 2px 6px;
-            font-size: 12px;
-            font-weight: bold;
-          }
+...
         </style>
         <button id="alacarte-chat-button" onclick="AlacarteChatWidget.toggleChat()">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
+          ${buttonContent}
           <span id="alacarte-unread-badge" class="alacarte-unread-badge" style="display: none;"></span>
         </button>
         <div id="alacarte-chat-window">
           <div id="alacarte-chat-header">
-            <span>${this.customization.greeting_message || 'Chat with us'}</span>
+            <span>${greeting}</span>
             <button id="alacarte-chat-close" onclick="AlacarteChatWidget.toggleChat()">×</button>
           </div>
           <div id="alacarte-chat-messages"></div>
