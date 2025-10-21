@@ -15,9 +15,15 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
   const [customization, setCustomization] = useState({
     chat_icon_type: 'default',
     primary_color: '#6366f1',
+    secondary_color: '#8b5cf6',
+    background_color: '#ffffff',
+    text_color: '#000000',
+    font_family: 'Inter, sans-serif',
+    border_radius: '12',
     widget_position: 'bottom-right',
     greeting_message: 'Hello! How can we help you today?',
     offline_message: "We're currently offline. Leave a message!",
+    logo_url: '',
     custom_css: ''
   });
 
@@ -66,6 +72,30 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
           </div>
           
           <div>
+            <Label>Secondary Color</Label>
+            <Input type="color" value={customization.secondary_color} 
+              onChange={(e) => setCustomization({...customization, secondary_color: e.target.value})} />
+          </div>
+
+          <div>
+            <Label>Background Color</Label>
+            <Input type="color" value={customization.background_color} 
+              onChange={(e) => setCustomization({...customization, background_color: e.target.value})} />
+          </div>
+
+          <div>
+            <Label>Text Color</Label>
+            <Input type="color" value={customization.text_color} 
+              onChange={(e) => setCustomization({...customization, text_color: e.target.value})} />
+          </div>
+
+          <div>
+            <Label>Border Radius (px)</Label>
+            <Input type="number" value={customization.border_radius} 
+              onChange={(e) => setCustomization({...customization, border_radius: e.target.value})} />
+          </div>
+          
+          <div>
             <Label>Widget Position</Label>
             <Select value={customization.widget_position} 
               onValueChange={(val) => setCustomization({...customization, widget_position: val})}>
@@ -77,6 +107,13 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
                 <SelectItem value="top-left">Top Left</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label>Logo URL (Optional)</Label>
+            <Input value={customization.logo_url} 
+              onChange={(e) => setCustomization({...customization, logo_url: e.target.value})} 
+              placeholder="https://example.com/logo.png" />
           </div>
         </TabsContent>
 

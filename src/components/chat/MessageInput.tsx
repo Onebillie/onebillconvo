@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 import { Customer } from "@/types/chat";
 import { populateTemplateWithContactData } from "@/lib/templateUtils";
 import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
+import { LimitReachedModal } from "@/components/modals/LimitReachedModal";
 
 interface MessageInputProps {
   conversationId: string;
   customerId: string;
   customerPhone: string;
   customerEmail?: string;
-  lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram";
+  lastContactMethod?: "whatsapp" | "email" | "sms";
   onMessageSent: () => void;
   customer?: Customer;
   initialMessage?: string;
@@ -42,7 +43,10 @@ export const MessageInput = ({
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram">(lastContactMethod || "whatsapp");
+  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms">(lastContactMethod || "whatsapp");
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [currentUsage, setCurrentUsage] = useState(0);
+  const [messageLimit, setMessageLimit] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const sendingRef = useRef(false);
@@ -135,11 +139,11 @@ export const MessageInput = ({
 
           // Check if user has exceeded limits
           if (currentCount >= messageLimit && creditBalance === 0) {
-            toast({
-              title: "Message Limit Reached",
-              description: `You've reached your ${messageLimit} message limit. Upgrade your plan or purchase credit bundles to continue sending.`,
-              variant: "destructive",
-            });
+            setCurrentUsage(currentCount);
+            setMessageLimit(messageLimit);
+            setShowLimitModal(true);
+            sendingRef.current = false;
+            setIsSending(false);
             return;
           }
         }
@@ -479,34 +483,6 @@ export const MessageInput = ({
           >
             <Phone className="h-4 w-4" />
           </button>
-          {customer?.facebook_username && (
-            <button
-              onClick={() => setSendVia("facebook")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors border-l",
-                sendVia === "facebook"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              )}
-              title="Facebook Messenger"
-            >
-              <MessageCircle className="h-4 w-4" />
-            </button>
-          )}
-          {customer?.instagram_username && (
-            <button
-              onClick={() => setSendVia("instagram")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors border-l",
-                sendVia === "instagram"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              )}
-              title="Instagram"
-            >
-              <Instagram className="h-4 w-4" />
-            </button>
-          )}
         </div>
         
         <input
@@ -558,6 +534,13 @@ export const MessageInput = ({
           <Send className="w-4 h-4" />
         </Button>
       </div>
+
+      <LimitReachedModal 
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        currentUsage={currentUsage}
+        messageLimit={messageLimit}
+      />
     </div>
   );
 };

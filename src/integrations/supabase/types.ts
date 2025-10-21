@@ -1746,43 +1746,55 @@ export type Database = {
           background_color: string | null
           border_radius: string | null
           business_id: string
+          chat_icon_type: string | null
           created_at: string
           custom_css: string | null
           font_family: string | null
+          greeting_message: string | null
           id: string
           logo_url: string | null
+          offline_message: string | null
           primary_color: string | null
           secondary_color: string | null
           text_color: string | null
           updated_at: string
+          widget_position: string | null
         }
         Insert: {
           background_color?: string | null
           border_radius?: string | null
           business_id: string
+          chat_icon_type?: string | null
           created_at?: string
           custom_css?: string | null
           font_family?: string | null
+          greeting_message?: string | null
           id?: string
           logo_url?: string | null
+          offline_message?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           text_color?: string | null
           updated_at?: string
+          widget_position?: string | null
         }
         Update: {
           background_color?: string | null
           border_radius?: string | null
           business_id?: string
+          chat_icon_type?: string | null
           created_at?: string
           custom_css?: string | null
           font_family?: string | null
+          greeting_message?: string | null
           id?: string
           logo_url?: string | null
+          offline_message?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           text_color?: string | null
           updated_at?: string
+          widget_position?: string | null
         }
         Relationships: [
           {
