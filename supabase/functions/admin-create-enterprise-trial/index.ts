@@ -61,27 +61,41 @@ serve(async (req) => {
       paymentMethod = "bank",
       invoiceEmail,
       customFeatures = {},
-      notes
+      notes,
+      tempPassword,
+      assignRole = "admin"
     } = body;
 
     if (!businessName || !ownerEmail || !ownerFullName) {
       throw new Error("Missing required fields: businessName, ownerEmail, ownerFullName");
     }
 
-    logStep("Creating enterprise trial account", { businessName, ownerEmail, paymentMethod });
+    logStep("Creating enterprise trial account", { businessName, ownerEmail, paymentMethod, assignRole });
 
     // Check if user already exists
     let ownerId: string;
+    let isNewUser = false;
     const { data: existingUser } = await supabaseClient.auth.admin.listUsers();
     const userExists = existingUser?.users?.find(u => u.email === ownerEmail);
 
     if (userExists) {
       ownerId = userExists.id;
       logStep("Using existing user", { ownerId });
+      
+      // Update password if provided
+      if (tempPassword) {
+        await supabaseClient.auth.admin.updateUserById(ownerId, {
+          password: tempPassword
+        });
+        logStep("Updated user password");
+      }
     } else {
-      // Create new user account
+      // Create new user account with temp password
+      const password = tempPassword || `Temp${Math.random().toString(36).slice(-8)}!`;
+      
       const { data: newUser, error: createUserError } = await supabaseClient.auth.admin.createUser({
         email: ownerEmail,
+        password: password,
         email_confirm: true,
         user_metadata: {
           full_name: ownerFullName,
@@ -93,7 +107,8 @@ serve(async (req) => {
       if (!newUser.user) throw new Error("User creation failed");
       
       ownerId = newUser.user.id;
-      logStep("Created new user", { ownerId });
+      isNewUser = true;
+      logStep("Created new user", { ownerId, hasPassword: !!tempPassword });
 
       // Update profile
       await supabaseClient
@@ -101,6 +116,18 @@ serve(async (req) => {
         .update({ full_name: ownerFullName })
         .eq("id", ownerId);
     }
+
+    // Assign role to user
+    await supabaseClient
+      .from("user_roles")
+      .upsert({
+        user_id: ownerId,
+        role: assignRole
+      }, {
+        onConflict: "user_id,role"
+      });
+    
+    logStep("Assigned role", { role: assignRole });
 
     // Calculate trial end date
     const trialEndsAt = new Date();

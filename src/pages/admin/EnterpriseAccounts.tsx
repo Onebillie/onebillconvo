@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, CreditCard, Plus, Lock, Unlock, FileText } from "lucide-react";
+import { Building2, CreditCard, Plus, Lock, Unlock, FileText, Users, Shield } from "lucide-react";
+import EnterpriseUserManagement from "@/components/admin/EnterpriseUserManagement";
 
 interface EnterpriseAccount {
   id: string;
@@ -46,8 +47,12 @@ export default function EnterpriseAccounts() {
     customPrice: "",
     paymentMethod: "bank",
     invoiceEmail: "",
-    notes: ""
+    notes: "",
+    tempPassword: "",
+    assignRole: "admin"
   });
+  const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string } | null>(null);
+  const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchEnterpriseAccounts();
@@ -110,7 +115,9 @@ export default function EnterpriseAccounts() {
           customPrice: formData.customPrice ? parseFloat(formData.customPrice) : null,
           paymentMethod: formData.paymentMethod,
           invoiceEmail: formData.invoiceEmail || formData.ownerEmail,
-          notes: formData.notes
+          notes: formData.notes,
+          tempPassword: formData.tempPassword,
+          assignRole: formData.assignRole
         }
       });
 
@@ -130,7 +137,9 @@ export default function EnterpriseAccounts() {
         customPrice: "",
         paymentMethod: "bank",
         invoiceEmail: "",
-        notes: ""
+        notes: "",
+        tempPassword: "",
+        assignRole: "admin"
       });
       fetchEnterpriseAccounts();
     } catch (error: any) {
@@ -323,6 +332,37 @@ export default function EnterpriseAccounts() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="tempPassword">Temporary Password *</Label>
+                <Input
+                  id="tempPassword"
+                  type="password"
+                  value={formData.tempPassword}
+                  onChange={(e) => setFormData({ ...formData, tempPassword: e.target.value })}
+                  placeholder="Set initial password for account owner"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="assignRole">
+                  <Shield className="h-4 w-4 inline mr-1" />
+                  Account Owner Role
+                </Label>
+                <Select
+                  value={formData.assignRole}
+                  onValueChange={(value) => setFormData({ ...formData, assignRole: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="superadmin">Superadmin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="notes">Internal Notes</Label>
                 <Textarea
                   id="notes"
@@ -394,6 +434,17 @@ export default function EnterpriseAccounts() {
               <div className="flex gap-2 flex-wrap">
                 <Button
                   size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedBusiness({ id: account.id, name: account.name });
+                    setIsUsersDialogOpen(true);
+                  }}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Users
+                </Button>
+                <Button
+                  size="sm"
                   variant="default"
                   onClick={() => handleMarkAsPaid(account.id)}
                   disabled={account.payment_status === "paid"}
@@ -445,6 +496,15 @@ export default function EnterpriseAccounts() {
           </Card>
         )}
       </div>
+
+      {selectedBusiness && (
+        <EnterpriseUserManagement
+          businessId={selectedBusiness.id}
+          businessName={selectedBusiness.name}
+          open={isUsersDialogOpen}
+          onOpenChange={setIsUsersDialogOpen}
+        />
+      )}
     </div>
   );
 }
