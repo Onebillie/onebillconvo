@@ -1700,6 +1700,47 @@ export type Database = {
           },
         ]
       }
+      embed_ai_settings: {
+        Row: {
+          ai_first_response_enabled: boolean | null
+          ai_triage_enabled: boolean | null
+          business_id: string
+          created_at: string | null
+          departments: Json | null
+          id: string
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_first_response_enabled?: boolean | null
+          ai_triage_enabled?: boolean | null
+          business_id: string
+          created_at?: string | null
+          departments?: Json | null
+          id?: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_first_response_enabled?: boolean | null
+          ai_triage_enabled?: boolean | null
+          business_id?: string
+          created_at?: string | null
+          departments?: Json | null
+          id?: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embed_ai_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embed_customizations: {
         Row: {
           background_color: string | null
@@ -1753,6 +1794,96 @@ export type Database = {
           },
         ]
       }
+      embed_sessions: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          expires_at: string
+          id: string
+          session_token: string
+          site_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at: string
+          id?: string
+          session_token: string
+          site_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          expires_at?: string
+          id?: string
+          session_token?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embed_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "embed_sessions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      embed_sites: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          embed_token_id: string
+          id: string
+          name: string
+          site_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          embed_token_id: string
+          id?: string
+          name: string
+          site_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          embed_token_id?: string
+          id?: string
+          name?: string
+          site_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embed_sites_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "embed_sites_embed_token_id_fkey"
+            columns: ["embed_token_id"]
+            isOneToOne: false
+            referencedRelation: "embed_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embed_tokens: {
         Row: {
           allowed_domains: string[] | null
@@ -1762,6 +1893,7 @@ export type Database = {
           is_active: boolean | null
           last_used_at: string | null
           name: string
+          site_id: string | null
           token: string
           usage_count: number | null
         }
@@ -1773,6 +1905,7 @@ export type Database = {
           is_active?: boolean | null
           last_used_at?: string | null
           name: string
+          site_id?: string | null
           token: string
           usage_count?: number | null
         }
@@ -1784,6 +1917,7 @@ export type Database = {
           is_active?: boolean | null
           last_used_at?: string | null
           name?: string
+          site_id?: string | null
           token?: string
           usage_count?: number | null
         }
@@ -3689,6 +3823,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_embed_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_expired_oauth_states: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3696,6 +3834,10 @@ export type Database = {
       cleanup_expired_sso_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_site_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_or_create_user_business: {
         Args: { _user_id: string }

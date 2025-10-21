@@ -134,7 +134,7 @@
           #alacarte-unread-badge.show {
             display: flex;
           }
-          #alacarte-chat-window {
+          #chat-window {
             display: none;
             width: 380px;
             height: 600px;
@@ -146,7 +146,7 @@
             overflow: hidden;
             margin-bottom: 10px;
           }
-          #alacarte-chat-window.open {
+          #chat-window.open {
             display: flex;
           }
           #alacarte-chat-header {
@@ -162,7 +162,7 @@
             font-size: 18px;
             font-weight: 600;
           }
-          #alacarte-close-button {
+          #close-button {
             background: transparent;
             border: none;
             color: white;
@@ -172,7 +172,7 @@
             width: 30px;
             height: 30px;
           }
-          #alacarte-messages {
+          #messages {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
@@ -213,7 +213,7 @@
             display: flex;
             gap: 8px;
           }
-          #alacarte-message-input {
+          #message-input {
             flex: 1;
             border: 1px solid #d1d5db;
             border-radius: 8px;
@@ -426,7 +426,7 @@
     },
 
     updateUnreadBadge: function() {
-      const badge = document.getElementById('alacarte-unread-badge');
+      const badge = document.getElementById('unread-badge');
       if (this.unreadCount > 0) {
         badge.textContent = this.unreadCount;
         badge.classList.add('show');
