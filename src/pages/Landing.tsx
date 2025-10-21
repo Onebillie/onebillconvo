@@ -41,7 +41,7 @@ const Landing = () => {
       <section className="relative min-h-screen flex items-center justify-center text-center px-6">
         <div className="mt-16 max-w-[1100px] relative z-10">
           <h1 className="text-[clamp(3.2rem,11vw,8rem)] leading-[0.95] font-black tracking-tight uppercase">
-            STOP JUGGLING<br />APPS.<br />START CLOSING<br />DEALS.
+            STOP JUGGLING<br />INBOXES.<br />START CLOSING<br />DEALS.
           </h1>
           <p className="mt-6 max-w-[760px] mx-auto text-muted-foreground text-lg">
             Trusted by 1,000+ businesses worldwide. Bring WhatsApp Business API, email, SMS, Instagram and AI into one powerful inbox.
