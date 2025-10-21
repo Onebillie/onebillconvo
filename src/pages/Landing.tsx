@@ -83,32 +83,73 @@ const Landing = () => {
     }
     scriptTag.textContent = JSON.stringify(structuredData);
   }, []);
-  const features = [
-    { icon: MessageSquare, title: "WhatsApp Business API", description: "Official Meta verification • Send 100,000+ messages/month • Template management with approval tracking • Button click analytics • Unlimited receiving", status: "active" },
-    { icon: Mail, title: "Email Integration", description: "Connect unlimited Gmail, Outlook, custom domains • OAuth 2.0 security • Auto-sync every 5 min • Rich HTML support • Attachment handling", status: "active" },
-    { icon: MessageSquare, title: "SMS Messaging", description: "Global SMS via Twilio • Reach 200+ countries • Automatic cost calculator • Conversation threading • Delivery tracking", status: "active" },
-    { icon: MessageSquare, title: "Facebook Messenger", description: "Facebook Page integration • Auto-sync messages • Automated responses • File sharing • Typing indicators", status: "coming_soon" },
-    { icon: MessageSquare, title: "Instagram DMs", description: "Business account integration • Story reply handling • Media support • Auto-assignment to agents", status: "coming_soon" },
-    { icon: Users, title: "Multi-Agent Collaboration", description: "10 agents (Professional) or unlimited (Enterprise) • Smart assignment rules • Workload balancing • Performance metrics • Internal notes", status: "active" },
-    { icon: MessageSquare, title: "AI Assistant That Learns", description: "Train on YOUR FAQs and docs • Auto-respond instantly or queue for approval • Works 24/7 or business hours • Supports 50+ languages • Custom personality", status: "active" },
-    { icon: MessageSquare, title: "Full REST API", description: "Sync CRM data bidirectionally • Send/receive programmatically • Webhook notifications • 1000 req/hour (Pro) • OpenAPI documentation", status: "active" },
-    { icon: MessageSquare, title: "Embeddable Chat Widget", description: "Add live chat to ANY website • Match your brand colors • SSO login • Mobile responsive • Works with WordPress, Shopify, custom sites", status: "active" },
-    { icon: MessageSquare, title: "Voice Notes & All Files", description: "Voice recordings • Images • PDFs • Videos • Documents up to 100MB • Automatic malware scanning • Cloud storage", status: "active" },
-    { icon: Calendar, title: "Task & Calendar Automation", description: "Auto-create tasks from statuses • Export to Google Calendar • Outlook sync • ICS download • Follow-up reminders", status: "active" },
-    { icon: Bell, title: "Install as Mobile App (PWA)", description: "Works on iPhone, Android, Desktop • Add to home screen • Push notifications • Works offline • No app store downloads", status: "active" },
-  ];
+  const features = [{
+    icon: MessageSquare,
+    title: "WhatsApp Business API",
+    description: "Official Meta verification • Send 100,000+ messages/month • Template management with approval tracking • Button click analytics • Unlimited receiving",
+    status: "active"
+  }, {
+    icon: Mail,
+    title: "Email Integration",
+    description: "Connect unlimited Gmail, Outlook, custom domains • OAuth 2.0 security • Auto-sync every 5 min • Rich HTML support • Attachment handling",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "SMS Messaging",
+    description: "Global SMS via Twilio • Reach 200+ countries • Automatic cost calculator • Conversation threading • Delivery tracking",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "Facebook Messenger",
+    description: "Facebook Page integration • Auto-sync messages • Automated responses • File sharing • Typing indicators",
+    status: "coming_soon"
+  }, {
+    icon: MessageSquare,
+    title: "Instagram DMs",
+    description: "Business account integration • Story reply handling • Media support • Auto-assignment to agents",
+    status: "coming_soon"
+  }, {
+    icon: Users,
+    title: "Multi-Agent Collaboration",
+    description: "10 agents (Professional) or unlimited (Enterprise) • Smart assignment rules • Workload balancing • Performance metrics • Internal notes",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "AI Assistant That Learns",
+    description: "Train on YOUR FAQs and docs • Auto-respond instantly or queue for approval • Works 24/7 or business hours • Supports 50+ languages • Custom personality",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "Full REST API",
+    description: "Sync CRM data bidirectionally • Send/receive programmatically • Webhook notifications • 1000 req/hour (Pro) • OpenAPI documentation",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "Embeddable Chat Widget",
+    description: "Add live chat to ANY website • Match your brand colors • SSO login • Mobile responsive • Works with WordPress, Shopify, custom sites",
+    status: "active"
+  }, {
+    icon: MessageSquare,
+    title: "Voice Notes & All Files",
+    description: "Voice recordings • Images • PDFs • Videos • Documents up to 100MB • Automatic malware scanning • Cloud storage",
+    status: "active"
+  }, {
+    icon: Calendar,
+    title: "Task & Calendar Automation",
+    description: "Auto-create tasks from statuses • Export to Google Calendar • Outlook sync • ICS download • Follow-up reminders",
+    status: "active"
+  }, {
+    icon: Bell,
+    title: "Install as Mobile App (PWA)",
+    description: "Works on iPhone, Android, Desktop • Add to home screen • Push notifications • Works offline • No app store downloads",
+    status: "active"
+  }];
   const pricingTiers = [{
     name: "Free",
     price: "Free",
     period: "forever",
     description: "Get started",
-    features: [
-      "1 team member",
-      "100 WhatsApp messages/month",
-      "Unlimited receiving",
-      "Email integration",
-      "Community support"
-    ],
+    features: ["1 team member", "100 WhatsApp messages/month", "Unlimited receiving", "Email integration", "Community support"],
     cta: "Start Free",
     highlighted: false,
     tier: "free"
@@ -117,13 +158,7 @@ const Landing = () => {
     price: "$29",
     period: "/month",
     description: "per seat",
-    features: [
-      "2 team members",
-      "1,000 messages/month",
-      "All channels",
-      "Email support",
-      "Basic templates"
-    ],
+    features: ["2 team members", "1,000 messages/month", "All channels", "Email support", "Basic templates"],
     cta: "Subscribe",
     highlighted: true,
     tier: "starter"
@@ -132,13 +167,7 @@ const Landing = () => {
     price: "$79",
     period: "/month",
     description: "per seat",
-    features: [
-      "10 team members",
-      "10,000 messages/month",
-      "AI assistant (1,000 responses)",
-      "API access",
-      "Priority support"
-    ],
+    features: ["10 team members", "10,000 messages/month", "AI assistant (1,000 responses)", "API access", "Priority support"],
     cta: "Subscribe",
     highlighted: false,
     tier: "professional"
@@ -147,13 +176,7 @@ const Landing = () => {
     price: "$199",
     period: "/month",
     description: "per seat",
-    features: [
-      "Unlimited everything",
-      "AI assistant (unlimited)",
-      "Dedicated support",
-      "Custom integrations",
-      "Account manager"
-    ],
+    features: ["Unlimited everything", "AI assistant (unlimited)", "Dedicated support", "Custom integrations", "Account manager"],
     cta: "Contact Sales",
     highlighted: false,
     tier: "enterprise"
@@ -169,20 +192,16 @@ const Landing = () => {
             <span className="text-xl font-semibold">À La Carte Chat</span>
           </div>
       <div className="flex items-center gap-2">
-            {user ? (
-              <>
+            {user ? <>
                 <Button onClick={() => navigate("/app/dashboard")} variant="outline">
                   Dashboard
                 </Button>
                 <Button onClick={() => navigate("/auth")} variant="ghost">
                   Log Out
                 </Button>
-              </>
-            ) : (
-              <Button onClick={() => navigate("/auth")}>
+              </> : <Button onClick={() => navigate("/auth")}>
                 Sign In
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </header>
@@ -192,7 +211,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
-              <Badge className="mb-4 text-sm px-4 py-2">Trusted by 1,000+ businesses worldwide</Badge>
+              
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Stop Juggling Apps. Start Closing Deals.
               </h1>
@@ -213,9 +232,7 @@ const Landing = () => {
                   See How It Works
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-4">
-                ⚡ 5-minute setup • 💰 Cancel anytime • 🚀 100 free messages
-              </p>
+              
             </div>
             <div className="relative">
               <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 p-8 aspect-video flex items-center justify-center">
@@ -274,9 +291,7 @@ const Landing = () => {
                 <feature.icon className="w-12 h-12 text-primary mb-4" aria-hidden="true" />
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-xl font-semibold">{feature.title}</h3>
-                  {feature.status === 'coming_soon' && (
-                    <Badge variant="secondary" className="text-xs">COMING Q1 2026</Badge>
-                  )}
+                  {feature.status === 'coming_soon'}
                 </div>
                 <p className="text-muted-foreground">{feature.description}</p>
               </Card>)}
@@ -319,8 +334,10 @@ const Landing = () => {
               <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-secondary/10 via-background to-muted border-2 border-border p-8 aspect-video flex items-center justify-center">
                 <div className="text-center space-y-4">
                   <Mail className="w-20 h-20 text-primary mx-auto" />
-                  <p className="text-2xl font-semibold text-foreground">Aggregated Messages</p>
-                  <p className="text-muted-foreground">WhatsApp • Email • SMS</p>
+                  <p className="text-2xl font-semibold text-foreground">Aggregated Inbox
+AI powered reponses
+                </p>
+                  <p className="text-muted-foreground">WhatsApp • Email • SMS • Facebook • Instagram</p>
                 </div>
               </div>
             </div>
@@ -735,20 +752,35 @@ ai.response.completed`}</code>
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">See It in Action</h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Screenshots from our platform</p>
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {[
-              { title: "Unified Inbox", description: "All channels in one place", icon: "🖼️" },
-              { title: "AI Assistant", description: "Auto-respond feature", icon: "🤖" },
-              { title: "Team Collaboration", description: "Work together", icon: "👥" },
-              { title: "Button Analytics", description: "Track engagement", icon: "📊" },
-              { title: "Mobile PWA", description: "Any device", icon: "📱" },
-              { title: "API Dashboard", description: "Monitor integrations", icon: "⚡" }
-            ].map((item, i) => (
-              <Card key={i} className="p-6">
+            {[{
+            title: "Unified Inbox",
+            description: "All channels in one place",
+            icon: "🖼️"
+          }, {
+            title: "AI Assistant",
+            description: "Auto-respond feature",
+            icon: "🤖"
+          }, {
+            title: "Team Collaboration",
+            description: "Work together",
+            icon: "👥"
+          }, {
+            title: "Button Analytics",
+            description: "Track engagement",
+            icon: "📊"
+          }, {
+            title: "Mobile PWA",
+            description: "Any device",
+            icon: "📱"
+          }, {
+            title: "API Dashboard",
+            description: "Monitor integrations",
+            icon: "⚡"
+          }].map((item, i) => <Card key={i} className="p-6">
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg mb-4 flex items-center justify-center text-6xl">{item.icon}</div>
                 <h3 className="font-semibold mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.description}</p>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -759,20 +791,29 @@ ai.response.completed`}</code>
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Customer Reviews</h2>
           <p className="text-center text-muted-foreground mb-12">What businesses say about us</p>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[
-              { name: "Sarah J.", role: "Manager", avatar: "👩‍💼", quote: "All channels in one inbox. AI handles 80% automatically!" },
-              { name: "Michael C.", role: "Director", avatar: "👨‍💻", quote: "Seamless WhatsApp API integration. Great analytics." },
-              { name: "Emma R.", role: "CEO", avatar: "👩‍🚀", quote: "Best investment. Easy setup, fair pricing." }
-            ].map((t, i) => (
-              <Card key={i} className="p-6">
+            {[{
+            name: "Sarah J.",
+            role: "Manager",
+            avatar: "👩‍💼",
+            quote: "All channels in one inbox. AI handles 80% automatically!"
+          }, {
+            name: "Michael C.",
+            role: "Director",
+            avatar: "👨‍💻",
+            quote: "Seamless WhatsApp API integration. Great analytics."
+          }, {
+            name: "Emma R.",
+            role: "CEO",
+            avatar: "👩‍🚀",
+            quote: "Best investment. Easy setup, fair pricing."
+          }].map((t, i) => <Card key={i} className="p-6">
                 <div className="flex gap-3 mb-3">
                   <div className="text-3xl">{t.avatar}</div>
                   <div><h3 className="font-semibold">{t.name}</h3><p className="text-sm text-muted-foreground">{t.role}</p></div>
                 </div>
-                <div className="flex gap-1 mb-2">{[1,2,3,4,5].map(s => <span key={s}>⭐</span>)}</div>
+                <div className="flex gap-1 mb-2">{[1, 2, 3, 4, 5].map(s => <span key={s}>⭐</span>)}</div>
                 <p className="text-sm italic">"{t.quote}"</p>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -800,11 +841,7 @@ ai.response.completed`}</code>
                       <span className="text-sm">{feature}</span>
                     </li>)}
                 </ul>
-                <Button 
-                  className="w-full rounded-lg py-6 text-base font-medium bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90" 
-                  size="lg" 
-                  onClick={() => navigate(user ? "/pricing" : "/auth")}
-                >
+                <Button className="w-full rounded-lg py-6 text-base font-medium bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90" size="lg" onClick={() => navigate(user ? "/pricing" : "/auth")}>
                   {tier.cta}
                 </Button>
               </Card>)}
@@ -907,7 +944,8 @@ ai.response.completed`}</code>
 
       {/* Embed Chat Widget for Support */}
       <div id="alacarte-chat-widget"></div>
-      <script dangerouslySetInnerHTML={{__html: `
+      <script dangerouslySetInnerHTML={{
+      __html: `
         (function() {
           var script = document.createElement('script');
           script.src = '/embed-widget.js';
@@ -925,7 +963,8 @@ ai.response.completed`}</code>
           };
           document.head.appendChild(script);
         })();
-      `}} />
+      `
+    }} />
     </div>;
 };
 export default Landing;
