@@ -16,40 +16,24 @@ export function AIAssistantSettings() {
   const [config, setConfig] = useState<any>(null);
   const [trainingData, setTrainingData] = useState<any[]>([]);
   const [ragDocs, setRagDocs] = useState<any[]>([]);
-  const [providers, setProviders] = useState<any[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [showAddProvider, setShowAddProvider] = useState(false);
-  const [newProvider, setNewProvider] = useState({
-    provider_type: "openai",
-    api_key: "",
-    api_endpoint: "",
-    model: "gpt-5-mini",
-    is_primary: false,
-    temperature: 0.7,
-    max_tokens: 1000,
-  });
+  const [aiProvider, setAiProvider] = useState<string>("lovable");
+  const [customApiKey, setCustomApiKey] = useState<string>("");
+  const [customModel, setCustomModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [testingProvider, setTestingProvider] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    const [{ data: cfg }, { data: training }, { data: docs }, { data: providersList }] = await Promise.all([
+    const [{ data: cfg }, { data: training }, { data: docs }] = await Promise.all([
       supabase.from('ai_assistant_config').select('*').single(),
       supabase.from('ai_training_data').select('*').order('created_at', { ascending: false }),
       supabase.from('ai_rag_documents').select('*').order('created_at', { ascending: false }),
-      supabase.from('ai_provider_configs').select('*').order('created_at', { ascending: false }),
     ]);
     setConfig(cfg);
     setTrainingData(training || []);
     setRagDocs(docs || []);
-    setProviders(providersList || []);
-    
-    // Set selected provider to primary or first
-    const primary = providersList?.find(p => p.is_primary);
-    setSelectedProvider(primary?.id || providersList?.[0]?.id || "lovable");
     setLoading(false);
   };
 
@@ -76,81 +60,6 @@ export function AIAssistantSettings() {
     if (!error) {
       toast.success('Document added');
       fetchData();
-    }
-  };
-
-  const addProvider = async () => {
-    if (!newProvider.api_key) {
-      toast.error('API key is required');
-      return;
-    }
-
-    const { error } = await supabase.from('ai_provider_configs').insert({
-      provider_type: newProvider.provider_type,
-      api_key_encrypted: newProvider.api_key, // Will be encrypted in backend
-      api_endpoint: newProvider.api_endpoint || null,
-      model: newProvider.model,
-      is_primary: newProvider.is_primary,
-      temperature: newProvider.temperature,
-      max_tokens: newProvider.max_tokens,
-    });
-
-    if (error) {
-      toast.error('Failed to add provider');
-      console.error(error);
-    } else {
-      toast.success('Provider added successfully');
-      setShowAddProvider(false);
-      setNewProvider({
-        provider_type: "openai",
-        api_key: "",
-        api_endpoint: "",
-        model: "gpt-5-mini",
-        is_primary: false,
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
-      fetchData();
-    }
-  };
-
-  const deleteProvider = async (providerId: string) => {
-    const { error } = await supabase.from('ai_provider_configs').delete().eq('id', providerId);
-    if (!error) {
-      toast.success('Provider deleted');
-      fetchData();
-    }
-  };
-
-  const setPrimaryProvider = async (providerId: string) => {
-    // Unset all primaries first
-    await supabase.from('ai_provider_configs').update({ is_primary: false }).neq('id', '00000000-0000-0000-0000-000000000000');
-    // Set new primary
-    const { error } = await supabase.from('ai_provider_configs').update({ is_primary: true }).eq('id', providerId);
-    if (!error) {
-      toast.success('Primary provider updated');
-      fetchData();
-    }
-  };
-
-  const testProvider = async (providerId: string) => {
-    setTestingProvider(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-test-provider', {
-        body: { provider_id: providerId }
-      });
-      
-      if (error) throw error;
-      
-      if (data.success) {
-        toast.success('Provider test successful! ✓');
-      } else {
-        toast.error(`Test failed: ${data.error}`);
-      }
-    } catch (error: any) {
-      toast.error(`Test failed: ${error.message}`);
-    } finally {
-      setTestingProvider(false);
     }
   };
 
