@@ -119,30 +119,30 @@ export const PersistentHeader = () => {
 
   return (
     <div className="border-b bg-background sticky top-0 z-50 shadow-sm">
-      <div className="flex h-16 items-center px-6 justify-between">
+      <div className="flex h-14 sm:h-16 items-center px-3 sm:px-6 justify-between gap-2">
         {/* Left Section - Business Info & Dashboard Link */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           {!isOnDashboard && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/app/dashboard')}
-              className="gap-2"
+              className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
             >
               <Home className="w-4 h-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </Button>
           )}
           
           {businessName && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
-                <Building2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{businessName}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md min-w-0 max-w-[120px] sm:max-w-none">
+                <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">{businessName}</span>
               </div>
               {department && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md">
-                  <span className="text-xs text-muted-foreground">{department}</span>
+                <div className="hidden md:flex items-center gap-2 px-2 py-1 bg-muted/50 rounded-md">
+                  <span className="text-xs text-muted-foreground truncate">{department}</span>
                 </div>
               )}
             </div>
@@ -150,78 +150,60 @@ export const PersistentHeader = () => {
         </div>
 
         {/* Right Section - Notifications & Profile */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+          {/* Notification Icons - Compact on mobile */}
+          <div className="flex items-center gap-0.5 sm:gap-1.5">
             {/* InMail Notifications */}
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="relative h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setInMailSheetOpen(true)}
               title="InMail"
             >
-              <Mail className="w-5 h-5" />
+              <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
               {inMailCount > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs"
                 >
-                  {inMailCount}
+                  {inMailCount > 9 ? '9+' : inMailCount}
                 </Badge>
               )}
             </Button>
 
-            {/* Personal Tasks Notifications */}
+            {/* Personal Tasks - Hidden on smallest screens */}
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="relative h-9 w-9 sm:h-10 sm:w-10 hidden xs:flex"
               onClick={() => navigate("/settings?tab=tasks")}
               title="My Tasks"
             >
-              <CheckSquare className="w-5 h-5" />
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               {tasksCount > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs"
                 >
-                  {tasksCount}
+                  {tasksCount > 9 ? '9+' : tasksCount}
                 </Badge>
               )}
             </Button>
-
-            {/* Team Tasks Notifications */}
-            {teamTasksCount > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => navigate("/settings?tab=tasks")}
-                title="Team Tasks"
-              >
-                <CheckSquare className="w-5 h-5 text-primary" />
-                <Badge 
-                  variant="default" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {teamTasksCount}
-                </Badge>
-              </Button>
-            )}
 
             {/* All Notifications */}
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="relative h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               {unreadCount > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs"
                 >
-                  {unreadCount}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
             </Button>
@@ -230,14 +212,16 @@ export const PersistentHeader = () => {
           {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 h-auto py-2">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="gap-1.5 sm:gap-2 h-auto py-1.5 sm:py-2 px-1.5 sm:px-3">
+                <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>
+                  <AvatarFallback className="text-xs sm:text-sm">
                     {profile?.full_name ? getInitials(profile.full_name) : "U"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">{profile?.full_name}</span>
+                <span className="text-xs sm:text-sm font-medium hidden sm:inline max-w-[100px] truncate">
+                  {profile?.full_name}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
