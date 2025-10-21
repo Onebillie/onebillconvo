@@ -39,7 +39,7 @@ const Landing = () => {
 With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
         </p>
           <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-7 px-8 py-6 text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
-            Start Free — No Credit Card
+            Try Free For 7 Days!
           </Button>
         </div>
 
