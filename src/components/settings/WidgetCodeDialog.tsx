@@ -64,14 +64,41 @@ export const WidgetCodeDialog = ({ open, onClose, token, businessId, onCustomize
       console.error('Error saving widget customization:', error);
     }
 
-    // Copy code to clipboard
+    // Generate code
     const code = generateEmbedCode(presetId);
-    navigator.clipboard.writeText(code);
-    setCopiedPreset(presetId);
-    toast.success("Widget code copied! Paste it on your website to see it live.");
-    setTimeout(() => setCopiedPreset(null), 2000);
-  };
 
+    // Robust copy with fallback (works on Safari/HTTP/Extensions)
+    const fallbackCopy = () => {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(ta);
+      }
+    };
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        fallbackCopy();
+      }
+      setCopiedPreset(presetId);
+      toast.success("Widget code copied! Paste it on your website to see it live.");
+      setTimeout(() => setCopiedPreset(null), 2000);
+    } catch (err) {
+      fallbackCopy();
+      setCopiedPreset(presetId);
+      toast.success("Widget code copied! Paste it on your website to see it live.");
+      setTimeout(() => setCopiedPreset(null), 2000);
+    }
+  };
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">

@@ -222,14 +222,41 @@ export function EmbedTokenManagement() {
     });
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: `${label} copied to clipboard`
-    });
-  };
+  const copyToClipboard = async (text: string, label: string) => {
+    const fallbackCopy = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(ta);
+      }
+    };
 
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        fallbackCopy();
+      }
+      toast({
+        title: "Copied",
+        description: `${label} copied to clipboard`
+      });
+    } catch (err) {
+      // Final fallback
+      fallbackCopy();
+      toast({
+        title: "Copied",
+        description: `${label} copied to clipboard`
+      });
+    }
+  };
   const getCodeForPlatform = (token: EmbedToken, platform: string): string => {
     const siteId = token.site_id || token.token;
     const baseCode = `<script src="${window.location.origin}/embed-widget.js"></script>
