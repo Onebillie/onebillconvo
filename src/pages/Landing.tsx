@@ -201,10 +201,10 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
       <section className="bg-background py-24 px-6 text-center" id="pricing">
         <h2 className="text-4xl font-bold mb-8 text-foreground">Simple pricing</h2>
         <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
-            <h3 className="font-bold text-xl mb-2 text-card-foreground">Free</h3>
-            <div className="text-4xl font-extrabold my-3 text-foreground">$0</div>
-            <ul className="space-y-2 text-card-foreground text-sm">
+          <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
+            <h3 className="font-bold text-xl mb-2 text-white">Free</h3>
+            <div className="text-4xl font-extrabold my-3 text-white">$0</div>
+            <ul className="space-y-2 text-white text-sm">
               <li>1 team member</li>
               <li>100 WhatsApp msgs/mo</li>
               <li>Unlimited receiving</li>
@@ -212,7 +212,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
               <li>Email integration</li>
               <li>Community support</li>
             </ul>
-            <Button onClick={() => navigate("/signup")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate("/signup")} className="mt-4 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
               Start Free
             </Button>
           </div>
@@ -231,10 +231,10 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
               Get Started
             </Button>
           </div>
-          <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
-            <h3 className="font-bold text-xl mb-2 text-card-foreground">Professional</h3>
-            <div className="text-4xl font-extrabold my-3 text-foreground">$79<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-card-foreground text-sm">
+          <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
+            <h3 className="font-bold text-xl mb-2 text-white">Professional</h3>
+            <div className="text-4xl font-extrabold my-3 text-white">$79<span className="text-base font-medium">/mo</span></div>
+            <ul className="space-y-2 text-white text-sm">
               <li>10 team members</li>
               <li>10,000 WhatsApp msgs/mo</li>
               <li>Unlimited templates</li>
@@ -242,14 +242,14 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
               <li>API access</li>
               <li>Priority support</li>
             </ul>
-            <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
               Choose Professional
             </Button>
           </div>
-          <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
-            <h3 className="font-bold text-xl mb-2 text-card-foreground">Enterprise</h3>
-            <div className="text-4xl font-extrabold my-3 text-foreground">$199<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-card-foreground text-sm">
+          <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
+            <h3 className="font-bold text-xl mb-2 text-white">Enterprise</h3>
+            <div className="text-4xl font-extrabold my-3 text-white">$199<span className="text-base font-medium">/mo</span></div>
+            <ul className="space-y-2 text-white text-sm">
               <li>Unlimited team members</li>
               <li>Unlimited messages</li>
               <li>AI assistant (unlimited)</li>
@@ -257,7 +257,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
               <li>Custom integrations</li>
               <li>Account manager</li>
             </ul>
-            <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
               Contact Sales
             </Button>
           </div>
