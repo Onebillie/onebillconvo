@@ -849,10 +849,20 @@ ai.response.completed`}</code>
         </div>
       </section>
 
-      {/* Roadmap Section */}
+      {/* Book a Demo Section */}
       <section className="py-20 bg-muted/20">
-        <div className="container mx-auto px-4">
-          
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Customer Communications?</h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            See À La Carte Chat in action. Book a personalized demo with our team.
+          </p>
+          <Button 
+            size="lg" 
+            className="text-lg px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+            onClick={() => window.open('https://calendly.com/alacartesaas/30min', '_blank', 'width=800,height=900')}
+          >
+            📅 Book a Demo - 30 Minutes
+          </Button>
         </div>
       </section>
 
