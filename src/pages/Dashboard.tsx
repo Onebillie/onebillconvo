@@ -460,7 +460,7 @@ const Dashboard = () => {
 
   const conversationSidebar = (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header - Only show on desktop, mobile has its own header */}
+      {/* Header - Only show on desktop, mobile has its own unified header above */}
       {!isMobile && (
         <div className="p-3 md:p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -536,44 +536,7 @@ const Dashboard = () => {
         </div>
       )}
       
-      {/* Mobile-specific header content */}
-      {isMobile && (
-        <div className="flex-shrink-0 p-3 border-b border-border space-y-3">
-          <div className="flex flex-col gap-2">
-            <CreateContactDialog onContactCreated={fetchConversations} />
-            <ContactPickerDialog
-              onContactSelected={async (customerId) => {
-                // Find or create conversation for the selected customer
-                const { data: conversation } = await supabase
-                  .from("conversations")
-                  .select(`
-                    *,
-                    customers (
-                      id,
-                      name,
-                      phone,
-                      email,
-                      avatar,
-                      last_active,
-                      notes
-                    )
-                  `)
-                  .eq("customer_id", customerId)
-                  .eq("is_archived", false)
-                  .maybeSingle();
-
-                if (conversation) {
-                  setSelectedConversation({
-                    ...conversation,
-                    customer: conversation.customers as Customer,
-                    status_tags: [],
-                  });
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Mobile no longer needs buttons here - they're in the unified header above */}
       
       <DuplicateContactsBanner />
       
@@ -801,7 +764,9 @@ const Dashboard = () => {
             {!selectedConversation ? (
               /* Show conversation list on mobile */
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="flex-shrink-0 border-b border-border">
+                {/* Unified Mobile Header with all functionalities */}
+                <div className="flex-shrink-0 border-b border-border bg-background">
+                  {/* Top row: Title and utility buttons */}
                   <div className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="w-5 h-5 text-primary" />
@@ -824,6 +789,39 @@ const Dashboard = () => {
                         <LogOut className="w-4 h-4" />
                       </Button>
                     </div>
+                  </div>
+                  {/* Bottom row: Action buttons */}
+                  <div className="px-3 pb-3 flex flex-col gap-2">
+                    <CreateContactDialog onContactCreated={fetchConversations} />
+                    <ContactPickerDialog
+                      onContactSelected={async (customerId) => {
+                        const { data: conversation } = await supabase
+                          .from("conversations")
+                          .select(`
+                            *,
+                            customers (
+                              id,
+                              name,
+                              phone,
+                              email,
+                              avatar,
+                              last_active,
+                              notes
+                            )
+                          `)
+                          .eq("customer_id", customerId)
+                          .eq("is_archived", false)
+                          .maybeSingle();
+
+                        if (conversation) {
+                          setSelectedConversation({
+                            ...conversation,
+                            customer: conversation.customers as Customer,
+                            status_tags: [],
+                          });
+                        }
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden">
