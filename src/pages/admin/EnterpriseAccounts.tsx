@@ -55,17 +55,37 @@ export default function EnterpriseAccounts() {
 
   const fetchEnterpriseAccounts = async () => {
     try {
-      const { data, error } = await supabase
+      // 1) Fetch businesses without relying on a FK hint (not present in schema)
+      const { data: bizData, error: bizError } = await supabase
         .from("businesses")
-        .select(`
-          *,
-          profiles!owner_id(email, full_name)
-        `)
+        .select("*")
         .eq("is_enterprise", true)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setAccounts(data || []);
+      if (bizError) throw bizError;
+
+      const businesses = bizData || [];
+      if (businesses.length === 0) {
+        setAccounts([]);
+        return;
+      }
+
+      // 2) Load owner profiles in a second query and merge client-side
+      const ownerIds = businesses.map((b: any) => b.owner_id).filter(Boolean);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles" as any)
+        .select("id, email, full_name")
+        .in("id", ownerIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesById = new Map((profilesData || []).map((p: any) => [p.id, p]));
+      const merged = businesses.map((b: any) => ({
+        ...b,
+        profiles: profilesById.get(b.owner_id) || null,
+      }));
+
+      setAccounts(merged);
     } catch (error) {
       console.error("Error fetching enterprise accounts:", error);
       toast({
