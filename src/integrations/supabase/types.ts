@@ -4224,6 +4224,96 @@ export type Database = {
           },
         ]
       }
+      widget_customization: {
+        Row: {
+          auto_open_delay: number | null
+          business_id: string
+          button_text: string | null
+          created_at: string
+          custom_css: string | null
+          custom_icon_url: string | null
+          embed_token_id: string
+          greeting_message: string | null
+          icon_type: string
+          id: string
+          offline_message: string | null
+          primary_color: string
+          secondary_color: string
+          show_button_text: boolean | null
+          show_unread_badge: boolean | null
+          sound_notifications: boolean | null
+          text_color: string
+          updated_at: string
+          welcome_message: string | null
+          widget_position: string
+          widget_size: string
+          widget_type: string
+        }
+        Insert: {
+          auto_open_delay?: number | null
+          business_id: string
+          button_text?: string | null
+          created_at?: string
+          custom_css?: string | null
+          custom_icon_url?: string | null
+          embed_token_id: string
+          greeting_message?: string | null
+          icon_type?: string
+          id?: string
+          offline_message?: string | null
+          primary_color?: string
+          secondary_color?: string
+          show_button_text?: boolean | null
+          show_unread_badge?: boolean | null
+          sound_notifications?: boolean | null
+          text_color?: string
+          updated_at?: string
+          welcome_message?: string | null
+          widget_position?: string
+          widget_size?: string
+          widget_type?: string
+        }
+        Update: {
+          auto_open_delay?: number | null
+          business_id?: string
+          button_text?: string | null
+          created_at?: string
+          custom_css?: string | null
+          custom_icon_url?: string | null
+          embed_token_id?: string
+          greeting_message?: string | null
+          icon_type?: string
+          id?: string
+          offline_message?: string | null
+          primary_color?: string
+          secondary_color?: string
+          show_button_text?: boolean | null
+          show_unread_badge?: boolean | null
+          sound_notifications?: boolean | null
+          text_color?: string
+          updated_at?: string
+          welcome_message?: string | null
+          widget_position?: string
+          widget_size?: string
+          widget_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_customization_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widget_customization_embed_token_id_fkey"
+            columns: ["embed_token_id"]
+            isOneToOne: false
+            referencedRelation: "embed_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

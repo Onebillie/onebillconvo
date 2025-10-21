@@ -20,9 +20,11 @@ import {
   PlayCircle,
   ChevronDown,
   ChevronUp,
-  CheckCircle
+  CheckCircle,
+  Wand2
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { EmbedWidgetWizard } from "./EmbedWidgetWizard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +67,9 @@ export function EmbedTokenManagement() {
   const [embedCode, setEmbedCode] = useState<{ token: EmbedToken; platform: string } | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'wordpress' | 'shopify' | 'wix' | 'html'>('html');
   const [testToken, setTestToken] = useState<EmbedToken | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardTokenId, setWizardTokenId] = useState<string | null>(null);
+  const [businessId, setBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTokens();
@@ -82,6 +87,8 @@ export function EmbedTokenManagement() {
         .single();
 
       if (!businessUsers) return;
+      
+      setBusinessId(businessUsers.business_id);
 
       const { data, error } = await supabase
         .from('embed_tokens')

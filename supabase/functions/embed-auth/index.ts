@@ -90,13 +90,28 @@ serve(async (req) => {
       conversation_id: conversationId, expires_at: expiresAt.toISOString()
     });
 
-    const { data: customization } = await supabase.from("embed_customizations")
-      .select("*").eq("business_id", siteData.businesses.id).single();
+    // Fetch widget customization
+    const { data: customization } = await supabase
+      .from("widget_customization")
+      .select("*")
+      .eq("business_id", siteData.businesses.id)
+      .single();
 
     return new Response(JSON.stringify({
-      success: true, session_token: sessionToken, customer_id: customerId,
-      conversation_id: conversationId, business_name: siteData.businesses.name,
-      customization: customization || {}
+      success: true, 
+      session_token: sessionToken, 
+      customer_id: customerId,
+      conversation_id: conversationId, 
+      business_name: siteData.businesses.name,
+      customization: customization || {
+        primary_color: '#6366f1',
+        widget_position: 'bottom-right',
+        widget_size: 'medium',
+        icon_type: 'chat',
+        show_button_text: false,
+        button_text: 'Chat with us',
+        greeting_message: 'Hi! How can we help?'
+      }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error:", error);
