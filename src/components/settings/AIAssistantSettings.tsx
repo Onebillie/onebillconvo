@@ -20,6 +20,8 @@ export function AIAssistantSettings() {
   const [customApiKey, setCustomApiKey] = useState<string>("");
   const [customModel, setCustomModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  // Alias to prevent runtime issues if older references exist
+  const aiProvider = provider;
 
   useEffect(() => {
     fetchData();
