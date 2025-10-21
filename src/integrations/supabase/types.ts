@@ -527,6 +527,41 @@ export type Database = {
           },
         ]
       }
+      business_audit_log: {
+        Row: {
+          action: string
+          business_id: string | null
+          changed_by: string | null
+          changes: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          business_id?: string | null
+          changed_by?: string | null
+          changes: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          business_id?: string | null
+          changed_by?: string | null
+          changes?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_audit_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_settings: {
         Row: {
           company_logo: string | null

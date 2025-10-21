@@ -19,8 +19,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Edit, TrendingUp, Users, DollarSign } from "lucide-react";
+import { Search, Edit, TrendingUp, Users, DollarSign, Trash2, Clock } from "lucide-react";
+import RevenueBreakdownDialog from "@/components/admin/RevenueBreakdownDialog";
 
 interface Business {
   id: string;
@@ -35,6 +46,21 @@ interface Business {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   created_at: string;
+  owner_id: string;
+  custom_price_monthly: number | null;
+  is_enterprise: boolean;
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
+interface AuditLog {
+  id: string;
+  action: string;
+  changes: any;
+  created_at: string;
+  changed_by: string;
 }
 
 interface SubscriptionHistory {
@@ -58,6 +84,10 @@ export default function SubscriptionManagement() {
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
   const [history, setHistory] = useState<SubscriptionHistory[]>([]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<Business | null>(null);
+  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
 
   useEffect(() => {
     fetchBusinesses();
@@ -75,14 +105,38 @@ export default function SubscriptionManagement() {
   const fetchBusinesses = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch businesses
+      const { data: bizData, error: bizError } = await supabase
         .from("businesses")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setBusinesses(data || []);
-      setFilteredBusinesses(data || []);
+      if (bizError) throw bizError;
+
+      const businessList = bizData || [];
+      if (businessList.length === 0) {
+        setBusinesses([]);
+        setFilteredBusinesses([]);
+        return;
+      }
+
+      // Get owner profiles
+      const ownerIds = businessList.map((b: any) => b.owner_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ownerIds);
+
+      const profilesById = new Map((profiles || []).map((p: any) => [p.id, p]));
+      
+      const businessesWithProfiles = businessList.map((b: any) => ({
+        ...b,
+        profiles: profilesById.get(b.owner_id) || null
+      }));
+
+      setBusinesses(businessesWithProfiles);
+      setFilteredBusinesses(businessesWithProfiles);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -114,11 +168,83 @@ export default function SubscriptionManagement() {
     }
   };
 
+  const fetchAuditLogs = async (businessId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("business_audit_log")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAuditLogs(data || []);
+      setShowAuditDialog(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const logAuditAction = async (businessId: string, action: string, changes: any) => {
+    try {
+      await supabase
+        .from("business_audit_log")
+        .insert({
+          business_id: businessId,
+          action,
+          changes
+        });
+    } catch (error) {
+      console.error("Failed to log audit action:", error);
+    }
+  };
+
+  const deleteBusiness = async (business: Business) => {
+    try {
+      // Log the deletion
+      await logAuditAction(business.id, "DELETE", {
+        business_name: business.name,
+        tier: business.subscription_tier,
+        status: business.subscription_status
+      });
+
+      const { error } = await supabase
+        .from("businesses")
+        .delete()
+        .eq("id", business.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Business deleted successfully"
+      });
+
+      setDeleteConfirm(null);
+      fetchBusinesses();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const updateSubscription = async (
     businessId: string,
     updates: Partial<Business>
   ) => {
     try {
+      // Log the update
+      await logAuditAction(businessId, "UPDATE", {
+        old_values: editingBusiness,
+        new_values: updates
+      });
+
       const { error } = await supabase
         .from("businesses")
         .update(updates)
@@ -149,6 +275,11 @@ export default function SubscriptionManagement() {
     totalMRR: businesses
       .filter((b) => b.subscription_status === "active")
       .reduce((sum, b) => {
+        // Use custom price for enterprise, otherwise use tier pricing
+        if (b.is_enterprise && b.custom_price_monthly) {
+          return sum + b.custom_price_monthly;
+        }
+        
         const tierPricing: Record<string, number> = {
           free: 0,
           starter: 29,
@@ -158,6 +289,18 @@ export default function SubscriptionManagement() {
         return sum + (tierPricing[b.subscription_tier] || 0);
       }, 0),
   };
+
+  const revenueSource = businesses
+    .filter((b) => b.subscription_status === "active")
+    .map(b => ({
+      businessName: b.name,
+      tier: b.subscription_tier,
+      amount: b.is_enterprise && b.custom_price_monthly 
+        ? b.custom_price_monthly 
+        : { free: 0, starter: 29, professional: 99, enterprise: 299 }[b.subscription_tier] || 0,
+      status: b.subscription_status,
+      isEnterprise: b.is_enterprise || false
+    }));
 
   if (loading) {
     return (
@@ -198,11 +341,11 @@ export default function SubscriptionManagement() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowRevenueBreakdown(true)}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Monthly Recurring Revenue</p>
-              <p className="text-3xl font-bold">€{stats.totalMRR}</p>
+              <p className="text-3xl font-bold">${stats.totalMRR.toFixed(2)}</p>
             </div>
             <DollarSign className="w-8 h-8 text-primary opacity-50" />
           </div>
@@ -229,6 +372,8 @@ export default function SubscriptionManagement() {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-4">Business</th>
+                <th className="text-left p-4">Owner</th>
+                <th className="text-left p-4">Contact</th>
                 <th className="text-left p-4">Tier</th>
                 <th className="text-left p-4">Status</th>
                 <th className="text-left p-4">Messages</th>
@@ -244,7 +389,17 @@ export default function SubscriptionManagement() {
                     <div>
                       <p className="font-medium">{business.name}</p>
                       <p className="text-sm text-muted-foreground">{business.slug}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        Signed up: {new Date(business.created_at).toLocaleDateString()}
+                      </p>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <p className="font-medium">{business.profiles?.full_name || "N/A"}</p>
+                  </td>
+                  <td className="p-4">
+                    <p className="text-sm">{business.profiles?.email || "N/A"}</p>
                   </td>
                   <td className="p-4">
                     <span className="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary uppercase">
@@ -289,9 +444,16 @@ export default function SubscriptionManagement() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => fetchHistory(business.id)}
+                        onClick={() => fetchAuditLogs(business.id)}
                       >
-                        History
+                        Audit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteConfirm(business)}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>
@@ -301,6 +463,73 @@ export default function SubscriptionManagement() {
           </table>
         </div>
       </Card>
+
+      {/* Revenue Breakdown Dialog */}
+      <RevenueBreakdownDialog
+        open={showRevenueBreakdown}
+        onOpenChange={setShowRevenueBreakdown}
+        sources={revenueSource}
+        totalMRR={stats.totalMRR}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Business?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone. 
+              All data will be permanently deleted, but an audit log entry will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirm && deleteBusiness(deleteConfirm)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Audit Log Dialog */}
+      <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Audit Trail</DialogTitle>
+            <DialogDescription>Complete history of all changes</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {auditLogs.map((log) => (
+              <Card key={log.id} className="p-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{log.action}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(log.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-muted p-2 rounded text-xs">
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(log.changes, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {auditLogs.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No audit logs available
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingBusiness} onOpenChange={() => setEditingBusiness(null)}>
