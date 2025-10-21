@@ -79,14 +79,14 @@ export const EditStaffDialog = ({
     setUploading(true);
     try {
       const { error: uploadError } = await supabase.storage
-        .from("customer_bills")
+        .from("avatars")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
 
