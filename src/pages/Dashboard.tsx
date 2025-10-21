@@ -585,39 +585,87 @@ const Dashboard = () => {
       {selectedConversation ? (
         <>
           {/* Chat Header */}
-          <div className="flex-shrink-0 p-3 border-b border-border bg-background shadow-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex-shrink-0 p-3 sm:p-4 border-b border-border bg-background shadow-sm">
+            {/* Row 1: Back button + Customer info */}
+            <div className="flex items-center gap-3 mb-3 sm:mb-0">
               {isMobile && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedConversation(null)}
-                  className="flex-shrink-0 h-9 w-9"
+                  className="flex-shrink-0 h-10 w-10"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               )}
+              
               <div 
-                className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors flex-1 min-w-0"
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors flex-1 min-w-0"
                 onClick={() => !isMobile && setShowContactDetails(!showContactDetails)}
               >
-                <Avatar className="w-9 h-9 flex-shrink-0">
+                <Avatar className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0">
                   <AvatarImage src={selectedConversation.customer.avatar} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                  <AvatarFallback className="bg-primary/10 text-primary">
                     {selectedConversation.customer.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-sm truncate">
+                  <h2 className="font-semibold text-base sm:text-lg truncate">
                     {selectedConversation.customer.name}
                   </h2>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-sm text-muted-foreground truncate">
                     {selectedConversation.customer.phone}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Desktop: All controls in one row */}
+              {!isMobile && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <AIToggle conversationId={selectedConversation.id} />
+                  
+                  <RefreshButton
+                    onRefresh={async () => {
+                      await fetchMessages(selectedConversation.id);
+                      await fetchConversations();
+                      toast({
+                        title: "Refreshed",
+                        description: "Messages updated"
+                      });
+                    }}
+                  />
+                  
+                  <EmailSyncButton onSyncComplete={() => {
+                    if (selectedConversation) {
+                      fetchMessages(selectedConversation.id);
+                    }
+                    fetchConversations();
+                  }} />
+                  
+                  <div className="hidden lg:block">
+                    <EnhancedTemplateSelector
+                      conversationId={selectedConversation.id}
+                      customerId={selectedConversation.customer.id}
+                      customerPhone={selectedConversation.customer.phone}
+                      customerEmail={selectedConversation.customer.email}
+                      onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                    />
+                  </div>
+                  
+                  <div className="hidden xl:block w-48">
+                    <AdminAssignment
+                      conversationId={selectedConversation.id}
+                      currentAssignee={selectedConversation.assigned_to}
+                      onAssignmentChange={fetchConversations}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Mobile: Action buttons row */}
+            {isMobile && (
+              <div className="flex items-center gap-2 mb-3">
                 <AIToggle conversationId={selectedConversation.id} />
                 
                 <RefreshButton
@@ -637,50 +685,24 @@ const Dashboard = () => {
                   }
                   fetchConversations();
                 }} />
-                
-                {!isMobile && (
-                  <div className="hidden lg:block">
-                    <EnhancedTemplateSelector
-                      conversationId={selectedConversation.id}
-                      customerId={selectedConversation.customer.id}
-                      customerPhone={selectedConversation.customer.phone}
-                      customerEmail={selectedConversation.customer.email}
-                      onTemplateSent={() => fetchMessages(selectedConversation.id)}
-                    />
-                  </div>
-                )}
-                
-                {!isMobile && (
-                  <div className="hidden xl:block w-48">
-                    <AdminAssignment
-                      conversationId={selectedConversation.id}
-                      currentAssignee={selectedConversation.assigned_to}
-                      onAssignmentChange={fetchConversations}
-                    />
-                  </div>
-                )}
               </div>
-            </div>
+            )}
             
-            {/* Mobile: Second row for additional controls */}
+            {/* Mobile: Assignment and Template row */}
             {isMobile && (
-              <div className="flex items-center gap-2 mt-2">
-                <div className="flex-1">
-                  <EnhancedTemplateSelector
-                    conversationId={selectedConversation.id}
-                    customerId={selectedConversation.customer.id}
-                    customerPhone={selectedConversation.customer.phone}
-                    customerEmail={selectedConversation.customer.email}
-                    onTemplateSent={() => fetchMessages(selectedConversation.id)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <AdminAssignment
-                    conversationId={selectedConversation.id}
-                    currentAssignee={selectedConversation.assigned_to}
-                    onAssignmentChange={fetchConversations}
-                  />
-                </div>
+              <div className="space-y-2">
+                <AdminAssignment
+                  conversationId={selectedConversation.id}
+                  currentAssignee={selectedConversation.assigned_to}
+                  onAssignmentChange={fetchConversations}
+                />
+                <EnhancedTemplateSelector
+                  conversationId={selectedConversation.id}
+                  customerId={selectedConversation.customer.id}
+                  customerPhone={selectedConversation.customer.phone}
+                  customerEmail={selectedConversation.customer.email}
+                  onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                />
               </div>
             )}
           </div>
