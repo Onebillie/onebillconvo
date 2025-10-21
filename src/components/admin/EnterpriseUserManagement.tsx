@@ -121,38 +121,18 @@ export default function EnterpriseUserManagement({
     try {
       setLoading(true);
 
-      // Update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
+      const { data, error } = await supabase.functions.invoke("admin-manage-enterprise-user", {
+        body: {
+          userId: editUser.id,
           full_name: editForm.full_name,
-          email: editForm.email
-        })
-        .eq("id", editUser.id);
+          email: editForm.email,
+          role: editForm.role,
+          newPassword: editForm.newPassword || undefined
+        }
+      });
 
-      if (profileError) throw profileError;
-
-      // Update role - delete old roles first, then insert new one
-      await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", editUser.id);
-
-      await supabase
-        .from("user_roles")
-        .insert({
-          user_id: editUser.id,
-          role: editForm.role
-        } as any);
-
-      // Update password if provided
-      if (editForm.newPassword) {
-        const { error: passError } = await supabase.auth.admin.updateUserById(
-          editUser.id,
-          { password: editForm.newPassword }
-        );
-        if (passError) throw passError;
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Success",
@@ -162,6 +142,7 @@ export default function EnterpriseUserManagement({
       setEditUser(null);
       fetchUsers();
     } catch (error: any) {
+      console.error("Update user error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update user",
