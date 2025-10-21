@@ -27,6 +27,7 @@ import { TaskNotifications } from "@/components/tasks/TaskNotifications";
 import { GlobalNotificationCenter } from "@/components/notifications/GlobalNotificationCenter";
 import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
 import { AssignDialog } from "@/components/conversations/AssignDialog";
+import { PersistentHeader } from "@/components/PersistentHeader";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
@@ -755,6 +756,7 @@ const Dashboard = () => {
         message="You have an unsaved message. Are you sure you want to leave?"
       />
       <div className="h-screen flex flex-col bg-background">
+        <PersistentHeader />
         {isMobile ? (
           /* Mobile: Simple toggle layout */
           <div className="flex-1 min-h-0 flex flex-col">
