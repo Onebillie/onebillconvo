@@ -21,17 +21,20 @@ export const UserProfileHeader = () => {
   const { unreadCount } = useGlobalNotifications();
   const navigate = useNavigate();
   const [businessName, setBusinessName] = useState<string>("");
+  const [department, setDepartment] = useState<string>("");
   const [inMailCount, setInMailCount] = useState(0);
   const [tasksCount, setTasksCount] = useState(0);
+  const [teamTasksCount, setTeamTasksCount] = useState(0);
 
   useEffect(() => {
-    fetchBusinessName();
+    fetchBusinessAndTeamInfo();
     fetchNotificationCounts();
   }, [profile]);
 
-  const fetchBusinessName = async () => {
+  const fetchBusinessAndTeamInfo = async () => {
     if (!profile?.id) return;
 
+    // Fetch business name
     const { data: businessUser } = await supabase
       .from("business_users")
       .select("business_id, businesses(name)")
@@ -40,6 +43,26 @@ export const UserProfileHeader = () => {
 
     if (businessUser?.businesses) {
       setBusinessName((businessUser.businesses as any).name);
+    }
+
+    // Fetch user's team and department
+    const { data: teamMember } = await supabase
+      .from("team_members" as any)
+      .select("team_id")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+
+    if (teamMember && 'team_id' in teamMember) {
+      const { data: team } = await supabase
+        .from("teams" as any)
+        .select("name, department")
+        .eq("id", teamMember.team_id)
+        .single();
+      
+      if (team && 'department' in team && 'name' in team) {
+        const dept = (team.department || team.name) as string;
+        setDepartment(dept);
+      }
     }
   };
 
@@ -55,7 +78,7 @@ export const UserProfileHeader = () => {
 
     setInMailCount(inMailUnread || 0);
 
-    // Fetch incomplete tasks count
+    // Fetch personal incomplete tasks count
     const { count: incompleteTasks } = await supabase
       .from("tasks" as any)
       .select("*", { count: "exact", head: true })
@@ -63,6 +86,24 @@ export const UserProfileHeader = () => {
       .eq("completed", false);
 
     setTasksCount(incompleteTasks || 0);
+
+    // Fetch team tasks count
+    const { data: userTeams } = await supabase
+      .from("team_members" as any)
+      .select("team_id")
+      .eq("user_id", profile.id);
+
+    if (userTeams && userTeams.length > 0) {
+      const teamIds = userTeams.map((tm: any) => tm.team_id);
+      
+      const { count: teamTasks } = await supabase
+        .from("tasks" as any)
+        .select("*", { count: "exact", head: true })
+        .in("team_id", teamIds)
+        .eq("completed", false);
+
+      setTeamTasksCount(teamTasks || 0);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -77,9 +118,16 @@ export const UserProfileHeader = () => {
   return (
     <div className="flex items-center gap-4">
       {businessName && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
-          <Building2 className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">{businessName}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
+            <Building2 className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{businessName}</span>
+          </div>
+          {department && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md">
+              <span className="text-xs text-muted-foreground">{department}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -102,12 +150,13 @@ export const UserProfileHeader = () => {
           )}
         </Button>
 
-        {/* Tasks Notifications */}
+        {/* Personal Tasks Notifications */}
         <Button
           variant="ghost"
           size="icon"
           className="relative"
           onClick={() => navigate("/settings?tab=tasks")}
+          title="My Tasks"
         >
           <CheckSquare className="w-5 h-5" />
           {tasksCount > 0 && (
@@ -119,6 +168,25 @@ export const UserProfileHeader = () => {
             </Badge>
           )}
         </Button>
+
+        {/* Team Tasks Notifications */}
+        {teamTasksCount > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => navigate("/settings?tab=tasks")}
+            title="Team Tasks"
+          >
+            <CheckSquare className="w-5 h-5 text-primary" />
+            <Badge 
+              variant="default" 
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
+              {teamTasksCount}
+            </Badge>
+          </Button>
+        )}
 
         {/* All Notifications */}
         <Button
