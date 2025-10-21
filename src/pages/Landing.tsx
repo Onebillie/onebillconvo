@@ -421,126 +421,164 @@ AI powered reponses
           <h2 className="text-4xl font-bold text-center mb-4">Your Aggregated Inbox in Action</h2>
           <p className="text-center text-muted-foreground mb-12">See how WhatsApp Business API and email messages flow into one combined inbox. Manage all customer conversations in one place.</p>
           
-          <div className="bg-card border rounded-lg shadow-lg overflow-hidden">
-            <div className="grid grid-cols-3 h-[500px]">
+          <div className="bg-background border-2 border-border rounded-2xl shadow-2xl overflow-hidden">
+            <div className="grid grid-cols-3 h-[600px]">
               {/* Inbox List */}
-              <div className="col-span-1 border-r overflow-y-auto">
-                <div className="p-4 border-b bg-muted/50">
-                  <h3 className="font-semibold">Conversations (24)</h3>
+              <div className="col-span-1 border-r border-border bg-card/50 overflow-y-auto">
+                <div className="p-4 border-b border-border bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10">
+                  <h3 className="font-semibold text-foreground">Conversations (24)</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Active chats across all channels</p>
                 </div>
-                <div className="space-y-2 p-2">
+                <div className="space-y-1 p-2">
                   {[{
                   name: "Sarah Johnson",
                   channel: "whatsapp",
                   msg: "Can you help with my order?",
                   time: "Just now",
                   agent: "AI Bot",
-                  unread: true
+                  unread: true,
+                  avatar: "SJ"
                 }, {
                   name: "john@acme.com",
                   channel: "email",
                   msg: "Invoice inquiry",
                   time: "2m ago",
                   agent: "Maria",
-                  unread: true
+                  unread: true,
+                  avatar: "JA"
                 }, {
                   name: "+1 555 0123",
                   channel: "whatsapp",
                   msg: "Delivery status?",
                   time: "5m ago",
                   agent: "AI Bot",
-                  unread: false
+                  unread: false,
+                  avatar: "+1"
                 }, {
                   name: "support@client.com",
                   channel: "email",
                   msg: "Feature request",
                   time: "12m ago",
                   agent: "Tom",
-                  unread: false
+                  unread: false,
+                  avatar: "SC"
                 }, {
                   name: "Lisa Chen",
                   channel: "whatsapp",
                   msg: "Thank you!",
                   time: "18m ago",
                   agent: "Maria",
-                  unread: false
+                  unread: false,
+                  avatar: "LC"
                 }, {
                   name: "sales@company.co",
                   channel: "email",
                   msg: "Partnership opportunity",
                   time: "25m ago",
                   agent: "Tom",
-                  unread: false
-                }].map((conv, i) => <div key={i} className={`p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all ${conv.unread ? 'bg-primary/5 border-l-2 border-primary' : ''}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">{conv.name}</span>
-                        <span className="text-xs text-muted-foreground">{conv.time}</span>
+                  unread: false,
+                  avatar: "SA"
+                }].map((conv, i) => <div key={i} className={`p-3 rounded-xl hover:bg-accent/10 cursor-pointer transition-all border ${conv.unread ? 'bg-primary/10 border-primary/30 shadow-sm' : 'bg-card/30 border-transparent'}`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${conv.unread ? 'bg-gradient-to-br from-primary to-secondary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {conv.avatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm truncate">{conv.name}</span>
+                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{conv.time}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${conv.channel === 'whatsapp' ? 'bg-green-500/20 text-green-700 dark:text-green-300' : 'bg-blue-500/20 text-blue-700 dark:text-blue-300'}`}>
+                              {conv.channel === 'whatsapp' ? '📱 WhatsApp' : '📧 Email'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">→ {conv.agent}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{conv.msg}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs px-2 py-0.5 rounded ${conv.channel === 'whatsapp' ? 'bg-green-500/20 text-green-700' : 'bg-blue-500/20 text-blue-700'}`}>
-                          {conv.channel === 'whatsapp' ? '📱 WhatsApp' : '📧 Email'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">→ {conv.agent}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{conv.msg}</p>
                     </div>)}
                 </div>
               </div>
 
               {/* Conversation View */}
-              <div className="col-span-2 flex flex-col">
-                <div className="p-4 border-b bg-muted/50">
+              <div className="col-span-2 flex flex-col bg-background">
+                <div className="p-4 border-b border-border bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">Sarah Johnson</h3>
-                      <p className="text-sm text-muted-foreground">📱 WhatsApp • Managed by AI Bot</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-bold">
+                        SJ
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">Sarah Johnson</h3>
+                        <p className="text-sm text-muted-foreground">📱 WhatsApp • Managed by AI Bot</p>
+                      </div>
                     </div>
                     <div className="flex gap-2">
-                      <span className="px-3 py-1 bg-green-500/20 text-green-700 rounded-full text-sm">🤖 AI Active</span>
+                      <span className="px-3 py-1.5 bg-gradient-to-r from-green-500/20 to-green-600/20 text-green-700 dark:text-green-300 rounded-full text-sm font-medium border border-green-500/30">🤖 AI Active</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/20">
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3 max-w-[70%]">
-                      <p className="text-sm">Hi! I ordered a product 3 days ago and haven't received tracking info yet. Order #12345</p>
-                      <span className="text-xs text-muted-foreground">10:32 AM</span>
+                    <div className="bg-card border border-border rounded-2xl rounded-tl-sm p-4 max-w-[70%] shadow-sm">
+                      <p className="text-sm text-foreground">Hi! I ordered a product 3 days ago and haven't received tracking info yet. Order #12345</p>
+                      <span className="text-xs text-muted-foreground mt-2 block">10:32 AM</span>
                     </div>
                   </div>
                   
                   <div className="flex justify-end">
-                    <div className="bg-primary text-primary-foreground rounded-lg p-3 max-w-[70%]">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs opacity-80">🤖 AI Bot</span>
+                    <div className="bg-gradient-to-br from-primary via-secondary to-accent text-primary-foreground rounded-2xl rounded-tr-sm p-4 max-w-[70%] shadow-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs opacity-90 font-medium">🤖 AI Bot</span>
                       </div>
                       <p className="text-sm">Hello Sarah! I've located your order #12345. It was shipped yesterday via FedEx. Your tracking number is FDX789456123. It should arrive by tomorrow. Is there anything else I can help you with?</p>
-                      <span className="text-xs opacity-80">10:32 AM</span>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs opacity-90">10:32 AM</span>
+                        <span className="text-xs opacity-90">✓✓</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3 max-w-[70%]">
-                      <p className="text-sm">Perfect! Thank you so much 😊</p>
-                      <span className="text-xs text-muted-foreground">10:33 AM</span>
+                    <div className="bg-card border border-border rounded-2xl rounded-tl-sm p-4 max-w-[70%] shadow-sm">
+                      <p className="text-sm text-foreground">Perfect! Thank you so much 😊</p>
+                      <span className="text-xs text-muted-foreground mt-2 block">10:33 AM</span>
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <div className="bg-primary text-primary-foreground rounded-lg p-3 max-w-[70%]">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs opacity-80">🤖 AI Bot</span>
+                    <div className="bg-gradient-to-br from-primary via-secondary to-accent text-primary-foreground rounded-2xl rounded-tr-sm p-4 max-w-[70%] shadow-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs opacity-90 font-medium">🤖 AI Bot</span>
                       </div>
                       <p className="text-sm">You're welcome! Feel free to reach out if you need anything else. Have a great day! 🎉</p>
-                      <span className="text-xs opacity-80">10:33 AM</span>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs opacity-90">10:33 AM</span>
+                        <span className="text-xs opacity-90">✓✓</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2 border rounded-lg bg-background" disabled />
-                    <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg">Send</button>
+                <div className="p-4 border-t border-border bg-card/50">
+                  <div className="flex gap-2 items-center">
+                    <button className="p-2 hover:bg-accent/20 rounded-lg transition-colors">
+                      <span className="text-xl">😊</span>
+                    </button>
+                    <button className="p-2 hover:bg-accent/20 rounded-lg transition-colors">
+                      <span className="text-xl">📎</span>
+                    </button>
+                    <input 
+                      type="text" 
+                      placeholder="Type a message..." 
+                      className="flex-1 px-4 py-3 border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
+                      disabled 
+                    />
+                    <button className="px-6 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-primary-foreground rounded-xl font-medium hover:shadow-lg transition-all">
+                      Send
+                    </button>
                   </div>
                 </div>
               </div>
