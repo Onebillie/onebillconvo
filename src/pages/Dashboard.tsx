@@ -459,35 +459,34 @@ const Dashboard = () => {
   }
 
   const conversationSidebar = (
-    <div className="h-full flex flex-col">
-      {/* Sidebar Content */}
-      {/* Header */}
-      <div className="p-3 md:p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3 whitespace-nowrap">
-        <div className="flex items-center space-x-2">
-          <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            <h1 className="font-semibold text-sm md:text-base whitespace-nowrap">Customer Service</h1>
-            {unreadCount > 0 && !isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ 
-                  search: '',
-                  unread: true, 
-                  statusIds: [],
-                  dateRange: { from: null, to: null },
-                  sortBy: 'newest',
-                  platforms: [],
-                  assignedTo: null,
-                })}
-                className="text-xs gap-1 h-6 px-2 whitespace-nowrap"
-              >
-                <Bell className="w-3 h-3" />
-                {unreadCount}
-              </Button>
-            )}
-          </div>
-          {!isMobile && (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header - Only show on desktop, mobile has its own header */}
+      {!isMobile && (
+        <div className="p-3 md:p-4 border-b border-border flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+              <h1 className="font-semibold text-sm md:text-base">Customer Service</h1>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilters({ 
+                    search: '',
+                    unread: true, 
+                    statusIds: [],
+                    dateRange: { from: null, to: null },
+                    sortBy: 'newest',
+                    platforms: [],
+                    assignedTo: null,
+                  })}
+                  className="text-xs gap-1 h-6 px-2"
+                >
+                  <Bell className="w-3 h-3" />
+                  {unreadCount}
+                </Button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <GlobalNotificationCenter />
               <TaskNotifications />
@@ -500,54 +499,93 @@ const Dashboard = () => {
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <CreateContactDialog onContactCreated={fetchConversations} />
-          <ContactPickerDialog
-            onContactSelected={async (customerId) => {
-              // Find or create conversation for the selected customer
-              const { data: conversation } = await supabase
-                .from("conversations")
-                .select(`
-                  *,
-                  customers (
-                    id,
-                    name,
-                    phone,
-                    email,
-                    avatar,
-                    last_active,
-                    notes
-                  )
-                `)
-                .eq("customer_id", customerId)
-                .eq("is_archived", false)
-                .maybeSingle();
+          </div>
+          <div className="flex flex-col gap-2">
+            <CreateContactDialog onContactCreated={fetchConversations} />
+            <ContactPickerDialog
+              onContactSelected={async (customerId) => {
+                // Find or create conversation for the selected customer
+                const { data: conversation } = await supabase
+                  .from("conversations")
+                  .select(`
+                    *,
+                    customers (
+                      id,
+                      name,
+                      phone,
+                      email,
+                      avatar,
+                      last_active,
+                      notes
+                    )
+                  `)
+                  .eq("customer_id", customerId)
+                  .eq("is_archived", false)
+                  .maybeSingle();
 
-              if (conversation) {
-                setSelectedConversation({
-                  ...conversation,
-                  customer: conversation.customers as Customer,
-                  status_tags: [],
-                });
-              }
-            }}
-          />
+                if (conversation) {
+                  setSelectedConversation({
+                    ...conversation,
+                    customer: conversation.customers as Customer,
+                    status_tags: [],
+                  });
+                }
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
+      
+      {/* Mobile-specific header content */}
+      {isMobile && (
+        <div className="flex-shrink-0 p-3 border-b border-border space-y-3">
+          <div className="flex flex-col gap-2">
+            <CreateContactDialog onContactCreated={fetchConversations} />
+            <ContactPickerDialog
+              onContactSelected={async (customerId) => {
+                // Find or create conversation for the selected customer
+                const { data: conversation } = await supabase
+                  .from("conversations")
+                  .select(`
+                    *,
+                    customers (
+                      id,
+                      name,
+                      phone,
+                      email,
+                      avatar,
+                      last_active,
+                      notes
+                    )
+                  `)
+                  .eq("customer_id", customerId)
+                  .eq("is_archived", false)
+                  .maybeSingle();
+
+                if (conversation) {
+                  setSelectedConversation({
+                    ...conversation,
+                    customer: conversation.customers as Customer,
+                    status_tags: [],
+                  });
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
       
       <DuplicateContactsBanner />
       
-      <div className="whitespace-nowrap">
+      <div className="flex-shrink-0">
         <ConversationFilters
           onFilterChange={handleFilterChange}
           currentFilters={filters}
         />
       </div>
 
-      {/* Contacts list */}
-      <ScrollArea className="flex-1">
+      {/* Contacts list - scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <ContactList
           conversations={filteredConversations}
           selectedConversation={selectedConversation}
@@ -574,7 +612,7 @@ const Dashboard = () => {
             />
           )}
         />
-      </ScrollArea>
+      </div>
     </div>
   );
 
@@ -584,39 +622,39 @@ const Dashboard = () => {
       {selectedConversation ? (
         <>
           {/* Chat Header */}
-          <div className="p-2 md:p-4 border-b border-border bg-background shadow-sm z-10 flex-shrink-0">
-            <div className="flex items-center justify-between gap-1 md:gap-2">
+          <div className="flex-shrink-0 p-3 border-b border-border bg-background shadow-sm">
+            <div className="flex items-center gap-2">
               {isMobile && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedConversation(null)}
-                  className="flex-shrink-0 h-8 w-8"
+                  className="flex-shrink-0 h-9 w-9"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-5 h-5" />
                 </Button>
               )}
               <div 
-                className="flex items-center space-x-2 md:space-x-3 cursor-pointer hover:bg-muted/50 p-1.5 md:p-2 rounded-lg transition-colors flex-1 min-w-0"
-                onClick={() => setShowContactDetails(!showContactDetails)}
+                className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors flex-1 min-w-0"
+                onClick={() => !isMobile && setShowContactDetails(!showContactDetails)}
               >
-                <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
+                <Avatar className="w-9 h-9 flex-shrink-0">
                   <AvatarImage src={selectedConversation.customer.avatar} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
                     {selectedConversation.customer.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-xs md:text-base truncate">
+                  <h2 className="font-semibold text-sm truncate">
                     {selectedConversation.customer.name}
                   </h2>
-                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {selectedConversation.customer.phone}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <AIToggle conversationId={selectedConversation.id} />
                 
                 <RefreshButton
@@ -663,7 +701,7 @@ const Dashboard = () => {
             
             {/* Mobile: Second row for additional controls */}
             {isMobile && (
-              <div className="flex items-center gap-1 mt-1.5">
+              <div className="flex items-center gap-2 mt-2">
                 <div className="flex-1">
                   <EnhancedTemplateSelector
                     conversationId={selectedConversation.id}
@@ -759,59 +797,43 @@ const Dashboard = () => {
         <PersistentHeader />
         {isMobile ? (
           /* Mobile: Simple toggle layout */
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             {!selectedConversation ? (
               /* Show conversation list on mobile */
-              <>
-                <div className="w-full border-b border-border flex-shrink-0">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="flex-shrink-0 border-b border-border">
                   <div className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-primary" />
-                      <h1 className="text-sm font-semibold">Conversations</h1>
+                      <MessageSquare className="w-5 h-5 text-primary" />
+                      <h1 className="text-base font-semibold">Conversations</h1>
                       {unreadCount > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setFilters({ 
-                              search: '',
-                              unread: true, 
-                              statusIds: [],
-                              dateRange: { from: null, to: null },
-                              sortBy: 'newest',
-                              platforms: [],
-                              assignedTo: null,
-                            });
-                          }}
-                          className="h-6 px-2 text-xs gap-1 ml-1"
-                        >
-                          <Bell className="w-3 h-3" />
+                        <Badge variant="secondary" className="h-6 px-2 text-xs">
                           {unreadCount}
-                        </Button>
+                        </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <GlobalNotificationCenter />
                       <TaskNotifications />
                       {isAdmin && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleBack}>
                           <SettingsIcon className="w-4 h-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={signOut}>
                         <LogOut className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 overflow-hidden">
                   {conversationSidebar}
                 </div>
-              </>
+              </div>
             ) : (
               /* Show selected conversation on mobile */
-              <div className="flex-1 min-h-0 flex flex-col">
-                <div className="p-3 border-b border-border">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="flex-shrink-0">
                   <PendingPaymentBanner />
                 </div>
                 {renderChatArea()}
