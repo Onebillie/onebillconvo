@@ -15,6 +15,7 @@ import { Bell, Building2, CheckSquare, Mail, User, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { InMailSheet } from "@/components/inmail/InMailSheet";
 
 export const UserProfileHeader = () => {
   const { profile, signOut } = useAuth();
@@ -25,6 +26,7 @@ export const UserProfileHeader = () => {
   const [inMailCount, setInMailCount] = useState(0);
   const [tasksCount, setTasksCount] = useState(0);
   const [teamTasksCount, setTeamTasksCount] = useState(0);
+  const [inMailSheetOpen, setInMailSheetOpen] = useState(false);
 
   useEffect(() => {
     fetchBusinessAndTeamInfo();
@@ -137,7 +139,8 @@ export const UserProfileHeader = () => {
           variant="ghost"
           size="icon"
           className="relative"
-          onClick={() => navigate("/settings?tab=inmail")}
+          onClick={() => setInMailSheetOpen(true)}
+          title="InMail"
         >
           <Mail className="w-5 h-5" />
           {inMailCount > 0 && (
@@ -231,7 +234,7 @@ export const UserProfileHeader = () => {
             <User className="mr-2 h-4 w-4" />
             Profile Settings
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate("/settings?tab=inmail")}>
+          <DropdownMenuItem onClick={() => setInMailSheetOpen(true)}>
             <Mail className="mr-2 h-4 w-4" />
             InMail
             {inMailCount > 0 && (
@@ -256,6 +259,9 @@ export const UserProfileHeader = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* InMail Sheet */}
+      <InMailSheet open={inMailSheetOpen} onOpenChange={setInMailSheetOpen} />
     </div>
   );
 };

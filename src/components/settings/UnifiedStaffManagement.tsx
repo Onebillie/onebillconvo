@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Shield, CheckCircle, Mail, Settings, Users, Plus, Edit } from "lucide-react";
+import { UserPlus, Trash2, Shield, CheckCircle, Mail, Settings, Users, Plus, Edit, UserCog } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StaffPermissionsDialog } from "./StaffPermissionsDialog";
+import { EditStaffDialog } from "./EditStaffDialog";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Staff {
@@ -38,6 +39,7 @@ export const UnifiedStaffManagement = () => {
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [editStaffDialogOpen, setEditStaffDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [editingTeam, setEditingTeam] = useState<any>(null);
   
@@ -373,6 +375,17 @@ export const UnifiedStaffManagement = () => {
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedStaff(member);
+                                setEditStaffDialogOpen(true);
+                              }}
+                            >
+                              <UserCog className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenPermissions(member)}
@@ -516,6 +529,14 @@ export const UnifiedStaffManagement = () => {
         open={permissionsDialogOpen}
         onOpenChange={setPermissionsDialogOpen}
         staffMember={selectedStaff}
+      />
+
+      {/* Edit Staff Dialog */}
+      <EditStaffDialog
+        open={editStaffDialogOpen}
+        onOpenChange={setEditStaffDialogOpen}
+        staffMember={selectedStaff}
+        onUpdate={fetchStaff}
       />
     </div>
   );

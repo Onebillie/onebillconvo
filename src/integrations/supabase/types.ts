@@ -2721,32 +2721,44 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           department: string | null
+          display_name: string | null
           email: string
           full_name: string
           id: string
           is_active: boolean
+          phone: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           department?: string | null
+          display_name?: string | null
           email: string
           full_name: string
           id: string
           is_active?: boolean
+          phone?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           department?: string | null
+          display_name?: string | null
           email?: string
           full_name?: string
           id?: string
           is_active?: boolean
+          phone?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
