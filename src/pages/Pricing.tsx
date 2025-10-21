@@ -169,6 +169,60 @@ export default function Pricing() {
           ))}
         </div>
 
+        {/* AI Assistant Pricing Details */}
+        <Card className="max-w-4xl mx-auto mt-12 p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-2">AI Assistant Pricing</h2>
+            <p className="text-muted-foreground">
+              Intelligent automated responses powered by Lovable AI
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Professional Plan</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>1,000 AI responses/month included</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>$0.02 per additional response after quota</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>Document training & knowledge base</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>Privacy & compliance controls</span>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Enterprise Plan</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>Unlimited AI responses included</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>No additional costs for AI usage</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>Advanced RAG & per-customer context</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>GDPR-compliant data handling</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+
         {user && (
           <div className="text-center mt-8">
             <Button variant="ghost" onClick={() => navigate("/app/dashboard")}>

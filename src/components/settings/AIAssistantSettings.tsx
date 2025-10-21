@@ -129,15 +129,6 @@ export function AIAssistantSettings() {
               </SelectContent>
             </Select>
 
-            {provider === "lovable" && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Professional: 1,000 AI responses/month included, then $0.02/response.
-                  Enterprise: Unlimited AI responses included.
-                </AlertDescription>
-              </Alert>
-            )}
 
             {provider === "openai" && (
               <div className="space-y-3 mt-3">
