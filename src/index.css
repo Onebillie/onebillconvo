@@ -8,21 +8,21 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Orange & Dark Grey Theme - macOS Tahoe Inspired */
+    /* AI Multicolor Rainbow Theme */
     --background: 0 0% 100%;
     --foreground: 0 0% 10%;
     
-    /* Primary: Vibrant Orange */
-    --primary: 27 96% 61%;
+    /* Primary: Vibrant Purple */
+    --primary: 280 100% 60%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary: Dark Grey */
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Cyan */
+    --secondary: 190 95% 55%;
+    --secondary-foreground: 0 0% 100%;
     
-    /* Accent: Light Orange */
-    --accent: 27 90% 85%;
-    --accent-foreground: 0 0% 10%;
+    /* Accent: Pink/Magenta */
+    --accent: 330 85% 60%;
+    --accent-foreground: 0 0% 100%;
     
     /* Muted: Light background with dark text */
     --muted: 0 0% 96%;
@@ -35,7 +35,7 @@ All colors MUST be HSL.
     /* Border & Input */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 27 96% 61%;
+    --ring: 280 100% 60%;
     
     /* Card */
     --card: 0 0% 100%;
@@ -52,29 +52,29 @@ All colors MUST be HSL.
     
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 27 96% 61%;
+    --sidebar-primary: 280 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 27 90% 95%;
+    --sidebar-accent: 280 90% 95%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 27 96% 61%;
+    --sidebar-ring: 280 100% 60%;
   }
 
   .dark {
     --background: 0 0% 10%;
     --foreground: 0 0% 98%;
     
-    /* Primary: Vibrant Orange */
-    --primary: 27 96% 61%;
-    --primary-foreground: 0 0% 10%;
+    /* Primary: Vibrant Purple */
+    --primary: 280 100% 65%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Secondary: Lighter Grey for dark mode */
-    --secondary: 0 0% 25%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Cyan */
+    --secondary: 190 95% 60%;
+    --secondary-foreground: 0 0% 100%;
     
-    /* Accent: Deep Orange */
-    --accent: 27 80% 40%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent: Pink/Magenta */
+    --accent: 330 85% 65%;
+    --accent-foreground: 0 0% 100%;
     
     /* Muted */
     --muted: 0 0% 20%;
@@ -87,7 +87,7 @@ All colors MUST be HSL.
     /* Border & Input */
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 27 96% 61%;
+    --ring: 280 100% 65%;
     
     /* Card */
     --card: 0 0% 12%;
@@ -102,12 +102,12 @@ All colors MUST be HSL.
     
     --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 27 96% 61%;
-    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-primary: 280 100% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 20%;
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 27 96% 61%;
+    --sidebar-ring: 280 100% 65%;
   }
 }
 

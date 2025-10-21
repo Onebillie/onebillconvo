@@ -212,7 +212,7 @@ const Landing = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
               
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-rainbow bg-clip-text text-transparent">
                 Stop Juggling Apps. Start Closing Deals.
               </h1>
               <p className="text-xl md:text-2xl mb-4 text-foreground font-semibold">
@@ -235,8 +235,8 @@ const Landing = () => {
               
             </div>
             <div className="relative">
-              <div className="rounded-2xl shadow-2xl w-full bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 p-8 aspect-video flex items-center justify-center">
-                <div className="text-center space-y-4">
+              <div className="rounded-2xl shadow-2xl w-full bg-gradient-rainbow-vertical border-2 border-primary/30 p-8 aspect-video flex items-center justify-center backdrop-blur-sm bg-opacity-10">
+                <div className="text-center space-y-4 bg-background/95 p-6 rounded-xl">
                   <MessageSquare className="w-20 h-20 text-primary mx-auto" />
                   <p className="text-2xl font-semibold text-foreground">Unified Inbox Dashboard</p>
                   <p className="text-muted-foreground">All channels in one place</p>
