@@ -19,7 +19,7 @@ const Landing = () => {
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80">
         <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
           <div className="font-extrabold tracking-tight text-foreground">À La Carte Chat</div>
-          <a href="#features" className="text-foreground hover:opacity-70 transition-opacity">Features</a>
+          <a href="/features" className="text-foreground hover:opacity-70 transition-opacity">Features</a>
           <a href="#pricing" className="text-foreground hover:opacity-70 transition-opacity">Pricing</a>
           <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity">Contact</a>
           <div className="flex-1" />
