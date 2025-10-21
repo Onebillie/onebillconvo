@@ -66,6 +66,7 @@ export const WidgetCodeDialog = ({ open, onClose, token, businessId, onCustomize
 
     // Generate code
     const code = generateEmbedCode(presetId);
+    console.log('[WIDGET COPY] prepared length:', code.length, 'preview:', code.slice(0, 120));
 
     // Robust copy with fallback (works on Safari/HTTP/Extensions)
     const fallbackCopy = () => {

@@ -223,6 +223,7 @@ export function EmbedTokenManagement() {
   };
 
   const copyToClipboard = async (text: string, label: string) => {
+    console.log('[EMBED COPY]', { label, length: text?.length, preview: (text || '').slice(0, 120) });
     const fallbackCopy = () => {
       const ta = document.createElement('textarea');
       ta.value = text;
