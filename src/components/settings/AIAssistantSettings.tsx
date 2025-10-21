@@ -9,33 +9,47 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Info } from "lucide-react";
+import { Plus, Trash2, Info, Upload, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AIDocumentUpload } from "./AIDocumentUpload";
+import { AIPrivacySettings } from "./AIPrivacySettings";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AIAssistantSettings() {
+  const { user } = useAuth();
   const [config, setConfig] = useState<any>(null);
   const [trainingData, setTrainingData] = useState<any[]>([]);
-  const [ragDocs, setRagDocs] = useState<any[]>([]);
+  const [knowledgeDocs, setKnowledgeDocs] = useState<any[]>([]);
   const [provider, setProvider] = useState<string>("lovable");
   const [customApiKey, setCustomApiKey] = useState<string>("");
   const [customModel, setCustomModel] = useState<string>("");
+  const [businessId, setBusinessId] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  // Alias to prevent runtime issues if older references exist
-  const aiProvider = provider;
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
+    // Get business ID
+    const { data: businessUser } = await supabase
+      .from('business_users')
+      .select('business_id')
+      .eq('user_id', user?.id)
+      .single();
+
+    if (businessUser) {
+      setBusinessId(businessUser.business_id);
+    }
+
     const [{ data: cfg }, { data: training }, { data: docs }] = await Promise.all([
       supabase.from('ai_assistant_config').select('*').single(),
       supabase.from('ai_training_data').select('*').order('created_at', { ascending: false }),
-      supabase.from('ai_rag_documents').select('*').order('created_at', { ascending: false }),
+      supabase.from('ai_knowledge_documents').select('*').eq('business_id', businessUser?.business_id).order('created_at', { ascending: false }),
     ]);
     setConfig(cfg);
     setTrainingData(training || []);
-    setRagDocs(docs || []);
+    setKnowledgeDocs(docs || []);
     setLoading(false);
   };
 
@@ -57,10 +71,14 @@ export function AIAssistantSettings() {
     }
   };
 
-  const addRagDoc = async () => {
-    const { error } = await supabase.from('ai_rag_documents').insert({ title: 'New document', content: 'Content here' });
+  const deleteDocument = async (docId: string) => {
+    const { error } = await supabase
+      .from('ai_knowledge_documents')
+      .delete()
+      .eq('id', docId);
+    
     if (!error) {
-      toast.success('Document added');
+      toast.success('Document deleted');
       fetchData();
     }
   };
@@ -209,11 +227,55 @@ export function AIAssistantSettings() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="training">
-        <TabsList>
+      <Tabs defaultValue="documents">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="documents">Knowledge Base</TabsTrigger>
           <TabsTrigger value="training">Q&A Training</TabsTrigger>
-          <TabsTrigger value="rag">RAG Documents</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy & Security</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="documents" className="space-y-4">
+          <AIDocumentUpload businessId={businessId} onUploadComplete={fetchData} />
+          
+          <div className="space-y-3">
+            {knowledgeDocs.map((doc) => (
+              <Card key={doc.id}>
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1">
+                      <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div className="space-y-1 flex-1">
+                        <h4 className="font-medium">{doc.title}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {doc.chunk_count} chunks • {Math.round(doc.file_size / 1024)}KB
+                        </p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {doc.content.substring(0, 150)}...
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteDocument(doc.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {knowledgeDocs.length === 0 && (
+              <Alert>
+                <Upload className="h-4 w-4" />
+                <AlertDescription>
+                  No documents uploaded yet. Upload your business documents to train the AI.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </TabsContent>
+        
         <TabsContent value="training" className="space-y-4">
           <Button onClick={addTrainingData}><Plus className="w-4 h-4 mr-2" />Add Q&A</Button>
           {trainingData.map((item) => (
@@ -225,16 +287,9 @@ export function AIAssistantSettings() {
             </Card>
           ))}
         </TabsContent>
-        <TabsContent value="rag" className="space-y-4">
-          <Button onClick={addRagDoc}><Plus className="w-4 h-4 mr-2" />Add Document</Button>
-          {ragDocs.map((doc) => (
-            <Card key={doc.id}>
-              <CardContent className="pt-4 space-y-2">
-                <Input placeholder="Title" defaultValue={doc.title} onBlur={(e) => supabase.from('ai_rag_documents').update({ title: e.target.value }).eq('id', doc.id)} />
-                <Textarea placeholder="Content" defaultValue={doc.content} onBlur={(e) => supabase.from('ai_rag_documents').update({ content: e.target.value }).eq('id', doc.id)} rows={6} />
-              </CardContent>
-            </Card>
-          ))}
+        
+        <TabsContent value="privacy" className="space-y-4">
+          <AIPrivacySettings businessId={businessId} />
         </TabsContent>
       </Tabs>
     </div>

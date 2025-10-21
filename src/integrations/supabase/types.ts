@@ -123,6 +123,215 @@ export type Database = {
           },
         ]
       }
+      ai_customer_context: {
+        Row: {
+          business_id: string
+          context_summary: string | null
+          conversation_id: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          last_interaction: string | null
+          metadata: Json | null
+          sentiment: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          context_summary?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          last_interaction?: string | null
+          metadata?: Json | null
+          sentiment?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          context_summary?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          last_interaction?: string | null
+          metadata?: Json | null
+          sentiment?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_customer_context_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_customer_context_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_customer_context_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_document_chunks: {
+        Row: {
+          business_id: string
+          chunk_index: number
+          chunk_text: string
+          created_at: string | null
+          document_id: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          business_id: string
+          chunk_index: number
+          chunk_text: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          business_id?: string
+          chunk_index?: number
+          chunk_text?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_document_chunks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "ai_knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_knowledge_documents: {
+        Row: {
+          business_id: string
+          chunk_count: number | null
+          content: string
+          created_at: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          chunk_count?: number | null
+          content: string
+          created_at?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          chunk_count?: number | null
+          content?: string
+          created_at?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_knowledge_documents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_privacy_settings: {
+        Row: {
+          anonymize_training_data: boolean | null
+          business_id: string
+          closed_dataset_mode: boolean | null
+          confidence_threshold: number | null
+          created_at: string | null
+          data_retention_days: number | null
+          id: string
+          mask_pii: boolean | null
+          require_high_confidence: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          anonymize_training_data?: boolean | null
+          business_id: string
+          closed_dataset_mode?: boolean | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          id?: string
+          mask_pii?: boolean | null
+          require_high_confidence?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          anonymize_training_data?: boolean | null
+          business_id?: string
+          closed_dataset_mode?: boolean | null
+          confidence_threshold?: number | null
+          created_at?: string | null
+          data_retention_days?: number | null
+          id?: string
+          mask_pii?: boolean | null
+          require_high_confidence?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_privacy_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_providers: {
         Row: {
           api_key: string | null
@@ -216,6 +425,73 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_response_logs: {
+        Row: {
+          approved_by: string | null
+          business_id: string
+          confidence_score: number | null
+          conversation_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          feedback_rating: number | null
+          id: string
+          prompt: string
+          response: string
+          sources_used: Json | null
+          was_approved: boolean | null
+        }
+        Insert: {
+          approved_by?: string | null
+          business_id: string
+          confidence_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          feedback_rating?: number | null
+          id?: string
+          prompt: string
+          response: string
+          sources_used?: Json | null
+          was_approved?: boolean | null
+        }
+        Update: {
+          approved_by?: string | null
+          business_id?: string
+          confidence_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          feedback_rating?: number | null
+          id?: string
+          prompt?: string
+          response?: string
+          sources_used?: Json | null
+          was_approved?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_response_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_response_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_response_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
