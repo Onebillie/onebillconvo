@@ -852,43 +852,7 @@ ai.response.completed`}</code>
       {/* Roadmap Section */}
       <section className="py-20 bg-muted/20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-4">PRODUCT ROADMAP</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">What's Coming Next</h2>
-            <p className="text-lg text-muted-foreground mb-12">
-              We're constantly improving À La Carte Chat. Here's what we're working on:
-            </p>
-            <div className="grid md:grid-cols-2 gap-6 text-left">
-              <Card className="p-6 border-2">
-                <Badge variant="secondary" className="mb-3">Q1 2026</Badge>
-                <h3 className="text-xl font-semibold mb-2">Facebook Messenger Integration</h3>
-                <p className="text-muted-foreground">
-                  Connect your Facebook Business Pages • Auto-sync messages • Automated responses • Full conversation history
-                </p>
-              </Card>
-              <Card className="p-6 border-2">
-                <Badge variant="secondary" className="mb-3">Q1 2026</Badge>
-                <h3 className="text-xl font-semibold mb-2">Instagram Direct Messages</h3>
-                <p className="text-muted-foreground">
-                  Business account integration • Story reply handling • Media support • Smart agent assignment
-                </p>
-              </Card>
-              <Card className="p-6 border-2">
-                <Badge variant="outline" className="mb-3">Q2 2026</Badge>
-                <h3 className="text-xl font-semibold mb-2">Advanced Analytics Dashboard</h3>
-                <p className="text-muted-foreground">
-                  Response time metrics • Agent performance tracking • Customer satisfaction scores • Revenue attribution
-                </p>
-              </Card>
-              <Card className="p-6 border-2">
-                <Badge variant="outline" className="mb-3">Q2 2026</Badge>
-                <h3 className="text-xl font-semibold mb-2">Telegram & WeChat Support</h3>
-                <p className="text-muted-foreground">
-                  Expand to global messaging platforms • Reach international customers • Unified inbox for all channels
-                </p>
-              </Card>
-            </div>
-          </div>
+          
         </div>
       </section>
 
