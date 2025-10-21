@@ -16,7 +16,7 @@ export function AIAssistantSettings() {
   const [config, setConfig] = useState<any>(null);
   const [trainingData, setTrainingData] = useState<any[]>([]);
   const [ragDocs, setRagDocs] = useState<any[]>([]);
-  const [aiProvider, setAiProvider] = useState<string>("lovable");
+  const [provider, setProvider] = useState<string>("lovable");
   const [customApiKey, setCustomApiKey] = useState<string>("");
   const [customModel, setCustomModel] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,7 @@ export function AIAssistantSettings() {
           {/* AI Provider Selection */}
           <div className="space-y-3 pt-4 border-t">
             <Label htmlFor="ai-provider">AI Provider</Label>
-            <Select value={aiProvider} onValueChange={setAiProvider}>
+            <Select value={provider} onValueChange={setProvider}>
               <SelectTrigger id="ai-provider">
                 <SelectValue />
               </SelectTrigger>
@@ -109,7 +109,7 @@ export function AIAssistantSettings() {
               </SelectContent>
             </Select>
 
-            {aiProvider === "lovable" && (
+            {provider === "lovable" && (
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
@@ -119,7 +119,7 @@ export function AIAssistantSettings() {
               </Alert>
             )}
 
-            {aiProvider === "openai" && (
+            {provider === "openai" && (
               <div className="space-y-3 mt-3">
                 <div className="space-y-2">
                   <Label htmlFor="openai-key">OpenAI API Key</Label>
@@ -155,7 +155,7 @@ export function AIAssistantSettings() {
               </div>
             )}
 
-            {aiProvider === "custom" && (
+            {provider === "custom" && (
               <div className="space-y-3 mt-3">
                 <div className="space-y-2">
                   <Label htmlFor="custom-endpoint">API Endpoint URL</Label>
