@@ -24,7 +24,7 @@ const Landing = () => {
           <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity">Contact</a>
           <div className="flex-1" />
           <Button onClick={() => navigate(user ? "/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6">
-            {user ? "Dashboard" : "Book a demo"}
+            {user ? "Dashboard" : "Login"}
           </Button>
         </nav>
       </header>
