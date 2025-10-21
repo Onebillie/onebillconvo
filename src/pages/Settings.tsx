@@ -4,12 +4,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { LogOut, Settings as SettingsIcon, MessageSquare } from "lucide-react";
-import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
-import { StaffAccordion } from "@/components/settings/StaffAccordion";
-import { TeamsAccordion } from "@/components/settings/TeamsAccordion";
-import { PermissionsAccordion } from "@/components/settings/PermissionsAccordion";
+import { Settings as SettingsIcon } from "lucide-react";
+import { UnifiedStaffManagement } from "@/components/settings/UnifiedStaffManagement";
+import { UserProfileHeader } from "@/components/UserProfileHeader";
 import { InMailAccordion } from "@/components/settings/InMailAccordion";
 import { SubscriptionAccordion } from "@/components/settings/SubscriptionAccordion";
 import { ChannelSettings } from "@/components/settings/ChannelSettings";
@@ -24,8 +21,7 @@ import { NotificationsAccordion } from "@/components/settings/NotificationsAccor
 import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
 
 export default function Settings() {
-  const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
-  const { unreadCount } = useGlobalNotifications();
+  const { profile, loading, isAdmin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
   if (loading) {
@@ -65,21 +61,7 @@ export default function Settings() {
             <SettingsIcon className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-semibold">Settings</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{profile.full_name}</span>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="relative">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Dashboard
-              {unreadCount > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-xs">
-                  {unreadCount}
-                </Badge>
-              )}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
+          <UserProfileHeader />
         </div>
       </div>
 
@@ -87,9 +69,7 @@ export default function Settings() {
       <div className="container mx-auto p-6">
         <Tabs defaultValue={isSuperAdmin ? "staff" : "subscription"} className="space-y-6">
           <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
-            {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff</TabsTrigger>}
-            {isSuperAdmin && <TabsTrigger value="teams" className="shrink-0">Teams</TabsTrigger>}
-            {isSuperAdmin && <TabsTrigger value="permissions" className="shrink-0">Permissions</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="staff" className="shrink-0">Staff & Teams</TabsTrigger>}
             <TabsTrigger value="inmail" className="shrink-0">In-Mail</TabsTrigger>
             <TabsTrigger value="subscription" className="shrink-0">Subscription</TabsTrigger>
             <TabsTrigger value="channels" className="shrink-0">Channels</TabsTrigger>
@@ -106,19 +86,7 @@ export default function Settings() {
 
           {isSuperAdmin && (
             <TabsContent value="staff" forceMount>
-              <StaffAccordion />
-            </TabsContent>
-          )}
-
-          {isSuperAdmin && (
-            <TabsContent value="teams" forceMount>
-              <TeamsAccordion />
-            </TabsContent>
-          )}
-
-          {isSuperAdmin && (
-            <TabsContent value="permissions" forceMount>
-              <PermissionsAccordion />
+              <UnifiedStaffManagement />
             </TabsContent>
           )}
 
