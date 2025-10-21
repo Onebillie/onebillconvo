@@ -1,193 +1,106 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { WhatsAppAccountManagement } from "./WhatsAppAccountManagement";
 import { WhatsAppTemplateManagement } from "./WhatsAppTemplateManagement";
 import { EmailAccountManagement } from "./EmailAccountManagement";
 import { EmailTemplateSettings } from "./EmailTemplateSettings";
 import { SmsAccountManagement } from "./SmsAccountManagement";
-import { TemplateManagement } from "./TemplateManagement";
 import { FacebookAccountManagement } from "./FacebookAccountManagement";
 import { InstagramAccountManagement } from "./InstagramAccountManagement";
-import { MessageSquare, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
+import { TemplateManagement } from "./TemplateManagement";
+import { EmbedTokenManagement } from "./EmbedTokenManagement";
+import { Globe, MessageSquare, Mail, Phone, Facebook, Instagram, FileText } from "lucide-react";
 
-export function ChannelSettings() {
+export const ChannelSettings = () => {
   return (
-    <div className="space-y-4">
-      <Accordion type="multiple" className="w-full">
-        {/* WhatsApp Section */}
-        <AccordionItem value="whatsapp">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-green-600" />
-              <h2 className="text-xl font-semibold">WhatsApp</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-6 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>WhatsApp Accounts</CardTitle>
-                  <CardDescription>
-                    Manage your WhatsApp Business API accounts and phone numbers
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <WhatsAppAccountManagement />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>WhatsApp Templates</CardTitle>
-                  <CardDescription>
-                    Manage and sync WhatsApp message templates approved by Meta
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <WhatsAppTemplateManagement />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+    <Accordion type="multiple" defaultValue={["widget", "whatsapp", "email"]} className="w-full space-y-4">
+      <AccordionItem value="widget" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Website Chat Widget</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <div className="text-sm text-muted-foreground mb-4">
+            Embed a live chat widget on your website to communicate with visitors in real-time.
+          </div>
+          <EmbedTokenManagement />
+        </AccordionContent>
+      </AccordionItem>
 
-        {/* Email Section */}
-        <AccordionItem value="email">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-blue-600" />
-              <h2 className="text-xl font-semibold">Email</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-6 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Accounts</CardTitle>
-                  <CardDescription>
-                    Configure IMAP/POP3 and SMTP settings for email communication
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <EmailAccountManagement />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Templates</CardTitle>
-                  <CardDescription>
-                    Customize HTML templates for outgoing emails
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <EmailTemplateSettings />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <AccordionItem value="whatsapp" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">WhatsApp</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <WhatsAppAccountManagement />
+          <WhatsAppTemplateManagement />
+        </AccordionContent>
+      </AccordionItem>
 
-        {/* SMS Section */}
-        <AccordionItem value="sms">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Phone className="w-5 h-5 text-purple-600" />
-              <h2 className="text-xl font-semibold">SMS</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>SMS Accounts</CardTitle>
-                  <CardDescription>
-                    Configure Twilio and other SMS provider accounts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SmsAccountManagement />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <AccordionItem value="email" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Email</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <EmailAccountManagement />
+          <EmailTemplateSettings />
+        </AccordionContent>
+      </AccordionItem>
 
-        {/* Facebook Messenger Section */}
-        <AccordionItem value="facebook">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-blue-600" />
-              <h2 className="text-xl font-semibold">Facebook Messenger</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Messenger Accounts</CardTitle>
-                  <CardDescription>
-                    Connect Facebook Business Pages to receive and send messages
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FacebookAccountManagement />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <AccordionItem value="sms" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Phone className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">SMS</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <SmsAccountManagement />
+        </AccordionContent>
+      </AccordionItem>
 
-        {/* Instagram Section */}
-        <AccordionItem value="instagram">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Instagram className="w-5 h-5 text-pink-600" />
-              <h2 className="text-xl font-semibold">Instagram</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Instagram Accounts</CardTitle>
-                  <CardDescription>
-                    Connect Instagram Business accounts for direct messaging
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <InstagramAccountManagement />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <AccordionItem value="facebook" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Facebook className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Facebook Messenger</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <FacebookAccountManagement />
+        </AccordionContent>
+      </AccordionItem>
 
-        {/* Message Templates Section */}
-        <AccordionItem value="templates">
-          <AccordionTrigger className="hover:no-underline">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Message Templates</h2>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Text Message Templates</CardTitle>
-                  <CardDescription>
-                    Create and manage reusable message templates for quick responses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TemplateManagement />
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
+      <AccordionItem value="instagram" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Instagram className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Instagram</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <InstagramAccountManagement />
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="templates" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Message Templates</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <TemplateManagement />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
-}
+};

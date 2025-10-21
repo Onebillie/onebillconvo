@@ -7,23 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, Settings as SettingsIcon, MessageSquare } from "lucide-react";
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications";
-import { StaffManagement } from "@/components/settings/StaffManagement";
-import { StatusManagement } from "@/components/settings/StatusManagement";
-import { TaskSettings } from "@/components/settings/TaskSettings";
-import { BusinessSettings } from "@/components/settings/BusinessSettings";
-import { CalendarSettings } from "@/components/settings/CalendarSettings";
-import { ApiAccessManagement } from "@/components/settings/ApiAccessManagement";
-import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
-import { NotificationSettings } from "@/components/settings/NotificationSettings";
-import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
+import { StaffAccordion } from "@/components/settings/StaffAccordion";
+import { TeamsAccordion } from "@/components/settings/TeamsAccordion";
+import { PermissionsAccordion } from "@/components/settings/PermissionsAccordion";
+import { InMailAccordion } from "@/components/settings/InMailAccordion";
+import { SubscriptionAccordion } from "@/components/settings/SubscriptionAccordion";
 import { ChannelSettings } from "@/components/settings/ChannelSettings";
-import { UsageDashboard } from "@/components/settings/UsageDashboard";
-import { CannedResponses } from "@/components/settings/CannedResponses";
-import { AIApprovalQueue } from "@/components/chat/AIApprovalQueue";
-import { AutoTopUpSettings } from "@/components/settings/AutoTopUpSettings";
-import { TeamManagement } from "@/components/settings/TeamManagement";
-import { PermissionManager } from "@/components/settings/PermissionManager";
-import { InMailInbox } from "@/components/inmail/InMailInbox";
+import { StatusesAccordion } from "@/components/settings/StatusesAccordion";
+import { TasksAccordion } from "@/components/settings/TasksAccordion";
+import { BusinessAccordion } from "@/components/settings/BusinessAccordion";
+import { CalendarAccordion } from "@/components/settings/CalendarAccordion";
+import { AIAccordion } from "@/components/settings/AIAccordion";
+import { QuickRepliesAccordion } from "@/components/settings/QuickRepliesAccordion";
+import { AIApprovalAccordion } from "@/components/settings/AIApprovalAccordion";
+import { NotificationsAccordion } from "@/components/settings/NotificationsAccordion";
+import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
 
 export default function Settings() {
   const { profile, loading, signOut, isAdmin, isSuperAdmin } = useAuth();
@@ -108,30 +106,28 @@ export default function Settings() {
 
           {isSuperAdmin && (
             <TabsContent value="staff" forceMount>
-              <StaffManagement />
+              <StaffAccordion />
             </TabsContent>
           )}
 
           {isSuperAdmin && (
             <TabsContent value="teams" forceMount>
-              <TeamManagement />
+              <TeamsAccordion />
             </TabsContent>
           )}
 
           {isSuperAdmin && (
             <TabsContent value="permissions" forceMount>
-              <PermissionManager />
+              <PermissionsAccordion />
             </TabsContent>
           )}
 
           <TabsContent value="inmail" forceMount>
-            <InMailInbox />
+            <InMailAccordion />
           </TabsContent>
 
-          <TabsContent value="subscription" forceMount className="space-y-6">
-            <UsageDashboard />
-            <SubscriptionSettings />
-            <AutoTopUpSettings />
+          <TabsContent value="subscription" forceMount>
+            <SubscriptionAccordion />
           </TabsContent>
 
           <TabsContent value="channels" forceMount>
@@ -139,41 +135,40 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="statuses" forceMount>
-            <StatusManagement />
+            <StatusesAccordion />
           </TabsContent>
 
           <TabsContent value="tasks" forceMount>
-            <TaskSettings />
+            <TasksAccordion />
           </TabsContent>
 
-          <TabsContent value="business" forceMount className="space-y-4">
-            <BusinessSettings />
-            <NotificationSettings />
+          <TabsContent value="business" forceMount>
+            <BusinessAccordion />
           </TabsContent>
 
           <TabsContent value="calendar" forceMount>
-            <CalendarSettings />
+            <CalendarAccordion />
           </TabsContent>
 
           <TabsContent value="ai" forceMount>
-            <AIAssistantSettings />
+            <AIAccordion />
           </TabsContent>
 
           <TabsContent value="canned" forceMount>
-            <CannedResponses />
+            <QuickRepliesAccordion />
           </TabsContent>
 
           <TabsContent value="ai-approval" forceMount>
-            <AIApprovalQueue />
+            <AIApprovalAccordion />
           </TabsContent>
 
           <TabsContent value="notifications" forceMount>
-            <NotificationSettings />
+            <NotificationsAccordion />
           </TabsContent>
 
           {isSuperAdmin && (
             <TabsContent value="api" forceMount>
-              <ApiAccessManagement />
+              <ApiAccessAccordion />
             </TabsContent>
           )}
         </Tabs>
