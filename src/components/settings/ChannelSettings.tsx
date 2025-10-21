@@ -1,4 +1,5 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WhatsAppAccountManagement } from "./WhatsAppAccountManagement";
 import { WhatsAppTemplateManagement } from "./WhatsAppTemplateManagement";
 import { EmailAccountManagement } from "./EmailAccountManagement";
@@ -8,11 +9,17 @@ import { FacebookAccountManagement } from "./FacebookAccountManagement";
 import { InstagramAccountManagement } from "./InstagramAccountManagement";
 import { TemplateManagement } from "./TemplateManagement";
 import { EmbedTokenManagement } from "./EmbedTokenManagement";
+import { EmbedWidgetCustomization } from "./EmbedWidgetCustomization";
+import { EmbedAISettings } from "./EmbedAISettings";
 import { Globe, MessageSquare, Mail, Phone, Facebook, Instagram, FileText } from "lucide-react";
 
-export const ChannelSettings = () => {
+interface ChannelSettingsProps {
+  businessId?: string;
+}
+
+export const ChannelSettings = ({ businessId }: ChannelSettingsProps) => {
   return (
-    <Accordion type="multiple" defaultValue={["widget", "whatsapp", "email"]} className="w-full space-y-4">
+    <Accordion type="single" collapsible className="w-full space-y-4">
       <AccordionItem value="widget" className="border rounded-lg px-4">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
@@ -24,7 +31,22 @@ export const ChannelSettings = () => {
           <div className="text-sm text-muted-foreground mb-4">
             Embed a live chat widget on your website to communicate with visitors in real-time.
           </div>
-          <EmbedTokenManagement />
+          <Tabs defaultValue="tokens" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="tokens">Embed Tokens</TabsTrigger>
+              <TabsTrigger value="customization">Customization</TabsTrigger>
+              <TabsTrigger value="ai">AI Settings</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tokens" className="space-y-4 pt-4">
+              <EmbedTokenManagement />
+            </TabsContent>
+            <TabsContent value="customization" className="space-y-4 pt-4">
+              {businessId && <EmbedWidgetCustomization businessId={businessId} />}
+            </TabsContent>
+            <TabsContent value="ai" className="space-y-4 pt-4">
+              {businessId && <EmbedAISettings businessId={businessId} />}
+            </TabsContent>
+          </Tabs>
         </AccordionContent>
       </AccordionItem>
 

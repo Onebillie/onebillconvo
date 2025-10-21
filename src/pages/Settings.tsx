@@ -99,35 +99,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="channels" forceMount>
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              <AccordionItem value="channels">
-                <AccordionTrigger>Channel Configuration</AccordionTrigger>
-                <AccordionContent>
-                  <ChannelSettings />
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="tokens">
-                <AccordionTrigger>Widget - Embed Tokens</AccordionTrigger>
-                <AccordionContent>
-                  <EmbedTokenManagement />
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="customization">
-                <AccordionTrigger>Widget - Customization</AccordionTrigger>
-                <AccordionContent>
-                  {currentBusinessId && <EmbedWidgetCustomization businessId={currentBusinessId} />}
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="ai-settings">
-                <AccordionTrigger>Widget - AI Settings</AccordionTrigger>
-                <AccordionContent>
-                  {currentBusinessId && <EmbedAISettings businessId={currentBusinessId} />}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <ChannelSettings businessId={currentBusinessId} />
           </TabsContent>
 
           <TabsContent value="statuses" forceMount>
