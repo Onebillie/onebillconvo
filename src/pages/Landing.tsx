@@ -216,10 +216,10 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
               Start Free
             </Button>
           </div>
-          <div className="bg-card rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
-            <h3 className="font-bold text-xl mb-2 text-card-foreground">Starter</h3>
-            <div className="text-4xl font-extrabold my-3 text-foreground">$29<span className="text-base font-medium">/mo</span></div>
-            <ul className="space-y-2 text-card-foreground text-sm">
+          <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
+            <h3 className="font-bold text-xl mb-2 text-white">Starter</h3>
+            <div className="text-4xl font-extrabold my-3 text-white">$29<span className="text-base font-medium">/mo</span></div>
+            <ul className="space-y-2 text-white text-sm">
               <li>2 team members</li>
               <li>1,000 WhatsApp msgs/mo</li>
               <li>Unlimited receiving</li>
