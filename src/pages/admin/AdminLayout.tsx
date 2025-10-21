@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, DollarSign, Receipt } from "lucide-react";
+import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, DollarSign, Receipt, Building2 } from "lucide-react";
 import { useEffect } from "react";
 
 export default function AdminLayout() {
@@ -21,6 +21,7 @@ export default function AdminLayout() {
 
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/enterprise", label: "Enterprise Accounts", icon: Building2 },
     { path: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
     { path: "/admin/pricing-config", label: "Pricing Config", icon: DollarSign },
     { path: "/admin/payments", label: "Payments", icon: Receipt },

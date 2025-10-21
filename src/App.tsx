@@ -28,6 +28,7 @@ import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PricingConfig from "./pages/admin/PricingConfig";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
+import EnterpriseAccounts from "./pages/admin/EnterpriseAccounts";
 import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
@@ -71,6 +72,7 @@ function AppContent() {
         <Route path="/admin/create-superadmin" element={<CreateSuperAdmin />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="enterprise" element={<EnterpriseAccounts />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
             <Route path="pricing" element={<PricingConfiguration />} />
             <Route path="pricing-config" element={<PricingConfig />} />

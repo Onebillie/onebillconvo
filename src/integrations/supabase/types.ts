@@ -625,15 +625,24 @@ export type Database = {
           cancellation_reason: string | null
           created_at: string | null
           credit_balance: number | null
+          custom_features: Json | null
+          custom_price_monthly: number | null
+          enterprise_notes: string | null
           grace_period_end: string | null
           id: string
+          invoice_email: string | null
+          is_enterprise: boolean | null
           is_frozen: boolean | null
           is_unlimited: boolean | null
+          last_payment_date: string | null
           message_count_current_period: number | null
           monthly_base_fee: number | null
           name: string
+          next_payment_due: string | null
           onboarding_completed: boolean | null
           owner_id: string
+          payment_method: string | null
+          payment_status: string | null
           price_per_message: number | null
           price_per_resolution: number | null
           pricing_model: string | null
@@ -656,15 +665,24 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          custom_features?: Json | null
+          custom_price_monthly?: number | null
+          enterprise_notes?: string | null
           grace_period_end?: string | null
           id?: string
+          invoice_email?: string | null
+          is_enterprise?: boolean | null
           is_frozen?: boolean | null
           is_unlimited?: boolean | null
+          last_payment_date?: string | null
           message_count_current_period?: number | null
           monthly_base_fee?: number | null
           name: string
+          next_payment_due?: string | null
           onboarding_completed?: boolean | null
           owner_id: string
+          payment_method?: string | null
+          payment_status?: string | null
           price_per_message?: number | null
           price_per_resolution?: number | null
           pricing_model?: string | null
@@ -687,15 +705,24 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          custom_features?: Json | null
+          custom_price_monthly?: number | null
+          enterprise_notes?: string | null
           grace_period_end?: string | null
           id?: string
+          invoice_email?: string | null
+          is_enterprise?: boolean | null
           is_frozen?: boolean | null
           is_unlimited?: boolean | null
+          last_payment_date?: string | null
           message_count_current_period?: number | null
           monthly_base_fee?: number | null
           name?: string
+          next_payment_due?: string | null
           onboarding_completed?: boolean | null
           owner_id?: string
+          payment_method?: string | null
+          payment_status?: string | null
           price_per_message?: number | null
           price_per_resolution?: number | null
           pricing_model?: string | null
@@ -1936,6 +1963,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "embed_tokens_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enterprise_invoices: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          notes: string | null
+          paid_date: string | null
+          payment_method: string
+          status: string
+          stripe_invoice_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          business_id: string
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method: string
+          status?: string
+          stripe_invoice_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string
+          status?: string
+          stripe_invoice_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_invoices_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
