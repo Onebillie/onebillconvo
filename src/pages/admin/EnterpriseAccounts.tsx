@@ -59,7 +59,7 @@ export default function EnterpriseAccounts() {
         .from("businesses")
         .select(`
           *,
-          profiles!businesses_owner_id_fkey(email, full_name)
+          profiles!owner_id(email, full_name)
         `)
         .eq("is_enterprise", true)
         .order("created_at", { ascending: false });
