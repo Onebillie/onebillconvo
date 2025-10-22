@@ -19,6 +19,7 @@ import { QuickRepliesAccordion } from "@/components/settings/QuickRepliesAccordi
 import { AIApprovalAccordion } from "@/components/settings/AIApprovalAccordion";
 import { NotificationsAccordion } from "@/components/settings/NotificationsAccordion";
 import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
+import { WebsiteChatWidget } from "@/components/settings/WebsiteChatWidget";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -41,6 +42,7 @@ export default function Settings() {
     { value: "canned", label: "Quick Replies", icon: MessageCircle },
     { value: "ai-approval", label: "AI Approval", icon: Shield },
     { value: "notifications", label: "Notifications", icon: Bell },
+    { value: "widget", label: "Website Chat", icon: MessageSquare },
     ...(isSuperAdmin ? [{ value: "api", label: "API Access", icon: Key }] : []),
   ];
 
@@ -178,6 +180,10 @@ export default function Settings() {
 
           <TabsContent value="notifications" forceMount>
             <NotificationsAccordion />
+          </TabsContent>
+
+          <TabsContent value="widget" forceMount>
+            <WebsiteChatWidget />
           </TabsContent>
 
           {isSuperAdmin && (
