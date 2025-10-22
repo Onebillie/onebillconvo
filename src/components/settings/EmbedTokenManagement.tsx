@@ -430,19 +430,13 @@ ${baseCode}`;
                           variant="ghost"
                           size="sm"
                           onClick={() => toggleTokenVisibility(token.id)}
+                          title="View raw token"
                         >
                           {revealedTokens.has(token.id) ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
                           )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(token.token, "Token")}
-                        >
-                          <Copy className="h-4 w-4" />
                         </Button>
                       </div>
 
@@ -473,12 +467,13 @@ ${baseCode}`;
                         <PlayCircle className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={() => setCodeDialogToken(token)}
-                        title="Get widget code"
+                        title="Get embed code"
                       >
                         <Code className="h-4 w-4" />
+                        <span className="ml-1">Get Embed Code</span>
                       </Button>
                       <Button
                         variant="ghost"
