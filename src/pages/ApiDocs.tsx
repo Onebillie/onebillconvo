@@ -256,7 +256,7 @@ const ApiDocs = () => {
           name: "Send Message",
           method: "POST",
           endpoint: "/send-message",
-          description: "Send a message via WhatsApp or Email",
+          description: "Send a message via WhatsApp, Email, SMS, Facebook Messenger, or Instagram DM. The channel field determines the delivery method.",
           request: `curl -X POST \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -266,12 +266,18 @@ const ApiDocs = () => {
     "content": "Hello from API!",
     "subject": "Optional email subject"
   }' \\
-  ${API_BASE_URL}/send-message`,
+  ${SUPABASE_URL}/api-send-message`,
           response: `{
   "success": true,
   "conversationId": "uuid",
   "message": "Message sent successfully"
 }`,
+          additionalInfo: `Supported channels:
+- "whatsapp" - Requires customer.phone
+- "email" - Requires customer.email (use subject field for email subject)
+- "sms" - Requires customer.phone  
+- "facebook" - Requires customer.facebook_psid
+- "instagram" - Requires customer.instagram_id`,
         },
         {
           name: "Get Messages",
@@ -628,31 +634,42 @@ const ApiDocs = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">Request</h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(endpoint.request, endpoint.endpoint)}
-                        >
-                          {copiedEndpoint === endpoint.endpoint ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
+                    {endpoint.request && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">Request</h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(endpoint.request, endpoint.endpoint)}
+                          >
+                            {copiedEndpoint === endpoint.endpoint ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
+                          <code>{endpoint.request}</code>
+                        </pre>
                       </div>
-                      <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
-                        <code>{endpoint.request}</code>
-                      </pre>
-                    </div>
+                    )}
 
                     {endpoint.response && (
                       <div>
                         <h4 className="font-medium mb-2">Response</h4>
                         <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
                           <code>{endpoint.response}</code>
+                        </pre>
+                      </div>
+                    )}
+
+                    {(endpoint as any).additionalInfo && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-2">Additional Information</h4>
+                        <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {(endpoint as any).additionalInfo}
                         </pre>
                       </div>
                     )}

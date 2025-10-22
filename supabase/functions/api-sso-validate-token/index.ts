@@ -32,7 +32,7 @@ serve(async (req) => {
       .select('*, businesses(id, name, is_frozen), customers(id, name, phone, email)')
       .eq('token', token)
       .gt('expires_at', new Date().toISOString())
-      .single();
+      .maybeSingle();
 
     if (tokenError || !ssoToken) {
       return new Response(

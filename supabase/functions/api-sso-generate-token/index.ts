@@ -30,7 +30,7 @@ serve(async (req) => {
       .select('id, business_id, permissions')
       .eq('key_hash', apiKey)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
     
     if (keyError || !keyData) {
       return new Response(JSON.stringify({ error: 'Invalid API key' }), {
@@ -77,7 +77,7 @@ serve(async (req) => {
         .select('id')
         .eq('id', customer_id)
         .eq('business_id', keyData.business_id)
-        .single();
+        .maybeSingle();
 
       if (customerError || !customer) {
         return new Response(

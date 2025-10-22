@@ -24,7 +24,7 @@ serve(async (req) => {
       .select('*')
       .eq('key_hash', apiKey)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
     
     if (keyError || !keyData) {
       return new Response(JSON.stringify({ error: 'Invalid API key' }), {
@@ -46,9 +46,17 @@ serve(async (req) => {
       .from('customers')
       .select('*')
       .eq('id', customerId)
-      .single();
+      .maybeSingle();
 
-    if (customerError) throw customerError;
+    if (customerError || !customer) {
+      return new Response(
+        JSON.stringify({ error: 'Customer not found' }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     // Find or create conversation
     let { data: conversation, error: convError } = await supabase
@@ -103,8 +111,51 @@ serve(async (req) => {
       });
 
       if (emailError) throw emailError;
+    } else if (channel === 'facebook') {
+      if (!customer.facebook_psid) {
+        throw new Error('Customer has no Facebook Page-scoped ID');
+      }
+
+      const { error: fbError } = await supabase.functions.invoke('facebook-send', {
+        body: {
+          customerId: customer.id,
+          message: content,
+          conversationId: conversation.id,
+        },
+      });
+
+      if (fbError) throw fbError;
+    } else if (channel === 'instagram') {
+      if (!customer.instagram_id) {
+        throw new Error('Customer has no Instagram ID');
+      }
+
+      const { error: igError } = await supabase.functions.invoke('instagram-send', {
+        body: {
+          customerId: customer.id,
+          message: content,
+          conversationId: conversation.id,
+        },
+      });
+
+      if (igError) throw igError;
+    } else if (channel === 'sms') {
+      if (!customer.phone) {
+        throw new Error('Customer has no phone number');
+      }
+
+      const { error: smsError } = await supabase.functions.invoke('sms-send', {
+        body: {
+          to: customer.phone,
+          message: content,
+          conversation_id: conversation.id,
+          customer_id: customer.id,
+        },
+      });
+
+      if (smsError) throw smsError;
     } else {
-      throw new Error('Invalid channel. Use "whatsapp" or "email"');
+      throw new Error('Invalid channel. Supported: whatsapp, email, sms, facebook, instagram');
     }
 
     return new Response(
