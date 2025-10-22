@@ -43,7 +43,6 @@ export default function Settings() {
     { value: "canned", label: "Quick Replies", icon: MessageCircle },
     { value: "ai-approval", label: "AI Approval", icon: Shield },
     { value: "notifications", label: "Notifications", icon: Bell },
-    { value: "widget", label: "Website Chat", icon: MessageSquare },
     { value: "theme", label: "Theme Colors", icon: Palette },
     ...(isSuperAdmin ? [{ value: "api", label: "API Access", icon: Key }] : []),
   ];
@@ -182,10 +181,6 @@ export default function Settings() {
 
           <TabsContent value="notifications" forceMount>
             <NotificationsAccordion />
-          </TabsContent>
-
-          <TabsContent value="widget" forceMount>
-            <WebsiteChatWidget />
           </TabsContent>
 
           <TabsContent value="theme" forceMount>

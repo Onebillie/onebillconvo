@@ -34,18 +34,47 @@ serve(async (req) => {
 
     const { data: siteData, error: siteError } = await supabase
       .from("embed_sites")
-      .select("*, embed_tokens!inner(business_id, is_active, allowed_domains), businesses!inner(id, name, is_frozen)")
+      .select(`
+        *,
+        embed_tokens:embed_token_id (
+          id,
+          business_id,
+          is_active,
+          allowed_domains,
+          businesses:business_id (
+            id,
+            name,
+            is_frozen
+          )
+        )
+      `)
       .eq("site_id", siteId)
-      .single();
+      .maybeSingle();
 
     if (siteError || !siteData) {
       console.error('Site lookup error:', siteError);
-      return new Response(JSON.stringify({ error: "Invalid site ID" }), 
+      return new Response(JSON.stringify({ error: "Invalid site ID", details: siteError?.message }), 
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (siteData.businesses.is_frozen || siteData.embed_tokens.is_active !== true) {
-      return new Response(JSON.stringify({ error: "Service unavailable" }), 
+    if (!siteData.embed_tokens) {
+      console.error('No embed token found for site:', siteId);
+      return new Response(JSON.stringify({ error: "Token not found" }), 
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const business = siteData.embed_tokens.businesses;
+    const token = siteData.embed_tokens;
+
+    if (!business || business.is_frozen) {
+      console.error('Business frozen or not found:', business);
+      return new Response(JSON.stringify({ error: "Service unavailable - account frozen" }), 
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (token.is_active !== true) {
+      console.error('Token not active:', token.id);
+      return new Response(JSON.stringify({ error: "Service unavailable - token inactive" }), 
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -56,27 +85,29 @@ serve(async (req) => {
     const customData = body.custom_data ?? body.customData;
 
     let customerId: string;
+    const businessId = business.id;
+    
     if (email) {
       const { data: existing } = await supabase.from("customers").select("id")
-        .eq("business_id", siteData.businesses.id).eq("email", email).single();
+        .eq("business_id", businessId).eq("email", email).single();
       
       if (existing) {
         customerId = existing.id;
       } else {
         const { data: newCustomer } = await supabase.from("customers")
-          .insert({ business_id: siteData.businesses.id, name: name || "Anonymous", email, phone, source: "embed_widget", custom_data: customData })
+          .insert({ business_id: businessId, name: name || "Anonymous", email, phone, source: "embed_widget", custom_data: customData })
           .select("id").single();
         customerId = newCustomer!.id;
       }
     } else {
       const { data: newCustomer } = await supabase.from("customers")
-        .insert({ business_id: siteData.businesses.id, name: name || "Anonymous User", source: "embed_widget", custom_data: customData })
+        .insert({ business_id: businessId, name: name || "Anonymous User", source: "embed_widget", custom_data: customData })
         .select("id").single();
       customerId = newCustomer!.id;
     }
 
     const { data: activeConv } = await supabase.from("conversations").select("id")
-      .eq("customer_id", customerId).eq("business_id", siteData.businesses.id)
+      .eq("customer_id", customerId).eq("business_id", businessId)
       .is("resolved_at", null).order("created_at", { ascending: false }).limit(1).single();
 
     let conversationId: string;
@@ -84,7 +115,7 @@ serve(async (req) => {
       conversationId = activeConv.id;
     } else {
       const { data: newConv } = await supabase.from("conversations")
-        .insert({ customer_id: customerId, business_id: siteData.businesses.id, channel: "embed", status: "open" })
+        .insert({ customer_id: customerId, business_id: businessId, channel: "embed", status: "open" })
         .select("id").single();
       conversationId = newConv!.id;
     }
@@ -101,8 +132,10 @@ serve(async (req) => {
     const { data: customization } = await supabase
       .from("widget_customization")
       .select("*")
-      .eq("business_id", siteData.businesses.id)
+      .eq("business_id", businessId)
       .single();
+
+    console.log('Auth success:', { customerId, conversationId, businessId, businessName: business.name });
 
     return new Response(JSON.stringify({
       success: true,
@@ -112,7 +145,7 @@ serve(async (req) => {
         conversation_id: conversationId,
         expires_at: expiresAt.toISOString()
       },
-      business_name: siteData.businesses.name,
+      business_name: business.name,
       customization: customization || {
         primary_color: '#6366f1',
         widget_position: 'bottom-right',

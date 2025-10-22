@@ -492,6 +492,80 @@ ${baseCode}`;
         </CardContent>
       </Card>
 
+      {/* Troubleshooting Section */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-lg">Troubleshooting</CardTitle>
+          <CardDescription>
+            Common issues and how to fix them
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted">
+              <span className="font-medium text-sm">Widget not appearing on website?</span>
+              <ChevronDown className="h-4 w-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-2 text-sm">
+              <p><strong>1. Check browser console:</strong> Press F12 to open developer tools and check for errors</p>
+              <p><strong>2. Verify code placement:</strong> Ensure the code is placed before the closing &lt;/body&gt; tag</p>
+              <p><strong>3. Check domain whitelist:</strong> If you set allowed domains, make sure your current domain is included</p>
+              <p><strong>4. Clear cache:</strong> Try clearing your browser cache or opening in incognito/private mode</p>
+              <p><strong>5. Check token status:</strong> Ensure the token shows as "Active" above</p>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted">
+              <span className="font-medium text-sm">Getting 503 or authentication errors?</span>
+              <ChevronDown className="h-4 w-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-2 text-sm">
+              <p><strong>503 Error:</strong> This usually means the backend service is temporarily unavailable. Wait a few moments and try again.</p>
+              <p><strong>Invalid Site ID:</strong> Make sure you're using the latest embed code. Old tokens may have been deleted.</p>
+              <p><strong>Token inactive:</strong> Check if the token is marked as "Active" in the list above. Reactivate if needed.</p>
+              <p><strong>Account frozen:</strong> Verify your subscription is active in the Subscription tab.</p>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted">
+              <span className="font-medium text-sm">Messages not showing in inbox?</span>
+              <ChevronDown className="h-4 w-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-2 text-sm">
+              <p><strong>Check conversation filters:</strong> Go to your inbox and ensure filters aren't hiding new conversations</p>
+              <p><strong>Look for "embed" channel:</strong> Widget messages appear with a "Website" or "Embed" channel badge</p>
+              <p><strong>Refresh manually:</strong> Click the refresh button in your inbox to sync new messages</p>
+              <p><strong>Check customer creation:</strong> Verify that customer records are being created in your Customers list</p>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted">
+              <span className="font-medium text-sm">How to test the widget locally?</span>
+              <ChevronDown className="h-4 w-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-2 text-sm">
+              <p><strong>Option 1:</strong> Leave "Allowed Domains" empty when creating the token (allows all domains including localhost)</p>
+              <p><strong>Option 2:</strong> Add "localhost" to the allowed domains list when creating the token</p>
+              <p><strong>Testing:</strong> Create a simple HTML file, paste the embed code, and open it in your browser</p>
+              <p><strong>Production:</strong> Once tested, update allowed domains to only include your production domain for security</p>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <ExternalLink className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Still need help?</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Check the browser console (F12) for detailed error messages, or contact support with your token ID and site URL.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Dialog open={showNewToken} onOpenChange={setShowNewToken}>
         <DialogContent>
           <DialogHeader>
