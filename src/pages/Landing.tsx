@@ -26,7 +26,8 @@ const Landing = () => {
           <div className="hidden md:flex items-center gap-6">
             <a href="/features" className="text-sm text-foreground hover:opacity-70 transition-opacity">Features</a>
             <a href="#pricing" className="text-sm text-foreground hover:opacity-70 transition-opacity">Pricing</a>
-            <a href="#contact" className="text-sm text-foreground hover:opacity-70 transition-opacity">Contact</a>
+            <a href="/faq" className="text-sm text-foreground hover:opacity-70 transition-opacity">FAQ</a>
+            <a href="/guides" className="text-sm text-foreground hover:opacity-70 transition-opacity">Guides</a>
             <Button 
               onClick={() => navigate(user ? "/dashboard" : "/auth")} 
               className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 text-sm"
@@ -182,10 +183,10 @@ const Landing = () => {
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">All your channels in one place</h2>
         <div className="overflow-hidden mask-marquee">
           <div className="flex gap-3 sm:gap-4 animate-marquee">
-            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
-            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
           </div>

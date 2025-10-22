@@ -417,8 +417,9 @@ const Features = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-11 px-6 text-center text-muted-foreground">
-        © 2025 À La Carte Chat — All rights reserved.
+      <footer className="py-11 px-6 text-center border-t">
+        <p className="text-muted-foreground mb-2">© 2025 À La Carte Chat — All rights reserved.</p>
+        <p className="text-sm text-muted-foreground">À La Carte Chat is a product of À La Carte SaaS</p>
       </footer>
     </div>
   );
