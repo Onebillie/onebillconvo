@@ -1,12 +1,13 @@
-# API Testing Guide
+# À La Carte Chat - Complete API Documentation & Testing Guide
 
-Complete guide for testing all À La Carte Chat API functionality.
+Comprehensive guide for testing all À La Carte Chat API functionality including customer management, messaging across 5 channels, widget embed, and data exports.
 
 ## Prerequisites
 
 1. **Generate API Key**: Go to Settings → API Access and generate an API key
 2. **Get Business ID**: Available in Settings → Business
 3. **Get Customer ID**: Create a customer or get existing ID from the dashboard
+4. **Get Site ID**: For widget embed, generate an embed token in Settings → Website Chat Widget
 
 ## Base URLs
 
@@ -76,6 +77,33 @@ curl -X PUT \
 ```
 
 **Expected Response**: Success message with updated customer
+
+#### Bulk Create/Update Customers
+```bash
+curl -X POST \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customers": [
+      {
+        "name": "Customer 1",
+        "email": "customer1@example.com",
+        "phone": "+1234567890",
+        "notes": "Imported from CRM"
+      },
+      {
+        "name": "Customer 2",
+        "email": "customer2@example.com",
+        "phone": "+1234567891"
+      }
+    ]
+  }' \
+  https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-customers-bulk-create
+```
+
+**Expected Response**: Results summary with created/updated/failed counts
+**Max Batch Size**: 1000 customers per request
+**Use Case**: Import customers from external CRM or database
 
 ### 2. Messaging API
 
@@ -173,7 +201,46 @@ curl -H "x-api-key: YOUR_API_KEY" \
 
 **Expected Response**: Single conversation with full message history
 
-### 4. SSO/Embed API
+### 4. Media & Export API
+
+#### Download Media/Attachments
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-download-media?conversation_id=CONVERSATION_ID"
+```
+
+**Expected Response**: Array of media files with download URLs
+**Query Parameters**:
+- `conversation_id`: Filter by conversation
+- `customer_id`: Filter by customer
+- `from_date`: Start date (ISO format)
+- `to_date`: End date (ISO format)
+
+#### Export Conversation History (JSON)
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-export-conversations?customer_id=CUSTOMER_ID&include_attachments=true"
+```
+
+**Expected Response**: Complete conversation history in JSON format
+**Use Case**: Backup customer conversations, data migration, compliance exports
+
+#### Export Conversation History (CSV)
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-export-conversations?format=csv&from_date=2024-01-01"
+```
+
+**Expected Response**: CSV file download
+**Query Parameters**:
+- `conversation_id`: Export specific conversation
+- `customer_id`: Export all conversations for customer
+- `from_date`: Start date filter
+- `to_date`: End date filter
+- `format`: `json` (default) or `csv`
+- `include_attachments`: `true` to include attachment metadata
+
+### 5. SSO/Embed API
 
 #### Generate SSO Token (Conversation Scope)
 ```bash
@@ -214,7 +281,103 @@ curl -H "x-api-key: YOUR_API_KEY" \
 
 **Expected Response**: Token validation status and metadata
 
-### 5. Templates API
+### 6. Widget Embed API
+
+The widget embed API allows you to add a chat widget to any website. This is different from SSO/iframe embeds - it's a JavaScript widget that sits on top of your website.
+
+#### Generate Widget Embed Token
+
+First, create an embed token in the dashboard (Settings → Website Chat Widget), then use the provided Site ID.
+
+#### Widget JavaScript Integration
+
+Add this code to your website:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Website</title>
+</head>
+<body>
+  <!-- Your website content -->
+  
+  <!-- Add before closing body tag -->
+  <script src="https://jrtlrnfdqfkjlkpfirzr.supabase.co/storage/v1/object/public/alacartechat%20storage/embed-widget.js"></script>
+  <script>
+    AlacarteChatWidget.init({
+      siteId: 'YOUR_SITE_ID_HERE',
+      customer: {
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '+1234567890'
+      },
+      customData: {
+        userId: '12345',
+        plan: 'premium'
+      }
+    });
+  </script>
+</body>
+</html>
+```
+
+**Widget Features**:
+- Automatic customer creation/matching
+- Real-time messaging
+- Unread message badges
+- Mobile responsive
+- Customizable colors, position, and messages
+- AI triage (if enabled)
+
+#### Widget Backend Endpoints
+
+These endpoints are called automatically by the widget JavaScript:
+
+**1. Widget Authentication**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "x-site-id: YOUR_SITE_ID" \
+  -d '{
+    "customer_name": "John Doe",
+    "customer_email": "john@example.com",
+    "customer_phone": "+1234567890",
+    "custom_data": {"userId": "12345"}
+  }' \
+  https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/embed-auth
+```
+
+**Response**: Session token and conversation ID
+
+**2. Widget Messaging**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "x-session-token: SESSION_TOKEN" \
+  -d '{
+    "action": "send_message",
+    "message": "Hello from widget"
+  }' \
+  https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/embed-message
+```
+
+**Response**: Message sent confirmation
+
+**3. AI Triage (Optional)**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "x-session-token: SESSION_TOKEN" \
+  -d '{
+    "message": "I need help with billing"
+  }' \
+  https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/embed-ai-triage
+```
+
+**Response**: AI-generated department routing and first response
+
+### 7. Templates API
 
 #### Get All Templates
 ```bash
@@ -352,19 +515,45 @@ done
 
 ## Integration Testing Checklist
 
+### Core API Functions
 - [ ] API key authentication works
-- [ ] Customer CRUD operations work
+- [ ] Customer CRUD operations work (create, read, update)
+- [ ] Bulk customer import works (up to 1000)
 - [ ] Send message via all 5 channels (WhatsApp, Email, SMS, Facebook, Instagram)
 - [ ] Conversation retrieval works
 - [ ] Template management works
+
+### Data Export & Backup
+- [ ] Media/attachment download API works
+- [ ] Conversation export works (JSON format)
+- [ ] Conversation export works (CSV format)
+- [ ] Date range filtering works correctly
+- [ ] Customer-specific exports work
+
+### SSO & Iframe Embeds
 - [ ] SSO token generation works (both scopes)
 - [ ] SSO token validation works
 - [ ] Conversation embed loads and functions
 - [ ] Inbox embed loads and functions
 - [ ] Custom branding applies to embeds
+- [ ] Token expiry works correctly
+
+### Website Chat Widget
+- [ ] Widget JavaScript loads correctly
+- [ ] Widget authentication creates/matches customers
+- [ ] Widget messaging works in real-time
+- [ ] Widget customization (colors, position) applies
+- [ ] Unread badge shows correctly
+- [ ] Mobile responsive behavior works
+- [ ] AI triage works (if enabled)
+- [ ] Widget messages appear in main dashboard
+
+### Error Handling & Security
 - [ ] Error responses are clear and helpful
 - [ ] Rate limiting works as expected
-- [ ] Messages appear in main dashboard after API send
+- [ ] Invalid API keys are rejected
+- [ ] Missing customer data handled gracefully
+- [ ] Batch size limits enforced
 
 ## Debugging Tips
 
@@ -375,20 +564,98 @@ done
 5. **Monitor Network Tab**: Use browser DevTools to see iframe communication
 6. **Test Expiry**: Verify SSO tokens expire correctly after specified time
 
+## Common Use Cases
+
+### Use Case 1: CRM Integration
+**Scenario**: Import 2000 customers from Salesforce and sync messages
+
+**Steps**:
+1. Export customers from Salesforce
+2. Transform to API format
+3. Use `api-customers-bulk-create` in batches of 1000
+4. Store customer IDs for future message syncing
+5. Use `api-send-message` to send messages
+6. Use `api-conversations` to retrieve message history
+
+### Use Case 2: Customer Portal
+**Scenario**: Let customers view their conversation history on your website
+
+**Steps**:
+1. Generate SSO token with conversation scope using `api-sso-generate-token`
+2. Embed iframe with the token: `https://alacartechat.com/embed/conversation?token=TOKEN`
+3. Customers can view and reply to messages
+4. Messages sync back to your main dashboard
+
+### Use Case 3: Website Chat Widget
+**Scenario**: Add live chat to your website
+
+**Steps**:
+1. Create embed token in dashboard (Settings → Website Chat Widget)
+2. Customize appearance, colors, and messages
+3. Add JavaScript code to your website
+4. Widget automatically creates customer records
+5. Enable AI triage for automatic department routing (optional)
+
+### Use Case 4: Compliance & Backup
+**Scenario**: Export all customer conversations monthly for compliance
+
+**Steps**:
+1. Use `api-export-conversations` with date range
+2. Set `format=json` and `include_attachments=true`
+3. Store exports on your servers
+4. Use `api-download-media` to backup attachments separately
+
 ## Production Readiness
 
 Before going live:
 
+### API Endpoints
 1. ✅ All API endpoints tested and working
 2. ✅ Error handling provides clear messages
 3. ✅ Rate limiting configured appropriately
-4. ✅ SSO tokens expire as expected
-5. ✅ Iframe embeds work across browsers
-6. ✅ Custom branding displays correctly
-7. ✅ All 5 messaging channels functional
-8. ✅ API documentation is complete and accurate
-9. ⚠️ Consider custom domain (api.alacartechat.com)
-10. ⚠️ Set up monitoring and alerting
+4. ✅ Bulk operations tested with real data volumes
+5. ✅ All 5 messaging channels functional
+
+### Widget & Embeds
+6. ✅ Widget JavaScript loads on test website
+7. ✅ Widget works across browsers (Chrome, Firefox, Safari, Edge)
+8. ✅ Widget is mobile responsive
+9. ✅ SSO tokens expire as expected
+10. ✅ Iframe embeds work across browsers
+11. ✅ Custom branding displays correctly
+
+### Data Management
+12. ✅ Export functionality tested
+13. ✅ Media download API works
+14. ✅ Bulk customer import tested with large datasets
+15. ✅ Customer matching logic works (email/phone deduplication)
+
+### Documentation & Monitoring
+16. ✅ API documentation is complete and accurate
+17. ✅ All endpoints have example curl commands
+18. ✅ Error codes documented
+19. ⚠️ Consider custom domain (api.alacartechat.com)
+20. ⚠️ Set up monitoring and alerting
+21. ⚠️ Configure backup schedules for exports
+
+## API Endpoint Summary
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api-customers` | GET | Retrieve customers |
+| `/api-customers-create` | POST | Create single customer |
+| `/api-customers-update` | PUT | Update customer |
+| `/api-customers-bulk-create` | POST | Create/update up to 1000 customers |
+| `/api-send-message` | POST | Send message via any channel |
+| `/api-conversations` | GET | Retrieve conversations |
+| `/api-download-media` | GET | Download attachments |
+| `/api-export-conversations` | GET | Export conversation history |
+| `/api-sso-generate-token` | POST | Generate SSO embed token |
+| `/api-sso-validate-token` | GET | Validate SSO token |
+| `/api-templates` | GET | List message templates |
+| `/embed-auth` | POST | Widget authentication |
+| `/embed-message` | POST | Widget messaging |
+| `/embed-ai-triage` | POST | Widget AI routing |
 
 ## Support
 
@@ -396,4 +663,6 @@ If you encounter issues:
 1. Check edge function logs in Supabase dashboard
 2. Verify your API key is active in Settings
 3. Ensure required customer fields are populated
-4. Contact support with specific error messages
+4. For widget issues, check browser console for JavaScript errors
+5. Test with curl commands before implementing in your application
+6. Contact support with specific error messages and request IDs
