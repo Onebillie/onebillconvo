@@ -296,21 +296,19 @@ const Dashboard = () => {
         )
       `)
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false })
-      .limit(200); // Limit to last 200 messages
+      .order('created_at', { ascending: true }) // Fetch in correct order to avoid reversing
+      .limit(100); // Reduced from 200 for faster loading
 
     if (error) {
       console.error('Error fetching messages:', error);
       return;
     }
 
-    // Transform and reverse to show oldest first
-    const messages = (data || [])
-      .map(msg => ({
-        ...msg,
-        direction: msg.direction as 'inbound' | 'outbound'
-      }))
-      .reverse();
+    // No need to reverse - already in correct order
+    const messages = (data || []).map(msg => ({
+      ...msg,
+      direction: msg.direction as 'inbound' | 'outbound'
+    }));
     
     setMessages(messages);
   }, []);

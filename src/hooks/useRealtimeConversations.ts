@@ -6,13 +6,13 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
   const lastUpdateRef = useRef<number>(0);
   const isSubscribedRef = useRef<boolean>(true);
   
-  // Optimized debounce - reduced frequency from every 1-2s to every 8s
+  // Optimized debounce - immediate updates for better UX
   const debouncedUpdate = useCallback(() => {
     if (!isSubscribedRef.current) return;
     
     const now = Date.now();
-    // Only allow updates every 8 seconds minimum (reduced from 2s)
-    if (now - lastUpdateRef.current < 8000) {
+    // Allow updates every 1 second minimum for responsive UI
+    if (now - lastUpdateRef.current < 1000) {
       return;
     }
     
@@ -25,7 +25,7 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
         lastUpdateRef.current = Date.now();
         onUpdate();
       }
-    }, 3000); // Wait 3s before updating (increased from 1s)
+    }, 500); // Quick 500ms debounce for responsive updates
   }, [onUpdate]);
 
   useEffect(() => {
@@ -39,6 +39,17 @@ export const useRealtimeConversations = (onUpdate: () => void) => {
           event: '*',
           schema: 'public',
           table: 'conversations',
+        },
+        () => {
+          debouncedUpdate();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversation_statuses',
         },
         () => {
           debouncedUpdate();
