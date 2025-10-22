@@ -1,12 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { Menu, X } from "lucide-react";
 const Landing = () => {
   const navigate = useNavigate();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     document.title = "À La Carte Chat — Unified Messaging Platform";
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -16,37 +16,95 @@ const Landing = () => {
   }, []);
   return <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80">
-        <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
-          <div className="font-extrabold tracking-tight text-foreground">À La Carte Chat</div>
-          <a href="/features" className="text-foreground hover:opacity-70 transition-opacity">Features</a>
-          <a href="#pricing" className="text-foreground hover:opacity-70 transition-opacity">Pricing</a>
-          <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity">Contact</a>
-          <div className="flex-1" />
-          <Button onClick={() => navigate(user ? "/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6">
-            {user ? "Dashboard" : "Login"}
-          </Button>
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40">
+        <nav className="max-w-[1200px] mx-auto px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
+          <div className="font-extrabold tracking-tight text-foreground text-sm sm:text-base">
+            À La Carte Chat
+          </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            <a href="/features" className="text-sm text-foreground hover:opacity-70 transition-opacity">Features</a>
+            <a href="#pricing" className="text-sm text-foreground hover:opacity-70 transition-opacity">Pricing</a>
+            <a href="#contact" className="text-sm text-foreground hover:opacity-70 transition-opacity">Contact</a>
+            <Button 
+              onClick={() => navigate(user ? "/dashboard" : "/auth")} 
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 text-sm"
+            >
+              {user ? "Dashboard" : "Login"}
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-foreground"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </nav>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md">
+            <div className="px-4 py-3 flex flex-col gap-3">
+              <a 
+                href="/features" 
+                className="text-foreground hover:opacity-70 transition-opacity py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Features
+              </a>
+              <a 
+                href="#pricing" 
+                className="text-foreground hover:opacity-70 transition-opacity py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Pricing
+              </a>
+              <a 
+                href="#contact" 
+                className="text-foreground hover:opacity-70 transition-opacity py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
+              </a>
+              <Button 
+                onClick={() => {
+                  navigate(user ? "/dashboard" : "/auth");
+                  setMobileMenuOpen(false);
+                }} 
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold mt-2"
+              >
+                {user ? "Dashboard" : "Login"}
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center text-center px-6">
-        <div className="mt-16 max-w-[1100px] relative z-10">
-          <h1 className="text-[clamp(3.2rem,11vw,8rem)] leading-[0.95] font-black tracking-tight uppercase">
+      <section className="relative min-h-screen flex items-center justify-center text-center px-4 sm:px-6 pt-16 sm:pt-0">
+        <div className="mt-8 sm:mt-16 max-w-[1100px] relative z-10">
+          <h1 className="text-[clamp(2rem,10vw,8rem)] leading-[0.95] sm:leading-[0.95] font-black tracking-tight uppercase">
             STOP JUGGLING<br />INBOXES.<br />START CLOSING<br />DEALS.
           </h1>
-          <p className="mt-6 max-w-[760px] mx-auto text-muted-foreground text-lg">An Unified Team Inbox For All Your Communication Channels
-With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
-        </p>
-          <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-7 px-8 py-6 text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
+          <p className="mt-4 sm:mt-6 max-w-[760px] mx-auto text-muted-foreground text-sm sm:text-base md:text-lg px-2">
+            An Unified Team Inbox For All Your Communication Channels With Your Very Own AI ChatBot Ready To Respond When Your Team Can't
+          </p>
+          <Button 
+            onClick={() => navigate(user ? "/dashboard" : "/signup")} 
+            className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg"
+          >
             Try Free For 7 Days!
           </Button>
         </div>
 
         {/* Floating Icons */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none hidden sm:block" aria-hidden="true">
           {/* WhatsApp - top left */}
-          <div className="absolute left-[6%] top-[10%] w-20 h-20 animate-float-a">
+          <div className="absolute left-[6%] top-[10%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-a">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#25D366" />
               <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
@@ -55,7 +113,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* Email - top right */}
-          <div className="absolute right-[8%] top-[14%] w-20 h-20 animate-float-b">
+          <div className="absolute right-[8%] top-[14%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-b">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="6" y="14" width="52" height="36" rx="6" fill="#ffffff" stroke="#e55436" strokeWidth="4" />
               <path d="M8 18l24 18L56 18" fill="none" stroke="#e55436" strokeWidth="4" strokeLinecap="round" />
@@ -63,7 +121,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* WhatsApp alt - bottom left */}
-          <div className="absolute left-[10%] bottom-[16%] w-24 h-24 animate-float-c">
+          <div className="absolute left-[10%] bottom-[16%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-c">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#25D366" />
               <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
@@ -71,7 +129,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* Instagram - bottom right */}
-          <div className="absolute right-[12%] bottom-[12%] w-24 h-24 animate-float-d">
+          <div className="absolute right-[12%] bottom-[12%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-d">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="10" y="10" width="44" height="44" rx="12" fill="#F56040" />
               <circle cx="32" cy="32" r="10" fill="#fff" />
@@ -80,7 +138,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* Facebook - center top */}
-          <div className="absolute left-[50%] top-[22%] w-20 h-20 animate-float-e">
+          <div className="absolute left-[50%] top-[22%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-e">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#1877F2" />
               <path d="M36 22h-3c-2.2 0-3 .9-3 3v3h6l-1 6h-5v12h-6V34h-4v-6h4v-4c0-4.4 2.6-8 8-8h4v6z" fill="#fff" />
@@ -88,7 +146,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* SMS - center bottom */}
-          <div className="absolute right-[44%] bottom-[16%] w-20 h-20 animate-float-f">
+          <div className="absolute right-[44%] bottom-[16%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-f">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="8" y="12" width="48" height="34" rx="8" fill="#00C389" />
               <path d="M22 52l10-6H44" fill="#00C389" />
@@ -99,7 +157,7 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
           </div>
 
           {/* ChatBot */}
-          <div className="absolute left-[18%] top-[24%] w-24 h-24 animate-float-b">
+          <div className="absolute left-[18%] top-[24%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-b">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="10" y="18" width="44" height="30" rx="10" fill="#6C63FF" />
               <circle cx="26" cy="33" r="5" fill="#fff" />
@@ -112,22 +170,22 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
       </section>
 
       {/* Ticker Belt */}
-      <section className="relative h-40 flex items-center overflow-hidden" aria-hidden="true">
+      <section className="relative h-24 sm:h-32 md:h-40 flex items-center overflow-hidden" aria-hidden="true">
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-foreground/8" />
-        <div className="whitespace-nowrap text-[clamp(1.6rem,5vw,2.4rem)] font-extrabold text-foreground/90 animate-scroll">
+        <div className="whitespace-nowrap text-[clamp(1.2rem,4vw,2.4rem)] font-extrabold text-foreground/90 animate-scroll">
           UNIFY • SIMPLIFY • RESPOND FASTER • DELIGHT CUSTOMERS • UNIFY • SIMPLIFY • RESPOND FASTER • DELIGHT CUSTOMERS •
         </div>
       </section>
 
       {/* Channels Marquee */}
-      <section className="bg-card py-20 text-center" id="features">
-        <h2 className="text-4xl font-bold mb-8 text-foreground">All your channels in one place</h2>
+      <section className="bg-card py-12 sm:py-16 md:py-20 text-center px-4" id="features">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">All your channels in one place</h2>
         <div className="overflow-hidden mask-marquee">
-          <div className="flex gap-4 animate-marquee">
-            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={i} className="min-w-[240px] px-6 py-9 rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md">
+          <div className="flex gap-3 sm:gap-4 animate-marquee">
+            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
-            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={`dup-${i}`} className="min-w-[240px] px-6 py-9 rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md">
+            {["WhatsApp Business", "SMS", "Email", "Instagram DMs", "Facebook Messenger", "Website Widget", "Voice & Files", "Team & Tasks", "AI Assistant", "Developer API"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
           </div>
@@ -135,8 +193,8 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 px-6">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           <div className="bg-card rounded-2xl shadow-lg p-6">
             <h3 className="text-lg font-bold mb-2 text-card-foreground">Unified inbox</h3>
             <p className="text-muted-foreground">Every message in one place with assignments, internal notes and collision detection.</p>
@@ -157,31 +215,31 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
       </section>
 
       {/* Metrics */}
-      <section className="bg-background py-20 px-6">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-2xl bg-[#12b886] text-white p-11 text-center">
-            <div className="text-4xl font-bold">1k+</div>
-            <div className="text-sm opacity-95 mt-2">businesses</div>
+      <section className="bg-background py-12 sm:py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="rounded-xl sm:rounded-2xl bg-[#12b886] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">1k+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">businesses</div>
           </div>
-          <div className="rounded-2xl bg-[#4dabf7] text-white p-11 text-center">
-            <div className="text-4xl font-bold">5M+</div>
-            <div className="text-sm opacity-95 mt-2">messages processed</div>
+          <div className="rounded-xl sm:rounded-2xl bg-[#4dabf7] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">5M+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">messages processed</div>
           </div>
-          <div className="rounded-2xl bg-[#ff922b] text-white p-11 text-center">
-            <div className="text-4xl font-bold">24/7</div>
-            <div className="text-sm opacity-95 mt-2">AI assistance</div>
+          <div className="rounded-xl sm:rounded-2xl bg-[#ff922b] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">24/7</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">AI assistance</div>
           </div>
-          <div className="rounded-2xl bg-[#e64980] text-white p-11 text-center">
-            <div className="text-4xl font-bold">200+</div>
-            <div className="text-sm opacity-95 mt-2">countries</div>
+          <div className="rounded-xl sm:rounded-2xl bg-[#e64980] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">200+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">countries</div>
           </div>
         </div>
       </section>
 
       {/* Steps */}
-      <section className="bg-card py-20 px-6 text-center">
-        <h2 className="text-4xl font-bold mb-8 text-foreground">Get started in 5 minutes</h2>
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section className="bg-card py-12 sm:py-16 md:py-20 px-4 sm:px-6 text-center">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">Get started in 5 minutes</h2>
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
           <div className="bg-card rounded-2xl shadow-lg p-6">
             <h4 className="font-bold text-lg mb-2 text-card-foreground">1. Connect channels</h4>
             <p className="text-muted-foreground">WhatsApp, Email, SMS, Instagram and Facebook in minutes.</p>
@@ -198,13 +256,13 @@ With Your Very Own AI ChatBot Ready To Respond When Your Team Cant
       </section>
 
       {/* Pricing */}
-      <section className="bg-background py-24 px-6 text-center" id="pricing">
-        <h2 className="text-4xl font-bold mb-8 text-foreground">Transparent pricing</h2>
-        <p className="text-muted-foreground max-w-3xl mx-auto mb-12">
+      <section className="bg-background py-12 sm:py-16 md:py-24 px-4 sm:px-6 text-center" id="pricing">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 md:mb-8 text-foreground">Transparent pricing</h2>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-10 md:mb-12 px-4">
           Choose a plan that fits your needs. All plans include core features with different usage limits.
         </p>
         
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-12 sm:mb-16">
           <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
             <h3 className="font-bold text-xl mb-2 text-card-foreground">Free</h3>
             <div className="text-4xl font-extrabold my-3 text-foreground">$0</div>
