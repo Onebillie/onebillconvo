@@ -189,6 +189,18 @@ verify_jwt = false
 [functions.embed-message]
 verify_jwt = false
 
+[functions.facebook-webhook]
+verify_jwt = false
+
+[functions.facebook-send]
+verify_jwt = false
+
+[functions.instagram-webhook]
+verify_jwt = false
+
+[functions.instagram-send]
+verify_jwt = false
+
 [functions.confirm-user-email]
 verify_jwt = false
 
