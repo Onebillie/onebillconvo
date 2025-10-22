@@ -3982,6 +3982,77 @@ export type Database = {
           },
         ]
       }
+      user_theme_preferences: {
+        Row: {
+          accent_color: string | null
+          accent_foreground: string | null
+          background_color: string | null
+          border_color: string | null
+          business_id: string
+          card_color: string | null
+          card_foreground: string | null
+          created_at: string | null
+          foreground_color: string | null
+          id: string
+          muted_color: string | null
+          muted_foreground: string | null
+          primary_color: string | null
+          primary_foreground: string | null
+          secondary_color: string | null
+          secondary_foreground: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string | null
+          accent_foreground?: string | null
+          background_color?: string | null
+          border_color?: string | null
+          business_id: string
+          card_color?: string | null
+          card_foreground?: string | null
+          created_at?: string | null
+          foreground_color?: string | null
+          id?: string
+          muted_color?: string | null
+          muted_foreground?: string | null
+          primary_color?: string | null
+          primary_foreground?: string | null
+          secondary_color?: string | null
+          secondary_foreground?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accent_color?: string | null
+          accent_foreground?: string | null
+          background_color?: string | null
+          border_color?: string | null
+          business_id?: string
+          card_color?: string | null
+          card_foreground?: string | null
+          created_at?: string | null
+          foreground_color?: string | null
+          id?: string
+          muted_color?: string | null
+          muted_foreground?: string | null
+          primary_color?: string | null
+          primary_foreground?: string | null
+          secondary_color?: string | null
+          secondary_foreground?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_theme_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -4319,22 +4390,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_embed_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_oauth_states: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_sso_tokens: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_site_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      cleanup_expired_embed_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_oauth_states: { Args: never; Returns: undefined }
+      cleanup_expired_sso_tokens: { Args: never; Returns: undefined }
+      generate_site_id: { Args: never; Returns: string }
       get_or_create_user_business: {
         Args: { _user_id: string }
         Returns: string
@@ -4356,14 +4415,8 @@ export type Database = {
         Args: { business_uuid: string }
         Returns: undefined
       }
-      is_account_frozen: {
-        Args: { _business_id: string }
-        Returns: boolean
-      }
-      is_admin_session: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_account_frozen: { Args: { _business_id: string }; Returns: boolean }
+      is_admin_session: { Args: never; Returns: boolean }
       is_business_owner: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
@@ -4380,18 +4433,9 @@ export type Database = {
         }
         Returns: undefined
       }
-      normalize_phone: {
-        Args: { phone_num: string }
-        Returns: string
-      }
-      sync_all_email_accounts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      trigger_email_sync: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      normalize_phone: { Args: { phone_num: string }; Returns: string }
+      sync_all_email_accounts: { Args: never; Returns: undefined }
+      trigger_email_sync: { Args: never; Returns: undefined }
       user_belongs_to_business: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean

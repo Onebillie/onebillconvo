@@ -42,11 +42,16 @@ import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { PendingPaymentBanner } from "@/components/PendingPaymentBanner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { WhatsAppAnalyticsWidget } from "@/components/dashboard/WhatsAppAnalyticsWidget";
+import { useThemePreferences } from "@/hooks/useThemePreferences";
 
 const Dashboard = () => {
-  const { profile, loading: authLoading, isAdmin, signOut } = useAuth();
+  const { profile, loading: authLoading, isAdmin, signOut, currentBusinessId } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const isMobile = useIsMobile();
+  
+  // Load and apply user's theme preferences
+  useThemePreferences(currentBusinessId);
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
