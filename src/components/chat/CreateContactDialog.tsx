@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -29,9 +30,19 @@ export const CreateContactDialog = ({
     name: "",
     phone: "",
     email: "",
+    whatsappPhone: "",
+    facebookUsername: "",
+    instagramUsername: "",
   });
 
-  const hasUnsavedChanges = open && (formData.name !== "" || formData.phone !== "" || formData.email !== "");
+  const hasUnsavedChanges = open && (
+    formData.name !== "" || 
+    formData.phone !== "" || 
+    formData.email !== "" || 
+    formData.whatsappPhone !== "" || 
+    formData.facebookUsername !== "" || 
+    formData.instagramUsername !== ""
+  );
   
   // Autosave form data
   const { loadSavedData, clearSavedData } = useFormAutosave({
@@ -44,11 +55,14 @@ export const CreateContactDialog = ({
   useEffect(() => {
     if (open) {
       const savedData = loadSavedData();
-      if (savedData && (savedData.name || savedData.phone || savedData.email)) {
+      if (savedData && (savedData.name || savedData.phone || savedData.email || savedData.whatsappPhone || savedData.facebookUsername || savedData.instagramUsername)) {
         setFormData({
           name: savedData.name || "",
           phone: savedData.phone || "",
           email: savedData.email || "",
+          whatsappPhone: savedData.whatsappPhone || "",
+          facebookUsername: savedData.facebookUsername || "",
+          instagramUsername: savedData.instagramUsername || "",
         });
         toast({
           title: "Draft restored",
@@ -94,6 +108,9 @@ export const CreateContactDialog = ({
           name: formData.name,
           phone: formData.phone,
           email: formData.email || null,
+          whatsapp_phone: formData.whatsappPhone || formData.phone,
+          facebook_username: formData.facebookUsername || null,
+          instagram_username: formData.instagramUsername || null,
           business_id: businessUser.business_id,
         })
         .select()
@@ -118,7 +135,7 @@ export const CreateContactDialog = ({
       });
 
       clearSavedData();
-      setFormData({ name: "", phone: "", email: "" });
+      setFormData({ name: "", phone: "", email: "", whatsappPhone: "", facebookUsername: "", instagramUsername: "" });
       setOpen(false);
       onContactCreated();
     } catch (error: any) {
@@ -159,7 +176,7 @@ export const CreateContactDialog = ({
         <DialogHeader>
           <DialogTitle>Create New Contact</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
           <div className="space-y-2">
             <Label htmlFor="name">Name *</Label>
             <Input
@@ -171,33 +188,80 @@ export const CreateContactDialog = ({
               placeholder="Customer name"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone *</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              placeholder="353871234567"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter full number with country code (e.g., 353871234567)
-            </p>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold">Contact Methods</h4>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone / SMS *</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                placeholder="353871234567"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter full number with country code (also used for SMS)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsappPhone">WhatsApp Phone (Optional)</Label>
+              <Input
+                id="whatsappPhone"
+                value={formData.whatsappPhone}
+                onChange={(e) =>
+                  setFormData({ ...formData, whatsappPhone: e.target.value })
+                }
+                placeholder="353871234567"
+              />
+              <p className="text-xs text-muted-foreground">
+                If different from phone number above
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email (Optional)</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="customer@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="facebookUsername">Facebook Username (Optional)</Label>
+              <Input
+                id="facebookUsername"
+                value={formData.facebookUsername}
+                onChange={(e) =>
+                  setFormData({ ...formData, facebookUsername: e.target.value })
+                }
+                placeholder="@username"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instagramUsername">Instagram Username (Optional)</Label>
+              <Input
+                id="instagramUsername"
+                value={formData.instagramUsername}
+                onChange={(e) =>
+                  setFormData({ ...formData, instagramUsername: e.target.value })
+                }
+                placeholder="@username"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              placeholder="customer@example.com"
-            />
-          </div>
-          <Button onClick={handleCreate} disabled={creating} className="w-full">
+
+          <Button onClick={handleCreate} disabled={creating} className="w-full mt-4">
             Create Contact
           </Button>
         </div>

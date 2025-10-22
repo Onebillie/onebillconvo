@@ -8,11 +8,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Customer } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { Lock } from "lucide-react";
 
 interface EditContactDialogProps {
   open: boolean;
@@ -31,11 +34,16 @@ export const EditContactDialog = ({
   const [lastName, setLastName] = useState(customer.last_name || "");
   const [whatsappPhone, setWhatsappPhone] = useState(customer.whatsapp_phone || "");
   const [whatsappName, setWhatsappName] = useState(customer.whatsapp_name || "");
+  const [phone, setPhone] = useState(customer.phone || "");
   const [email, setEmail] = useState(customer.email || "");
   const [alternateEmails, setAlternateEmails] = useState(
     customer.alternate_emails?.join(", ") || ""
   );
   const [address, setAddress] = useState(customer.address || "");
+  const [facebookUsername, setFacebookUsername] = useState(customer.facebook_username || "");
+  const [facebookPsid, setFacebookPsid] = useState(customer.facebook_psid || "");
+  const [instagramUsername, setInstagramUsername] = useState(customer.instagram_username || "");
+  const [instagramId, setInstagramId] = useState(customer.instagram_id || "");
   const [notes, setNotes] = useState(customer.notes || "");
   const [saving, setSaving] = useState(false);
 
@@ -44,9 +52,12 @@ export const EditContactDialog = ({
     lastName,
     whatsappPhone,
     whatsappName,
+    phone,
     email,
     alternateEmails,
     address,
+    facebookUsername,
+    instagramUsername,
     notes,
   };
 
@@ -54,9 +65,12 @@ export const EditContactDialog = ({
     firstName !== (customer.first_name || "") ||
     lastName !== (customer.last_name || "") ||
     whatsappPhone !== (customer.whatsapp_phone || "") ||
+    phone !== (customer.phone || "") ||
     email !== (customer.email || "") ||
     alternateEmails !== (customer.alternate_emails?.join(", ") || "") ||
     address !== (customer.address || "") ||
+    facebookUsername !== (customer.facebook_username || "") ||
+    instagramUsername !== (customer.instagram_username || "") ||
     notes !== (customer.notes || "")
   );
 
@@ -88,14 +102,14 @@ export const EditContactDialog = ({
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        // Treat WhatsApp Phone as the primary phone displayed in lists
-        // Only include `phone` when the input is non-empty to avoid nulling a NOT NULL column
-        phone: whatsappPhone.trim() ? whatsappPhone.trim() : undefined,
+        phone: phone.trim() || whatsappPhone.trim() || undefined,
         whatsapp_phone: whatsappPhone.trim() || null,
         whatsapp_name: whatsappName.trim() || null,
         email: email.trim() || null,
         alternate_emails: emailsArray.length > 0 ? emailsArray : null,
         address: address.trim() || null,
+        facebook_username: facebookUsername.trim() || null,
+        instagram_username: instagramUsername.trim() || null,
         notes: notes.trim() || null,
       };
       console.log("Updating customer:", customer.id, updateData);
@@ -154,92 +168,211 @@ export const EditContactDialog = ({
           <DialogHeader>
             <DialogTitle>Edit Contact</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Name *</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="First name"
-                />
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                  />
+                </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="lastName">Surname</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Last name"
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Customer address"
+                  rows={2}
                 />
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+
+            <Separator />
+
+            {/* WhatsApp */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">WhatsApp</h4>
               <div className="space-y-2">
                 <Label htmlFor="whatsappPhone">WhatsApp Phone</Label>
                 <Input
                   id="whatsappPhone"
                   value={whatsappPhone}
                   onChange={(e) => setWhatsappPhone(e.target.value)}
-                  placeholder="WhatsApp number"
+                  placeholder="353871234567"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Enter full number with country code
+                </p>
               </div>
+
+              {whatsappName && (
+                <div className="space-y-2">
+                  <Label htmlFor="whatsappName" className="flex items-center gap-2">
+                    WhatsApp Name
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="whatsappName"
+                    value={whatsappName}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Automatically populated from WhatsApp
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Phone & SMS */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Phone & SMS</h4>
               <div className="space-y-2">
-                <Label htmlFor="whatsappName">WhatsApp Name</Label>
+                <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                  id="whatsappName"
-                  value={whatsappName}
-                  onChange={(e) => setWhatsappName(e.target.value)}
-                  placeholder="Name on WhatsApp"
-                  disabled
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="353871234567"
                 />
+                <p className="text-xs text-muted-foreground">
+                  For SMS messages (can be different from WhatsApp)
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address (Default for outbound)</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Primary email address"
-              />
+            <Separator />
+
+            {/* Email */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Email</h4>
+              <div className="space-y-2">
+                <Label htmlFor="email">Primary Email (Default for outbound)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="customer@example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="alternateEmails">Associated Email Addresses</Label>
+                <Input
+                  id="alternateEmails"
+                  value={alternateEmails}
+                  onChange={(e) => setAlternateEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separate multiple emails with commas
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="alternateEmails">Associated Email Addresses</Label>
-              <Input
-                id="alternateEmails"
-                value={alternateEmails}
-                onChange={(e) => setAlternateEmails(e.target.value)}
-                placeholder="email1@example.com, email2@example.com"
-              />
-              <p className="text-xs text-muted-foreground">
-                Separate multiple emails with commas
-              </p>
+            <Separator />
+
+            {/* Facebook Messenger */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Facebook Messenger</h4>
+              <div className="space-y-2">
+                <Label htmlFor="facebookUsername">Facebook Username</Label>
+                <Input
+                  id="facebookUsername"
+                  value={facebookUsername}
+                  onChange={(e) => setFacebookUsername(e.target.value)}
+                  placeholder="@username"
+                />
+              </div>
+
+              {facebookPsid && (
+                <div className="space-y-2">
+                  <Label htmlFor="facebookPsid" className="flex items-center gap-2">
+                    Facebook PSID
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="facebookPsid"
+                    value={facebookPsid}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Automatically populated from Facebook
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Physical address"
-              />
+            <Separator />
+
+            {/* Instagram */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Instagram</h4>
+              <div className="space-y-2">
+                <Label htmlFor="instagramUsername">Instagram Username</Label>
+                <Input
+                  id="instagramUsername"
+                  value={instagramUsername}
+                  onChange={(e) => setInstagramUsername(e.target.value)}
+                  placeholder="@username"
+                />
+              </div>
+
+              {instagramId && (
+                <div className="space-y-2">
+                  <Label htmlFor="instagramId" className="flex items-center gap-2">
+                    Instagram ID
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="instagramId"
+                    value={instagramId}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Automatically populated from Instagram
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Input
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Private notes"
-              />
+            <Separator />
+
+            {/* Private Notes */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Private Notes</h4>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Internal notes about this customer"
+                  rows={3}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">
