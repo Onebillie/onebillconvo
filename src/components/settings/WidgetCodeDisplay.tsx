@@ -13,9 +13,12 @@ interface WidgetCodeDisplayProps {
 
 export const WidgetCodeDisplay = ({ siteId, config }: WidgetCodeDisplayProps) => {
   const [copied, setCopied] = useState(false);
+  const missingSiteId = !siteId;
 
   const generateEmbedCode = () => {
-    const WIDGET_URL = window.location.origin;
+    if (missingSiteId) {
+      return '<!-- Error: Missing site_id for this token. Please recreate the embed token. -->';
+    }
     const API_URL = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1';
     
     return `<!-- AlacarteChat Widget -->
@@ -179,6 +182,10 @@ export const WidgetCodeDisplay = ({ siteId, config }: WidgetCodeDisplayProps) =>
   };
 
   const handleCopyCode = async () => {
+    if (missingSiteId) {
+      toast.error('Missing site ID for this token. Please recreate the embed token.');
+      return;
+    }
     const code = generateEmbedCode();
 
     const fallbackCopy = () => {

@@ -51,6 +51,7 @@ export const EmbedWidgetWizard = ({
     custom_css: '',
   });
   const [saving, setSaving] = useState(false);
+  const [siteId, setSiteId] = useState<string | null>(null);
 
   const totalSteps = 6;
 
@@ -60,6 +61,30 @@ export const EmbedWidgetWizard = ({
       setStep(2); // Skip template selection if editing
     }
   }, [existingConfig]);
+
+  // Load the actual site_id for this embed token so the generated code works
+  useEffect(() => {
+    if (!embedTokenId) return;
+    const loadSiteId = async () => {
+      const { data, error } = await supabase
+        .from('embed_tokens')
+        .select('site_id')
+        .eq('id', embedTokenId)
+        .single();
+      if (error) {
+        console.error('Failed to fetch site_id for token:', error);
+        toast.error('Could not load site ID for this token');
+        return;
+      }
+      if (!data?.site_id) {
+        console.error('Token missing site_id');
+        toast.error('This token is missing a site ID. Please recreate the token.');
+      }
+      setSiteId(data?.site_id ?? null);
+    };
+    loadSiteId();
+  }, [embedTokenId]);
+
 
   const handlePresetSelect = (preset: WidgetPreset) => {
     setSelectedPreset(preset.id);
@@ -144,7 +169,7 @@ export const EmbedWidgetWizard = ({
           <WidgetCodeDisplay
             businessId={businessId}
             embedTokenId={embedTokenId}
-            siteId={embedTokenId}
+            siteId={siteId || ''}
             config={config}
           />
         );
