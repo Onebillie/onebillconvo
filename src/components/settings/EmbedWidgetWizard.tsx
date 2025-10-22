@@ -9,6 +9,7 @@ import { WidgetAppearanceEditor } from "./WidgetAppearanceEditor";
 import { WidgetMessagesEditor } from "./WidgetMessagesEditor";
 import { WidgetBehaviorSettings } from "./WidgetBehaviorSettings";
 import { WidgetLivePreview } from "./WidgetLivePreview";
+import { WidgetCodeDisplay } from "./WidgetCodeDisplay";
 import { WidgetPreset, getPresetById } from "@/lib/widgetPresets";
 import { Progress } from "@/components/ui/progress";
 
@@ -51,7 +52,7 @@ export const EmbedWidgetWizard = ({
   });
   const [saving, setSaving] = useState(false);
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   useEffect(() => {
     if (existingConfig) {
@@ -97,7 +98,7 @@ export const EmbedWidgetWizard = ({
 
       toast.success('Widget customization saved!');
       onSave();
-      onClose();
+      setStep(6); // Go to code display step instead of closing
     } catch (error: any) {
       console.error('Error saving widget customization:', error);
       toast.error('Failed to save widget customization');
@@ -138,6 +139,15 @@ export const EmbedWidgetWizard = ({
         );
       case 5:
         return <WidgetLivePreview config={config} />;
+      case 6:
+        return (
+          <WidgetCodeDisplay
+            businessId={businessId}
+            embedTokenId={embedTokenId}
+            siteId={embedTokenId}
+            config={config}
+          />
+        );
       default:
         return null;
     }
@@ -149,6 +159,7 @@ export const EmbedWidgetWizard = ({
     'Configure Messages',
     'Behavior Settings',
     'Preview & Finish',
+    'Get Your Code',
   ];
 
   const canProceed = step === 1 ? selectedPreset !== null : true;
@@ -192,21 +203,25 @@ export const EmbedWidgetWizard = ({
             </Button>
 
             <div className="flex gap-2">
-              {step < totalSteps ? (
+              {step < 5 ? (
                 <Button onClick={handleNext} disabled={!canProceed}>
                   Next
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
-              ) : (
+              ) : step === 5 ? (
                 <Button onClick={handleSave} disabled={saving}>
                   {saving ? (
                     "Saving..."
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Save & Finish
+                      Save & Continue
                     </>
                   )}
+                </Button>
+              ) : (
+                <Button onClick={onClose}>
+                  Done
                 </Button>
               )}
             </div>

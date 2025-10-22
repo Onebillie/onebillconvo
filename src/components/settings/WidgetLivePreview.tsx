@@ -37,7 +37,7 @@ export const WidgetLivePreview = ({ config }: WidgetLivePreviewProps) => {
   const IconComponent = icon?.Icon;
 
   const getPositionStyles = () => {
-    const base = { position: 'fixed' as const };
+    const base = { position: 'absolute' as const };
     switch (config.widget_position) {
       case 'bottom-right':
         return { ...base, bottom: '20px', right: '20px' };
