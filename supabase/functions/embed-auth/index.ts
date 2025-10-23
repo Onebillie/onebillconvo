@@ -103,7 +103,13 @@ serve(async (req) => {
       }
     }
 
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+    
     const name = body.customer_name ?? body.name;
     const email = body.customer_email ?? body.email;
     const phone = body.customer_phone ?? body.phone;
@@ -113,52 +119,96 @@ serve(async (req) => {
     const businessId = business.id;
     
     if (email) {
-      const { data: existing } = await supabase.from("customers").select("id")
-        .eq("business_id", businessId).eq("email", email).single();
+      const { data: existing, error: lookupError } = await supabase.from("customers").select("id")
+        .eq("business_id", businessId).eq("email", email).maybeSingle();
+      
+      if (lookupError) {
+        console.error('Customer lookup error:', lookupError);
+        return new Response(JSON.stringify({ error: "Database error during customer lookup" }), 
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       
       if (existing) {
         customerId = existing.id;
+        console.log('Existing customer found:', customerId);
       } else {
-        const { data: newCustomer } = await supabase.from("customers")
+        const { data: newCustomer, error: insertError } = await supabase.from("customers")
           .insert({ business_id: businessId, name: name || "Anonymous", email, phone, source: "embed_widget", custom_data: customData })
           .select("id").single();
-        customerId = newCustomer!.id;
+        
+        if (insertError || !newCustomer) {
+          console.error('Customer creation error:', insertError);
+          return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        
+        customerId = newCustomer.id;
+        console.log('New customer created:', customerId);
       }
     } else {
-      const { data: newCustomer } = await supabase.from("customers")
+      const { data: newCustomer, error: insertError } = await supabase.from("customers")
         .insert({ business_id: businessId, name: name || "Anonymous User", source: "embed_widget", custom_data: customData })
         .select("id").single();
-      customerId = newCustomer!.id;
+      
+      if (insertError || !newCustomer) {
+        console.error('Anonymous customer creation error:', insertError);
+        return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      
+      customerId = newCustomer.id;
+      console.log('Anonymous customer created:', customerId);
     }
 
-    const { data: activeConv } = await supabase.from("conversations").select("id")
+    const { data: activeConv, error: convLookupError } = await supabase.from("conversations").select("id")
       .eq("customer_id", customerId).eq("business_id", businessId)
-      .is("resolved_at", null).order("created_at", { ascending: false }).limit(1).single();
+      .is("resolved_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+    if (convLookupError) {
+      console.error('Conversation lookup error:', convLookupError);
+      return new Response(JSON.stringify({ error: "Database error during conversation lookup" }), 
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     let conversationId: string;
     if (activeConv) {
       conversationId = activeConv.id;
+      console.log('Active conversation found:', conversationId);
     } else {
-      const { data: newConv } = await supabase.from("conversations")
-        .insert({ customer_id: customerId, business_id: businessId, channel: "embed", status: "open" })
+      const { data: newConv, error: convInsertError } = await supabase.from("conversations")
+        .insert({ customer_id: customerId, business_id: businessId, status: "active" })
         .select("id").single();
-      conversationId = newConv!.id;
+      
+      if (convInsertError || !newConv) {
+        console.error('Conversation creation error:', convInsertError);
+        return new Response(JSON.stringify({ error: "Failed to create conversation", details: convInsertError?.message }), 
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      
+      conversationId = newConv.id;
+      console.log('New conversation created:', conversationId);
     }
 
     const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-    await supabase.from("embed_sessions").insert({
+    const { error: sessionError } = await supabase.from("embed_sessions").insert({
       site_id: siteId, session_token: sessionToken, customer_id: customerId,
       conversation_id: conversationId, expires_at: expiresAt.toISOString()
     });
+
+    if (sessionError) {
+      console.error('Session creation error:', sessionError);
+      return new Response(JSON.stringify({ error: "Failed to create session", details: sessionError.message }), 
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Fetch widget customization
     const { data: customization } = await supabase
       .from("widget_customization")
       .select("*")
       .eq("business_id", businessId)
-      .single();
+      .maybeSingle();
 
     console.log('Auth success:', { customerId, conversationId, businessId, businessName: business.name });
 
