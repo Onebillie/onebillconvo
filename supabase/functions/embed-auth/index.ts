@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,9 +10,13 @@ const corsHeaders = {
 };
 
 function generateSessionToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return encode(array);
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 serve(async (req) => {
@@ -76,6 +79,28 @@ serve(async (req) => {
       console.error('Token not active:', token.id);
       return new Response(JSON.stringify({ error: "Service unavailable - token inactive" }), 
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Enforce domain whitelist
+    const origin = req.headers.get('origin') || '';
+    const allowedDomains = Array.isArray(token.allowed_domains) ? token.allowed_domains : [];
+    
+    if (allowedDomains.length > 0) {
+      const isAllowed = allowedDomains.some((domain: string) => {
+        const normalizedDomain = domain.toLowerCase().trim();
+        const normalizedOrigin = origin.toLowerCase();
+        return normalizedOrigin.includes(normalizedDomain);
+      });
+      
+      if (!isAllowed) {
+        console.warn('Domain not allowed:', { origin, allowed_domains: allowedDomains });
+        return new Response(JSON.stringify({ 
+          error: "Domain not allowed", 
+          origin, 
+          allowed_domains: allowedDomains,
+          message: "Add your domain to Allowed Domains in Settings → Channels → Website Chat Widget"
+        }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     const body = await req.json();
