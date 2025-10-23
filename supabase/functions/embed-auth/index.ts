@@ -133,7 +133,7 @@ serve(async (req) => {
         console.log('Existing customer found:', customerId);
       } else {
         const { data: newCustomer, error: insertError } = await supabase.from("customers")
-          .insert({ business_id: businessId, name: name || "Anonymous", email, phone })
+          .insert({ business_id: businessId, name: name || "Anonymous", email, phone: phone || "unknown" })
           .select("id").single();
 
         if (insertError || !newCustomer) {
@@ -147,7 +147,7 @@ serve(async (req) => {
       }
     } else {
       const { data: newCustomer, error: insertError } = await supabase.from("customers")
-        .insert({ business_id: businessId, name: name || "Anonymous User" })
+        .insert({ business_id: businessId, name: name || "Anonymous User", phone: "unknown" })
         .select("id").single();
 
       if (insertError || !newCustomer) {

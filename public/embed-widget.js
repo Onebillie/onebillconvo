@@ -10,6 +10,8 @@
     unreadCount: 0,
     pollingInterval: null,
     shadowRoot: null,
+    requirePrechat: false,
+    isAuthenticated: false,
 
     init: function(options) {
       if (this.initialized) {
@@ -29,12 +31,22 @@
         customData: options.customData || {}
       };
 
+      // Require pre-chat info if name/email/phone are missing
+      this.requirePrechat = !(this.config.customer && this.config.customer.name && this.config.customer.email && this.config.customer.phone);
+
       this.initialized = true;
-      this.authenticate();
+      if (this.requirePrechat) {
+        // Inject shell UI and show pre-chat form; defer auth until user submits
+        this.injectWidget({}, 'Support');
+        this.showPrechatForm();
+      } else {
+        this.authenticate(this.config.customer);
+      }
     },
 
-    authenticate: async function() {
+    authenticate: async function(customerOverride) {
       try {
+        const customer = customerOverride || this.config.customer || {};
         const response = await fetch(`${this.config.apiUrl}/embed-auth`, {
           method: 'POST',
           headers: {
@@ -42,28 +54,48 @@
             'x-site-id': this.config.siteId
           },
           body: JSON.stringify({
-            customer_name: this.config.customer.name,
-            customer_email: this.config.customer.email,
-            customer_phone: this.config.customer.phone,
+            customer_name: customer.name,
+            customer_email: customer.email,
+            customer_phone: customer.phone,
             custom_data: this.config.customData
           })
         });
 
         if (!response.ok) {
           console.error('[AlacarteChat] Auth failed:', response.status);
-          return;
+          if (!this.shadowRoot) {
+            this.injectWidget({}, 'Support');
+          }
+          this.showPrechatForm();
+          return false;
         }
 
         const data = await response.json();
         this.sessionToken = data.session.session_token;
         this.conversationId = data.session.conversation_id;
         this.customerId = data.session.customer_id;
+        this.isAuthenticated = true;
         
-        this.injectWidget(data.customization || {}, data.business_name || 'Support');
+        if (!this.shadowRoot) {
+          this.injectWidget(data.customization || {}, data.business_name || 'Support');
+        } else {
+          // Enable input now that we're authenticated
+          const sendBtn = this.shadowRoot.getElementById('send-btn');
+          if (sendBtn) sendBtn.disabled = false;
+          const header = this.shadowRoot.querySelector('.chat-header h3');
+          if (header && data.business_name) header.textContent = data.business_name;
+        }
+        
         this.loadMessages();
         this.startPolling();
+        return true;
       } catch (error) {
         console.error('[AlacarteChat] Authentication failed:', error);
+        if (!this.shadowRoot) {
+          this.injectWidget({}, 'Support');
+        }
+        this.showPrechatForm();
+        return false;
       }
     },
 
@@ -312,7 +344,7 @@
             <div class="chat-input-container">
               <div class="chat-input-wrapper">
                 <input type="text" class="chat-input" id="message-input" placeholder="Type a message..." />
-                <button class="send-btn" id="send-btn">Send</button>
+                <button class="send-btn" id="send-btn" ${this.isAuthenticated ? '' : 'disabled'}>Send</button>
               </div>
             </div>
           </div>
@@ -486,6 +518,64 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    },
+
+    showPrechatForm: function() {
+      if (!this.shadowRoot) return;
+
+      // Ensure chat window exists
+      const chatWindow = this.shadowRoot.getElementById('chat-window');
+      if (chatWindow && !chatWindow.classList.contains('open')) {
+        chatWindow.classList.add('open');
+      }
+
+      // Add minimal styles for prechat form
+      const style = document.createElement('style');
+      style.textContent = `
+        .prechat-form { padding: 16px; }
+        .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .prechat-grid .full { grid-column: span 2; }
+        .prechat-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+        .prechat-submit { padding: 10px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+      `;
+      this.shadowRoot.appendChild(style);
+
+      // Hide chat input until authenticated
+      const inputContainer = this.shadowRoot.getElementById('message-input')?.closest('.chat-input-container');
+      if (inputContainer) inputContainer.style.display = 'none';
+
+      const messages = this.shadowRoot.getElementById('chat-messages');
+      if (!messages) return;
+      messages.innerHTML = `
+        <form id="prechat-form" class="prechat-form">
+          <div class="prechat-grid">
+            <input class="prechat-input" id="first-name" placeholder="First name" required />
+            <input class="prechat-input" id="last-name" placeholder="Last name" required />
+            <input class="prechat-input full" id="email" type="email" placeholder="Email address" required />
+            <input class="prechat-input full" id="phone" placeholder="Phone number" required />
+          </div>
+          <div class="prechat-actions">
+            <button type="submit" class="prechat-submit">Start chat</button>
+          </div>
+        </form>
+      `;
+
+      const form = this.shadowRoot.getElementById('prechat-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const first = this.shadowRoot.getElementById('first-name').value.trim();
+        const last = this.shadowRoot.getElementById('last-name').value.trim();
+        const email = this.shadowRoot.getElementById('email').value.trim();
+        const phone = this.shadowRoot.getElementById('phone').value.trim();
+        const ok = await this.authenticate({ name: `${first} ${last}`.trim(), email, phone });
+        if (ok) {
+          // Restore chat UI
+          if (inputContainer) inputContainer.style.display = 'block';
+          messages.innerHTML = '';
+          this.loadMessages();
+        }
+      });
     }
   };
 
