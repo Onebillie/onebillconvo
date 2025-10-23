@@ -138,7 +138,12 @@ export const useThemePreferences = (businessId: string | null) => {
 
       setTheme(defaultTheme);
       applyTheme(defaultTheme);
-      toast.success('Theme reset to default');
+      toast.success('Theme reset to default. Refreshing page...');
+      
+      // Reload page after a short delay to ensure theme fully resets
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
     } catch (error) {
       console.error('Error resetting theme:', error);
       toast.error('Failed to reset theme');
