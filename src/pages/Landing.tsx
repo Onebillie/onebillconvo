@@ -103,9 +103,9 @@ const Landing = () => {
         </div>
 
         {/* Floating Icons */}
-        <div className="absolute inset-0 pointer-events-none hidden sm:block" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           {/* WhatsApp - top left */}
-          <div className="absolute left-[6%] top-[10%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-a">
+          <div className="absolute left-[4%] top-[12%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-a">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#25D366" />
               <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
@@ -114,7 +114,7 @@ const Landing = () => {
           </div>
 
           {/* Email - top right */}
-          <div className="absolute right-[8%] top-[14%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-b">
+          <div className="absolute right-[4%] top-[16%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-b">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="6" y="14" width="52" height="36" rx="6" fill="#ffffff" stroke="#e55436" strokeWidth="4" />
               <path d="M8 18l24 18L56 18" fill="none" stroke="#e55436" strokeWidth="4" strokeLinecap="round" />
@@ -122,7 +122,7 @@ const Landing = () => {
           </div>
 
           {/* WhatsApp alt - bottom left */}
-          <div className="absolute left-[10%] bottom-[16%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-c">
+          <div className="absolute left-[6%] bottom-[18%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-c">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#25D366" />
               <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
@@ -130,7 +130,7 @@ const Landing = () => {
           </div>
 
           {/* Instagram - bottom right */}
-          <div className="absolute right-[12%] bottom-[12%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-d">
+          <div className="absolute right-[6%] bottom-[14%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-d">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="10" y="10" width="44" height="44" rx="12" fill="#F56040" />
               <circle cx="32" cy="32" r="10" fill="#fff" />
@@ -139,7 +139,7 @@ const Landing = () => {
           </div>
 
           {/* Facebook - center top */}
-          <div className="absolute left-[50%] top-[22%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-e">
+          <div className="absolute left-[50%] top-[24%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-e">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <circle cx="32" cy="32" r="30" fill="#1877F2" />
               <path d="M36 22h-3c-2.2 0-3 .9-3 3v3h6l-1 6h-5v12h-6V34h-4v-6h4v-4c0-4.4 2.6-8 8-8h4v6z" fill="#fff" />
@@ -147,7 +147,7 @@ const Landing = () => {
           </div>
 
           {/* SMS - center bottom */}
-          <div className="absolute right-[44%] bottom-[16%] w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 animate-float-f">
+          <div className="absolute right-[44%] bottom-[18%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-f">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="8" y="12" width="48" height="34" rx="8" fill="#00C389" />
               <path d="M22 52l10-6H44" fill="#00C389" />
@@ -158,7 +158,7 @@ const Landing = () => {
           </div>
 
           {/* ChatBot */}
-          <div className="absolute left-[18%] top-[24%] w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 animate-float-b">
+          <div className="absolute left-[14%] top-[26%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-b">
             <svg viewBox="0 0 64 64" className="w-full h-full">
               <rect x="10" y="18" width="44" height="30" rx="10" fill="#6C63FF" />
               <circle cx="26" cy="33" r="5" fill="#fff" />
