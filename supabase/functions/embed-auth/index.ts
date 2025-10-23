@@ -133,9 +133,9 @@ serve(async (req) => {
         console.log('Existing customer found:', customerId);
       } else {
         const { data: newCustomer, error: insertError } = await supabase.from("customers")
-          .insert({ business_id: businessId, name: name || "Anonymous", email, phone, source: "embed_widget", custom_data: customData })
+          .insert({ business_id: businessId, name: name || "Anonymous", email, phone, source: "embed_widget" })
           .select("id").single();
-        
+
         if (insertError || !newCustomer) {
           console.error('Customer creation error:', insertError);
           return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
@@ -147,9 +147,9 @@ serve(async (req) => {
       }
     } else {
       const { data: newCustomer, error: insertError } = await supabase.from("customers")
-        .insert({ business_id: businessId, name: name || "Anonymous User", source: "embed_widget", custom_data: customData })
+        .insert({ business_id: businessId, name: name || "Anonymous User", source: "embed_widget" })
         .select("id").single();
-      
+
       if (insertError || !newCustomer) {
         console.error('Anonymous customer creation error:', insertError);
         return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
