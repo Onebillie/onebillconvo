@@ -59,6 +59,13 @@ export default function WhyUs() {
             <button onClick={() => navigate('/')} className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity">
               À La Carte Chat
             </button>
+            <nav className="hidden md:flex items-center gap-6">
+              <button onClick={() => navigate('/features')} className="text-sm text-foreground hover:text-primary transition-colors">Features</button>
+              <button onClick={() => navigate('/why-us')} className="text-sm text-foreground hover:text-primary transition-colors">Why Us</button>
+              <button onClick={() => navigate('/pricing')} className="text-sm text-foreground hover:text-primary transition-colors">Pricing</button>
+              <button onClick={() => navigate('/faq')} className="text-sm text-foreground hover:text-primary transition-colors">FAQ</button>
+              <button onClick={() => navigate('/guides')} className="text-sm text-foreground hover:text-primary transition-colors">Guides</button>
+            </nav>
             <Button onClick={() => navigate('/signup')} size="sm">
               Start Free Trial
             </Button>
@@ -560,7 +567,12 @@ export default function WhyUs() {
         <footer className="bg-card border-t py-8 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto text-center text-sm text-muted-foreground">
             <p>&copy; 2025 À La Carte Chat. All rights reserved.</p>
-            <div className="flex justify-center gap-6 mt-4">
+            <div className="flex justify-center gap-6 mt-4 flex-wrap">
+              <button onClick={() => navigate('/features')} className="hover:text-primary transition-colors">Features</button>
+              <button onClick={() => navigate('/why-us')} className="hover:text-primary transition-colors">Why Us</button>
+              <button onClick={() => navigate('/pricing')} className="hover:text-primary transition-colors">Pricing</button>
+              <button onClick={() => navigate('/faq')} className="hover:text-primary transition-colors">FAQ</button>
+              <button onClick={() => navigate('/guides')} className="hover:text-primary transition-colors">Guides</button>
               <button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy Policy</button>
               <button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms of Service</button>
               <a href="mailto:support@alacartechat.com" className="hover:text-primary transition-colors">Contact Us</a>

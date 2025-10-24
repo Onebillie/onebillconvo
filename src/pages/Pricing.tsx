@@ -82,21 +82,28 @@ export default function Pricing() {
       />
       
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <header className="border-b border-border bg-background">
+      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/")} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
               <MessageSquare className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-semibold">À La Carte Chat</span>
+          </button>
+          <div className="hidden md:flex items-center gap-6">
+            <button onClick={() => navigate('/features')} className="text-foreground hover:text-primary transition-colors">Features</button>
+            <button onClick={() => navigate('/why-us')} className="text-foreground hover:text-primary transition-colors">Why Us</button>
+            <button onClick={() => navigate('/pricing')} className="text-foreground hover:text-primary transition-colors">Pricing</button>
+            <button onClick={() => navigate('/faq')} className="text-foreground hover:text-primary transition-colors">FAQ</button>
+            <button onClick={() => navigate('/guides')} className="text-foreground hover:text-primary transition-colors">Guides</button>
           </div>
           {user ? (
             <Button onClick={() => navigate("/app/dashboard")} variant="outline">
               Dashboard
             </Button>
           ) : (
-            <Button onClick={() => navigate("/auth")}>
-              Sign In
+            <Button onClick={() => navigate("/signup")}>
+              Start Free Trial
             </Button>
           )}
         </div>

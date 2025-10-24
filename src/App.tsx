@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Features from "./pages/Features";
 import WhyUs from "./pages/WhyUs";
+import FAQ from "./pages/FAQ";
+import Guides from "./pages/Guides";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -50,6 +52,8 @@ function AppContent() {
           <Route path="/landing" element={<Landing />} />
           <Route path="/features" element={<Features />} />
           <Route path="/why-us" element={<WhyUs />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/guides" element={<Guides />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />

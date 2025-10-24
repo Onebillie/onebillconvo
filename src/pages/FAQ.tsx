@@ -403,15 +403,18 @@ const FAQ = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b">
         <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
-          <div className="font-extrabold tracking-tight text-foreground cursor-pointer" onClick={() => navigate("/")}>
+          <button onClick={() => navigate("/")} className="font-extrabold tracking-tight text-foreground cursor-pointer hover:opacity-80 transition-opacity">
             À La Carte Chat
+          </button>
+          <div className="hidden md:flex items-center gap-6">
+            <button onClick={() => navigate('/features')} className="text-foreground hover:text-primary transition-colors">Features</button>
+            <button onClick={() => navigate('/why-us')} className="text-foreground hover:text-primary transition-colors">Why Us</button>
+            <button onClick={() => navigate('/pricing')} className="text-foreground hover:text-primary transition-colors">Pricing</button>
+            <button onClick={() => navigate('/faq')} className="text-foreground hover:text-primary transition-colors">FAQ</button>
+            <button onClick={() => navigate('/guides')} className="text-foreground hover:text-primary transition-colors">Guides</button>
           </div>
-          <a href="/#features" className="text-foreground hover:opacity-70 transition-opacity">Features</a>
-          <a href="/#pricing" className="text-foreground hover:opacity-70 transition-opacity">Pricing</a>
-          <a href="/faq" className="text-foreground hover:opacity-70 transition-opacity">FAQ</a>
-          <a href="/guides" className="text-foreground hover:opacity-70 transition-opacity">Guides</a>
           <div className="flex-1" />
-          <Button onClick={() => navigate(user ? "/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6">
+          <Button onClick={() => navigate(user ? "/app/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6">
             {user ? "Dashboard" : "Login"}
           </Button>
         </nav>
@@ -473,7 +476,16 @@ const FAQ = () => {
 
       {/* Footer */}
       <footer className="py-11 px-6 text-center border-t">
-        <p className="text-muted-foreground mb-2">© 2025 À La Carte Chat — All rights reserved.</p>
+        <p className="text-muted-foreground mb-4">© 2025 À La Carte Chat — All rights reserved.</p>
+        <div className="flex justify-center gap-6 flex-wrap text-sm text-muted-foreground mb-4">
+          <button onClick={() => navigate('/features')} className="hover:text-primary transition-colors">Features</button>
+          <button onClick={() => navigate('/why-us')} className="hover:text-primary transition-colors">Why Us</button>
+          <button onClick={() => navigate('/pricing')} className="hover:text-primary transition-colors">Pricing</button>
+          <button onClick={() => navigate('/faq')} className="hover:text-primary transition-colors">FAQ</button>
+          <button onClick={() => navigate('/guides')} className="hover:text-primary transition-colors">Guides</button>
+          <button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy</button>
+          <button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms</button>
+        </div>
         <p className="text-sm text-muted-foreground">À La Carte Chat is a product of À La Carte SaaS</p>
       </footer>
     </div>
