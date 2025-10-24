@@ -33,6 +33,7 @@ const Landing = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <a href="/features" className="text-sm text-foreground hover:opacity-70 transition-opacity">Features</a>
+            <a href="/why-us" className="text-sm text-foreground hover:opacity-70 transition-opacity">Why Us</a>
             <a href="#pricing" className="text-sm text-foreground hover:opacity-70 transition-opacity">Pricing</a>
             <a href="/faq" className="text-sm text-foreground hover:opacity-70 transition-opacity">FAQ</a>
             <a href="/guides" className="text-sm text-foreground hover:opacity-70 transition-opacity">Guides</a>
@@ -53,11 +54,17 @@ const Landing = () => {
               <a href="/features" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
                 Features
               </a>
+              <a href="/why-us" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                Why Us
+              </a>
               <a href="#pricing" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
                 Pricing
               </a>
-              <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
-                Contact
+              <a href="/faq" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                FAQ
+              </a>
+              <a href="/guides" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                Guides
               </a>
               <Button onClick={() => {
               navigate(user ? "/dashboard" : "/auth");
@@ -195,20 +202,20 @@ const Landing = () => {
       <section className="bg-background py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-[1200px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="rounded-xl sm:rounded-2xl bg-[#12b886] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">1k+</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">businesses</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">66%</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Increase in customer engagement</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#4dabf7] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">5M+</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">messages processed</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">23%</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Productivity gained from unified inbox</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#ff922b] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">24/7</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">AI assistance</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">80%</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Faster first response time</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#e64980] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">200+</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">countries</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">3x</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Higher customer satisfaction scores</div>
           </div>
         </div>
       </section>
