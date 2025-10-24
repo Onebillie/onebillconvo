@@ -3708,6 +3708,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           business_id: string | null
+          completed: boolean | null
           completed_at: string | null
           conversation_id: string | null
           created_at: string | null
@@ -3726,6 +3727,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           business_id?: string | null
+          completed?: boolean | null
           completed_at?: string | null
           conversation_id?: string | null
           created_at?: string | null
@@ -3744,6 +3746,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           business_id?: string | null
+          completed?: boolean | null
           completed_at?: string | null
           conversation_id?: string | null
           created_at?: string | null
@@ -3813,6 +3816,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           role: string | null
+          team_id: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -3824,6 +3828,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           role?: string | null
+          team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -3835,10 +3840,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           role?: string | null
+          team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teams: {
         Row: {
