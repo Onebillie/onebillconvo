@@ -491,7 +491,7 @@ const Landing = () => {
                 </div>
                 
                 <div className="bg-background/50 rounded-lg p-4">
-                  <p className="font-semibold mb-2">Facebook & Instagram (Meta):</p>
+                  <p className="font-semibold mb-2">All prices in USD. Billing is monthly. You can upgrade, downgrade, or cancel anytime. 7-day free trial available on all paid plans. Additional costs from the individual service provider apply. For some integrations you may need to updrade yourservice with the third party provider. </p>
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Currently free for most use cases</li>
                     <li>• Subject to Meta's policies</li>
