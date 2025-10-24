@@ -45,10 +45,66 @@ serve(async (req) => {
 
     if (action === 'send_message') {
       const { message, content } = body;
-      const { data: newMessage } = await supabase.from('messages').insert({
+      const { data: newMessage, error: insertError } = await supabase.from('messages').insert({
         conversation_id: session.conversation_id, customer_id: session.customer_id,
         content: message || content, direction: 'inbound', channel: 'embed', status: 'delivered'
       }).select().single();
+
+      if (insertError) {
+        console.error('Error inserting message:', insertError);
+        return new Response(JSON.stringify({ error: 'Failed to send message' }), 
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      // Get conversation details for notifications
+      const { data: conversation } = await supabase.from('conversations')
+        .select('business_id, assigned_to, customer_id, customers(name)')
+        .eq('id', session.conversation_id)
+        .single();
+
+      if (conversation) {
+        const customerName = conversation.customers?.name || 'Customer';
+        
+        // Get all business users for notification if no specific assignment
+        const targetUsers = conversation.assigned_to 
+          ? [conversation.assigned_to]
+          : await supabase.from('business_users')
+              .select('user_id')
+              .eq('business_id', conversation.business_id)
+              .then(({ data }) => data?.map(u => u.user_id) || []);
+
+        // Send notifications to each target user
+        for (const userId of Array.isArray(targetUsers) ? targetUsers : [targetUsers]) {
+          // Create in-app notification
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            type: 'message',
+            title: `New message from ${customerName}`,
+            message: message || content,
+            link_url: `/app/dashboard?conversation=${session.conversation_id}`,
+            priority: 5,
+            related_conversation_id: session.conversation_id
+          });
+
+          // Send push notification
+          try {
+            await supabase.functions.invoke('send-push-notification', {
+              body: {
+                userId,
+                title: `💬 ${customerName}`,
+                body: message || content,
+                data: {
+                  type: 'embed_message',
+                  conversationId: session.conversation_id,
+                  url: `/app/dashboard?conversation=${session.conversation_id}`
+                }
+              }
+            });
+          } catch (error) {
+            console.error('Failed to send push notification:', error);
+          }
+        }
+      }
       
       return new Response(JSON.stringify({ success: true, message: newMessage }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
