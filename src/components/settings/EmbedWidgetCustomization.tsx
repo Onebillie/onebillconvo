@@ -13,17 +13,12 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [customization, setCustomization] = useState({
-    chat_icon_type: 'default',
     primary_color: '#6366f1',
     secondary_color: '#8b5cf6',
-    background_color: '#ffffff',
     text_color: '#000000',
-    font_family: 'Inter, sans-serif',
-    border_radius: '12',
     widget_position: 'bottom-right',
     greeting_message: 'Hello! How can we help you today?',
     offline_message: "We're currently offline. Leave a message!",
-    logo_url: '',
     custom_css: ''
   });
 
@@ -36,21 +31,40 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
       .from('embed_customizations')
       .select('*')
       .eq('business_id', businessId)
-      .single();
+      .maybeSingle();
     
-    if (data) setCustomization(data);
+    if (data) {
+      setCustomization({
+        primary_color: data.primary_color || '#6366f1',
+        secondary_color: data.secondary_color || '#8b5cf6',
+        text_color: data.text_color || '#000000',
+        widget_position: data.widget_position || 'bottom-right',
+        greeting_message: data.greeting_message || 'Hello! How can we help you today?',
+        offline_message: data.offline_message || "We're currently offline. Leave a message!",
+        custom_css: data.custom_css || ''
+      });
+    }
   };
 
   const handleSave = async () => {
     setLoading(true);
     const { error } = await supabase
       .from('embed_customizations')
-      .upsert({ ...customization, business_id: businessId });
+      .upsert({ 
+        business_id: businessId,
+        primary_color: customization.primary_color,
+        secondary_color: customization.secondary_color,
+        text_color: customization.text_color,
+        widget_position: customization.widget_position,
+        greeting_message: customization.greeting_message,
+        offline_message: customization.offline_message,
+        custom_css: customization.custom_css
+      });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "Widget customization saved" });
+      toast({ title: "Success", description: "Widget customization saved and applied" });
     }
     setLoading(false);
   };
@@ -78,21 +92,9 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
           </div>
 
           <div>
-            <Label>Background Color</Label>
-            <Input type="color" value={customization.background_color} 
-              onChange={(e) => setCustomization({...customization, background_color: e.target.value})} />
-          </div>
-
-          <div>
             <Label>Text Color</Label>
             <Input type="color" value={customization.text_color} 
               onChange={(e) => setCustomization({...customization, text_color: e.target.value})} />
-          </div>
-
-          <div>
-            <Label>Border Radius (px)</Label>
-            <Input type="number" value={customization.border_radius} 
-              onChange={(e) => setCustomization({...customization, border_radius: e.target.value})} />
           </div>
           
           <div>
@@ -107,13 +109,6 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
                 <SelectItem value="top-left">Top Left</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div>
-            <Label>Logo URL (Optional)</Label>
-            <Input value={customization.logo_url} 
-              onChange={(e) => setCustomization({...customization, logo_url: e.target.value})} 
-              placeholder="https://example.com/logo.png" />
           </div>
         </TabsContent>
 

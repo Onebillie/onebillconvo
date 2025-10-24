@@ -203,9 +203,9 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch widget customization
+    // Fetch widget customization from embed_customizations table
     const { data: customization } = await supabase
-      .from("widget_customization")
+      .from("embed_customizations")
       .select("*")
       .eq("business_id", businessId)
       .maybeSingle();
