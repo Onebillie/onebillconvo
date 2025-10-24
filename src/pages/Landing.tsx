@@ -7,40 +7,20 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <>
-      <SEOHead 
-        title="À La Carte Chat - Unified Inbox for Business Messaging"
-        description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide."
-        keywords={[
-          'unified inbox',
-          'business messaging platform',
-          'WhatsApp Business API',
-          'multi-channel messaging',
-          'customer service software',
-          'AI chatbot',
-          'email integration',
-          'SMS management',
-          'Instagram DM',
-          'Facebook Messenger',
-          'unified communications',
-          'omnichannel support',
-        ]}
-        canonical="/"
-      />
+  return <>
+      <SEOHead title="À La Carte Chat - Unified Inbox for Business Messaging" description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide." keywords={['unified inbox', 'business messaging platform', 'WhatsApp Business API', 'multi-channel messaging', 'customer service software', 'AI chatbot', 'email integration', 'SMS management', 'Instagram DM', 'Facebook Messenger', 'unified communications', 'omnichannel support']} canonical="/" />
       <StructuredData type="Organization" />
       <StructuredData type="SoftwareApplication" />
-      <StructuredData 
-        type="BreadcrumbList" 
-        data={{
-          items: [
-            { name: 'Home', url: '/' }
-          ]
-        }} 
-      />
+      <StructuredData type="BreadcrumbList" data={{
+      items: [{
+        name: 'Home',
+        url: '/'
+      }]
+    }} />
       
       <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
@@ -56,61 +36,37 @@ const Landing = () => {
             <a href="#pricing" className="text-sm text-foreground hover:opacity-70 transition-opacity">Pricing</a>
             <a href="/faq" className="text-sm text-foreground hover:opacity-70 transition-opacity">FAQ</a>
             <a href="/guides" className="text-sm text-foreground hover:opacity-70 transition-opacity">Guides</a>
-            <Button 
-              onClick={() => navigate(user ? "/dashboard" : "/auth")} 
-              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 text-sm"
-            >
+            <Button onClick={() => navigate(user ? "/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 text-sm">
               {user ? "Dashboard" : "Login"}
             </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-foreground"
-            aria-label="Toggle menu"
-          >
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-foreground" aria-label="Toggle menu">
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </nav>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md">
+        {mobileMenuOpen && <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md">
             <div className="px-4 py-3 flex flex-col gap-3">
-              <a 
-                href="/features" 
-                className="text-foreground hover:opacity-70 transition-opacity py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <a href="/features" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
                 Features
               </a>
-              <a 
-                href="#pricing" 
-                className="text-foreground hover:opacity-70 transition-opacity py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <a href="#pricing" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
                 Pricing
               </a>
-              <a 
-                href="#contact" 
-                className="text-foreground hover:opacity-70 transition-opacity py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
                 Contact
               </a>
-              <Button 
-                onClick={() => {
-                  navigate(user ? "/dashboard" : "/auth");
-                  setMobileMenuOpen(false);
-                }} 
-                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold mt-2"
-              >
+              <Button onClick={() => {
+              navigate(user ? "/dashboard" : "/auth");
+              setMobileMenuOpen(false);
+            }} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold mt-2">
                 {user ? "Dashboard" : "Login"}
               </Button>
             </div>
-          </div>
-        )}
+          </div>}
       </header>
 
       {/* Hero Section */}
@@ -119,13 +75,10 @@ const Landing = () => {
           <h1 className="text-[clamp(2rem,10vw,8rem)] leading-[0.95] sm:leading-[0.95] font-black tracking-tight uppercase">
             STOP JUGGLING<br />INBOXES.<br />START CLOSING<br />DEALS.
           </h1>
-          <p className="mt-4 sm:mt-6 max-w-[760px] mx-auto text-muted-foreground text-sm sm:text-base md:text-lg px-2">
+          <p className="mt-4 sm:mt-6 max-w-[760px] mx-auto text-muted-foreground text-sm sm:text-base px-2 md:text-2xl">
             An Unified Team Inbox For All Your Communication Channels With Your Very Own AI ChatBot Ready To Respond When Your Team Can't
           </p>
-          <Button 
-            onClick={() => navigate(user ? "/dashboard" : "/signup")} 
-            className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg"
-          >
+          <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
             Try Free For 7 Days!
           </Button>
         </div>
@@ -199,22 +152,17 @@ const Landing = () => {
       </section>
 
       {/* Ticker Belt */}
-      <section className="relative h-24 sm:h-32 md:h-40 flex items-center overflow-hidden" aria-hidden="true">
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-foreground/8" />
-        <div className="whitespace-nowrap text-[clamp(1.2rem,4vw,2.4rem)] font-extrabold text-foreground/90 animate-scroll">
-          UNIFY • SIMPLIFY • RESPOND FASTER • DELIGHT CUSTOMERS • UNIFY • SIMPLIFY • RESPOND FASTER • DELIGHT CUSTOMERS •
-        </div>
-      </section>
+      
 
       {/* Channels Marquee */}
       <section className="bg-card py-12 sm:py-16 md:py-20 text-center px-4" id="features">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">All your channels in one place</h2>
         <div className="overflow-hidden mask-marquee">
           <div className="flex gap-3 sm:gap-4 animate-marquee">
-            {["Email", "Instagram DMs", "Facebook Messenger", "WhatsApp business", "In-App Support", "Website Chatbot", "AI Powered Chat", "Team In-Mail", "Task Management"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
-            {["Email", "Instagram DMs", "Facebook Messenger", "WhatsApp business", "In-App Support", "Website Chatbot", "AI Powered Chat", "Team In-Mail", "Task Management"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
           </div>
@@ -616,7 +564,6 @@ const Landing = () => {
         © 2025 À La Carte Chat — All rights reserved.
       </footer>
     </div>
-    </>
-  );
+    </>;
 };
 export default Landing;
