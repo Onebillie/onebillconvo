@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { MessageSquare } from "lucide-react";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { PublicHeader } from "@/components/PublicHeader";
 
 const FAQ = () => {
   const navigate = useNavigate();
@@ -400,25 +401,7 @@ const FAQ = () => {
       />
       
       <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b">
-        <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
-          <button onClick={() => navigate("/")} className="font-extrabold tracking-tight text-foreground cursor-pointer hover:opacity-80 transition-opacity">
-            À La Carte Chat
-          </button>
-          <div className="hidden md:flex items-center gap-6">
-            <button onClick={() => navigate('/features')} className="text-foreground hover:text-primary transition-colors">Features</button>
-            <button onClick={() => navigate('/why-us')} className="text-foreground hover:text-primary transition-colors">Why Us</button>
-            <button onClick={() => navigate('/pricing')} className="text-foreground hover:text-primary transition-colors">Pricing</button>
-            <button onClick={() => navigate('/faq')} className="text-foreground hover:text-primary transition-colors">FAQ</button>
-            <button onClick={() => navigate('/guides')} className="text-foreground hover:text-primary transition-colors">Guides</button>
-          </div>
-          <div className="flex-1" />
-          <Button onClick={() => navigate(user ? "/app/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6">
-            {user ? "Dashboard" : "Login"}
-          </Button>
-        </nav>
-      </header>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="pt-32 pb-12 px-6 text-center bg-gradient-to-b from-background to-card">

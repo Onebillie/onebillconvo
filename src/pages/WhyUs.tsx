@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { PublicHeader } from "@/components/PublicHeader";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -53,24 +55,7 @@ export default function WhyUs() {
       />
 
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity">
-              À La Carte Chat
-            </button>
-            <nav className="hidden md:flex items-center gap-6">
-              <button onClick={() => navigate('/features')} className="text-sm text-foreground hover:text-primary transition-colors">Features</button>
-              <button onClick={() => navigate('/why-us')} className="text-sm text-foreground hover:text-primary transition-colors">Why Us</button>
-              <button onClick={() => navigate('/pricing')} className="text-sm text-foreground hover:text-primary transition-colors">Pricing</button>
-              <button onClick={() => navigate('/faq')} className="text-sm text-foreground hover:text-primary transition-colors">FAQ</button>
-              <button onClick={() => navigate('/guides')} className="text-sm text-foreground hover:text-primary transition-colors">Guides</button>
-            </nav>
-            <Button onClick={() => navigate('/signup')} size="sm">
-              Start Free Trial
-            </Button>
-          </div>
-        </header>
+        <PublicHeader />
 
         {/* Hero Section */}
         <section className="py-16 sm:py-24 px-4 sm:px-6 text-center bg-gradient-to-b from-primary/5 to-background">
