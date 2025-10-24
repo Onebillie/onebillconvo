@@ -32,6 +32,7 @@ import PricingConfiguration from "./pages/admin/PricingConfiguration";
 import PricingConfig from "./pages/admin/PricingConfig";
 import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
+import PaymentTesting from "./pages/admin/PaymentTesting";
 import EnterpriseAccounts from "./pages/admin/EnterpriseAccounts";
 import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
@@ -88,6 +89,7 @@ function AppContent() {
             <Route path="users" element={<UsersManagement />} />
             <Route path="system" element={<SystemHealth />} />
             <Route path="testing" element={<SystemTesting />} />
+            <Route path="payment-testing" element={<PaymentTesting />} />
           </Route>
           
           {/* Embed Routes - No Auth Required */}

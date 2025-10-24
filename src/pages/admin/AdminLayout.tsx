@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, DollarSign, Receipt, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, Activity, Settings, ArrowLeft, CreditCard, DollarSign, Receipt, Building2, TestTube } from "lucide-react";
 import { useEffect } from "react";
 
 export default function AdminLayout() {
@@ -27,7 +27,8 @@ export default function AdminLayout() {
     { path: "/admin/payments", label: "Payments", icon: Receipt },
     { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/system", label: "System Health", icon: Activity },
-    { path: "/admin/testing", label: "System Testing", icon: Activity },
+    { path: "/admin/testing", label: "System Testing", icon: TestTube },
+    { path: "/admin/payment-testing", label: "Payment Testing", icon: CreditCard },
     { path: "/app/settings", label: "Settings", icon: Settings },
   ];
 
