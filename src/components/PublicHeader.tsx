@@ -80,7 +80,7 @@ export const PublicHeader = () => {
             </div>
 
             {/* Desktop CTA / Profile */}
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-3">
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -108,13 +108,23 @@ export const PublicHeader = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button 
-                  onClick={() => navigate("/signup")}
-                  className="rounded-full"
-                  size="sm"
-                >
-                  Start Free Trial
-                </Button>
+                <>
+                  <Button 
+                    onClick={() => navigate("/auth")}
+                    variant="ghost"
+                    className="rounded-full"
+                    size="sm"
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    onClick={() => navigate("/signup")}
+                    className="rounded-full"
+                    size="sm"
+                  >
+                    Start Free Trial
+                  </Button>
+                </>
               )}
             </div>
 
@@ -187,12 +197,21 @@ export const PublicHeader = () => {
                 </Button>
               </>
             ) : (
-              <Button 
-                onClick={() => { navigate("/signup"); setMobileMenuOpen(false); }} 
-                className="rounded-full mt-2 w-full"
-              >
-                Start Free Trial
-              </Button>
+              <div className="flex flex-col gap-2 mt-2">
+                <Button 
+                  onClick={() => { navigate("/auth"); setMobileMenuOpen(false); }} 
+                  variant="outline"
+                  className="rounded-full w-full"
+                >
+                  Login
+                </Button>
+                <Button 
+                  onClick={() => { navigate("/signup"); setMobileMenuOpen(false); }} 
+                  className="rounded-full w-full"
+                >
+                  Start Free Trial
+                </Button>
+              </div>
             )}
           </div>
         </div>
