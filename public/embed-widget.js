@@ -568,7 +568,13 @@
 
       const messages = this.shadowRoot.getElementById('chat-messages');
       if (!messages) return;
+      
+      // Preserve greeting message if it exists
+      const greetingMsg = messages.querySelector('[data-greeting="true"]');
+      const greetingHTML = greetingMsg ? greetingMsg.outerHTML : '';
+      
       messages.innerHTML = `
+        ${greetingHTML}
         <form id="prechat-form" class="prechat-form">
           <div class="prechat-grid">
             <input class="prechat-input" id="first-name" placeholder="First name" required />
@@ -593,7 +599,9 @@
         if (ok) {
           // Restore chat UI
           if (inputContainer) inputContainer.style.display = 'block';
-          messages.innerHTML = '';
+          // Remove only the form, keep greeting message
+          const form = messages.querySelector('#prechat-form');
+          if (form) form.remove();
           this.loadMessages();
         }
       });
