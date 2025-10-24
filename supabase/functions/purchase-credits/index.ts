@@ -41,6 +41,10 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // Calculate expiry date (1 year from now)
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    
     // Create checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -58,6 +62,7 @@ serve(async (req) => {
         user_id: user.id,
         credits: credits.toString(),
         type: "credit_purchase",
+        expiry_date: expiryDate.toISOString(),
       },
     });
 

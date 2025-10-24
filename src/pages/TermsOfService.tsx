@@ -79,7 +79,7 @@ export default function TermsOfService() {
 
             <h3 className="text-lg font-semibold mb-2 mt-4">4.4 Credit System</h3>
             <p className="mb-4">
-              Credits can be purchased in bundles and used for AI responses or additional message capacity. Credits are non-refundable and do not expire.
+              Credits can be purchased in bundles and used for AI responses or additional message capacity. <strong>Credits expire 1 year from the purchase date and are non-refundable.</strong> You will receive email notifications when credits are approaching expiry (30, 14, 7, 3, and 1 days before expiration). Expired credits are automatically removed and cannot be recovered.
             </p>
           </section>
 

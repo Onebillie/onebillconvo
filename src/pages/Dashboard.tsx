@@ -40,6 +40,7 @@ import { AIToggle } from "@/components/chat/AIToggle";
 import { AIResponseSuggestions } from "@/components/chat/AIResponseSuggestions";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { PendingPaymentBanner } from "@/components/PendingPaymentBanner";
+import { CreditExpiryBanner } from "@/components/CreditExpiryBanner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { WhatsAppAnalyticsWidget } from "@/components/dashboard/WhatsAppAnalyticsWidget";
 import { useThemePreferences } from "@/hooks/useThemePreferences";
@@ -858,6 +859,7 @@ const Dashboard = () => {
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="flex-shrink-0">
                   <PendingPaymentBanner />
+                  <CreditExpiryBanner />
                 </div>
                 {renderChatArea()}
               </div>
@@ -886,6 +888,7 @@ const Dashboard = () => {
               <div className="h-full flex flex-col overflow-hidden">
                 <div className="p-3 border-b border-border">
                   <PendingPaymentBanner />
+                  <CreditExpiryBanner />
                 </div>
                 {renderChatArea()}
               </div>

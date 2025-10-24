@@ -80,7 +80,7 @@ export function CreditBundleDialog({ open, onOpenChange }: CreditBundleDialogPro
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Credits never expire and can be used for WhatsApp messages
+          Credits expire 1 year from purchase date. Non-refundable.
         </p>
       </DialogContent>
     </Dialog>

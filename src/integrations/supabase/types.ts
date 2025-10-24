@@ -936,6 +936,7 @@ export type Database = {
           cancellation_reason: string | null
           created_at: string | null
           credit_balance: number | null
+          credit_expiry_date: string | null
           custom_features: Json | null
           custom_price_monthly: number | null
           enterprise_notes: string | null
@@ -976,6 +977,7 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          credit_expiry_date?: string | null
           custom_features?: Json | null
           custom_price_monthly?: number | null
           enterprise_notes?: string | null
@@ -1016,6 +1018,7 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string | null
           credit_balance?: number | null
+          credit_expiry_date?: string | null
           custom_features?: Json | null
           custom_price_monthly?: number | null
           enterprise_notes?: string | null
@@ -1655,6 +1658,44 @@ export type Database = {
           stripe_price_id?: string | null
         }
         Relationships: []
+      }
+      credit_expiry_warnings: {
+        Row: {
+          business_id: string
+          created_at: string
+          credits_amount: number
+          expiry_date: string
+          id: string
+          sent_at: string
+          warning_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          credits_amount: number
+          expiry_date: string
+          id?: string
+          sent_at?: string
+          warning_type: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          credits_amount?: number
+          expiry_date?: string
+          id?: string
+          sent_at?: string
+          warning_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_expiry_warnings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       credit_warnings: {
         Row: {

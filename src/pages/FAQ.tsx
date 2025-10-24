@@ -79,7 +79,7 @@ const FAQ = () => {
         },
         {
           question: "Can I purchase additional message credits?",
-          answer: "Yes! We offer credit bundles: Small (500 messages - $10), Medium (1,500 messages - $25), and Large (5,000 messages - $75). Credits never expire and can be used across any channel."
+          answer: "Yes! We offer credit bundles: Small (500 messages - $10), Medium (1,500 messages - $25), and Large (5,000 messages - $75). Credits expire 1 year from purchase date and are non-refundable."
         },
         {
           question: "Do you offer refunds?",

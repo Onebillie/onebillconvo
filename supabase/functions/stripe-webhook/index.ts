@@ -320,6 +320,10 @@ serve(async (req) => {
           });
           
           if (businessId) {
+            // Calculate expiry date (1 year from now)
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            
             // Add credits to business
             const { data: business } = await supabaseClient
               .from("businesses")
@@ -332,14 +336,40 @@ serve(async (req) => {
               
               await supabaseClient
                 .from("businesses")
-                .update({ credit_balance: newCredits })
+                .update({ 
+                  credit_balance: newCredits,
+                  credit_expiry_date: expiryDate.toISOString()
+                })
                 .eq("id", businessId);
               
               logStep("Credits added successfully", { 
                 previousCredits: business.credit_balance,
                 addedCredits: creditsToAdd,
-                newCredits 
+                newCredits,
+                expiryDate: expiryDate.toISOString()
               });
+              
+              // Send email notification about credit purchase
+              const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+              const email = (customer as Stripe.Customer).email;
+              
+              if (email) {
+                await supabaseClient.functions.invoke('send-transactional-email', {
+                  body: {
+                    to: email,
+                    subject: `${creditsToAdd.toLocaleString()} Credits Added to Your Account`,
+                    html: `
+                      <h2>Credits Added Successfully!</h2>
+                      <p>Hi there,</p>
+                      <p><strong>${creditsToAdd.toLocaleString()} message credits</strong> have been added to your account.</p>
+                      <p><strong>Expiry Date:</strong> ${expiryDate.toLocaleDateString()} (1 year from now)</p>
+                      <p>You will receive email reminders as your credits approach expiration.</p>
+                      <p><a href="https://alacartechat.com/app/dashboard" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px;">View Dashboard</a></p>
+                      <p><small>Credits expire 1 year from purchase date and are non-refundable.</small></p>
+                    `
+                  }
+                });
+              }
             }
           }
         }
