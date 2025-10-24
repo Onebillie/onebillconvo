@@ -336,7 +336,7 @@
             </div>
             <div class="chat-messages" id="chat-messages">
               ${customization.greeting_message ? `
-                <div class="message inbound">
+                <div class="message inbound greeting-message" data-greeting="true">
                   <div class="message-bubble">${this.escapeHtml(customization.greeting_message)}</div>
                 </div>
               ` : ''}
@@ -408,12 +408,14 @@
 
     renderMessages: function(messages) {
       const container = this.shadowRoot.getElementById('chat-messages');
-      const existingMessages = container.querySelectorAll('.message:not(.inbound:first-child)');
+      // Remove all messages except the greeting
+      const existingMessages = container.querySelectorAll('.message:not([data-greeting="true"])');
       existingMessages.forEach(msg => msg.remove());
 
       messages.forEach(msg => {
         const messageEl = document.createElement('div');
         messageEl.className = `message ${msg.direction}`;
+        messageEl.setAttribute('data-message-id', msg.id);
         messageEl.innerHTML = `
           <div class="message-bubble">${this.escapeHtml(msg.content)}</div>
           <div class="message-time">${new Date(msg.created_at).toLocaleTimeString()}</div>
@@ -432,6 +434,19 @@
       const sendBtn = this.shadowRoot.getElementById('send-btn');
       sendBtn.disabled = true;
 
+      // Optimistically show the message immediately
+      const container = this.shadowRoot.getElementById('chat-messages');
+      const tempMessageEl = document.createElement('div');
+      tempMessageEl.className = 'message inbound';
+      tempMessageEl.setAttribute('data-temp', 'true');
+      tempMessageEl.innerHTML = `
+        <div class="message-bubble">${this.escapeHtml(message)}</div>
+        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+      `;
+      container.appendChild(tempMessageEl);
+      container.scrollTop = container.scrollHeight;
+      input.value = '';
+
       try {
         const response = await fetch(`${this.config.apiUrl}/embed-message`, {
           method: 'POST',
@@ -447,13 +462,19 @@
 
         if (!response.ok) {
           console.error('[AlacarteChat] Failed to send message:', response.status);
+          // Remove the temporary message on error
+          tempMessageEl.remove();
+          input.value = message; // Restore the message
           return;
         }
 
-        input.value = '';
+        // Remove temp message and reload all messages from server
+        tempMessageEl.remove();
         this.loadMessages();
       } catch (error) {
         console.error('[AlacarteChat] Failed to send message:', error);
+        tempMessageEl.remove();
+        input.value = message;
       } finally {
         sendBtn.disabled = false;
       }
