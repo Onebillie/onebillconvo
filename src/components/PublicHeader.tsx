@@ -1,11 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const getInitials = (name: string | null | undefined) => {
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
 
 export const PublicHeader = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
 
   return (
     <>
@@ -59,15 +79,43 @@ export const PublicHeader = () => {
               </button>
             </div>
 
-            {/* Desktop CTA */}
+            {/* Desktop CTA / Profile */}
             <div className="hidden md:block">
-              <Button 
-                onClick={() => navigate("/signup")}
-                className="rounded-full"
-                size="sm"
-              >
-                Start Free Trial
-              </Button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url || undefined} alt={user?.email || "User"} />
+                        <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate("/app/dashboard")}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/settings")}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button 
+                  onClick={() => navigate("/signup")}
+                  className="rounded-full"
+                  size="sm"
+                >
+                  Start Free Trial
+                </Button>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -116,12 +164,36 @@ export const PublicHeader = () => {
             >
               Guides
             </button>
-            <Button 
-              onClick={() => { navigate("/signup"); setMobileMenuOpen(false); }} 
-              className="rounded-full mt-2 w-full"
-            >
-              Start Free Trial
-            </Button>
+            {user ? (
+              <>
+                <button 
+                  onClick={() => { navigate('/app/dashboard'); setMobileMenuOpen(false); }} 
+                  className="text-left text-foreground hover:text-primary transition-colors py-2 font-medium"
+                >
+                  Dashboard
+                </button>
+                <button 
+                  onClick={() => { navigate('/settings'); setMobileMenuOpen(false); }} 
+                  className="text-left text-foreground hover:text-primary transition-colors py-2 font-medium"
+                >
+                  Settings
+                </button>
+                <Button 
+                  onClick={() => { signOut(); setMobileMenuOpen(false); }} 
+                  variant="outline"
+                  className="rounded-full mt-2 w-full"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={() => { navigate("/signup"); setMobileMenuOpen(false); }} 
+                className="rounded-full mt-2 w-full"
+              >
+                Start Free Trial
+              </Button>
+            )}
           </div>
         </div>
       )}
