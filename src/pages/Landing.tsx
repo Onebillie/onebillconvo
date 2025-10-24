@@ -211,10 +211,10 @@ const Landing = () => {
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">All your channels in one place</h2>
         <div className="overflow-hidden mask-marquee">
           <div className="flex gap-3 sm:gap-4 animate-marquee">
-            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["Email", "Instagram DMs", "Facebook Messenger", "WhatsApp business", "In-App Support", "Website Chatbot", "AI Powered Chat", "Team In-Mail", "Task Management"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
-            {["WhatsApp Business API", "SMS Messaging", "Email (IMAP/SMTP)", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
+            {["Email", "Instagram DMs", "Facebook Messenger", "WhatsApp business", "In-App Support", "Website Chatbot", "AI Powered Chat", "Team In-Mail", "Task Management"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                 {item}
               </div>)}
           </div>
