@@ -5,12 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X } from "lucide-react";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { PublicHeader } from "@/components/PublicHeader";
-import dashboardScreenshot from "@/assets/dashboard-conversation-screenshot.png";
-
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return <>
       <SEOHead title="À La Carte Chat - Unified Inbox for Business Messaging" description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide." keywords={['unified inbox', 'business messaging platform', 'WhatsApp Business API', 'multi-channel messaging', 'customer service software', 'AI chatbot', 'email integration', 'SMS management', 'Instagram DM', 'Facebook Messenger', 'unified communications', 'omnichannel support']} canonical="/" />
       <StructuredData type="Organization" />
@@ -23,7 +23,51 @@ const Landing = () => {
     }} />
       
       <div className="min-h-screen bg-background overflow-x-hidden">
-      <PublicHeader />
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40">
+        <nav className="max-w-[1200px] mx-auto px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
+          <div className="font-extrabold tracking-tight text-foreground text-sm sm:text-base">
+            À La Carte Chat
+          </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            <a href="/features" className="text-sm text-foreground hover:opacity-70 transition-opacity">Features</a>
+            <a href="#pricing" className="text-sm text-foreground hover:opacity-70 transition-opacity">Pricing</a>
+            <a href="/faq" className="text-sm text-foreground hover:opacity-70 transition-opacity">FAQ</a>
+            <a href="/guides" className="text-sm text-foreground hover:opacity-70 transition-opacity">Guides</a>
+            <Button onClick={() => navigate(user ? "/dashboard" : "/auth")} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 text-sm">
+              {user ? "Dashboard" : "Login"}
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-foreground" aria-label="Toggle menu">
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </nav>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md">
+            <div className="px-4 py-3 flex flex-col gap-3">
+              <a href="/features" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                Features
+              </a>
+              <a href="#pricing" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                Pricing
+              </a>
+              <a href="#contact" className="text-foreground hover:opacity-70 transition-opacity py-2" onClick={() => setMobileMenuOpen(false)}>
+                Contact
+              </a>
+              <Button onClick={() => {
+              navigate(user ? "/dashboard" : "/auth");
+              setMobileMenuOpen(false);
+            }} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold mt-2">
+                {user ? "Dashboard" : "Login"}
+              </Button>
+            </div>
+          </div>}
+      </header>
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center text-center px-4 sm:px-6 pt-16 sm:pt-0">
@@ -151,20 +195,20 @@ const Landing = () => {
       <section className="bg-background py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-[1200px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="rounded-xl sm:rounded-2xl bg-[#12b886] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">66%</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Increase in customer engagement</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">1k+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">businesses</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#4dabf7] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">23%</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Productivity gained from unified inbox</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">5M+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">messages processed</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#ff922b] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">80%</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Faster first response time</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">24/7</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">AI assistance</div>
           </div>
           <div className="rounded-xl sm:rounded-2xl bg-[#e64980] text-white p-6 sm:p-8 md:p-11 text-center">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">3x</div>
-            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Higher customer satisfaction scores</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold">200+</div>
+            <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">countries</div>
           </div>
         </div>
       </section>
@@ -313,7 +357,7 @@ const Landing = () => {
                     <td className="py-3">Unlimited</td>
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3">WhatsApp messages/mo</td>
+                    
                     <td className="py-3">100</td>
                     <td className="py-3">1,000</td>
                     <td className="py-3">10,000</td>
