@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MessageSquare } from "lucide-react";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData } from "@/components/seo/StructuredData";
 
 const FAQ = () => {
   const navigate = useNavigate();
@@ -166,8 +168,39 @@ const FAQ = () => {
     }
   ];
 
+  // Flatten all questions for FAQ schema
+  const allQuestions = faqCategories.flatMap(cat => cat.questions);
+
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEOHead 
+        title="FAQ - À La Carte Chat"
+        description="Frequently asked questions about À La Carte Chat. Learn about features, pricing, integrations, security, and support for our unified business messaging platform."
+        keywords={[
+          'unified inbox FAQ',
+          'WhatsApp Business API questions',
+          'messaging platform help',
+          'multi-channel messaging FAQ',
+          'customer service software questions',
+          'business messaging support',
+        ]}
+        canonical="/faq"
+      />
+      <StructuredData 
+        type="FAQPage" 
+        data={{ questions: allQuestions }} 
+      />
+      <StructuredData 
+        type="BreadcrumbList" 
+        data={{
+          items: [
+            { name: 'Home', url: '/' },
+            { name: 'FAQ', url: '/faq' }
+          ]
+        }} 
+      />
+      
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b">
         <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
@@ -245,6 +278,7 @@ const FAQ = () => {
         <p className="text-sm text-muted-foreground">À La Carte Chat is a product of À La Carte SaaS</p>
       </footer>
     </div>
+    </>
   );
 };
 

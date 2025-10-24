@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageSquare, Mail, Phone, Instagram, Facebook, Bot, Users, BarChart3, Lock, Zap, Globe, CheckCircle2, Clock, Shield, Workflow, FileText, Calendar, Bell, Search, Settings } from "lucide-react";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData } from "@/components/seo/StructuredData";
 
 const Features = () => {
   const navigate = useNavigate();
@@ -218,7 +220,43 @@ const Features = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEOHead 
+        title="Features - À La Carte Chat"
+        description="Explore all features of À La Carte Chat: Unified Inbox, AI Assistant, Multi-channel messaging, Team collaboration, Analytics, and more. Everything you need to manage customer conversations."
+        keywords={[
+          'unified inbox features',
+          'multi-channel messaging',
+          'WhatsApp Business API features',
+          'AI chatbot features',
+          'customer service automation',
+          'team collaboration tools',
+          'message templates',
+          'real-time notifications',
+          'conversation management',
+          'business messaging features',
+        ]}
+        canonical="/features"
+      />
+      <StructuredData 
+        type="BreadcrumbList" 
+        data={{
+          items: [
+            { name: 'Home', url: '/' },
+            { name: 'Features', url: '/features' }
+          ]
+        }} 
+      />
+      <StructuredData 
+        type="WebPage" 
+        data={{
+          name: 'Features - À La Carte Chat',
+          description: 'Comprehensive features for managing customer conversations across all channels',
+          url: 'https://alacartechat.com/features'
+        }} 
+      />
+      
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b">
         <nav className="max-w-[1200px] mx-auto px-5 py-4 flex items-center gap-7">
@@ -422,6 +460,7 @@ const Features = () => {
         <p className="text-sm text-muted-foreground">À La Carte Chat is a product of À La Carte SaaS</p>
       </footer>
     </div>
+    </>
   );
 };
 

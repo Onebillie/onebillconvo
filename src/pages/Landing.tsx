@@ -1,20 +1,48 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X } from "lucide-react";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData } from "@/components/seo/StructuredData";
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  useEffect(() => {
-    document.title = "À La Carte Chat — Unified Messaging Platform";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Bring WhatsApp Business API, email, SMS, Instagram and AI into one powerful inbox. Trusted by 1,000+ businesses worldwide.");
-    }
-  }, []);
-  return <div className="min-h-screen bg-background overflow-x-hidden">
+
+  return (
+    <>
+      <SEOHead 
+        title="À La Carte Chat - Unified Inbox for Business Messaging"
+        description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide."
+        keywords={[
+          'unified inbox',
+          'business messaging platform',
+          'WhatsApp Business API',
+          'multi-channel messaging',
+          'customer service software',
+          'AI chatbot',
+          'email integration',
+          'SMS management',
+          'Instagram DM',
+          'Facebook Messenger',
+          'unified communications',
+          'omnichannel support',
+        ]}
+        canonical="/"
+      />
+      <StructuredData type="Organization" />
+      <StructuredData type="SoftwareApplication" />
+      <StructuredData 
+        type="BreadcrumbList" 
+        data={{
+          items: [
+            { name: 'Home', url: '/' }
+          ]
+        }} 
+      />
+      
+      <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40">
         <nav className="max-w-[1200px] mx-auto px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
@@ -587,6 +615,8 @@ const Landing = () => {
       <footer className="py-11 px-6 text-center text-muted-foreground" id="contact">
         © 2025 À La Carte Chat — All rights reserved.
       </footer>
-    </div>;
+    </div>
+    </>
+  );
 };
 export default Landing;

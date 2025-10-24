@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { STRIPE_PRODUCTS, type SubscriptionTier, getLocalizedPrice, formatPrice } from "@/lib/stripeConfig";
 import { useCountryPricing } from "@/hooks/useCountryPricing";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData } from "@/components/seo/StructuredData";
 
 export default function Pricing() {
   const { user, subscriptionState } = useAuth();
@@ -53,7 +55,33 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <>
+      <SEOHead 
+        title="Pricing - À La Carte Chat"
+        description="Transparent pay-as-you-go pricing for business messaging. Free plan available. No hidden fees. Plans starting from $0/month with WhatsApp, Email, SMS, Instagram, and Facebook integration."
+        keywords={[
+          'messaging platform pricing',
+          'WhatsApp Business API pricing',
+          'unified inbox cost',
+          'business messaging rates',
+          'pay as you go messaging',
+          'affordable customer service software',
+          'SMS pricing',
+          'multi-channel pricing',
+        ]}
+        canonical="/pricing"
+      />
+      <StructuredData 
+        type="BreadcrumbList" 
+        data={{
+          items: [
+            { name: 'Home', url: '/' },
+            { name: 'Pricing', url: '/pricing' }
+          ]
+        }} 
+      />
+      
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <header className="border-b border-border bg-background">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -232,5 +260,6 @@ export default function Pricing() {
         )}
       </div>
     </div>
+    </>
   );
 }
