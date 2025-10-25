@@ -6,41 +6,19 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicHeader } from "@/components/PublicHeader";
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  return (
-    <>
-      <SEOHead
-        title="À La Carte Chat - Unified Inbox for Business Messaging"
-        description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide."
-        keywords={[
-          "unified inbox",
-          "business messaging platform",
-          "WhatsApp Business API",
-          "multi-channel messaging",
-          "customer service software",
-          "AI chatbot",
-          "email integration",
-          "SMS management",
-          "Instagram DM",
-          "Facebook Messenger",
-          "unified communications",
-          "omnichannel support",
-        ]}
-        canonical="/"
-      />
+  const {
+    user
+  } = useAuth();
+  return <>
+      <SEOHead title="À La Carte Chat - Unified Inbox for Business Messaging" description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide." keywords={["unified inbox", "business messaging platform", "WhatsApp Business API", "multi-channel messaging", "customer service software", "AI chatbot", "email integration", "SMS management", "Instagram DM", "Facebook Messenger", "unified communications", "omnichannel support"]} canonical="/" />
       <StructuredData type="Organization" />
       <StructuredData type="SoftwareApplication" />
-      <StructuredData
-        type="BreadcrumbList"
-        data={{
-          items: [
-            {
-              name: "Home",
-              url: "/",
-            },
-          ],
-        }}
-      />
+      <StructuredData type="BreadcrumbList" data={{
+      items: [{
+        name: "Home",
+        url: "/"
+      }]
+    }} />
 
       <div className="min-h-screen bg-background overflow-x-hidden">
         <PublicHeader />
@@ -61,10 +39,7 @@ const Landing = () => {
               An Unified Team Inbox For All Your Communication Channels With Your Very Own AI ChatBot Ready To Respond
               When Your Team Can't
             </p>
-            <Button
-              onClick={() => navigate(user ? "/dashboard" : "/signup")}
-              className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg"
-            >
+            <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
               Try Free For 7 Days!
             </Button>
           </div>
@@ -75,15 +50,8 @@ const Landing = () => {
             <div className="absolute left-[4%] top-[12%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-a">
               <svg viewBox="0 0 64 64" className="w-full h-full">
                 <circle cx="32" cy="32" r="30" fill="#25D366" />
-                <path
-                  fill="#fff"
-                  d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z"
-                  opacity=".95"
-                />
-                <path
-                  fill="#25D366"
-                  d="M27 24c-.6 0-1 .5-1 1 0 7 5 12 12 12 .6 0 1-.4 1-1v-2c0-.6-.4-1-1-1-1 0-2-.2-3-.6l-1-.4-1 .5c-.4.2-.8.1-1-.2l-2-2c-.3-.3-.3-.8-.1-1.1l.6-1c.1-.2.1-.5 0-.7l-1.1-2c-.2-.4-.6-.6-1-.6H27z"
-                />
+                <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
+                <path fill="#25D366" d="M27 24c-.6 0-1 .5-1 1 0 7 5 12 12 12 .6 0 1-.4 1-1v-2c0-.6-.4-1-1-1-1 0-2-.2-3-.6l-1-.4-1 .5c-.4.2-.8.1-1-.2l-2-2c-.3-.3-.3-.8-.1-1.1l.6-1c.1-.2.1-.5 0-.7l-1.1-2c-.2-.4-.6-.6-1-.6H27z" />
               </svg>
             </div>
 
@@ -99,11 +67,7 @@ const Landing = () => {
             <div className="absolute left-[6%] bottom-[18%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-c">
               <svg viewBox="0 0 64 64" className="w-full h-full">
                 <circle cx="32" cy="32" r="30" fill="#25D366" />
-                <path
-                  fill="#fff"
-                  d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z"
-                  opacity=".95"
-                />
+                <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
               </svg>
             </div>
 
@@ -157,48 +121,12 @@ const Landing = () => {
           </h2>
           <div className="overflow-hidden mask-marquee">
             <div className="flex gap-3 sm:gap-4 animate-marquee">
-              {[
-                "WhatsApp Business API",
-                "SMS Messaging",
-                "Email",
-                "Instagram DMs",
-                "Facebook Messenger",
-                "Website Chat Widget",
-                "Voice & Files",
-                "Team Collaboration",
-                "AI Assistant",
-                "REST API",
-                "Embed Widget",
-                "SSO Integration",
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base"
-                >
+              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                   {item}
-                </div>
-              ))}
-              {[
-                "WhatsApp Business API",
-                "SMS Messaging",
-                "Email",
-                "Instagram DMs",
-                "Facebook Messenger",
-                "Website Chat Widget",
-                "Voice & Files",
-                "Team Collaboration",
-                "AI Assistant",
-                "REST API",
-                "Embed Widget",
-                "SSO Integration",
-              ].map((item, i) => (
-                <div
-                  key={`dup-${i}`}
-                  className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base"
-                >
+                </div>)}
+              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                   {item}
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </section>
@@ -302,10 +230,7 @@ const Landing = () => {
                 <p className="text-xs text-muted-foreground font-semibold mb-1">Overages:</p>
                 <p className="text-xs text-muted-foreground">Additional messages: $0.10/msg</p>
               </div>
-              <Button
-                onClick={() => navigate("/signup")}
-                className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={() => navigate("/signup")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Start Free
               </Button>
             </div>
@@ -323,14 +248,11 @@ const Landing = () => {
                 <li>✓ Email support</li>
               </ul>
               <div className="border-t border-white/20 pt-3 mb-4">
-                <p className="text-xs text-white/90 font-semibold mb-1">Add-ons:</p>
-                <p className="text-xs text-white/70">Extra team member: $10/mo</p>
-                <p className="text-xs text-white/70">Extra 1,000 msgs: $15/mo</p>
+                <p className="text-xs mb-1 font-semibold text-neutral-700">Add-ons:</p>
+                <p className="text-xs text-neutral-800">Extra team member: $10/mo</p>
+                <p className="text-xs text-neutral-800">Extra 1,000 msgs: $15/mo</p>
               </div>
-              <Button
-                onClick={() => navigate("/pricing")}
-                className="mt-4 w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
-              >
+              <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full text-slate-50 bg-black">
                 Get Started
               </Button>
             </div>
@@ -355,10 +277,7 @@ const Landing = () => {
                 <p className="text-xs text-muted-foreground">Extra 5,000 msgs: $30/mo</p>
                 <p className="text-xs text-muted-foreground">AI responses: $0.05/response</p>
               </div>
-              <Button
-                onClick={() => navigate("/pricing")}
-                className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Choose Professional
               </Button>
             </div>
@@ -383,10 +302,7 @@ const Landing = () => {
                 <p className="text-xs text-muted-foreground">Dedicated infrastructure</p>
                 <p className="text-xs text-muted-foreground">White-label options available</p>
               </div>
-              <Button
-                onClick={() => navigate("/pricing")}
-                className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={() => navigate("/pricing")} className="mt-4 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Contact Sales
               </Button>
             </div>
@@ -621,10 +537,7 @@ const Landing = () => {
         <section className="bg-[#0e0e10] text-white py-20 px-6 text-center">
           <h2 className="text-4xl font-bold mb-4">Be ready on every channel</h2>
           <p className="text-lg mb-6">Switch to À La Carte Chat and keep every customer conversation in one place.</p>
-          <Button
-            onClick={() => navigate(user ? "/dashboard" : "/signup")}
-            className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6"
-          >
+          <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
             Start free trial
           </Button>
         </section>
@@ -634,7 +547,6 @@ const Landing = () => {
           © 2025 À La Carte Chat — All rights reserved.
         </footer>
       </div>
-    </>
-  );
+    </>;
 };
 export default Landing;
