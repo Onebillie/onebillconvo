@@ -136,10 +136,21 @@ serve(async (req) => {
       customerId = existingCustomers[0].id;
       console.log('Existing customer found:', customerId);
       
-      // If multiple matches found, create a duplicate detection record for admin review
+      // If multiple matches found, create merge suggestion immediately
       if (existingCustomers.length > 1) {
-        console.log('Multiple customer matches detected - marking for merge review');
-        // The useDuplicateDetection hook will pick this up automatically via its query
+        const customerIds = existingCustomers.map(c => c.id);
+        console.log('⚠️ DUPLICATE DETECTED: Creating merge suggestion for', customerIds);
+        
+        // Create merge suggestion record for admin review
+        await supabase.from('customer_merge_suggestions').insert({
+          business_id: businessId,
+          customer_ids: customerIds,
+          match_type: email ? 'email' : 'phone',
+          match_value: email || phone,
+          status: 'pending',
+          created_via: 'embed_auth',
+          priority: 'high'
+        });
       }
     } else {
       // Create new customer with all required fields
@@ -180,7 +191,13 @@ serve(async (req) => {
       console.log('Active conversation found:', conversationId);
     } else {
       const { data: newConv, error: convInsertError } = await supabase.from("conversations")
-        .insert({ customer_id: customerId, business_id: businessId, status: "active" })
+        .insert({ 
+          customer_id: customerId, 
+          business_id: businessId, 
+          status: "active",
+          priority: 5,
+          metadata: { source: 'embed', is_urgent: true, channel: 'website_widget' }
+        })
         .select("id").single();
       
       if (convInsertError || !newConv) {

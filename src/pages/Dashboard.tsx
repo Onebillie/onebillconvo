@@ -145,7 +145,7 @@ const Dashboard = () => {
           )
         ),
         assigned_user:profiles!fk_conversations_assigned_to(id, full_name, department),
-        messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at, is_read)
+        messages!messages_conversation_id_fkey(content, subject, platform, direction, created_at, is_read, priority, metadata)
       `)
       .eq('is_archived', false);
 
@@ -248,30 +248,50 @@ const Dashboard = () => {
     // Sort by different criteria
     switch (currentFilters.sortBy) {
       case 'oldest':
-        filtered.sort((a, b) => 
-          new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
-        );
+        filtered.sort((a, b) => {
+          // Priority first (higher priority = lower number, so sort ascending)
+          const priorityDiff = (a.priority || 3) - (b.priority || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          // Then by date
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+        });
         break;
       case 'unread':
-        filtered.sort((a, b) => 
-          (b.unread_count || 0) - (a.unread_count || 0)
-        );
+        filtered.sort((a, b) => {
+          // Priority first
+          const priorityDiff = (a.priority || 3) - (b.priority || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          // Then by unread count
+          return (b.unread_count || 0) - (a.unread_count || 0);
+        });
         break;
       case 'name_asc':
-        filtered.sort((a, b) => 
-          a.customer.name.localeCompare(b.customer.name)
-        );
+        filtered.sort((a, b) => {
+          // Priority first
+          const priorityDiff = (a.priority || 3) - (b.priority || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          // Then by name
+          return a.customer.name.localeCompare(b.customer.name);
+        });
         break;
       case 'name_desc':
-        filtered.sort((a, b) => 
-          b.customer.name.localeCompare(a.customer.name)
-        );
+        filtered.sort((a, b) => {
+          // Priority first
+          const priorityDiff = (a.priority || 3) - (b.priority || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          // Then by name
+          return b.customer.name.localeCompare(a.customer.name);
+        });
         break;
       case 'newest':
       default:
-        filtered.sort((a, b) => 
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
+        filtered.sort((a, b) => {
+          // Priority first (5 = urgent, 1 = low, so higher = more urgent)
+          const priorityDiff = (b.priority || 3) - (a.priority || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          // Then by most recent
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
     }
 
     setFilteredConversations(filtered);

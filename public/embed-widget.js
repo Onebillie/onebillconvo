@@ -45,8 +45,8 @@
         return;
       }
 
-      // Require pre-chat info if name/email/phone are missing
-      this.requirePrechat = !(this.config.customer && this.config.customer.name && this.config.customer.email && this.config.customer.phone);
+      // ALWAYS require pre-chat form for all users (mandatory 4 questions)
+      this.requirePrechat = true;
 
       this.initialized = true;
       if (this.requirePrechat) {
@@ -61,7 +61,7 @@
     // Cookie management for session persistence
     setSessionCookie: function(sessionData) {
       try {
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
         const cookieData = JSON.stringify({
           sessionToken: sessionData.sessionToken,
           conversationId: sessionData.conversationId,
@@ -632,36 +632,19 @@
       }
     },
 
+    validateSession: async function(sessionToken) {
       try {
         const response = await fetch(`${this.config.apiUrl}/embed-message`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-session-token': this.sessionToken
+            'x-session-token': sessionToken
           },
-          body: JSON.stringify({
-            action: 'send_message',
-            message: message
-          })
+          body: JSON.stringify({ action: 'validate_session' })
         });
-
-        if (!response.ok) {
-          console.error('[AlacarteChat] Failed to send message:', response.status);
-          // Remove the temporary message on error
-          tempMessageEl.remove();
-          input.value = message; // Restore the message
-          return;
-        }
-
-        // Remove temp message and reload all messages from server
-        tempMessageEl.remove();
-        this.loadMessages();
-      } catch (error) {
-        console.error('[AlacarteChat] Failed to send message:', error);
-        tempMessageEl.remove();
-        input.value = message;
-      } finally {
-        sendBtn.disabled = false;
+        return response.ok;
+      } catch {
+        return false;
       }
     },
 
@@ -762,10 +745,10 @@
         ${greetingHTML}
         <form id="prechat-form" class="prechat-form">
           <div class="prechat-grid">
-            <input class="prechat-input" id="first-name" placeholder="First name" required />
-            <input class="prechat-input" id="last-name" placeholder="Last name" required />
-            <input class="prechat-input full" id="email" type="email" placeholder="Email address" required />
-            <input class="prechat-input full" id="phone" placeholder="Phone number" required />
+            <input class="prechat-input" id="first-name" placeholder="First name *" required pattern="[A-Za-z\\s]{2,}" title="At least 2 letters" />
+            <input class="prechat-input" id="last-name" placeholder="Last name *" required pattern="[A-Za-z\\s]{2,}" title="At least 2 letters" />
+            <input class="prechat-input full" id="email" type="email" placeholder="Email address *" required pattern="[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$" title="Valid email required" />
+            <input class="prechat-input full" id="phone" placeholder="Phone number *" required pattern="[0-9+\\-\\s()]{10,}" title="Valid phone number (min 10 digits)" />
           </div>
           <div class="prechat-actions">
             <button type="submit" class="prechat-submit">Start chat</button>

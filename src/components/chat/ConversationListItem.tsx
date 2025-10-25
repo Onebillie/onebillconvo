@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, isToday, isYesterday } from "date-fns";
 import { Conversation } from "@/types/chat";
-import { Mail, MessageSquare, Edit3 } from "lucide-react";
+import { Mail, MessageSquare, Edit3, AlertCircle } from "lucide-react";
 import DOMPurify from 'dompurify';
 
 interface ConversationListItemProps {
@@ -67,17 +67,24 @@ export const ConversationListItem = memo(({
 
   return (
     <div
-      className={`px-3 py-2.5 cursor-pointer transition-all border-b border-border/30 hover:shadow-sm ${
+      className={`px-3 py-2.5 cursor-pointer transition-all border-b border-border/30 hover:shadow-sm relative ${
         isSelected
           ? "bg-accent/60 border-l-4 border-l-primary"
           : "hover:bg-accent/30"
-      }`}
+      } ${conversation.priority && conversation.priority >= 5 ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
       onClick={() => onSelect(conversation)}
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
       }}
     >
+      {/* High priority indicator */}
+      {conversation.priority && conversation.priority >= 5 && (
+        <div className="absolute top-1 right-1">
+          <AlertCircle className="w-3 h-3 text-orange-500" />
+        </div>
+      )}
+      
       <div className="flex items-start gap-2 md:gap-3">
         <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
           <AvatarImage src={conversation.customer.avatar} />
@@ -115,12 +122,17 @@ export const ConversationListItem = memo(({
             </div>
           ) : conversation.last_message ? (
             <div className="flex items-center gap-1 mb-1">
-              {conversation.last_message.platform === 'email' && (
-                <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              )}
-              {conversation.last_message.platform === 'whatsapp' && (
-                <MessageSquare className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              )}
+            {conversation.last_message.platform === 'email' && (
+              <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+            )}
+            {conversation.last_message.platform === 'whatsapp' && (
+              <MessageSquare className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+            )}
+            {conversation.last_message.platform === 'embed' && (
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                Website
+              </Badge>
+            )}
             <p className="text-[10px] text-muted-foreground truncate flex-1">
               {conversation.last_message.direction === 'outbound' && 'You: '}
               {DOMPurify.sanitize(

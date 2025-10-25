@@ -36,6 +36,12 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    if (action === 'validate_session') {
+      // Session already validated above, just return success
+      return new Response(JSON.stringify({ valid: true }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'get_messages') {
       const { data: messages } = await supabase.from('messages').select('*')
         .eq('conversation_id', session.conversation_id).order('created_at', { ascending: true });
@@ -64,7 +70,9 @@ serve(async (req) => {
         content: messageContent, 
         direction: 'inbound', 
         channel: 'embed', 
-        status: 'delivered'
+        status: 'delivered',
+        priority: 5,
+        metadata: { source: 'website_widget', requires_urgent_response: true }
       }).select().single();
 
       if (insertError) {

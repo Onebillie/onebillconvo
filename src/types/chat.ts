@@ -27,6 +27,8 @@ export interface Conversation {
   assigned_to?: string;
   created_at: string;
   updated_at: string;
+  priority?: number;
+  metadata?: any;
   customer: Customer;
   unread_count?: number;
   assigned_user?: {

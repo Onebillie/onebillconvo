@@ -1592,7 +1592,9 @@ export type Database = {
           is_pinned: boolean | null
           labels: string[] | null
           last_message_at: string | null
+          metadata: Json | null
           pinned_at: string | null
+          priority: number | null
           resolution_type: string | null
           resolution_value: number | null
           resolved_at: string | null
@@ -1614,7 +1616,9 @@ export type Database = {
           is_pinned?: boolean | null
           labels?: string[] | null
           last_message_at?: string | null
+          metadata?: Json | null
           pinned_at?: string | null
+          priority?: number | null
           resolution_type?: string | null
           resolution_value?: number | null
           resolved_at?: string | null
@@ -1636,7 +1640,9 @@ export type Database = {
           is_pinned?: boolean | null
           labels?: string[] | null
           last_message_at?: string | null
+          metadata?: Json | null
           pinned_at?: string | null
+          priority?: number | null
           resolution_type?: string | null
           resolution_value?: number | null
           resolved_at?: string | null
@@ -1786,6 +1792,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "credit_warnings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_merge_suggestions: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          created_via: string | null
+          customer_ids: string[]
+          id: string
+          match_type: string
+          match_value: string | null
+          priority: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          created_via?: string | null
+          customer_ids: string[]
+          id?: string
+          match_type: string
+          match_value?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          created_via?: string | null
+          customer_ids?: string[]
+          id?: string
+          match_type?: string
+          match_value?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_merge_suggestions_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -3258,6 +3317,7 @@ export type Database = {
           pinned_at: string | null
           pinned_by: string | null
           platform: string | null
+          priority: number | null
           replied_to_message_id: string | null
           retry_count: number | null
           scheduled_at: string | null
@@ -3304,6 +3364,7 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           platform?: string | null
+          priority?: number | null
           replied_to_message_id?: string | null
           retry_count?: number | null
           scheduled_at?: string | null
@@ -3350,6 +3411,7 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           platform?: string | null
+          priority?: number | null
           replied_to_message_id?: string | null
           retry_count?: number | null
           scheduled_at?: string | null
