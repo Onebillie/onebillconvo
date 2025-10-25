@@ -13,6 +13,7 @@
     requirePrechat: false,
     isAuthenticated: false,
     styleEl: null,
+    prechatStyleEl: null,
     cachedCustomization: null,
 
     init: async function(options) {
@@ -802,6 +803,21 @@
       
       // Update styles
       this.styleEl.textContent = this.buildStyles(customization);
+
+      // Also update prechat form styles if present
+      const pc = (customization && customization.primary_color) || '#6366f1';
+      if (this.prechatStyleEl) {
+        this.prechatStyleEl.textContent = `
+          .prechat-form { padding: 16px; }
+          .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+          .prechat-grid .full { grid-column: span 2; }
+          .prechat-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+          .prechat-input:focus { border-color: ${pc}; outline: none; box-shadow: 0 0 0 2px ${pc}22; }
+          .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+          .prechat-submit { padding: 10px 16px; background: ${pc}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
+          .prechat-submit:hover { opacity: 0.9; }
+        `;
+      }
       
       // Update header text
       const header = this.shadowRoot.querySelector('.chat-header h3');
@@ -833,17 +849,22 @@
         chatWindow.classList.add('open');
       }
 
-      // Add minimal styles for prechat form
-      const style = document.createElement('style');
-      style.textContent = `
+      // Add minimal styles for prechat form (uses primary_color)
+      const primaryColor = (this.cachedCustomization && this.cachedCustomization.primary_color) || '#6366f1';
+      if (!this.prechatStyleEl) {
+        this.prechatStyleEl = document.createElement('style');
+        this.shadowRoot.appendChild(this.prechatStyleEl);
+      }
+      this.prechatStyleEl.textContent = `
         .prechat-form { padding: 16px; }
         .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .prechat-grid .full { grid-column: span 2; }
         .prechat-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .prechat-input:focus { border-color: ${primaryColor}; outline: none; box-shadow: 0 0 0 2px ${primaryColor}22; }
         .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
-        .prechat-submit { padding: 10px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .prechat-submit { padding: 10px 16px; background: ${primaryColor}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
+        .prechat-submit:hover { opacity: 0.9; }
       `;
-      this.shadowRoot.appendChild(style);
 
       // Hide chat input until authenticated
       const inputContainer = this.shadowRoot.getElementById('message-input')?.closest('.chat-input-container');
