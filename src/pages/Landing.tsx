@@ -5,255 +5,137 @@ import { MessageSquare, Mail, Phone, Instagram, Facebook, Bot, Users, BarChart3,
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicHeader } from "@/components/PublicHeader";
-
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const features = [
-    {
-      icon: MessageSquare,
-      title: "Unified Inbox",
-      description: "All your customer conversations in one place. No more switching between apps or missing important messages.",
-      benefits: [
-        "Single view for all channels",
-        "Smart conversation threading",
-        "Real-time message sync",
-        "Collision detection prevents duplicate replies"
-      ]
-    },
-    {
-      icon: Bot,
-      title: "AI Assistant",
-      description: "Train your own AI to handle common queries, route conversations, and provide instant responses 24/7.",
-      benefits: [
-        "Natural language understanding",
-        "Custom training on your FAQs",
-        "Human-in-the-loop approval",
-        "Multi-language support"
-      ]
-    },
-    {
-      icon: Users,
-      title: "Team Collaboration",
-      description: "Built for teams of any size. Assign conversations, share notes, and collaborate seamlessly.",
-      benefits: [
-        "Conversation assignment",
-        "Internal notes & mentions",
-        "Role-based permissions",
-        "Team performance metrics"
-      ]
-    },
-    {
-      icon: Workflow,
-      title: "Automation & Workflows",
-      description: "Set up smart automations to route, categorize, and respond to messages automatically.",
-      benefits: [
-        "Auto-assign by channel or topic",
-        "Triggered responses",
-        "SLA monitoring",
-        "Smart routing rules"
-      ]
-    },
-    {
-      icon: Phone,
-      title: "WhatsApp Business API",
-      description: "Official WhatsApp Business API integration with template management and bulk messaging.",
-      benefits: [
-        "Verified business account",
-        "Template library",
-        "Bulk messaging campaigns",
-        "Rich media support"
-      ]
-    },
-    {
-      icon: Mail,
-      title: "Email Integration",
-      description: "Connect unlimited email accounts with full IMAP/SMTP support and shared inbox capabilities.",
-      benefits: [
-        "Multiple account support",
-        "Two-way sync",
-        "Email templates",
-        "Threading & search"
-      ]
-    },
-    {
-      icon: Phone,
-      title: "SMS Messaging",
-      description: "Send and receive SMS messages with automatic country routing and delivery tracking.",
-      benefits: [
-        "Global coverage",
-        "Delivery receipts",
-        "Cost calculator",
-        "Bulk SMS campaigns"
-      ]
-    },
-    {
-      icon: Instagram,
-      title: "Instagram DMs",
-      description: "Manage Instagram Direct Messages from your unified inbox with media support.",
-      benefits: [
-        "Media handling",
-        "Story replies",
-        "Quick replies",
-        "Auto-sync conversations"
-      ]
-    },
-    {
-      icon: Facebook,
-      title: "Facebook Messenger",
-      description: "Connect Facebook Pages to handle Messenger conversations alongside other channels.",
-      benefits: [
-        "Page management",
-        "Media attachments",
-        "Quick responses",
-        "Automated greetings"
-      ]
-    },
-    {
-      icon: Globe,
-      title: "Website Widget",
-      description: "Embeddable chat widget for your website with customizable branding and AI support.",
-      benefits: [
-        "Custom branding",
-        "Pre-chat forms",
-        "AI-powered triage",
-        "Easy integration"
-      ]
-    },
-    {
-      icon: FileText,
-      title: "Templates & Canned Responses",
-      description: "Create reusable message templates and quick replies to respond faster.",
-      benefits: [
-        "Unlimited templates",
-        "Variable placeholders",
-        "Media attachments",
-        "Team sharing"
-      ]
-    },
-    {
-      icon: BarChart3,
-      title: "Analytics & Reporting",
-      description: "Track team performance, response times, and customer satisfaction metrics.",
-      benefits: [
-        "Response time tracking",
-        "Team performance",
-        "Message volume trends",
-        "Export capabilities"
-      ]
-    },
-    {
-      icon: Calendar,
-      title: "Tasks & Reminders",
-      description: "Never miss a follow-up with built-in task management and calendar integration.",
-      benefits: [
-        "Task assignment",
-        "Due date reminders",
-        "Calendar sync",
-        "Priority flagging"
-      ]
-    },
-    {
-      icon: Bell,
-      title: "Smart Notifications",
-      description: "Get notified on your terms with customizable notification rules and preferences.",
-      benefits: [
-        "Push notifications",
-        "Email digests",
-        "Custom rules",
-        "Do not disturb"
-      ]
-    },
-    {
-      icon: Search,
-      title: "Advanced Search",
-      description: "Find any message instantly with powerful search across all channels and time periods.",
-      benefits: [
-        "Full-text search",
-        "Advanced filters",
-        "Date ranges",
-        "Export results"
-      ]
-    },
-    {
-      icon: Lock,
-      title: "Security & Privacy",
-      description: "Enterprise-grade security with GDPR compliance and data encryption.",
-      benefits: [
-        "End-to-end encryption",
-        "GDPR compliant",
-        "Role-based access",
-        "Audit logs"
-      ]
-    },
-    {
-      icon: Zap,
-      title: "Developer API",
-      description: "Full REST API access to integrate with your existing tools and workflows.",
-      benefits: [
-        "RESTful API",
-        "Webhooks",
-        "SSO support",
-        "Comprehensive docs"
-      ]
-    },
-    {
-      icon: Settings,
-      title: "Customization",
-      description: "Tailor the platform to your needs with custom statuses, tags, and workflows.",
-      benefits: [
-        "Custom fields",
-        "Status management",
-        "Tag system",
-        "Branding options"
-      ]
-    }
-  ];
-
-  const channels = [
-    { name: "WhatsApp Business", color: "bg-[#25D366]", icon: MessageSquare },
-    { name: "Email", color: "bg-[#e55436]", icon: Mail },
-    { name: "SMS", color: "bg-[#00C389]", icon: Phone },
-    { name: "Instagram DMs", color: "bg-[#F56040]", icon: Instagram },
-    { name: "Facebook Messenger", color: "bg-[#1877F2]", icon: Facebook },
-    { name: "Website Widget", color: "bg-[#6C63FF]", icon: Globe }
-  ];
-
-  return (
-    <>
-      <SEOHead
-        title="À La Carte Chat - Unified Inbox for Business Messaging"
-        description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide."
-        keywords={[
-          "unified inbox",
-          "business messaging platform",
-          "WhatsApp Business API",
-          "multi-channel messaging",
-          "customer service software",
-          "AI chatbot",
-          "email integration",
-          "SMS management",
-          "Instagram DM",
-          "Facebook Messenger",
-          "unified communications",
-          "omnichannel support",
-        ]}
-        canonical="/"
-      />
+  const {
+    user
+  } = useAuth();
+  const features = [{
+    icon: MessageSquare,
+    title: "Unified Inbox",
+    description: "All your customer conversations in one place. No more switching between apps or missing important messages.",
+    benefits: ["Single view for all channels", "Smart conversation threading", "Real-time message sync", "Collision detection prevents duplicate replies"]
+  }, {
+    icon: Bot,
+    title: "AI Assistant",
+    description: "Train your own AI to handle common queries, route conversations, and provide instant responses 24/7.",
+    benefits: ["Natural language understanding", "Custom training on your FAQs", "Human-in-the-loop approval", "Multi-language support"]
+  }, {
+    icon: Users,
+    title: "Team Collaboration",
+    description: "Built for teams of any size. Assign conversations, share notes, and collaborate seamlessly.",
+    benefits: ["Conversation assignment", "Internal notes & mentions", "Role-based permissions", "Team performance metrics"]
+  }, {
+    icon: Workflow,
+    title: "Automation & Workflows",
+    description: "Set up smart automations to route, categorize, and respond to messages automatically.",
+    benefits: ["Auto-assign by channel or topic", "Triggered responses", "SLA monitoring", "Smart routing rules"]
+  }, {
+    icon: Phone,
+    title: "WhatsApp Business API",
+    description: "Official WhatsApp Business API integration with template management and bulk messaging.",
+    benefits: ["Verified business account", "Template library", "Bulk messaging campaigns", "Rich media support"]
+  }, {
+    icon: Mail,
+    title: "Email Integration",
+    description: "Connect unlimited email accounts with full IMAP/SMTP support and shared inbox capabilities.",
+    benefits: ["Multiple account support", "Two-way sync", "Email templates", "Threading & search"]
+  }, {
+    icon: Phone,
+    title: "SMS Messaging",
+    description: "Send and receive SMS messages with automatic country routing and delivery tracking.",
+    benefits: ["Global coverage", "Delivery receipts", "Cost calculator", "Bulk SMS campaigns"]
+  }, {
+    icon: Instagram,
+    title: "Instagram DMs",
+    description: "Manage Instagram Direct Messages from your unified inbox with media support.",
+    benefits: ["Media handling", "Story replies", "Quick replies", "Auto-sync conversations"]
+  }, {
+    icon: Facebook,
+    title: "Facebook Messenger",
+    description: "Connect Facebook Pages to handle Messenger conversations alongside other channels.",
+    benefits: ["Page management", "Media attachments", "Quick responses", "Automated greetings"]
+  }, {
+    icon: Globe,
+    title: "Website Widget",
+    description: "Embeddable chat widget for your website with customizable branding and AI support.",
+    benefits: ["Custom branding", "Pre-chat forms", "AI-powered triage", "Easy integration"]
+  }, {
+    icon: FileText,
+    title: "Templates & Canned Responses",
+    description: "Create reusable message templates and quick replies to respond faster.",
+    benefits: ["Unlimited templates", "Variable placeholders", "Media attachments", "Team sharing"]
+  }, {
+    icon: BarChart3,
+    title: "Analytics & Reporting",
+    description: "Track team performance, response times, and customer satisfaction metrics.",
+    benefits: ["Response time tracking", "Team performance", "Message volume trends", "Export capabilities"]
+  }, {
+    icon: Calendar,
+    title: "Tasks & Reminders",
+    description: "Never miss a follow-up with built-in task management and calendar integration.",
+    benefits: ["Task assignment", "Due date reminders", "Calendar sync", "Priority flagging"]
+  }, {
+    icon: Bell,
+    title: "Smart Notifications",
+    description: "Get notified on your terms with customizable notification rules and preferences.",
+    benefits: ["Push notifications", "Email digests", "Custom rules", "Do not disturb"]
+  }, {
+    icon: Search,
+    title: "Advanced Search",
+    description: "Find any message instantly with powerful search across all channels and time periods.",
+    benefits: ["Full-text search", "Advanced filters", "Date ranges", "Export results"]
+  }, {
+    icon: Lock,
+    title: "Security & Privacy",
+    description: "Enterprise-grade security with GDPR compliance and data encryption.",
+    benefits: ["End-to-end encryption", "GDPR compliant", "Role-based access", "Audit logs"]
+  }, {
+    icon: Zap,
+    title: "Developer API",
+    description: "Full REST API access to integrate with your existing tools and workflows.",
+    benefits: ["RESTful API", "Webhooks", "SSO support", "Comprehensive docs"]
+  }, {
+    icon: Settings,
+    title: "Customization",
+    description: "Tailor the platform to your needs with custom statuses, tags, and workflows.",
+    benefits: ["Custom fields", "Status management", "Tag system", "Branding options"]
+  }];
+  const channels = [{
+    name: "WhatsApp Business",
+    color: "bg-[#25D366]",
+    icon: MessageSquare
+  }, {
+    name: "Email",
+    color: "bg-[#e55436]",
+    icon: Mail
+  }, {
+    name: "SMS",
+    color: "bg-[#00C389]",
+    icon: Phone
+  }, {
+    name: "Instagram DMs",
+    color: "bg-[#F56040]",
+    icon: Instagram
+  }, {
+    name: "Facebook Messenger",
+    color: "bg-[#1877F2]",
+    icon: Facebook
+  }, {
+    name: "Website Widget",
+    color: "bg-[#6C63FF]",
+    icon: Globe
+  }];
+  return <>
+      <SEOHead title="À La Carte Chat - Unified Inbox for Business Messaging" description="Manage WhatsApp, Email, SMS, Instagram, and Facebook messages in one unified inbox. Pay-as-you-go pricing with AI-powered automation. Trusted by 1,000+ businesses worldwide." keywords={["unified inbox", "business messaging platform", "WhatsApp Business API", "multi-channel messaging", "customer service software", "AI chatbot", "email integration", "SMS management", "Instagram DM", "Facebook Messenger", "unified communications", "omnichannel support"]} canonical="/" />
       <StructuredData type="Organization" />
       <StructuredData type="SoftwareApplication" />
-      <StructuredData
-        type="BreadcrumbList"
-        data={{
-          items: [
-            {
-              name: "Home",
-              url: "/",
-            },
-          ],
-        }}
-      />
+      <StructuredData type="BreadcrumbList" data={{
+      items: [{
+        name: "Home",
+        url: "/"
+      }]
+    }} />
 
       <div className="min-h-screen bg-background overflow-x-hidden">
         <PublicHeader />
@@ -274,10 +156,7 @@ const Landing = () => {
               An Unified Team Inbox For All Your Communication Channels With Your Very Own AI ChatBot Ready To Respond
               When Your Team Can't
             </p>
-            <Button
-              onClick={() => navigate(user ? "/dashboard" : "/signup")}
-              className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg"
-            >
+            <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
               Try Free For 7 Days!
             </Button>
           </div>
@@ -288,15 +167,8 @@ const Landing = () => {
             <div className="absolute left-[4%] top-[12%] w-8 sm:w-12 md:w-16 lg:w-20 h-8 sm:h-12 md:h-16 lg:h-20 animate-float-a">
               <svg viewBox="0 0 64 64" className="w-full h-full">
                 <circle cx="32" cy="32" r="30" fill="#25D366" />
-                <path
-                  fill="#fff"
-                  d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z"
-                  opacity=".95"
-                />
-                <path
-                  fill="#25D366"
-                  d="M27 24c-.6 0-1 .5-1 1 0 7 5 12 12 12 .6 0 1-.4 1-1v-2c0-.6-.4-1-1-1-1 0-2-.2-3-.6l-1-.4-1 .5c-.4.2-.8.1-1-.2l-2-2c-.3-.3-.3-.8-.1-1.1l.6-1c.1-.2.1-.5 0-.7l-1.1-2c-.2-.4-.6-.6-1-.6H27z"
-                />
+                <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
+                <path fill="#25D366" d="M27 24c-.6 0-1 .5-1 1 0 7 5 12 12 12 .6 0 1-.4 1-1v-2c0-.6-.4-1-1-1-1 0-2-.2-3-.6l-1-.4-1 .5c-.4.2-.8.1-1-.2l-2-2c-.3-.3-.3-.8-.1-1.1l.6-1c.1-.2.1-.5 0-.7l-1.1-2c-.2-.4-.6-.6-1-.6H27z" />
               </svg>
             </div>
 
@@ -312,11 +184,7 @@ const Landing = () => {
             <div className="absolute left-[6%] bottom-[18%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-c">
               <svg viewBox="0 0 64 64" className="w-full h-full">
                 <circle cx="32" cy="32" r="30" fill="#25D366" />
-                <path
-                  fill="#fff"
-                  d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z"
-                  opacity=".95"
-                />
+                <path fill="#fff" d="M45 33c0 7-6 12-13 12-2 0-5-.6-7-1.8L17 45l2.1-7c-1.3-2.1-2.1-4.5-2.1-7 0-7 6-13 13-13s15 6 15 14z" opacity=".95" />
               </svg>
             </div>
 
@@ -368,48 +236,12 @@ const Landing = () => {
           </h2>
           <div className="overflow-hidden mask-marquee">
             <div className="flex gap-3 sm:gap-4 animate-marquee">
-              {[
-                "WhatsApp Business API",
-                "SMS Messaging",
-                "Email",
-                "Instagram DMs",
-                "Facebook Messenger",
-                "Website Chat Widget",
-                "Voice & Files",
-                "Team Collaboration",
-                "AI Assistant",
-                "REST API",
-                "Embed Widget",
-                "SSO Integration",
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base"
-                >
+              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                   {item}
-                </div>
-              ))}
-              {[
-                "WhatsApp Business API",
-                "SMS Messaging",
-                "Email",
-                "Instagram DMs",
-                "Facebook Messenger",
-                "Website Chat Widget",
-                "Voice & Files",
-                "Team Collaboration",
-                "AI Assistant",
-                "REST API",
-                "Embed Widget",
-                "SSO Integration",
-              ].map((item, i) => (
-                <div
-                  key={`dup-${i}`}
-                  className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base"
-                >
+                </div>)}
+              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
                   {item}
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </section>
@@ -422,14 +254,12 @@ const Landing = () => {
               Connect every communication channel your customers use
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {channels.map((channel) => (
-                <div key={channel.name} className="bg-background rounded-xl p-8 text-center shadow-lg hover:shadow-xl transition-all">
+              {channels.map(channel => <div key={channel.name} className="bg-background rounded-xl p-8 text-center shadow-lg hover:shadow-xl transition-all">
                   <div className={`${channel.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <channel.icon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="font-bold text-xl text-foreground">{channel.name}</h3>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </section>
@@ -504,8 +334,7 @@ const Landing = () => {
               Everything you need to manage customer conversations at scale
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {features.map((feature) => (
-                <div key={feature.title} className="bg-card rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              {features.map(feature => <div key={feature.title} className="bg-card rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="bg-primary/10 p-3 rounded-lg">
                       <feature.icon className="w-6 h-6 text-primary" />
@@ -516,15 +345,12 @@ const Landing = () => {
                     </div>
                   </div>
                   <ul className="space-y-2 ml-16">
-                    {feature.benefits.map((benefit) => (
-                      <li key={benefit} className="flex items-start gap-2 text-sm text-card-foreground">
+                    {feature.benefits.map(benefit => <li key={benefit} className="flex items-start gap-2 text-sm text-card-foreground">
                         <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                         <span>{benefit}</span>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </section>
@@ -608,9 +434,7 @@ const Landing = () => {
         <section className="py-20 px-6 bg-[#0e0e10] text-white text-center">
           <div className="max-w-[800px] mx-auto">
             <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-lg mb-8 opacity-90">
-              Join 1,000+ businesses using À La Carte Chat to manage customer conversations
-            </p>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button onClick={() => navigate("/signup")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
                 Start Free Trial
@@ -624,7 +448,10 @@ const Landing = () => {
 
         {/* Footer */}
         <footer className="py-11 px-6 text-center border-t">
-          <p className="text-muted-foreground mb-4">© 2025 À La Carte Chat — All rights reserved.</p>
+          <p className="text-muted-foreground mb-4">© 2025 À La Carte Chat — All rights reserved.
+An Al
+
+        </p>
           <div className="flex justify-center gap-6 flex-wrap text-sm text-muted-foreground mb-4">
             <button onClick={() => navigate('/features')} className="hover:text-primary transition-colors">Features</button>
             <button onClick={() => navigate('/why-us')} className="hover:text-primary transition-colors">Why Us</button>
@@ -637,8 +464,6 @@ const Landing = () => {
           <p className="text-sm text-muted-foreground">À La Carte Chat is a product of À La Carte SaaS</p>
         </footer>
       </div>
-    </>
-  );
+    </>;
 };
-
 export default Landing;
