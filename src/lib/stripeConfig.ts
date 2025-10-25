@@ -1,17 +1,6 @@
 // Stripe product configuration
 // Update these with your actual Stripe price IDs
 
-// Pricing multipliers based on purchasing power parity
-const PRICE_MULTIPLIERS: Record<string, number> = {
-  USD: 1.0,
-  EUR: 0.95,
-  GBP: 0.85,
-  INR: 0.4,  // Lower pricing for India
-  NGN: 0.35, // Lower pricing for Nigeria
-  ZAR: 0.5,  // Lower pricing for South Africa
-  KES: 0.45, // Lower pricing for Kenya
-  GHS: 0.4,  // Lower pricing for Ghana
-};
 
 export const STRIPE_PRODUCTS = {
   free: {
@@ -173,30 +162,10 @@ export const getMessageLimit = (tier: SubscriptionTier): number => {
   return STRIPE_PRODUCTS[tier].limits.whatsappSending || 0;
 };
 
-// Get localized price based on currency
-export const getLocalizedPrice = (tier: SubscriptionTier, currency: string = "USD"): number => {
-  const basePrice = STRIPE_PRODUCTS[tier].price;
-  const multiplier = PRICE_MULTIPLIERS[currency] || 1.0;
-  return Math.round(basePrice * multiplier);
-};
-
-// Get localized credit bundle price
-export const getLocalizedBundlePrice = (bundle: CreditBundle, currency: string = "USD"): number => {
-  const basePrice = CREDIT_BUNDLES[bundle].price;
-  const multiplier = PRICE_MULTIPLIERS[currency] || 1.0;
-  return Math.round(basePrice * multiplier);
-};
-
-// Format price with currency symbol
-export const formatPrice = (price: number, currency: string, currencySymbol: string): string => {
+// Format price with USD currency symbol
+export const formatPrice = (price: number): string => {
   if (price === 0) return "Free";
-  
-  // For currencies like INR, round to nearest 10
-  if (currency === "INR" || currency === "NGN") {
-    price = Math.round(price / 10) * 10;
-  }
-  
-  return `${currencySymbol}${price.toLocaleString()}`;
+  return `$${price.toLocaleString()}`;
 };
 
 // AI Usage Pricing Configuration
