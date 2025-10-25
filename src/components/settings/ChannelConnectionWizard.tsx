@@ -100,6 +100,21 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
   const [emailCreds, setEmailCreds] = useState({ email: "", smtpHost: "", smtpPort: "587", smtpPassword: "", imapHost: "", imapPort: "993" });
   const [whatsappCreds, setWhatsappCreds] = useState({ accessToken: "", phoneId: "", businessAccountId: "" });
   const [smsCreds, setSmsCreds] = useState({ accountSid: "", authToken: "", phoneNumber: "" });
+  
+  // Team & workflow forms state
+  const [teamMemberEmail, setTeamMemberEmail] = useState("");
+  const [teamMemberName, setTeamMemberName] = useState("");
+  const [teamMemberRole, setTeamMemberRole] = useState<"admin" | "agent" | "viewer">("agent");
+  const [statusName, setStatusName] = useState("");
+  const [statusColor, setStatusColor] = useState("#3b82f6");
+  const [templateShortcut, setTemplateShortcut] = useState("");
+  const [templateContent, setTemplateContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  
+  // Lists for created items
+  const [createdTeamMembers, setCreatedTeamMembers] = useState<Array<{ email: string; name: string; role: string }>>([]);
+  const [createdStatuses, setCreatedStatuses] = useState<Array<{ name: string; color: string }>>([]);
+  const [createdTemplates, setCreatedTemplates] = useState<Array<{ shortcut: string; content: string }>>([]);
 
   // Load saved progress
   useEffect(() => {
@@ -302,6 +317,126 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
         [config]: true,
       },
     });
+  };
+
+  // Team member invitation
+  const addTeamMember = async () => {
+    if (!teamMemberEmail || !businessId) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.admin.inviteUserByEmail(teamMemberEmail, {
+        data: {
+          full_name: teamMemberName || teamMemberEmail,
+          business_id: businessId,
+          business_role: teamMemberRole,
+        },
+      });
+
+      if (error) throw error;
+
+      setCreatedTeamMembers([...createdTeamMembers, { 
+        email: teamMemberEmail, 
+        name: teamMemberName || teamMemberEmail, 
+        role: teamMemberRole 
+      }]);
+      setTeamMemberEmail("");
+      setTeamMemberName("");
+      setTeamMemberRole("agent");
+      
+      toast({
+        title: "Team member invited!",
+        description: `${teamMemberEmail} will receive an invitation email.`,
+      });
+      
+      if (createdTeamMembers.length === 0) {
+        markConfigComplete("team");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to invite team member",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Status creation
+  const addStatus = async () => {
+    if (!statusName || !businessId) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("conversation_status_tags").insert({
+        business_id: businessId,
+        name: statusName,
+        color: statusColor,
+        description: `Created via setup wizard`,
+      });
+
+      if (error) throw error;
+
+      setCreatedStatuses([...createdStatuses, { name: statusName, color: statusColor }]);
+      setStatusName("");
+      setStatusColor("#3b82f6");
+      
+      toast({
+        title: "Status created!",
+        description: `${statusName} is now available for conversations.`,
+      });
+      
+      if (createdStatuses.length === 0) {
+        markConfigComplete("statuses");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to create status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Template creation
+  const addTemplate = async () => {
+    if (!templateShortcut || !templateContent || !businessId) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("canned_responses").insert([{
+        title: templateShortcut,
+        content: templateContent,
+        shortcut: templateShortcut,
+        business_id: businessId,
+      }]);
+
+      if (error) throw error;
+
+      setCreatedTemplates([...createdTemplates, { shortcut: templateShortcut, content: templateContent }]);
+      setTemplateShortcut("");
+      setTemplateContent("");
+      
+      toast({
+        title: "Template created!",
+        description: `Use /${templateShortcut} to quickly insert this response.`,
+      });
+      
+      if (createdTemplates.length === 0) {
+        markConfigComplete("templates");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to create template",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetWizard = () => {
@@ -1085,7 +1220,7 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
             <div>
               <h2 className="text-2xl font-bold mb-2">Team & Workflow Setup</h2>
               <p className="text-muted-foreground">
-                Configure your team, statuses, and templates
+                Configure your team, statuses, and templates to get started
               </p>
             </div>
 
@@ -1095,26 +1230,72 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                   <Users className="w-5 h-5 text-primary" />
                   <CardTitle>Team Members</CardTitle>
                 </div>
+                <CardDescription>
+                  Invite team members to collaborate. They'll receive an email invitation.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Add team members and assign roles to collaborate effectively.
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                  <li>• Go to Settings → Staff & Teams</li>
-                  <li>• Invite team members via email</li>
-                  <li>• Assign roles (Admin, Agent, Viewer)</li>
-                  <li>• Set up teams for organized workflows</li>
-                </ul>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={progress.configurationComplete.team}
-                    onCheckedChange={() => markConfigComplete("team")}
-                  />
-                  <Label className="cursor-pointer" onClick={() => markConfigComplete("team")}>
-                    Team members configured
-                  </Label>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Email Address *</Label>
+                      <Input
+                        type="email"
+                        placeholder="teammate@company.com"
+                        value={teamMemberEmail}
+                        onChange={(e) => setTeamMemberEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <Input
+                        placeholder="John Doe"
+                        value={teamMemberName}
+                        onChange={(e) => setTeamMemberName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Role</Label>
+                    <select
+                      className="w-full px-3 py-2 rounded-md border border-input bg-background"
+                      value={teamMemberRole}
+                      onChange={(e) => setTeamMemberRole(e.target.value as "admin" | "agent" | "viewer")}
+                    >
+                      <option value="viewer">Viewer - Can only view conversations</option>
+                      <option value="agent">Agent - Can manage conversations</option>
+                      <option value="admin">Admin - Full access to settings</option>
+                    </select>
+                  </div>
+                  <Button 
+                    onClick={addTeamMember} 
+                    disabled={!teamMemberEmail || saving}
+                    className="w-full"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Send Invitation
+                  </Button>
                 </div>
+
+                {createdTeamMembers.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Invited Members ({createdTeamMembers.length})</Label>
+                    <div className="space-y-2">
+                      {createdTeamMembers.map((member, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm p-2 rounded bg-primary/5">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          <span className="font-medium">{member.name}</span>
+                          <span className="text-muted-foreground">({member.email})</span>
+                          <span className="ml-auto text-xs bg-primary/10 px-2 py-1 rounded">{member.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 You can add more team members later in Settings → Staff & Teams
+                </p>
               </CardContent>
             </Card>
 
@@ -1124,26 +1305,62 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                   <Tags className="w-5 h-5 text-primary" />
                   <CardTitle>Conversation Statuses</CardTitle>
                 </div>
+                <CardDescription>
+                  Create statuses to organize and track conversation progress.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Create custom statuses to organize and track conversations.
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                  <li>• Go to Settings → Statuses</li>
-                  <li>• Create statuses (e.g., New, In Progress, Resolved)</li>
-                  <li>• Assign colors for easy identification</li>
-                  <li>• Set up auto-task creation rules</li>
-                </ul>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={progress.configurationComplete.statuses}
-                    onCheckedChange={() => markConfigComplete("statuses")}
-                  />
-                  <Label className="cursor-pointer" onClick={() => markConfigComplete("statuses")}>
-                    Statuses configured
-                  </Label>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2 space-y-2">
+                      <Label>Status Name *</Label>
+                      <Input
+                        placeholder="e.g., New Lead, In Progress, Resolved"
+                        value={statusName}
+                        onChange={(e) => setStatusName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Color</Label>
+                      <Input
+                        type="color"
+                        value={statusColor}
+                        onChange={(e) => setStatusColor(e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={addStatus} 
+                    disabled={!statusName || saving}
+                    className="w-full"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Create Status
+                  </Button>
                 </div>
+
+                {createdStatuses.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Created Statuses ({createdStatuses.length})</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {createdStatuses.map((status, idx) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center gap-2 px-3 py-1 rounded-full text-sm"
+                          style={{ backgroundColor: status.color + '20', color: status.color }}
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          {status.name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 You can manage statuses later in Settings → Statuses
+                </p>
               </CardContent>
             </Card>
 
@@ -1151,28 +1368,61 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <FileText className="w-5 h-5 text-primary" />
-                  <CardTitle>Message Templates</CardTitle>
+                  <CardTitle>Quick Reply Templates</CardTitle>
                 </div>
+                <CardDescription>
+                  Create templates for frequently used responses. Use them with /shortcut.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Create quick replies and templates for common responses.
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                  <li>• Go to Settings → Quick Replies</li>
-                  <li>• Create templates for FAQs</li>
-                  <li>• Use placeholders for personalization</li>
-                  <li>• Set up WhatsApp message templates (if applicable)</li>
-                </ul>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={progress.configurationComplete.templates}
-                    onCheckedChange={() => markConfigComplete("templates")}
-                  />
-                  <Label className="cursor-pointer" onClick={() => markConfigComplete("templates")}>
-                    Templates configured
-                  </Label>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label>Shortcut * (without /)</Label>
+                    <Input
+                      placeholder="e.g., greeting, hours, refund"
+                      value={templateShortcut}
+                      onChange={(e) => setTemplateShortcut(e.target.value.replace(/\//g, ''))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Message Content *</Label>
+                    <textarea
+                      className="w-full px-3 py-2 rounded-md border border-input bg-background min-h-[100px]"
+                      placeholder="Hi! Thanks for reaching out. How can I help you today?"
+                      value={templateContent}
+                      onChange={(e) => setTemplateContent(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    onClick={addTemplate} 
+                    disabled={!templateShortcut || !templateContent || saving}
+                    className="w-full"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Create Template
+                  </Button>
                 </div>
+
+                {createdTemplates.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Created Templates ({createdTemplates.length})</Label>
+                    <div className="space-y-2">
+                      {createdTemplates.map((template, idx) => (
+                        <div key={idx} className="p-3 rounded border bg-card">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <code className="text-sm font-medium">/{template.shortcut}</code>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{template.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 You can create more templates later in Settings → Quick Replies
+                </p>
               </CardContent>
             </Card>
           </div>
