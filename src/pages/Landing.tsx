@@ -615,7 +615,7 @@ const Landing = () => {
               <Button onClick={() => navigate("/signup")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
                 Start Free Trial
               </Button>
-              <Button onClick={() => navigate("/pricing")} variant="outline" className="rounded-full border-white text-white hover:bg-white/10 font-bold px-8 py-6">
+              <Button onClick={() => navigate("/pricing")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
                 View Pricing
               </Button>
             </div>
