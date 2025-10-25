@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Search, X } from "lucide-react";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -10,6 +12,7 @@ import { PublicHeader } from "@/components/PublicHeader";
 const FAQ = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const faqCategories = [
     {
@@ -368,6 +371,24 @@ const FAQ = () => {
     }
   ];
 
+  // Filter FAQ categories and questions based on search query
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return faqCategories;
+
+    const query = searchQuery.toLowerCase();
+    
+    return faqCategories
+      .map(category => ({
+        ...category,
+        questions: category.questions.filter(
+          q => 
+            q.question.toLowerCase().includes(query) ||
+            q.answer.toLowerCase().includes(query)
+        )
+      }))
+      .filter(category => category.questions.length > 0);
+  }, [searchQuery]);
+
   // Flatten all questions for FAQ schema
   const allQuestions = faqCategories.flatMap(cat => cat.questions);
 
@@ -410,16 +431,55 @@ const FAQ = () => {
           <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 text-foreground">
             Frequently Asked Questions
           </h1>
-          <p className="text-xl text-muted-foreground max-w-[700px] mx-auto">
+          <p className="text-xl text-muted-foreground max-w-[700px] mx-auto mb-8">
             Everything you need to know about À La Carte Chat
           </p>
+
+          {/* Search Bar */}
+          <div className="max-w-[600px] mx-auto relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search FAQs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-12 h-12 text-base"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
       {/* FAQ Categories */}
       <section className="py-12 px-6">
         <div className="max-w-[900px] mx-auto">
-          {faqCategories.map((category, idx) => (
+          {filteredCategories.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-xl text-muted-foreground mb-2">No results found for "{searchQuery}"</p>
+              <p className="text-muted-foreground">Try a different search term or browse all categories</p>
+              <Button 
+                onClick={() => setSearchQuery("")} 
+                variant="outline" 
+                className="mt-6"
+              >
+                Clear Search
+              </Button>
+            </div>
+          ) : (
+            <>
+              {searchQuery && (
+                <p className="text-sm text-muted-foreground mb-6">
+                  Found {filteredCategories.reduce((acc, cat) => acc + cat.questions.length, 0)} result(s) in {filteredCategories.length} categor{filteredCategories.length === 1 ? 'y' : 'ies'}
+                </p>
+              )}
+              {filteredCategories.map((category, idx) => (
             <div key={idx} className="mb-12">
               <h2 className="text-3xl font-bold mb-6 text-foreground">{category.category}</h2>
               <Accordion type="single" collapsible className="space-y-4">
@@ -436,6 +496,8 @@ const FAQ = () => {
               </Accordion>
             </div>
           ))}
+          </>
+          )}
         </div>
       </section>
 
