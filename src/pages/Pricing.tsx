@@ -4,11 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Globe, MessageSquare } from "lucide-react";
+import { Check, Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { STRIPE_PRODUCTS, type SubscriptionTier, getLocalizedPrice, formatPrice } from "@/lib/stripeConfig";
-import { useCountryPricing } from "@/hooks/useCountryPricing";
+import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -17,7 +16,6 @@ export default function Pricing() {
   const { user, subscriptionState } = useAuth();
   const navigate = useNavigate();
   const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
-  const { countryInfo, loading: countryLoading } = useCountryPricing();
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (!user) {
@@ -91,14 +89,6 @@ export default function Pricing() {
           <p className="text-xl text-muted-foreground">
             Select the perfect plan for your business needs
           </p>
-          {!countryLoading && countryInfo.currency !== "USD" && (
-            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
-              <Globe className="w-4 h-4" />
-              <span>
-                Pricing shown in {countryInfo.currency} for {countryInfo.country}
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
@@ -132,11 +122,7 @@ export default function Pricing() {
                   ) : (
                     <>
                       <span className="text-5xl font-bold text-foreground">
-                        {formatPrice(
-                          getLocalizedPrice(tier as SubscriptionTier, countryInfo.currency),
-                          countryInfo.currency,
-                          countryInfo.currencySymbol
-                        )}
+                        ${config.price}
                       </span>
                       <span className="text-muted-foreground text-lg">/{config.interval}</span>
                     </>
