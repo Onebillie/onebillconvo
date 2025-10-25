@@ -3046,6 +3046,62 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          business_id: string
+          channel: string | null
+          created_at: string | null
+          id: string
+          link: string | null
+          message: string
+          metadata: Json | null
+          notification_type: string
+          priority: string | null
+          sent: boolean | null
+          sent_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          priority?: string | null
+          sent?: boolean | null
+          sent_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          priority?: string | null
+          sent?: boolean | null
+          sent_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
