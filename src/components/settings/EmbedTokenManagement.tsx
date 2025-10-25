@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EmbedWidgetWizard } from "./EmbedWidgetWizard";
-import { WidgetCodeDialog } from "./WidgetCodeDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,8 +70,6 @@ export function EmbedTokenManagement() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardTokenId, setWizardTokenId] = useState<string | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
-  const [codeDialogToken, setCodeDialogToken] = useState<EmbedToken | null>(null);
-  const [templateSelector, setTemplateSelector] = useState<EmbedToken | null>(null);
 
   useEffect(() => {
     fetchTokens();
@@ -469,11 +466,14 @@ ${baseCode}`;
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => setCodeDialogToken(token)}
-                        title="Get embed code"
+                        onClick={() => {
+                          setWizardTokenId(token.id);
+                          setWizardOpen(true);
+                        }}
+                        title="Customize & get embed code"
                       >
                         <Code className="h-4 w-4" />
-                        <span className="ml-1">Get Embed Code</span>
+                        <span className="ml-1">Customize Widget</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -790,20 +790,6 @@ ${baseCode}`;
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {codeDialogToken && businessId && (
-        <WidgetCodeDialog
-          open={!!codeDialogToken}
-          onClose={() => setCodeDialogToken(null)}
-          token={codeDialogToken}
-          businessId={businessId}
-          onCustomize={() => {
-            setWizardTokenId(codeDialogToken.id);
-            setCodeDialogToken(null);
-            setWizardOpen(true);
-          }}
-        />
-      )}
 
       {wizardOpen && wizardTokenId && businessId && (
         <EmbedWidgetWizard
