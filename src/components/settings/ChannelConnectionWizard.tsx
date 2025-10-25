@@ -590,6 +590,7 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                         value={emailCreds.email}
                         onChange={(e) => setEmailCreds({ ...emailCreds, email: e.target.value })}
                       />
+                      <p className="text-xs text-muted-foreground">Your business email address</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -600,6 +601,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={emailCreds.smtpHost}
                           onChange={(e) => setEmailCreds({ ...emailCreds, smtpHost: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Gmail: smtp.gmail.com | <a href="https://support.google.com/mail/answer/7126229" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Help</a>
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label>SMTP Port</Label>
@@ -609,6 +613,7 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={emailCreds.smtpPort}
                           onChange={(e) => setEmailCreds({ ...emailCreds, smtpPort: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">Usually 587 or 465</p>
                       </div>
                     </div>
 
@@ -620,6 +625,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={emailCreds.imapHost}
                           onChange={(e) => setEmailCreds({ ...emailCreds, imapHost: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Gmail: imap.gmail.com | <a href="https://support.google.com/mail/answer/7126229" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Help</a>
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label>IMAP Port</Label>
@@ -629,17 +637,21 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={emailCreds.imapPort}
                           onChange={(e) => setEmailCreds({ ...emailCreds, imapPort: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">Usually 993</p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Password / App Password</Label>
+                      <Label>Password / App Password (Recommended)</Label>
                       <Input
                         type="password"
                         placeholder="Enter password"
                         value={emailCreds.smtpPassword}
                         onChange={(e) => setEmailCreds({ ...emailCreds, smtpPassword: e.target.value })}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        🔐 <strong>Get App Password:</strong> <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Gmail</a> | <a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Outlook</a>
+                      </p>
                     </div>
 
                     <Button 
@@ -750,7 +762,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                         value={whatsappCreds.accessToken}
                         onChange={(e) => setWhatsappCreds({ ...whatsappCreds, accessToken: e.target.value })}
                       />
-                      <p className="text-xs text-muted-foreground">From API Setup section in Meta Developer Portal</p>
+                      <p className="text-xs text-muted-foreground">
+                        📍 <strong>Get it here:</strong> <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Meta Developer Portal</a> → Your App → WhatsApp → API Setup → Temporary Access Token
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -760,7 +774,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                         value={whatsappCreds.phoneId}
                         onChange={(e) => setWhatsappCreds({ ...whatsappCreds, phoneId: e.target.value })}
                       />
-                      <p className="text-xs text-muted-foreground">From your phone number settings</p>
+                      <p className="text-xs text-muted-foreground">
+                        📍 <strong>Get it here:</strong> <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Meta Developer Portal</a> → Your App → WhatsApp → API Setup → Phone Number ID (shown above the token)
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -770,7 +786,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                         value={whatsappCreds.businessAccountId}
                         onChange={(e) => setWhatsappCreds({ ...whatsappCreds, businessAccountId: e.target.value })}
                       />
-                      <p className="text-xs text-muted-foreground">From app settings</p>
+                      <p className="text-xs text-muted-foreground">
+                        📍 <strong>Get it here:</strong> <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Meta Developer Portal</a> → Your App → WhatsApp → Configuration → Business Account ID
+                      </p>
                     </div>
 
                     <Button 
@@ -848,6 +866,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={smsCreds.accountSid}
                           onChange={(e) => setSmsCreds({ ...smsCreds, accountSid: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          📍 <strong>Get it here:</strong> <a href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Twilio Console</a> → Account Info → Account SID
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -858,6 +879,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={smsCreds.authToken}
                           onChange={(e) => setSmsCreds({ ...smsCreds, authToken: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          📍 <strong>Get it here:</strong> <a href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Twilio Console</a> → Account Info → Auth Token (click "View" to reveal)
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -867,6 +891,9 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                           value={smsCreds.phoneNumber}
                           onChange={(e) => setSmsCreds({ ...smsCreds, phoneNumber: e.target.value })}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          📍 <strong>Get it here:</strong> <a href="https://console.twilio.com/us1/develop/phone-numbers/manage/incoming" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Twilio Phone Numbers</a> → Active Numbers (or <a href="https://console.twilio.com/us1/develop/phone-numbers/manage/search" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Buy a Number</a>)
+                        </p>
                       </div>
 
                       <Button 
@@ -916,12 +943,14 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Connect your Facebook Page</li>
                       <li>• Grant Messenger permissions</li>
-                      <li>• Configure in Settings → Channels → Facebook</li>
+                      <li>• Configure webhook settings</li>
                     </ul>
                     
                     <Alert>
                       <AlertDescription>
-                        Go to <strong>Settings → Channels → Facebook</strong> to complete the OAuth connection process.
+                        📍 <strong>Start here:</strong> <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Meta Developer Portal</a> → Create App → Business → Add Messenger Product
+                        <br /><br />
+                        Then go to <strong>Settings → Channels → Facebook</strong> in AlacarteChat to complete the connection.
                       </AlertDescription>
                     </Alert>
 
@@ -960,12 +989,16 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Convert to Instagram Business Account</li>
                       <li>• Connect to Facebook Page</li>
-                      <li>• Configure in Settings → Channels → Instagram</li>
+                      <li>• Enable Instagram messaging</li>
                     </ul>
                     
                     <Alert>
                       <AlertDescription>
-                        Go to <strong>Settings → Channels → Instagram</strong> to complete the OAuth connection process.
+                        📍 <strong>Start here:</strong> <a href="https://www.facebook.com/pages" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Facebook Pages</a> → Settings → Instagram → Connect Account
+                        <br /><br />
+                        Then visit <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Meta Developer Portal</a> to add Instagram Messaging to your app.
+                        <br /><br />
+                        Finally, configure in <strong>Settings → Channels → Instagram</strong> in AlacarteChat.
                       </AlertDescription>
                     </Alert>
 
@@ -1002,15 +1035,15 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                       To add the chat widget to your website:
                     </p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                      <li>• Customize your widget appearance</li>
-                      <li>• Get embed code</li>
-                      <li>• Add to your website's HTML</li>
-                      <li>• Test the widget on your site</li>
+                      <li>• Customize widget appearance and behavior</li>
+                      <li>• Copy the embed code snippet</li>
+                      <li>• Paste it before the closing &lt;/body&gt; tag in your website's HTML</li>
+                      <li>• Test the widget on your live site</li>
                     </ul>
                     
                     <Alert>
                       <AlertDescription>
-                        Go to <strong>Settings → Channels → Website Chat Widget</strong> to customize and get the embed code.
+                        📍 <strong>Configure here:</strong> Go to <strong>Settings → Channels → Website Chat Widget</strong> in AlacarteChat to customize appearance, get your embed code, and set up AI responses.
                       </AlertDescription>
                     </Alert>
 
