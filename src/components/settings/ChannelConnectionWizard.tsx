@@ -1364,38 +1364,30 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                 Reset Wizard
               </Button>
               {progress.currentStep < totalSteps - 1 ? (
-                <Button 
-                  onClick={nextStep}
-                  disabled={
-                    (progress.currentStep === 2 && progress.selectedChannels.email && !progress.channelVerified.email) ||
-                    (progress.currentStep === 3 && progress.selectedChannels.whatsapp && !progress.channelVerified.whatsapp) ||
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={nextStep}
+                  >
+                    Skip for Now
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                  {((progress.currentStep === 2 && progress.selectedChannels.email && progress.channelVerified.email) ||
+                    (progress.currentStep === 3 && progress.selectedChannels.whatsapp && progress.channelVerified.whatsapp) ||
                     (progress.currentStep === 4 && (
-                      (progress.selectedChannels.sms && !progress.channelVerified.sms) ||
-                      (progress.selectedChannels.facebook && !progress.channelVerified.facebook) ||
-                      (progress.selectedChannels.instagram && !progress.channelVerified.instagram) ||
-                      (progress.selectedChannels.website && !progress.channelVerified.website)
-                    ))
-                  }
-                >
-                  {(progress.currentStep === 2 && progress.selectedChannels.email && !progress.channelVerified.email) ||
-                   (progress.currentStep === 3 && progress.selectedChannels.whatsapp && !progress.channelVerified.whatsapp) ||
-                   (progress.currentStep === 4 && (
-                     (progress.selectedChannels.sms && !progress.channelVerified.sms) ||
-                     (progress.selectedChannels.facebook && !progress.channelVerified.facebook) ||
-                     (progress.selectedChannels.instagram && !progress.channelVerified.instagram) ||
-                     (progress.selectedChannels.website && !progress.channelVerified.website)
-                   )) ? (
-                    <>
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      Verify Connection First
-                    </>
-                  ) : (
-                    <>
+                      (!progress.selectedChannels.sms || progress.channelVerified.sms) &&
+                      (!progress.selectedChannels.facebook || progress.channelVerified.facebook) &&
+                      (!progress.selectedChannels.instagram || progress.channelVerified.instagram) &&
+                      (!progress.selectedChannels.website || progress.channelVerified.website)
+                    )) ||
+                    progress.currentStep < 2 ||
+                    progress.currentStep > 4) && (
+                    <Button onClick={nextStep}>
                       Next
                       <ChevronRight className="w-4 h-4 ml-1" />
-                    </>
+                    </Button>
                   )}
-                </Button>
+                </>
               ) : (
                 <Button onClick={completeWizard}>
                   Complete
