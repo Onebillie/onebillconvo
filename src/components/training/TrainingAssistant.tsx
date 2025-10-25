@@ -39,10 +39,63 @@ export const TrainingAssistant = () => {
   }, [messages]);
 
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = (e: any) => {
+      setIsOpen(true);
+      setIsMinimized(false);
+      
+      // If a question was provided, auto-send it
+      if (e.detail?.question) {
+        setInput(e.detail.question);
+        // Small delay to ensure component is fully rendered
+        setTimeout(() => {
+          const trimmedQuestion = e.detail.question.trim();
+          if (trimmedQuestion) {
+            setMessages(prev => [...prev, { role: 'user', content: trimmedQuestion }]);
+            setLoading(true);
+            
+            supabase.auth.getUser().then(({ data: { user } }) => {
+              if (!user) return;
+              
+              supabase
+                .from('business_users')
+                .select('business_id')
+                .eq('user_id', user.id)
+                .single()
+                .then(({ data: businessData }) => {
+                  supabase.functions.invoke('training-assistant', {
+                    body: {
+                      question: trimmedQuestion,
+                      currentPage: location.pathname + location.search,
+                      conversationId,
+                      userId: user.id,
+                      businessId: businessData?.business_id,
+                    },
+                  }).then(({ data, error }) => {
+                    if (error) throw error;
+                    setMessages(prev => [...prev, { role: 'assistant', content: data.answer }]);
+                    setConversationId(data.conversationId);
+                    setRelatedContent(data.relatedContent || []);
+                    setInput('');
+                  }).catch((error) => {
+                    console.error('Training assistant error:', error);
+                    toast({
+                      title: 'Error',
+                      description: 'Failed to get response. Please try again.',
+                      variant: 'destructive',
+                    });
+                  }).finally(() => {
+                    setLoading(false);
+                  });
+                });
+            });
+          }
+        }, 100);
+      }
+    };
+    
     window.addEventListener('open-training-assistant', handleOpen);
     return () => window.removeEventListener('open-training-assistant', handleOpen);
-  }, []);
+  }, [conversationId, location.pathname, location.search, toast]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -164,14 +217,23 @@ export const TrainingAssistant = () => {
                 <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="font-medium mb-2">Hi! I'm your training assistant.</p>
                 <p className="text-sm">Ask me anything about using À La Carte Chat!</p>
+                <p className="text-xs mt-2 text-muted-foreground/70">
+                  I can help with setup, configuration, features, and troubleshooting.
+                </p>
                 <div className="mt-6 space-y-2 text-left">
-                  <p className="text-xs font-medium">Try asking:</p>
+                  <p className="text-xs font-medium">Example questions:</p>
                   <div className="space-y-1">
                     <button
-                      onClick={() => setInput('How do I send a WhatsApp broadcast?')}
+                      onClick={() => setInput('How do I create a WhatsApp template message?')}
                       className="block w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors"
                     >
-                      • How do I send a WhatsApp broadcast?
+                      • How do I create a WhatsApp template message?
+                    </button>
+                    <button
+                      onClick={() => setInput('How do I send a broadcast to a customer segment?')}
+                      className="block w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors"
+                    >
+                      • How do I send a broadcast to a customer segment?
                     </button>
                     <button
                       onClick={() => setInput('How do I set up the AI assistant?')}
@@ -180,10 +242,10 @@ export const TrainingAssistant = () => {
                       • How do I set up the AI assistant?
                     </button>
                     <button
-                      onClick={() => setInput('How do I add team members?')}
+                      onClick={() => setInput('How do I configure team permissions?')}
                       className="block w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors"
                     >
-                      • How do I add team members?
+                      • How do I configure team permissions?
                     </button>
                   </div>
                 </div>

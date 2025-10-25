@@ -139,9 +139,17 @@ export default function Training() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search for guides, features, or topics..."
+                placeholder="Ask anything about À La Carte Chat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    const event = new CustomEvent('open-training-assistant', { 
+                      detail: { question: searchQuery.trim() } 
+                    });
+                    window.dispatchEvent(event);
+                  }
+                }}
                 className="pl-10 h-12 text-lg"
               />
             </div>
@@ -149,9 +157,12 @@ export default function Training() {
               size="lg"
               className="h-12 gap-2"
               onClick={() => {
-                const event = new CustomEvent('open-training-assistant');
+                const event = new CustomEvent('open-training-assistant', { 
+                  detail: { question: searchQuery.trim() } 
+                });
                 window.dispatchEvent(event);
               }}
+              disabled={!searchQuery.trim()}
             >
               <Bot className="h-5 w-5" />
               Ask AI
