@@ -134,15 +134,28 @@ export default function Training() {
 
         {/* Search */}
         <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search for guides, features, or topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-lg"
-            />
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search for guides, features, or topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 text-lg"
+              />
+            </div>
+            <Button 
+              size="lg"
+              className="h-12 gap-2"
+              onClick={() => {
+                const event = new CustomEvent('open-training-assistant');
+                window.dispatchEvent(event);
+              }}
+            >
+              <Bot className="h-5 w-5" />
+              Ask AI
+            </Button>
           </div>
         </div>
 

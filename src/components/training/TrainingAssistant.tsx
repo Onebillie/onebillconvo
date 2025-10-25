@@ -38,6 +38,12 @@ export const TrainingAssistant = () => {
     }
   }, [messages]);
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-training-assistant', handleOpen);
+    return () => window.removeEventListener('open-training-assistant', handleOpen);
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
