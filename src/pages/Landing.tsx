@@ -251,7 +251,7 @@ const Landing = () => {
         {/* Use Cases */}
         <section className="py-20 px-6 bg-background">
           <div className="max-w-[1200px] mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Built for Every Team</h2>
+            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Built for Teams</h2>
             <p className="text-center text-muted-foreground mb-12 text-lg">
               No matter your industry, we have you covered
             </p>
