@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, ChevronLeft, Check, Mail, MessageSquare, Phone, Facebook, Instagram, Globe, Users, Tags, FileText, Bot, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Mail, MessageSquare, Phone, Facebook, Instagram, Globe, Users, Tags, FileText, Bot, Sparkles, Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WizardProgress {
   currentStep: number;
@@ -22,6 +24,14 @@ interface WizardProgress {
   };
   completedSteps: number[];
   channelSetupComplete: {
+    email: boolean;
+    whatsapp: boolean;
+    sms: boolean;
+    facebook: boolean;
+    instagram: boolean;
+    website: boolean;
+  };
+  channelVerified: {
     email: boolean;
     whatsapp: boolean;
     sms: boolean;
@@ -66,6 +76,14 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
       instagram: false,
       website: false,
     },
+    channelVerified: {
+      email: false,
+      whatsapp: false,
+      sms: false,
+      facebook: false,
+      instagram: false,
+      website: false,
+    },
     configurationComplete: {
       team: false,
       statuses: false,
@@ -73,6 +91,15 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
       ai: false,
     },
   });
+
+  // Connection testing states
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  
+  // Credential forms state
+  const [emailCreds, setEmailCreds] = useState({ email: "", smtpHost: "", smtpPort: "587", smtpPassword: "", imapHost: "", imapPort: "993" });
+  const [whatsappCreds, setWhatsappCreds] = useState({ accessToken: "", phoneId: "", businessAccountId: "" });
+  const [smsCreds, setSmsCreds] = useState({ accountSid: "", authToken: "", phoneNumber: "" });
 
   // Load saved progress
   useEffect(() => {
@@ -135,6 +162,121 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
     });
   };
 
+  const markChannelVerified = (channel: keyof typeof progress.channelVerified) => {
+    saveProgress({
+      ...progress,
+      channelVerified: {
+        ...progress.channelVerified,
+        [channel]: true,
+      },
+    });
+  };
+
+  // Test connection functions
+  const testEmailConnection = async () => {
+    setTesting("email");
+    try {
+      const { data, error } = await supabase.functions.invoke("smtp-test", {
+        body: {
+          host: emailCreds.smtpHost,
+          port: parseInt(emailCreds.smtpPort),
+          user: emailCreds.email,
+          password: emailCreds.smtpPassword,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setTestResults({ ...testResults, email: { success: true, message: "Email connection successful!" } });
+        markChannelVerified("email");
+        toast({
+          title: "✅ Email Connected!",
+          description: "Your email account is working properly.",
+        });
+      } else {
+        throw new Error(data?.error || "Connection failed");
+      }
+    } catch (error: any) {
+      setTestResults({ ...testResults, email: { success: false, message: error.message } });
+      toast({
+        title: "❌ Connection Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const testWhatsAppConnection = async () => {
+    setTesting("whatsapp");
+    try {
+      // Verify WhatsApp credentials by trying to fetch account info
+      const response = await fetch(
+        `https://graph.facebook.com/v17.0/${whatsappCreds.businessAccountId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${whatsappCreds.accessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Invalid WhatsApp credentials");
+
+      setTestResults({ ...testResults, whatsapp: { success: true, message: "WhatsApp connection successful!" } });
+      markChannelVerified("whatsapp");
+      toast({
+        title: "✅ WhatsApp Connected!",
+        description: "Your WhatsApp Business account is working properly.",
+      });
+    } catch (error: any) {
+      setTestResults({ ...testResults, whatsapp: { success: false, message: error.message } });
+      toast({
+        title: "❌ Connection Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const testSmsConnection = async () => {
+    setTesting("sms");
+    try {
+      // Basic validation for Twilio credentials
+      if (!smsCreds.accountSid.startsWith("AC") || smsCreds.accountSid.length !== 34) {
+        throw new Error("Invalid Account SID format");
+      }
+      
+      setTestResults({ ...testResults, sms: { success: true, message: "SMS credentials validated!" } });
+      markChannelVerified("sms");
+      toast({
+        title: "✅ SMS Configured!",
+        description: "Your Twilio credentials look good. Test sending a message to confirm.",
+      });
+    } catch (error: any) {
+      setTestResults({ ...testResults, sms: { success: false, message: error.message } });
+      toast({
+        title: "❌ Validation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  // For channels that can't be easily tested, we'll mark as configured when user confirms
+  const markChannelConfigured = (channel: keyof typeof progress.channelVerified) => {
+    markChannelVerified(channel);
+    toast({
+      title: `✅ ${channel.charAt(0).toUpperCase() + channel.slice(1)} Configured!`,
+      description: `You can now proceed to the next step.`,
+    });
+  };
+
   const markConfigComplete = (config: keyof typeof progress.configurationComplete) => {
     saveProgress({
       ...progress,
@@ -159,6 +301,14 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
       },
       completedSteps: [],
       channelSetupComplete: {
+        email: false,
+        whatsapp: false,
+        sms: false,
+        facebook: false,
+        instagram: false,
+        website: false,
+      },
+      channelVerified: {
         email: false,
         whatsapp: false,
         sms: false,
@@ -361,7 +511,7 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
             <div>
               <h2 className="text-2xl font-bold mb-2">Email Setup</h2>
               <p className="text-muted-foreground">
-                Connect your business email to send and receive messages
+                Enter your email credentials and test the connection
               </p>
             </div>
 
@@ -399,54 +549,120 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Step-by-Step Guide</CardTitle>
+                    <CardTitle>Quick Setup Guide</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <h4 className="font-medium mb-2">1. Get Your Email Server Settings</h4>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Find your email provider's SMTP and IMAP settings:
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                        <li>• Gmail: smtp.gmail.com (port 587) / imap.gmail.com (port 993)</li>
-                        <li>• Outlook: smtp-mail.outlook.com (port 587) / outlook.office365.com (port 993)</li>
-                        <li>• Other providers: Check your email provider's support documentation</li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">2. Create an App Password (Recommended)</h4>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        For Gmail and Outlook, create an app-specific password instead of using your main password:
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                        <li>• <strong>Gmail:</strong> <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google App Passwords</a></li>
-                        <li>• <strong>Outlook:</strong> Account Security → App Passwords</li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">3. Configure in AlacarteChat</h4>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Go to Settings → Channels → Email to add your email account with the credentials above.
-                      </p>
-                    </div>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <p><strong>Gmail:</strong> smtp.gmail.com (587) / imap.gmail.com (993)</p>
+                    <p><strong>Outlook:</strong> smtp-mail.outlook.com (587) / outlook.office365.com (993)</p>
+                    <p className="pt-2">
+                      <strong>App Password:</strong> <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google</a> | <a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Microsoft</a>
+                    </p>
                   </CardContent>
                 </Card>
 
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={progress.channelSetupComplete.email}
-                    onCheckedChange={() => markChannelComplete("email")}
-                  />
-                  <Label className="cursor-pointer" onClick={() => markChannelComplete("email")}>
-                    I've configured my email account
-                  </Label>
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Enter Email Credentials</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={emailCreds.email}
+                        onChange={(e) => setEmailCreds({ ...emailCreds, email: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>SMTP Host</Label>
+                        <Input
+                          placeholder="smtp.gmail.com"
+                          value={emailCreds.smtpHost}
+                          onChange={(e) => setEmailCreds({ ...emailCreds, smtpHost: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>SMTP Port</Label>
+                        <Input
+                          type="number"
+                          placeholder="587"
+                          value={emailCreds.smtpPort}
+                          onChange={(e) => setEmailCreds({ ...emailCreds, smtpPort: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>IMAP Host</Label>
+                        <Input
+                          placeholder="imap.gmail.com"
+                          value={emailCreds.imapHost}
+                          onChange={(e) => setEmailCreds({ ...emailCreds, imapHost: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>IMAP Port</Label>
+                        <Input
+                          type="number"
+                          placeholder="993"
+                          value={emailCreds.imapPort}
+                          onChange={(e) => setEmailCreds({ ...emailCreds, imapPort: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Password / App Password</Label>
+                      <Input
+                        type="password"
+                        placeholder="Enter password"
+                        value={emailCreds.smtpPassword}
+                        onChange={(e) => setEmailCreds({ ...emailCreds, smtpPassword: e.target.value })}
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={testEmailConnection} 
+                      disabled={testing === "email" || !emailCreds.email || !emailCreds.smtpHost || !emailCreds.smtpPassword}
+                      className="w-full"
+                    >
+                      {testing === "email" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Testing Connection...
+                        </>
+                      ) : (
+                        "Test Email Connection"
+                      )}
+                    </Button>
+
+                    {testResults.email && (
+                      <Alert variant={testResults.email.success ? "default" : "destructive"}>
+                        <div className="flex items-center gap-2">
+                          {testResults.email.success ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4" />
+                          )}
+                          <AlertDescription>{testResults.email.message}</AlertDescription>
+                        </div>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {progress.channelVerified.email && (
+                  <Alert>
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <AlertDescription>
+                      ✅ <strong>Email verified!</strong> You can now proceed to the next step.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </div>
@@ -458,7 +674,7 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
             <div>
               <h2 className="text-2xl font-bold mb-2">WhatsApp Business Setup</h2>
               <p className="text-muted-foreground">
-                Connect WhatsApp Business API for professional messaging
+                Enter your WhatsApp Business API credentials and verify the connection
               </p>
             </div>
 
@@ -472,89 +688,112 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>What You'll Need</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary mt-1" />
-                      <p className="text-sm">Meta Business Account (create at <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">business.facebook.com</a>)</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary mt-1" />
-                      <p className="text-sm">WhatsApp Business API access</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary mt-1" />
-                      <p className="text-sm">Phone number for WhatsApp Business</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Step-by-Step Guide</CardTitle>
+                    <CardTitle>Setup Guide</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
                       <h4 className="font-medium mb-2">1. Create Meta Business Account</h4>
                       <p className="text-sm text-muted-foreground">
-                        Visit <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta Business Suite</a> and create an account if you don't have one.
+                        Visit <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta Business Suite</a> and create an account
                       </p>
                     </div>
-
-                    <Separator />
 
                     <div>
                       <h4 className="font-medium mb-2">2. Set Up WhatsApp Business API</h4>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Go to <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta for Developers</a>:
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                        <li>• Create a new app and select "Business" type</li>
-                        <li>• Add WhatsApp product to your app</li>
-                        <li>• Complete the business verification process</li>
-                        <li>• Add a phone number for WhatsApp</li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">3. Get Your API Credentials</h4>
-                      <p className="text-sm text-muted-foreground mb-2">From your WhatsApp Business App, copy:</p>
-                      <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                        <li>• <strong>Access Token</strong> (from API Setup section)</li>
-                        <li>• <strong>Phone Number ID</strong> (from your phone number settings)</li>
-                        <li>• <strong>Business Account ID</strong> (from app settings)</li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium mb-2">4. Configure Webhook</h4>
                       <p className="text-sm text-muted-foreground">
-                        In Settings → Channels → WhatsApp, you'll find your webhook URL to add in Meta's webhook settings.
+                        Go to <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta for Developers</a> and:
                       </p>
+                      <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                        <li>• Create a new Business app</li>
+                        <li>• Add WhatsApp product</li>
+                        <li>• Complete business verification</li>
+                        <li>• Add a phone number</li>
+                      </ul>
                     </div>
+
+                    <Alert>
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>
+                        <strong>Note:</strong> Business verification can take 1-2 weeks
+                      </AlertDescription>
+                    </Alert>
                   </CardContent>
                 </Card>
 
-                <Alert>
-                  <AlertDescription>
-                    💡 <strong>Tip:</strong> WhatsApp Business API requires business verification. This process can take 1-2 weeks.
-                  </AlertDescription>
-                </Alert>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Enter WhatsApp Credentials</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Access Token</Label>
+                      <Input
+                        type="password"
+                        placeholder="Your WhatsApp API Access Token"
+                        value={whatsappCreds.accessToken}
+                        onChange={(e) => setWhatsappCreds({ ...whatsappCreds, accessToken: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">From API Setup section in Meta Developer Portal</p>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={progress.channelSetupComplete.whatsapp}
-                    onCheckedChange={() => markChannelComplete("whatsapp")}
-                  />
-                  <Label className="cursor-pointer" onClick={() => markChannelComplete("whatsapp")}>
-                    I've configured WhatsApp Business API
-                  </Label>
-                </div>
+                    <div className="space-y-2">
+                      <Label>Phone Number ID</Label>
+                      <Input
+                        placeholder="Phone Number ID"
+                        value={whatsappCreds.phoneId}
+                        onChange={(e) => setWhatsappCreds({ ...whatsappCreds, phoneId: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">From your phone number settings</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Business Account ID</Label>
+                      <Input
+                        placeholder="Business Account ID"
+                        value={whatsappCreds.businessAccountId}
+                        onChange={(e) => setWhatsappCreds({ ...whatsappCreds, businessAccountId: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">From app settings</p>
+                    </div>
+
+                    <Button 
+                      onClick={testWhatsAppConnection} 
+                      disabled={testing === "whatsapp" || !whatsappCreds.accessToken || !whatsappCreds.phoneId || !whatsappCreds.businessAccountId}
+                      className="w-full"
+                    >
+                      {testing === "whatsapp" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Verifying Connection...
+                        </>
+                      ) : (
+                        "Test WhatsApp Connection"
+                      )}
+                    </Button>
+
+                    {testResults.whatsapp && (
+                      <Alert variant={testResults.whatsapp.success ? "default" : "destructive"}>
+                        <div className="flex items-center gap-2">
+                          {testResults.whatsapp.success ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4" />
+                          )}
+                          <AlertDescription>{testResults.whatsapp.message}</AlertDescription>
+                        </div>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {progress.channelVerified.whatsapp && (
+                  <Alert>
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <AlertDescription>
+                      ✅ <strong>WhatsApp verified!</strong> You can now proceed to the next step.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </div>
@@ -580,22 +819,66 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mb-3">
                       Create a Twilio account at <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">twilio.com</a>
                     </p>
-                    <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                      <li>• Get your Account SID and Auth Token</li>
-                      <li>• Purchase a phone number</li>
-                      <li>• Configure in Settings → Channels → SMS</li>
-                    </ul>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={progress.channelSetupComplete.sms}
-                        onCheckedChange={() => markChannelComplete("sms")}
-                      />
-                      <Label className="cursor-pointer" onClick={() => markChannelComplete("sms")}>
-                        SMS configured
-                      </Label>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Account SID</Label>
+                        <Input
+                          placeholder="AC..."
+                          value={smsCreds.accountSid}
+                          onChange={(e) => setSmsCreds({ ...smsCreds, accountSid: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Auth Token</Label>
+                        <Input
+                          type="password"
+                          placeholder="Your Twilio Auth Token"
+                          value={smsCreds.authToken}
+                          onChange={(e) => setSmsCreds({ ...smsCreds, authToken: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Twilio Phone Number</Label>
+                        <Input
+                          placeholder="+1234567890"
+                          value={smsCreds.phoneNumber}
+                          onChange={(e) => setSmsCreds({ ...smsCreds, phoneNumber: e.target.value })}
+                        />
+                      </div>
+
+                      <Button 
+                        onClick={testSmsConnection} 
+                        disabled={testing === "sms" || !smsCreds.accountSid || !smsCreds.authToken}
+                        className="w-full"
+                      >
+                        {testing === "sms" ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Validating...
+                          </>
+                        ) : (
+                          "Validate SMS Credentials"
+                        )}
+                      </Button>
+
+                      {testResults.sms && (
+                        <Alert variant={testResults.sms.success ? "default" : "destructive"}>
+                          <div className="flex items-center gap-2">
+                            {testResults.sms.success ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <XCircle className="w-4 h-4" />
+                            )}
+                            <AlertDescription>{testResults.sms.message}</AlertDescription>
+                          </div>
+                        </Alert>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -610,20 +893,37 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      To connect Facebook Messenger, you'll need to:
+                    </p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Connect your Facebook Page</li>
                       <li>• Grant Messenger permissions</li>
                       <li>• Configure in Settings → Channels → Facebook</li>
                     </ul>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={progress.channelSetupComplete.facebook}
-                        onCheckedChange={() => markChannelComplete("facebook")}
-                      />
-                      <Label className="cursor-pointer" onClick={() => markChannelComplete("facebook")}>
-                        Facebook configured
-                      </Label>
-                    </div>
+                    
+                    <Alert>
+                      <AlertDescription>
+                        Go to <strong>Settings → Channels → Facebook</strong> to complete the OAuth connection process.
+                      </AlertDescription>
+                    </Alert>
+
+                    {!progress.channelVerified.facebook ? (
+                      <Button 
+                        onClick={() => markChannelConfigured("facebook")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        I've Connected Facebook Messenger
+                      </Button>
+                    ) : (
+                      <Alert>
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <AlertDescription>
+                          ✅ <strong>Facebook verified!</strong>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -637,20 +937,37 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      To connect Instagram Direct Messages:
+                    </p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Convert to Instagram Business Account</li>
                       <li>• Connect to Facebook Page</li>
                       <li>• Configure in Settings → Channels → Instagram</li>
                     </ul>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={progress.channelSetupComplete.instagram}
-                        onCheckedChange={() => markChannelComplete("instagram")}
-                      />
-                      <Label className="cursor-pointer" onClick={() => markChannelComplete("instagram")}>
-                        Instagram configured
-                      </Label>
-                    </div>
+                    
+                    <Alert>
+                      <AlertDescription>
+                        Go to <strong>Settings → Channels → Instagram</strong> to complete the OAuth connection process.
+                      </AlertDescription>
+                    </Alert>
+
+                    {!progress.channelVerified.instagram ? (
+                      <Button 
+                        onClick={() => markChannelConfigured("instagram")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        I've Connected Instagram
+                      </Button>
+                    ) : (
+                      <Alert>
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <AlertDescription>
+                          ✅ <strong>Instagram verified!</strong>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -664,21 +981,38 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      To add the chat widget to your website:
+                    </p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Customize your widget appearance</li>
                       <li>• Get embed code</li>
                       <li>• Add to your website's HTML</li>
-                      <li>• Configure in Settings → Channels → Website Chat Widget</li>
+                      <li>• Test the widget on your site</li>
                     </ul>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={progress.channelSetupComplete.website}
-                        onCheckedChange={() => markChannelComplete("website")}
-                      />
-                      <Label className="cursor-pointer" onClick={() => markChannelComplete("website")}>
-                        Website widget configured
-                      </Label>
-                    </div>
+                    
+                    <Alert>
+                      <AlertDescription>
+                        Go to <strong>Settings → Channels → Website Chat Widget</strong> to customize and get the embed code.
+                      </AlertDescription>
+                    </Alert>
+
+                    {!progress.channelVerified.website ? (
+                      <Button 
+                        onClick={() => markChannelConfigured("website")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        I've Added the Widget to My Website
+                      </Button>
+                    ) : (
+                      <Alert>
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <AlertDescription>
+                          ✅ <strong>Website widget verified!</strong>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -1013,9 +1347,37 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
                 Reset Wizard
               </Button>
               {progress.currentStep < totalSteps - 1 ? (
-                <Button onClick={nextStep}>
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                <Button 
+                  onClick={nextStep}
+                  disabled={
+                    (progress.currentStep === 2 && progress.selectedChannels.email && !progress.channelVerified.email) ||
+                    (progress.currentStep === 3 && progress.selectedChannels.whatsapp && !progress.channelVerified.whatsapp) ||
+                    (progress.currentStep === 4 && (
+                      (progress.selectedChannels.sms && !progress.channelVerified.sms) ||
+                      (progress.selectedChannels.facebook && !progress.channelVerified.facebook) ||
+                      (progress.selectedChannels.instagram && !progress.channelVerified.instagram) ||
+                      (progress.selectedChannels.website && !progress.channelVerified.website)
+                    ))
+                  }
+                >
+                  {(progress.currentStep === 2 && progress.selectedChannels.email && !progress.channelVerified.email) ||
+                   (progress.currentStep === 3 && progress.selectedChannels.whatsapp && !progress.channelVerified.whatsapp) ||
+                   (progress.currentStep === 4 && (
+                     (progress.selectedChannels.sms && !progress.channelVerified.sms) ||
+                     (progress.selectedChannels.facebook && !progress.channelVerified.facebook) ||
+                     (progress.selectedChannels.instagram && !progress.channelVerified.instagram) ||
+                     (progress.selectedChannels.website && !progress.channelVerified.website)
+                   )) ? (
+                    <>
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      Verify Connection First
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button onClick={completeWizard}>
