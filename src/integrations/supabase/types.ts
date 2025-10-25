@@ -4364,14 +4364,17 @@ export type Database = {
           id: string
           offline_message: string | null
           primary_color: string
+          require_contact_info: boolean | null
           secondary_color: string
           show_button_text: boolean | null
           show_unread_badge: boolean | null
           sound_notifications: boolean | null
+          start_minimized: boolean | null
           text_color: string
           updated_at: string
           welcome_message: string | null
           widget_position: string
+          widget_shape: string | null
           widget_size: string
           widget_type: string
         }
@@ -4388,14 +4391,17 @@ export type Database = {
           id?: string
           offline_message?: string | null
           primary_color?: string
+          require_contact_info?: boolean | null
           secondary_color?: string
           show_button_text?: boolean | null
           show_unread_badge?: boolean | null
           sound_notifications?: boolean | null
+          start_minimized?: boolean | null
           text_color?: string
           updated_at?: string
           welcome_message?: string | null
           widget_position?: string
+          widget_shape?: string | null
           widget_size?: string
           widget_type?: string
         }
@@ -4412,14 +4418,17 @@ export type Database = {
           id?: string
           offline_message?: string | null
           primary_color?: string
+          require_contact_info?: boolean | null
           secondary_color?: string
           show_button_text?: boolean | null
           show_unread_badge?: boolean | null
           sound_notifications?: boolean | null
+          start_minimized?: boolean | null
           text_color?: string
           updated_at?: string
           welcome_message?: string | null
           widget_position?: string
+          widget_shape?: string | null
           widget_size?: string
           widget_type?: string
         }

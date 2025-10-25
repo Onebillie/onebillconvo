@@ -31,6 +31,20 @@
         customData: options.customData || {}
       };
 
+      // Try to restore session from cookie
+      const savedSession = this.getSessionFromCookie();
+      if (savedSession && savedSession.sessionToken && savedSession.customerId) {
+        this.sessionToken = savedSession.sessionToken;
+        this.conversationId = savedSession.conversationId;
+        this.customerId = savedSession.customerId;
+        this.isAuthenticated = true;
+        this.initialized = true;
+        this.injectWidget(savedSession.customization || {}, savedSession.businessName || 'Support');
+        this.loadMessages();
+        this.startPolling();
+        return;
+      }
+
       // Require pre-chat info if name/email/phone are missing
       this.requirePrechat = !(this.config.customer && this.config.customer.name && this.config.customer.email && this.config.customer.phone);
 
@@ -42,6 +56,34 @@
       } else {
         this.authenticate(this.config.customer);
       }
+    },
+
+    // Cookie management for session persistence
+    setSessionCookie: function(sessionData) {
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const cookieData = JSON.stringify(sessionData);
+      document.cookie = `alacarte_chat_session=${encodeURIComponent(cookieData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+    },
+
+    getSessionFromCookie: function() {
+      const name = 'alacarte_chat_session=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const cookieArray = decodedCookie.split(';');
+      for (let i = 0; i < cookieArray.length; i++) {
+        let cookie = cookieArray[i].trim();
+        if (cookie.indexOf(name) === 0) {
+          try {
+            return JSON.parse(cookie.substring(name.length));
+          } catch (e) {
+            return null;
+          }
+        }
+      }
+      return null;
+    },
+
+    clearSessionCookie: function() {
+      document.cookie = 'alacarte_chat_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     },
 
     authenticate: async function(customerOverride) {
@@ -75,6 +117,15 @@
         this.conversationId = data.session.conversation_id;
         this.customerId = data.session.customer_id;
         this.isAuthenticated = true;
+        
+        // Save session to cookie for persistence
+        this.setSessionCookie({
+          sessionToken: this.sessionToken,
+          conversationId: this.conversationId,
+          customerId: this.customerId,
+          businessName: data.business_name,
+          customization: data.customization
+        });
         
         if (!this.shadowRoot) {
           this.injectWidget(data.customization || {}, data.business_name || 'Support');
@@ -414,11 +465,12 @@
 
       messages.forEach(msg => {
         const messageEl = document.createElement('div');
+        // Inbound = customer message (from widget user), Outbound = business response
         messageEl.className = `message ${msg.direction}`;
         messageEl.setAttribute('data-message-id', msg.id);
         messageEl.innerHTML = `
           <div class="message-bubble">${this.escapeHtml(msg.content)}</div>
-          <div class="message-time">${new Date(msg.created_at).toLocaleTimeString()}</div>
+          <div class="message-time">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
         `;
         container.appendChild(messageEl);
       });
@@ -595,6 +647,13 @@
         const last = this.shadowRoot.getElementById('last-name').value.trim();
         const email = this.shadowRoot.getElementById('email').value.trim();
         const phone = this.shadowRoot.getElementById('phone').value.trim();
+        
+        // Validate all required fields
+        if (!first || !last || !email || !phone) {
+          alert('Please fill in all fields');
+          return;
+        }
+        
         const ok = await this.authenticate({ name: `${first} ${last}`.trim(), email, phone });
         if (ok) {
           // Restore chat UI

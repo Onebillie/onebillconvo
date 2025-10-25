@@ -118,46 +118,50 @@ serve(async (req) => {
     let customerId: string;
     const businessId = business.id;
     
-    if (email) {
-      const { data: existing, error: lookupError } = await supabase.from("customers").select("id")
-        .eq("business_id", businessId).eq("email", email).maybeSingle();
+    // Check for existing customers by email or phone
+    const { data: existingCustomers, error: lookupError } = await supabase
+      .from("customers")
+      .select("id, name, email, phone, alternate_emails")
+      .eq("business_id", businessId)
+      .or(`email.eq.${email},phone.eq.${phone}${email ? `,alternate_emails.cs.{${email}}` : ''}`);
+    
+    if (lookupError) {
+      console.error('Customer lookup error:', lookupError);
+      return new Response(JSON.stringify({ error: "Database error during customer lookup" }), 
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    
+    if (existingCustomers && existingCustomers.length > 0) {
+      // Use the first existing customer
+      customerId = existingCustomers[0].id;
+      console.log('Existing customer found:', customerId);
       
-      if (lookupError) {
-        console.error('Customer lookup error:', lookupError);
-        return new Response(JSON.stringify({ error: "Database error during customer lookup" }), 
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      
-      if (existing) {
-        customerId = existing.id;
-        console.log('Existing customer found:', customerId);
-      } else {
-        const { data: newCustomer, error: insertError } = await supabase.from("customers")
-          .insert({ business_id: businessId, name: name || "Anonymous", email, phone: phone || "unknown" })
-          .select("id").single();
-
-        if (insertError || !newCustomer) {
-          console.error('Customer creation error:', insertError);
-          return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        
-        customerId = newCustomer.id;
-        console.log('New customer created:', customerId);
+      // If multiple matches found, create a duplicate detection record for admin review
+      if (existingCustomers.length > 1) {
+        console.log('Multiple customer matches detected - marking for merge review');
+        // The useDuplicateDetection hook will pick this up automatically via its query
       }
     } else {
-      const { data: newCustomer, error: insertError } = await supabase.from("customers")
-        .insert({ business_id: businessId, name: name || "Anonymous User", phone: "unknown" })
-        .select("id").single();
+      // Create new customer with all required fields
+      const { data: newCustomer, error: insertError } = await supabase
+        .from("customers")
+        .insert({ 
+          business_id: businessId, 
+          name: name || "Anonymous", 
+          email: email || null, 
+          phone: phone || "unknown" 
+        })
+        .select("id")
+        .single();
 
       if (insertError || !newCustomer) {
-        console.error('Anonymous customer creation error:', insertError);
+        console.error('Customer creation error:', insertError);
         return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       
       customerId = newCustomer.id;
-      console.log('Anonymous customer created:', customerId);
+      console.log('New customer created:', customerId);
     }
 
     const { data: activeConv, error: convLookupError } = await supabase.from("conversations").select("id")
@@ -203,9 +207,9 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch widget customization from embed_customizations table
+    // Fetch widget customization from widget_customization table (correct table name)
     const { data: customization } = await supabase
-      .from("embed_customizations")
+      .from("widget_customization")
       .select("*")
       .eq("business_id", businessId)
       .maybeSingle();
@@ -225,10 +229,15 @@ serve(async (req) => {
         primary_color: '#6366f1',
         widget_position: 'bottom-right',
         widget_size: 'medium',
+        widget_shape: 'circle',
         icon_type: 'chat',
         show_button_text: false,
         button_text: 'Chat with us',
-        greeting_message: 'Hi! How can we help?'
+        welcome_message: 'Hi! How can we help?',
+        greeting_message: 'Hi! How can we help?',
+        require_contact_info: true,
+        sound_notifications: true,
+        start_minimized: true
       }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
