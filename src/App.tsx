@@ -37,6 +37,7 @@ import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
 import PaymentTesting from "./pages/admin/PaymentTesting";
 import EnterpriseAccounts from "./pages/admin/EnterpriseAccounts";
+import VoiceBillingTest from "./pages/VoiceBillingTest";
 import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
@@ -96,6 +97,7 @@ function AppContent() {
             <Route path="system" element={<SystemHealth />} />
             <Route path="testing" element={<SystemTesting />} />
             <Route path="payment-testing" element={<PaymentTesting />} />
+            <Route path="voice-billing-test" element={<VoiceBillingTest />} />
           </Route>
           
           {/* Embed Routes - No Auth Required */}

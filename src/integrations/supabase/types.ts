@@ -6044,6 +6044,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_low_voice_credits: { Args: never; Returns: undefined }
       cleanup_expired_embed_sessions: { Args: never; Returns: undefined }
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       cleanup_expired_sso_tokens: { Args: never; Returns: undefined }

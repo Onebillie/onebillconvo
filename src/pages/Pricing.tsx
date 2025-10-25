@@ -88,7 +88,10 @@ export default function Pricing() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
           <p className="text-xl text-muted-foreground">
-            Select the perfect plan for your business needs
+            Multi-channel messaging with voice calling included
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            All plans include SMS, Email, WhatsApp, and social media channels
           </p>
         </div>
 
@@ -294,6 +297,34 @@ export default function Pricing() {
                     <td className="py-3">✓</td>
                     <td className="py-3">✓</td>
                   </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Voice calling (inbound)</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">100 min/mo</td>
+                    <td className="py-3">500 min/mo</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Voice calling (outbound)</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">200 min/mo</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Call recording</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                    <td className="py-3">✓</td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3">Call transcription</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">-</td>
+                    <td className="py-3">100 min/mo</td>
+                    <td className="py-3">Unlimited</td>
+                  </tr>
                   <tr>
                     <td className="py-3">Support level</td>
                     <td className="py-3">Community</td>
@@ -339,6 +370,15 @@ export default function Pricing() {
                 <ul className="space-y-1 text-muted-foreground">
                   <li>• Professional: $0.002 per call after 10,000</li>
                   <li>• Enterprise: Unlimited included</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-card-foreground mb-2">Voice calling overages:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Inbound calls: $0.02/minute</li>
+                  <li>• Outbound calls: $0.03/minute</li>
+                  <li>• Call transcription: $0.08/minute</li>
+                  <li>• Credit bundles available (save up to 35%)</li>
                 </ul>
               </div>
             </div>

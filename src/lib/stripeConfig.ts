@@ -27,6 +27,11 @@ export const STRIPE_PRODUCTS = {
       emailIntegration: true, // Can receive
       whatsappSending: 100,
       marketing: false,
+      voiceInboundMinutes: 0,
+      voiceOutboundMinutes: 0,
+      voiceRecording: false,
+      voiceTranscription: false,
+      voicePhoneNumbers: 0,
     },
     popular: false,
   },
@@ -54,6 +59,11 @@ export const STRIPE_PRODUCTS = {
       emailIntegration: true,
       whatsappSending: 1000,
       marketing: false,
+      voiceInboundMinutes: 100,
+      voiceOutboundMinutes: 0,
+      voiceRecording: true,
+      voiceTranscription: false,
+      voicePhoneNumbers: 1,
     },
     popular: true,
   },
@@ -83,6 +93,11 @@ export const STRIPE_PRODUCTS = {
       emailIntegration: true,
       whatsappSending: 10000,
       marketing: false,
+      voiceInboundMinutes: 500,
+      voiceOutboundMinutes: 200,
+      voiceRecording: true,
+      voiceTranscription: true,
+      voicePhoneNumbers: 3,
     },
     popular: false,
   },
@@ -112,6 +127,11 @@ export const STRIPE_PRODUCTS = {
       emailIntegration: true,
       whatsappSending: 999999,
       marketing: false,
+      voiceInboundMinutes: 999999,
+      voiceOutboundMinutes: 999999,
+      voiceRecording: true,
+      voiceTranscription: true,
+      voicePhoneNumbers: 999999,
     },
     popular: false,
   },
@@ -238,6 +258,36 @@ export const OVERAGE_PRICING = {
   email: 0.001, // $0.001 per email
   facebook: 0.03, // $0.03 per message
   instagram: 0.03, // $0.03 per message
+} as const;
+
+// Voice calling overage pricing (per minute in dollars)
+export const VOICE_OVERAGE_PRICING = {
+  inbound: 0.02, // $0.02 per minute
+  outbound: 0.03, // $0.03 per minute
+  transcription: 0.08, // $0.08 per minute
+  recording: 0.005, // $0.005 per minute
+} as const;
+
+// Voice credit bundles (minutes)
+export const VOICE_CREDIT_BUNDLES = {
+  small: {
+    name: "500 Minutes",
+    minutes: 500,
+    price: 10,
+    savings: 20,
+  },
+  medium: {
+    name: "2000 Minutes",
+    minutes: 2000,
+    price: 35,
+    savings: 30,
+  },
+  large: {
+    name: "5000 Minutes",
+    minutes: 5000,
+    price: 75,
+    savings: 35,
+  },
 } as const;
 
 export type SubscriptionTier = keyof typeof STRIPE_PRODUCTS;
