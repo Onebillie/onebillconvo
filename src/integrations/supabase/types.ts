@@ -1770,6 +1770,8 @@ export type Database = {
           business_id: string
           created_at: string | null
           email: string | null
+          external_id: string | null
+          external_system: string | null
           facebook_psid: string | null
           facebook_username: string | null
           first_name: string | null
@@ -1780,10 +1782,12 @@ export type Database = {
           last_active: string | null
           last_contact_method: string | null
           last_name: string | null
+          last_synced_at: string | null
           metadata: Json | null
           name: string
           notes: string | null
           phone: string
+          sync_enabled: boolean | null
           whatsapp_name: string | null
           whatsapp_phone: string | null
         }
@@ -1794,6 +1798,8 @@ export type Database = {
           business_id: string
           created_at?: string | null
           email?: string | null
+          external_id?: string | null
+          external_system?: string | null
           facebook_psid?: string | null
           facebook_username?: string | null
           first_name?: string | null
@@ -1804,10 +1810,12 @@ export type Database = {
           last_active?: string | null
           last_contact_method?: string | null
           last_name?: string | null
+          last_synced_at?: string | null
           metadata?: Json | null
           name: string
           notes?: string | null
           phone: string
+          sync_enabled?: boolean | null
           whatsapp_name?: string | null
           whatsapp_phone?: string | null
         }
@@ -1818,6 +1826,8 @@ export type Database = {
           business_id?: string
           created_at?: string | null
           email?: string | null
+          external_id?: string | null
+          external_system?: string | null
           facebook_psid?: string | null
           facebook_username?: string | null
           first_name?: string | null
@@ -1828,10 +1838,12 @@ export type Database = {
           last_active?: string | null
           last_contact_method?: string | null
           last_name?: string | null
+          last_synced_at?: string | null
           metadata?: Json | null
           name?: string
           notes?: string | null
           phone?: string
+          sync_enabled?: boolean | null
           whatsapp_name?: string | null
           whatsapp_phone?: string | null
         }
