@@ -1459,6 +1459,11 @@ export type Database = {
           require_recording_consent: boolean | null
           retention_days: number | null
           transcription_enabled: boolean | null
+          twilio_account_sid: string | null
+          twilio_api_key: string | null
+          twilio_api_secret: string | null
+          twilio_auth_token: string | null
+          twilio_twiml_app_sid: string | null
           updated_at: string
         }
         Insert: {
@@ -1475,6 +1480,11 @@ export type Database = {
           require_recording_consent?: boolean | null
           retention_days?: number | null
           transcription_enabled?: boolean | null
+          twilio_account_sid?: string | null
+          twilio_api_key?: string | null
+          twilio_api_secret?: string | null
+          twilio_auth_token?: string | null
+          twilio_twiml_app_sid?: string | null
           updated_at?: string
         }
         Update: {
@@ -1491,6 +1501,11 @@ export type Database = {
           require_recording_consent?: boolean | null
           retention_days?: number | null
           transcription_enabled?: boolean | null
+          twilio_account_sid?: string | null
+          twilio_api_key?: string | null
+          twilio_api_secret?: string | null
+          twilio_auth_token?: string | null
+          twilio_twiml_app_sid?: string | null
           updated_at?: string
         }
         Relationships: [

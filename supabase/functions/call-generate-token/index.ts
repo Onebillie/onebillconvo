@@ -61,11 +61,38 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Generate Twilio access token (requires TWILIO secrets)
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const apiKey = Deno.env.get('TWILIO_API_KEY');
-    const apiSecret = Deno.env.get('TWILIO_API_SECRET');
-    const twimlAppSid = Deno.env.get('TWILIO_TWIML_APP_SID');
+    // Get business for user
+    const { data: businessUser } = await supabase
+      .from('business_users')
+      .select('business_id')
+      .eq('user_id', user.id)
+      .single();
+
+    let accountSid, apiKey, apiSecret, twimlAppSid;
+
+    // Try to get credentials from call_settings first
+    if (businessUser) {
+      const { data: settings } = await supabase
+        .from('call_settings')
+        .select('twilio_account_sid, twilio_api_key, twilio_api_secret, twilio_twiml_app_sid')
+        .eq('business_id', businessUser.business_id)
+        .single();
+
+      if (settings?.twilio_account_sid) {
+        accountSid = settings.twilio_account_sid;
+        apiKey = settings.twilio_api_key;
+        apiSecret = settings.twilio_api_secret;
+        twimlAppSid = settings.twilio_twiml_app_sid;
+      }
+    }
+
+    // Fallback to environment variables
+    if (!accountSid) {
+      accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      apiKey = Deno.env.get('TWILIO_API_KEY');
+      apiSecret = Deno.env.get('TWILIO_API_SECRET');
+      twimlAppSid = Deno.env.get('TWILIO_TWIML_APP_SID');
+    }
 
     if (!accountSid || !apiKey || !apiSecret || !twimlAppSid) {
       return new Response(JSON.stringify({ 

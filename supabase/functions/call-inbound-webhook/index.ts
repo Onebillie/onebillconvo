@@ -42,12 +42,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get call settings
+    // Get call settings (includes Twilio credentials)
     const { data: settings } = await supabase
       .from('call_settings')
       .select('*')
       .eq('business_id', business.id)
       .single();
+
+    // Note: Twilio credentials are now stored in call_settings
+    // They can be used here if needed for advanced call routing
 
     // Check business hours if configured
     const now = new Date();

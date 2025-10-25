@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Settings, Shield } from 'lucide-react';
+import { Phone, Shield, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const TwilioVoiceManagement = () => {
@@ -16,6 +16,11 @@ export const TwilioVoiceManagement = () => {
   const [loading, setLoading] = useState(false);
   const [isOneBillChat, setIsOneBillChat] = useState(false);
   const [settings, setSettings] = useState<any>({
+    twilio_account_sid: '',
+    twilio_auth_token: '',
+    twilio_api_key: '',
+    twilio_api_secret: '',
+    twilio_twiml_app_sid: '',
     recording_enabled: true,
     require_consent: true,
     transcription_enabled: true,
@@ -25,6 +30,13 @@ export const TwilioVoiceManagement = () => {
     crm_webhook_url: '',
     crm_webhook_token: '',
     retention_days: 90
+  });
+  const [showCredentials, setShowCredentials] = useState({
+    accountSid: false,
+    authToken: false,
+    apiKey: false,
+    apiSecret: false,
+    twimlAppSid: false
   });
 
   useEffect(() => {
@@ -117,30 +129,133 @@ export const TwilioVoiceManagement = () => {
             <CardHeader>
               <CardTitle>Twilio Credentials</CardTitle>
               <CardDescription>
-                These credentials are stored securely as Supabase secrets. Add them via the Supabase Dashboard.
+                Enter your Twilio credentials. These are stored securely and encrypted. Find these values in your{' '}
+                <a 
+                  href="https://console.twilio.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Twilio Console
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Required Secrets</Label>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• TWILIO_ACCOUNT_SID</li>
-                  <li>• TWILIO_AUTH_TOKEN</li>
-                  <li>• TWILIO_API_KEY</li>
-                  <li>• TWILIO_API_SECRET</li>
-                  <li>• TWILIO_TWIML_APP_SID</li>
-                </ul>
+                <Label htmlFor="accountSid">Account SID</Label>
+                <div className="relative">
+                  <Input
+                    id="accountSid"
+                    type={showCredentials.accountSid ? "text" : "password"}
+                    value={settings.twilio_account_sid}
+                    onChange={(e) => setSettings({ ...settings, twilio_account_sid: e.target.value })}
+                    placeholder="Enter your Twilio Account SID"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCredentials(prev => ({ ...prev, accountSid: !prev.accountSid }))}
+                  >
+                    {showCredentials.accountSid ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
-              <Button variant="outline" asChild>
-                <a 
-                  href="https://supabase.com/dashboard/project/jrtlrnfdqfkjlkpfirzr/settings/functions" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configure Secrets in Supabase
-                </a>
-              </Button>
+
+              <div className="space-y-2">
+                <Label htmlFor="authToken">Auth Token</Label>
+                <div className="relative">
+                  <Input
+                    id="authToken"
+                    type={showCredentials.authToken ? "text" : "password"}
+                    value={settings.twilio_auth_token}
+                    onChange={(e) => setSettings({ ...settings, twilio_auth_token: e.target.value })}
+                    placeholder="Enter your Twilio Auth Token"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCredentials(prev => ({ ...prev, authToken: !prev.authToken }))}
+                  >
+                    {showCredentials.authToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <div className="relative">
+                  <Input
+                    id="apiKey"
+                    type={showCredentials.apiKey ? "text" : "password"}
+                    value={settings.twilio_api_key}
+                    onChange={(e) => setSettings({ ...settings, twilio_api_key: e.target.value })}
+                    placeholder="Enter your Twilio API Key"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCredentials(prev => ({ ...prev, apiKey: !prev.apiKey }))}
+                  >
+                    {showCredentials.apiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="apiSecret">API Secret</Label>
+                <div className="relative">
+                  <Input
+                    id="apiSecret"
+                    type={showCredentials.apiSecret ? "text" : "password"}
+                    value={settings.twilio_api_secret}
+                    onChange={(e) => setSettings({ ...settings, twilio_api_secret: e.target.value })}
+                    placeholder="Enter your Twilio API Secret"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCredentials(prev => ({ ...prev, apiSecret: !prev.apiSecret }))}
+                  >
+                    {showCredentials.apiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="twimlAppSid">TwiML App SID</Label>
+                <div className="relative">
+                  <Input
+                    id="twimlAppSid"
+                    type={showCredentials.twimlAppSid ? "text" : "password"}
+                    value={settings.twilio_twiml_app_sid}
+                    onChange={(e) => setSettings({ ...settings, twilio_twiml_app_sid: e.target.value })}
+                    placeholder="Enter your TwiML App SID"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCredentials(prev => ({ ...prev, twimlAppSid: !prev.twimlAppSid }))}
+                  >
+                    {showCredentials.twimlAppSid ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

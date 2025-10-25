@@ -44,20 +44,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check Twilio credentials
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-
-    if (!accountSid || !authToken) {
-      return new Response(JSON.stringify({ 
-        error: 'Twilio not configured',
-        message: 'Please configure Twilio credentials to make calls'
-      }), {
-        status: 503,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Get business
     const { data: businessUser } = await supabase
       .from('business_users')
@@ -68,6 +54,32 @@ Deno.serve(async (req) => {
     if (!businessUser) {
       return new Response(JSON.stringify({ error: 'No business found' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get Twilio credentials from call_settings
+    const { data: settings } = await supabase
+      .from('call_settings')
+      .select('twilio_account_sid, twilio_auth_token')
+      .eq('business_id', businessUser.business_id)
+      .single();
+
+    let accountSid = settings?.twilio_account_sid;
+    let authToken = settings?.twilio_auth_token;
+
+    // Fallback to environment variables
+    if (!accountSid) {
+      accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    }
+
+    if (!accountSid || !authToken) {
+      return new Response(JSON.stringify({ 
+        error: 'Twilio not configured',
+        message: 'Please configure Twilio credentials to make calls'
+      }), {
+        status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
