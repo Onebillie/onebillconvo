@@ -417,7 +417,7 @@ const Landing = () => {
         {/* Channels Overview */}
         <section className="py-20 px-6 bg-card">
           <div className="max-w-[1200px] mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">All Your Channels</h2>
+            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">All Your Inbox Channels In One Place</h2>
             <p className="text-center text-muted-foreground mb-12 text-lg">
               Connect every communication channel your customers use
             </p>
