@@ -310,9 +310,8 @@ const Landing = () => {
               </Button>
             </div>
 
-            <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-12 sm:mb-16">
             <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
-              <h3 className="font-bold text-xl mb-2 text-card-foreground">Free</h3>
+              <h3 className="font-bold text-xl mb-2 text-card-foreground">Starter</h3>
               <div className="text-4xl font-extrabold my-3 text-foreground">$0</div>
               <p className="text-xs text-muted-foreground mb-4">Forever free</p>
               <ul className="space-y-2 text-card-foreground text-sm mb-4">
