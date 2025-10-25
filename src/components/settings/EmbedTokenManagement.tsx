@@ -416,29 +416,51 @@ ${baseCode}`;
                         </Badge>
                       </div>
                       
-                      <div className="flex items-center gap-2 mb-2">
-                        <code className="text-xs bg-muted px-2 py-1 rounded flex-1 font-mono">
-                          {revealedTokens.has(token.id) 
-                            ? token.token 
-                            : '•'.repeat(40)
-                          }
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleTokenVisibility(token.id)}
-                          title="View raw token"
-                        >
-                          {revealedTokens.has(token.id) ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
+                      <div className="space-y-3 mb-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1">Secret Token</Label>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs bg-muted px-2 py-1 rounded flex-1 font-mono">
+                              {revealedTokens.has(token.id) 
+                                ? token.token 
+                                : '•'.repeat(40)
+                              }
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTokenVisibility(token.id)}
+                              title="View raw token"
+                            >
+                              {revealedTokens.has(token.id) ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <Label className="text-xs text-muted-foreground">Embed Code</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(getCodeForPlatform(token, 'html'), 'Embed code')}
+                            >
+                              <Copy className="h-3 w-3 mr-1" />
+                              <span className="text-xs">Copy</span>
+                            </Button>
+                          </div>
+                          <code className="text-xs bg-muted/50 px-2 py-2 rounded block font-mono overflow-x-auto whitespace-pre-wrap">
+                            {getCodeForPlatform(token, 'html')}
+                          </code>
+                        </div>
                       </div>
 
                       {token.allowed_domains && token.allowed_domains.length > 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                           <Globe className="h-3 w-3" />
                           Allowed: {token.allowed_domains.join(', ')}
                         </div>

@@ -12,7 +12,6 @@ import { FacebookAccountManagement } from "./FacebookAccountManagement";
 import { InstagramAccountManagement } from "./InstagramAccountManagement";
 import { TemplateManagement } from "./TemplateManagement";
 import { EmbedTokenManagement } from "./EmbedTokenManagement";
-import { EmbedWidgetCustomization } from "./EmbedWidgetCustomization";
 import { EmbedAISettings } from "./EmbedAISettings";
 import { ChannelConnectionWizard } from "./ChannelConnectionWizard";
 import { Globe, MessageSquare, Mail, Phone, Facebook, Instagram, FileText, Sparkles } from "lucide-react";
@@ -61,16 +60,12 @@ export const ChannelSettings = ({ businessId }: ChannelSettingsProps) => {
               Embed a live chat widget on your website to communicate with visitors in real-time.
             </div>
             <Tabs defaultValue="tokens" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="tokens">Embed Tokens</TabsTrigger>
-                <TabsTrigger value="customization">Customization</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tokens">Embed Tokens & Code</TabsTrigger>
                 <TabsTrigger value="ai">AI Settings</TabsTrigger>
               </TabsList>
               <TabsContent value="tokens" className="space-y-4 pt-4">
                 <EmbedTokenManagement />
-              </TabsContent>
-              <TabsContent value="customization" className="space-y-4 pt-4">
-                {businessId && <EmbedWidgetCustomization businessId={businessId} />}
               </TabsContent>
               <TabsContent value="ai" className="space-y-4 pt-4">
                 {businessId && <EmbedAISettings businessId={businessId} />}
