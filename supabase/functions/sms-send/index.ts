@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logMessageEvent, updateMessageStatus } from '../_shared/messageLogger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,7 +108,7 @@ serve(async (req) => {
       }
 
       // Insert message into database
-      const { error: insertError } = await supabase
+      const { data: newMessage, error: insertError } = await supabase
         .from('messages')
         .insert({
           conversation_id,
@@ -117,10 +118,37 @@ serve(async (req) => {
           platform: 'sms',
           channel: 'sms',
           status: 'sent',
+          delivery_status: 'sent',
+          platform_message_id: twilioData.sid,
           is_read: true,
           business_id: customer.business_id,
           external_message_id: twilioData.sid,
-        });
+        })
+        .select()
+        .single();
+
+      if (newMessage) {
+        // Log SMS created and sent
+        await logMessageEvent(
+          supabaseUrl,
+          supabaseKey,
+          newMessage.id,
+          'created',
+          'success',
+          'sms',
+          { to: customer.phone }
+        );
+
+        await logMessageEvent(
+          supabaseUrl,
+          supabaseKey,
+          newMessage.id,
+          'sent',
+          'success',
+          'sms',
+          { sid: twilioData.sid }
+        );
+      }
 
       if (insertError) {
         console.error('Error inserting message:', insertError);

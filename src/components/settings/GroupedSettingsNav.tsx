@@ -48,6 +48,7 @@ export function GroupedSettingsNav({ activeTab, onTabChange, isSuperAdmin }: Gro
       label: "Communication",
       tabs: [
         { value: "channels", label: "Channels", icon: MessageSquare },
+        { value: "webhooks", label: "Webhooks", icon: Key },
         { value: "canned", label: "Quick Replies", icon: MessageCircle },
         { value: "statuses", label: "Statuses", icon: Tags },
       ],

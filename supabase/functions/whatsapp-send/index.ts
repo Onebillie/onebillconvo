@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { logMessageEvent, updateMessageStatus } from '../_shared/messageLogger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -359,6 +360,25 @@ serve(async (req) => {
       }
 
       if (conversation) {
+        // Get template content if using a template
+        let templateContent = message;
+        if (templateName) {
+          const { data: template } = await supabase
+            .from('whatsapp_templates')
+            .select('body')
+            .eq('name', templateName)
+            .single();
+          
+          templateContent = template?.body || `Template: ${templateName}`;
+          
+          // Replace variables in template
+          if (templateVariables && Array.isArray(templateVariables)) {
+            templateVariables.forEach((val: string, idx: number) => {
+              templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
+            });
+          }
+        }
+
         // Store outbound message in database
         const { data: outboundMsg, error: msgError } = await supabase
           .from('messages')
@@ -366,15 +386,44 @@ serve(async (req) => {
             conversation_id: conversation.id,
             customer_id: customer.id,
             content: message || `Template: ${templateName}`,
+            template_name: templateName,
+            template_content: templateContent,
+            template_variables: templateVariables ? { variables: templateVariables } : null,
             direction: 'outbound',
             platform: 'whatsapp',
             external_message_id: responseData.messages[0].id,
+            platform_message_id: responseData.messages[0].id,
+            delivery_status: 'sent',
             thread_id: conversation.id,
             is_read: true,
             business_id: customer.business_id
           })
           .select()
           .single();
+
+        if (outboundMsg) {
+          // Log message created
+          await logMessageEvent(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            outboundMsg.id,
+            'created',
+            'success',
+            'whatsapp',
+            { to: cleanPhoneNumber, template: templateName }
+          );
+
+          // Log message sent
+          await logMessageEvent(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+            outboundMsg.id,
+            'sent',
+            'success',
+            'whatsapp',
+            { message_id: responseData.messages[0].id }
+          );
+        }
 
         if (msgError) {
           console.error(`[${requestId}] Error creating message record:`, msgError);

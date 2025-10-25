@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home } from "lucide-react";
+import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -116,6 +116,7 @@ export const PersistentHeader = () => {
   };
 
   const isOnDashboard = location.pathname.includes('/dashboard');
+  const isOnMarketing = location.pathname.includes('/marketing');
 
   return (
     <div className="border-b bg-background sticky top-0 z-50 shadow-sm">
@@ -131,6 +132,18 @@ export const PersistentHeader = () => {
             >
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Dashboard</span>
+            </Button>
+          )}
+
+          {!isOnMarketing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/app/marketing')}
+              className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
+            >
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">Marketing</span>
             </Button>
           )}
           

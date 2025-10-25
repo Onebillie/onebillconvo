@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { OperationLogger, ERROR_CODES } from "../_shared/emailLogger.ts";
+import { logMessageEvent, updateMessageStatus } from '../_shared/messageLogger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -265,6 +266,8 @@ serve(async (req) => {
         .from('messages')
         .update({ 
           content: bundledContent,
+          template_content: finalHtml,
+          delivery_status: 'sent',
           status: 'sent'
         })
         .eq('id', pendingMessage.id);
@@ -273,6 +276,17 @@ serve(async (req) => {
         console.error('Failed to update message record:', updateError);
       } else {
         console.log('Updated pending message to sent status');
+        
+        // Log email sent
+        await logMessageEvent(
+          supabaseUrl,
+          supabaseKey,
+          pendingMessage.id,
+          'sent',
+          'success',
+          'email',
+          { to: emailRequest.to, subject: finalSubject }
+        );
       }
     } else {
       // Fallback: if no pending message found, insert a new one
@@ -285,19 +299,36 @@ serve(async (req) => {
         .eq("id", emailRequest.conversation_id)
         .single();
 
-      const { error: insertError } = await supabase
+      const { data: newMessage, error: insertError } = await supabase
         .from('messages')
         .insert({
           conversation_id: emailRequest.conversation_id,
           customer_id: emailRequest.customer_id,
           content: bundledContent,
+          template_content: finalHtml,
+          delivery_status: 'sent',
           direction: 'outbound',
           platform: 'email',
           channel: 'email',
           status: 'sent',
           is_read: true,
           business_id: conversation?.business_id
-        });
+        })
+        .select()
+        .single();
+
+      if (newMessage) {
+        // Log email sent
+        await logMessageEvent(
+          supabaseUrl,
+          supabaseKey,
+          newMessage.id,
+          'sent',
+          'success',
+          'email',
+          { to: emailRequest.to, subject: finalSubject }
+        );
+      }
 
       if (insertError) {
         console.error('Failed to insert message record:', insertError);
