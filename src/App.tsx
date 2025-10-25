@@ -22,6 +22,8 @@ import ApiDocs from "./pages/ApiDocs";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import Training from "./pages/Training";
+import { TrainingAssistant } from "./components/training/TrainingAssistant";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
 import CreateSuperAdmin from "./pages/admin/CreateSuperAdmin";
@@ -49,6 +51,7 @@ function AppContent() {
       <AccountFrozenBanner />
       <CookieConsent />
       <PWAInstallPrompt />
+      <TrainingAssistant />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/landing" element={<Landing />} />
@@ -56,6 +59,7 @@ function AppContent() {
           <Route path="/why-us" element={<WhyUs />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/guides" element={<Guides />} />
+          <Route path="/training" element={<Training />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />

@@ -4523,6 +4523,203 @@ export type Database = {
           },
         ]
       }
+      training_analytics: {
+        Row: {
+          answer_quality: number | null
+          created_at: string | null
+          id: string
+          page_context: string | null
+          question: string
+          user_id: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          answer_quality?: number | null
+          created_at?: string | null
+          id?: string
+          page_context?: string | null
+          question: string
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          answer_quality?: number | null
+          created_at?: string | null
+          id?: string
+          page_context?: string | null
+          question?: string
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_content: {
+        Row: {
+          category: string
+          content: Json
+          content_type: string
+          created_at: string | null
+          description: string | null
+          difficulty: string | null
+          estimated_time: string | null
+          feature_name: string
+          id: string
+          is_published: boolean | null
+          related_pages: string[] | null
+          screenshots: Json | null
+          search_keywords: string[] | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          category: string
+          content: Json
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          estimated_time?: string | null
+          feature_name: string
+          id?: string
+          is_published?: boolean | null
+          related_pages?: string[] | null
+          screenshots?: Json | null
+          search_keywords?: string[] | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          content?: Json
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          estimated_time?: string | null
+          feature_name?: string
+          id?: string
+          is_published?: boolean | null
+          related_pages?: string[] | null
+          screenshots?: Json | null
+          search_keywords?: string[] | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      training_conversations: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          current_page: string | null
+          feedback: string | null
+          id: string
+          messages: Json
+          rating: number | null
+          resolved: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          current_page?: string | null
+          feedback?: string | null
+          id?: string
+          messages?: Json
+          rating?: number | null
+          resolved?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          current_page?: string | null
+          feedback?: string | null
+          id?: string
+          messages?: Json
+          rating?: number | null
+          resolved?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_progress: {
+        Row: {
+          completed_steps: number[] | null
+          created_at: string | null
+          id: string
+          last_accessed: string | null
+          status: string | null
+          training_content_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_steps?: number[] | null
+          created_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          status?: string | null
+          training_content_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_steps?: number[] | null
+          created_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          status?: string | null
+          training_content_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_progress_training_content_id_fkey"
+            columns: ["training_content_id"]
+            isOneToOne: false
+            referencedRelation: "training_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_alerts_sent: {
         Row: {
           alert_date: string | null

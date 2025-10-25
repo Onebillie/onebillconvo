@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone } from "lucide-react";
+import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone, GraduationCap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -146,6 +146,16 @@ export const PersistentHeader = () => {
               <span className="hidden sm:inline">Marketing</span>
             </Button>
           )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/training')}
+            className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span className="hidden sm:inline">Training</span>
+          </Button>
           
           {businessName && (
             <div className="flex items-center gap-2 min-w-0">
