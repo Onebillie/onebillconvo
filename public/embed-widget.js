@@ -60,9 +60,20 @@
 
     // Cookie management for session persistence
     setSessionCookie: function(sessionData) {
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      const cookieData = JSON.stringify(sessionData);
-      document.cookie = `alacarte_chat_session=${encodeURIComponent(cookieData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+      try {
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        const cookieData = JSON.stringify({
+          sessionToken: sessionData.sessionToken,
+          conversationId: sessionData.conversationId,
+          customerId: sessionData.customerId,
+          businessName: sessionData.businessName,
+          customization: sessionData.customization
+        });
+        document.cookie = `alacarte_chat_session=${encodeURIComponent(cookieData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+        console.log('[AlacarteChat] Session saved to cookie');
+      } catch (error) {
+        console.error('[AlacarteChat] Failed to save session cookie:', error);
+      }
     },
 
     getSessionFromCookie: function() {
@@ -87,6 +98,11 @@
     },
 
     authenticate: async function(customerOverride) {
+      console.log('[AlacarteChat] Starting authentication...', { 
+        hasCustomerOverride: !!customerOverride,
+        siteId: this.config.siteId 
+      });
+
       try {
         const customer = customerOverride || this.config.customer || {};
         const response = await fetch(`${this.config.apiUrl}/embed-auth`, {
@@ -104,7 +120,8 @@
         });
 
         if (!response.ok) {
-          console.error('[AlacarteChat] Auth failed:', response.status);
+          const errorText = await response.text();
+          console.error('[AlacarteChat] Auth failed:', response.status, errorText);
           if (!this.shadowRoot) {
             this.injectWidget({}, 'Support');
           }
@@ -113,6 +130,11 @@
         }
 
         const data = await response.json();
+        console.log('[AlacarteChat] Auth successful', {
+          conversationId: data.session.conversation_id,
+          customerId: data.session.customer_id
+        });
+
         this.sessionToken = data.session.session_token;
         this.conversationId = data.session.conversation_id;
         this.customerId = data.session.customer_id;
@@ -132,7 +154,10 @@
         } else {
           // Enable input now that we're authenticated
           const sendBtn = this.shadowRoot.getElementById('send-btn');
-          if (sendBtn) sendBtn.disabled = false;
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            console.log('[AlacarteChat] Send button enabled');
+          }
           const header = this.shadowRoot.querySelector('.chat-header h3');
           if (header && data.business_name) header.textContent = data.business_name;
         }
@@ -166,6 +191,35 @@
       this.shadowRoot = host.attachShadow({ mode: 'open' });
 
       // Define styles with CSS reset
+      const sizeMap = {
+        small: { size: '48px', iconSize: '24px' },
+        medium: { size: '60px', iconSize: '28px' },
+        large: { size: '80px', iconSize: '36px' }
+      };
+
+      const shapeMap = {
+        circle: '50%',
+        square: '12px',
+        rounded: '24px'
+      };
+
+      const widgetSize = sizeMap[customization.widget_size || 'medium'] || sizeMap.medium;
+      const borderRadius = shapeMap[customization.widget_shape || 'circle'] || '50%';
+
+      // Dynamic position styles
+      const getPositionStyle = () => {
+        const pos = customization.widget_position || 'bottom-right';
+        switch(pos) {
+          case 'top-left': return 'top: 20px !important; left: 20px !important;';
+          case 'top-center': return 'top: 20px !important; left: 50% !important; transform: translateX(-50%);';
+          case 'top-right': return 'top: 20px !important; right: 20px !important;';
+          case 'bottom-left': return 'bottom: 20px !important; left: 20px !important;';
+          case 'bottom-center': return 'bottom: 20px !important; left: 50% !important; transform: translateX(-50%);';
+          case 'bottom-right': return 'bottom: 20px !important; right: 20px !important;';
+          default: return 'bottom: 20px !important; right: 20px !important;';
+        }
+      };
+
       const styles = `
         *, *::before, *::after {
           box-sizing: border-box;
@@ -176,35 +230,47 @@
         .widget-container {
           all: initial;
           position: fixed !important;
-          ${customization.widget_position === 'bottom-left' ? 'bottom: 20px !important; left: 20px !important;' : 'bottom: 20px !important; right: 20px !important;'}
+          ${getPositionStyle()}
           pointer-events: auto !important;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
           z-index: 999999 !important;
         }
         
         .chat-button {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
+          width: ${widgetSize.size};
+          height: ${widgetSize.size};
+          border-radius: ${borderRadius};
           background: ${customization.primary_color || '#6366f1'};
           border: none;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
+          padding: ${customization.show_button_text ? '0 20px' : '0'};
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          transition: transform 0.2s;
+          transition: all 0.2s;
           position: relative;
+          min-width: ${widgetSize.size};
         }
         
         .chat-button:hover {
           transform: scale(1.05);
+          background: ${customization.secondary_color || customization.primary_color || '#4f46e5'};
         }
         
         .chat-button svg {
-          width: 28px;
-          height: 28px;
-          fill: white;
+          width: ${widgetSize.iconSize};
+          height: ${widgetSize.iconSize};
+          fill: ${customization.text_color || 'white'};
+          flex-shrink: 0;
+        }
+
+        .chat-button-text {
+          color: ${customization.text_color || 'white'};
+          font-weight: 500;
+          font-size: 14px;
+          white-space: nowrap;
         }
         
         .unread-badge {
@@ -226,7 +292,20 @@
         
         .chat-window {
           position: fixed !important;
-          ${customization.widget_position === 'bottom-left' ? 'bottom: 100px !important; left: 20px !important;' : 'bottom: 100px !important; right: 20px !important;'}
+          ${(() => {
+            const pos = customization.widget_position || 'bottom-right';
+            const offset = `calc(${widgetSize.size} + 30px)`;
+            if (pos.includes('bottom')) return `bottom: ${offset} !important;`;
+            if (pos.includes('top')) return `top: ${offset} !important;`;
+            return 'bottom: 100px !important;';
+          })()}
+          ${(() => {
+            const pos = customization.widget_position || 'bottom-right';
+            if (pos.includes('left')) return 'left: 20px !important;';
+            if (pos.includes('right')) return 'right: 20px !important;';
+            if (pos.includes('center')) return 'left: 50% !important; transform: translateX(-50%);';
+            return 'right: 20px !important;';
+          })()}
           width: 380px;
           height: 600px;
           max-height: calc(100vh - 140px);
@@ -377,6 +456,7 @@
         <div class="widget-container">
           <button class="chat-button" id="toggle-chat">
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            ${customization.show_button_text ? `<span class="chat-button-text">${this.escapeHtml(customization.button_text || 'Chat')}</span>` : ''}
             <span class="unread-badge" id="unread-badge">0</span>
           </button>
           
@@ -493,11 +573,64 @@
       tempMessageEl.setAttribute('data-temp', 'true');
       tempMessageEl.innerHTML = `
         <div class="message-bubble">${this.escapeHtml(message)}</div>
-        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
       `;
       container.appendChild(tempMessageEl);
       container.scrollTop = container.scrollHeight;
       input.value = '';
+
+      try {
+        console.log('[AlacarteChat] Sending message...', { conversationId: this.conversationId });
+        
+        const response = await fetch(`${this.config.apiUrl}/embed-message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': this.sessionToken
+          },
+          body: JSON.stringify({ 
+            action: 'send_message',
+            message: message,
+            content: message
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[AlacarteChat] Failed to send message:', response.status, errorText);
+          throw new Error('Failed to send message');
+        }
+
+        const data = await response.json();
+        console.log('[AlacarteChat] Message sent successfully:', data);
+
+        // Remove temp message and add the real one with ID
+        tempMessageEl.remove();
+        if (data.message) {
+          const realMessageEl = document.createElement('div');
+          realMessageEl.className = 'message inbound';
+          realMessageEl.setAttribute('data-message-id', data.message.id);
+          realMessageEl.innerHTML = `
+            <div class="message-bubble">${this.escapeHtml(data.message.content)}</div>
+            <div class="message-time">${new Date(data.message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+          `;
+          container.appendChild(realMessageEl);
+          container.scrollTop = container.scrollHeight;
+        }
+      } catch (error) {
+        console.error('[AlacarteChat] Failed to send message:', error);
+        // Remove temp message on error
+        tempMessageEl.remove();
+        // Show error state
+        const errorEl = document.createElement('div');
+        errorEl.style.cssText = 'text-align: center; padding: 8px; color: #ef4444; font-size: 12px;';
+        errorEl.textContent = 'Failed to send message. Please try again.';
+        container.appendChild(errorEl);
+        setTimeout(() => errorEl.remove(), 3000);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    },
 
       try {
         const response = await fetch(`${this.config.apiUrl}/embed-message`, {

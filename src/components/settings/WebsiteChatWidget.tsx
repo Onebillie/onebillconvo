@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff, RefreshCw, Code } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { WidgetLivePreview } from "./WidgetLivePreview";
 
 export const WebsiteChatWidget = () => {
   const { user, currentBusinessId } = useAuth();
@@ -25,10 +26,13 @@ export const WebsiteChatWidget = () => {
     text_color: '#ffffff',
     widget_position: 'bottom-right',
     widget_size: 'medium',
+    widget_shape: 'circle',
     icon_type: 'chat',
     show_button_text: false,
     button_text: 'Chat',
     greeting_message: 'Hi! How can we help you today?',
+    welcome_message: 'Welcome! How can we assist you?',
+    widget_type: 'bubble',
   });
 
   useEffect(() => {
@@ -64,10 +68,13 @@ export const WebsiteChatWidget = () => {
             text_color: custom.text_color || '#ffffff',
             widget_position: custom.widget_position || 'bottom-right',
             widget_size: custom.widget_size || 'medium',
+            widget_shape: custom.widget_shape || 'circle',
             icon_type: custom.icon_type || 'chat',
             show_button_text: custom.show_button_text || false,
             button_text: custom.button_text || 'Chat',
             greeting_message: custom.greeting_message || 'Hi! How can we help you today?',
+            welcome_message: custom.welcome_message || 'Welcome! How can we assist you?',
+            widget_type: custom.widget_type || 'bubble',
           });
         }
       }
@@ -315,30 +322,60 @@ export const WebsiteChatWidget = () => {
             </div>
           </div>
 
-          {/* Widget Size */}
-          <div className="space-y-4">
-            <h4 className="font-medium">Widget Size</h4>
-            <div className="grid grid-cols-3 gap-4">
-              {['small', 'medium', 'large'].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setCustomization({ ...customization, widget_size: size })}
-                  className={`p-6 border-2 rounded-lg hover:border-primary transition-all ${
-                    customization.widget_size === size ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <div 
-                      className="rounded-full bg-primary"
-                      style={{
-                        width: size === 'small' ? '48px' : size === 'medium' ? '72px' : '96px',
-                        height: size === 'small' ? '48px' : size === 'medium' ? '72px' : '96px',
-                      }}
-                    />
-                    <span className="text-sm font-medium capitalize">{size}</span>
-                  </div>
-                </button>
-              ))}
+          {/* Widget Shape & Size */}
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h4 className="font-medium">Widget Shape</h4>
+              <div className="grid grid-cols-3 gap-4">
+                {['circle', 'square', 'rounded'].map((shape) => (
+                  <button
+                    key={shape}
+                    onClick={() => setCustomization({ ...customization, widget_shape: shape })}
+                    className={`p-6 border-2 rounded-lg hover:border-primary transition-all ${
+                      customization.widget_shape === shape ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <div 
+                        className="bg-primary"
+                        style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: shape === 'circle' ? '50%' : shape === 'square' ? '12px' : '24px',
+                        }}
+                      />
+                      <span className="text-sm font-medium capitalize">{shape}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-medium">Widget Size</h4>
+              <div className="grid grid-cols-3 gap-4">
+                {['small', 'medium', 'large'].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setCustomization({ ...customization, widget_size: size })}
+                    className={`p-6 border-2 rounded-lg hover:border-primary transition-all ${
+                      customization.widget_size === size ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <div 
+                        className="bg-primary"
+                        style={{
+                          width: size === 'small' ? '48px' : size === 'medium' ? '60px' : '80px',
+                          height: size === 'small' ? '48px' : size === 'medium' ? '60px' : '80px',
+                          borderRadius: customization.widget_shape === 'circle' ? '50%' : customization.widget_shape === 'square' ? '12px' : '24px',
+                        }}
+                      />
+                      <span className="text-sm font-medium capitalize">{size}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -408,6 +445,11 @@ export const WebsiteChatWidget = () => {
           </Button>
         </div>
       </Card>
+
+      {/* Live Preview */}
+      {embedToken && (
+        <WidgetLivePreview config={customization} />
+      )}
 
       {/* Step 3: Get Code */}
       {embedToken && (

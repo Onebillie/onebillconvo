@@ -45,16 +45,35 @@ serve(async (req) => {
 
     if (action === 'send_message') {
       const { message, content } = body;
+      const messageContent = message || content;
+      
+      if (!messageContent || !messageContent.trim()) {
+        return new Response(JSON.stringify({ error: 'Message content is required' }), 
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      console.log('[embed-message] Sending message:', {
+        conversationId: session.conversation_id,
+        customerId: session.customer_id,
+        contentLength: messageContent.length
+      });
+
       const { data: newMessage, error: insertError } = await supabase.from('messages').insert({
-        conversation_id: session.conversation_id, customer_id: session.customer_id,
-        content: message || content, direction: 'inbound', channel: 'embed', status: 'delivered'
+        conversation_id: session.conversation_id, 
+        customer_id: session.customer_id,
+        content: messageContent, 
+        direction: 'inbound', 
+        channel: 'embed', 
+        status: 'delivered'
       }).select().single();
 
       if (insertError) {
-        console.error('Error inserting message:', insertError);
-        return new Response(JSON.stringify({ error: 'Failed to send message' }), 
+        console.error('[embed-message] Error inserting message:', insertError);
+        return new Response(JSON.stringify({ error: 'Failed to send message', details: insertError.message }), 
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+
+      console.log('[embed-message] Message inserted successfully:', { messageId: newMessage.id });
 
       // Send notifications asynchronously (fire-and-forget) to avoid blocking response
       Promise.resolve().then(async () => {

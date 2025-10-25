@@ -5,7 +5,8 @@ import { Monitor, Smartphone, Tablet, X, Send } from "lucide-react";
 import { getIconById } from "@/lib/widgetIcons";
 
 interface WidgetConfig {
-  widget_type: string;
+  widget_type?: string;
+  widget_shape?: string;
   icon_type: string;
   primary_color: string;
   secondary_color: string;
@@ -15,7 +16,7 @@ interface WidgetConfig {
   button_text: string;
   show_button_text: boolean;
   greeting_message: string;
-  welcome_message: string;
+  welcome_message?: string;
 }
 
 interface WidgetLivePreviewProps {
@@ -32,7 +33,14 @@ export const WidgetLivePreview = ({ config }: WidgetLivePreviewProps) => {
     large: '80px',
   };
 
+  const shapeMap = {
+    circle: '50%',
+    square: '12px',
+    rounded: '24px',
+  };
+
   const widgetSize = sizeMap[config.widget_size as keyof typeof sizeMap] || '60px';
+  const borderRadius = shapeMap[(config.widget_shape || 'circle') as keyof typeof shapeMap] || '50%';
   const icon = getIconById(config.icon_type);
   const IconComponent = icon?.Icon;
 
@@ -49,6 +57,8 @@ export const WidgetLivePreview = ({ config }: WidgetLivePreviewProps) => {
         return { ...base, top: '20px', right: '20px' };
       case 'top-left':
         return { ...base, top: '20px', left: '20px' };
+      case 'top-center':
+        return { ...base, top: '20px', left: '50%', transform: 'translateX(-50%)' };
       default:
         return { ...base, bottom: '20px', right: '20px' };
     }
@@ -121,8 +131,9 @@ export const WidgetLivePreview = ({ config }: WidgetLivePreviewProps) => {
                     backgroundColor: config.primary_color,
                     color: config.text_color,
                     width: config.show_button_text ? 'auto' : widgetSize,
+                    minWidth: widgetSize,
                     height: widgetSize,
-                    borderRadius: config.widget_type === 'bar' ? '8px' : '50px',
+                    borderRadius: borderRadius,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -207,15 +218,17 @@ export const WidgetLivePreview = ({ config }: WidgetLivePreviewProps) => {
                         >
                           {config.greeting_message}
                         </div>
-                        <div
-                          className="p-3 rounded-lg max-w-[80%]"
-                          style={{
-                            backgroundColor: config.primary_color,
-                            color: config.text_color,
-                          }}
-                        >
-                          {config.welcome_message}
-                        </div>
+                        {config.welcome_message && (
+                          <div
+                            className="p-3 rounded-lg max-w-[80%]"
+                            style={{
+                              backgroundColor: config.primary_color,
+                              color: config.text_color,
+                            }}
+                          >
+                            {config.welcome_message}
+                          </div>
+                        )}
                       </div>
                     </div>
 
