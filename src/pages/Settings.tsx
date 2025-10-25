@@ -239,11 +239,13 @@ export default function Settings() {
           ) : (
             /* Desktop: Grouped Sidebar Navigation */
             <div className="grid grid-cols-[280px_1fr] gap-6">
-              <GroupedSettingsNav
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                isSuperAdmin={isSuperAdmin}
-              />
+              <div className="sticky top-6 self-start">
+                <GroupedSettingsNav
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  isSuperAdmin={isSuperAdmin}
+                />
+              </div>
 
               {/* Desktop Tab Contents */}
               <div className="min-w-0">

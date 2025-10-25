@@ -91,7 +91,7 @@ export function GroupedSettingsNav({ activeTab, onTabChange, isSuperAdmin }: Gro
   ];
 
   return (
-    <ScrollArea className="h-[calc(100vh-12rem)]">
+    <ScrollArea className="h-[calc(100vh-8rem)]">
       <nav className="space-y-6 pr-4">
         {tabGroups.map((group, idx) => (
           <div key={group.label}>
