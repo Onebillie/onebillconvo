@@ -18,7 +18,7 @@ import {
   Globe,
   Users
 } from "lucide-react";
-import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
+import { STRIPE_PRODUCTS, CREDIT_BUNDLES, type SubscriptionTier } from "@/lib/stripeConfig";
 
 interface ChannelVolume {
   outgoing: number;
@@ -107,19 +107,18 @@ export function PricingCalculator() {
       subscriptionCost += (features.teamMembers - 10) * 7;
     }
 
-    // Calculate overage costs
-    let overageCost = 0;
+    // Calculate credit costs for messages exceeding plan limits
+    // Credits are purchased in bundles when you exceed your plan
+    let creditCost = 0;
     const tierLimit = tierConfig.limits.whatsappSending;
     
     if (finalTier !== "enterprise" && totalOutgoing > tierLimit) {
       const excess = totalOutgoing - tierLimit;
-      if (finalTier === "free") {
-        overageCost = excess * 0.10;
-      } else if (finalTier === "starter") {
-        overageCost = excess * 0.015;
-      } else if (finalTier === "professional") {
-        overageCost = excess * 0.006;
-      }
+      // Use the most economical bundle rate (Large Bundle: 5000 credits for $75 = $0.015/credit)
+      // Each message requires 1 credit
+      const largeBundle = CREDIT_BUNDLES.large;
+      const costPerCredit = largeBundle.price / largeBundle.credits; // $0.015
+      creditCost = excess * costPerCredit;
     }
 
     // Calculate third-party costs (estimates)
@@ -137,11 +136,11 @@ export function PricingCalculator() {
     // Instagram/Facebook: currently free
     // (no cost added)
 
-    const totalCost = subscriptionCost + overageCost + thirdPartyCost;
+    const totalCost = subscriptionCost + creditCost + thirdPartyCost;
 
     setCosts({
       subscription: subscriptionCost,
-      overage: overageCost,
+      overage: creditCost,
       thirdParty: thirdPartyCost,
       total: totalCost,
     });
@@ -327,9 +326,9 @@ export function PricingCalculator() {
               
               {costs.overage > 0 && (
                 <CostRow 
-                  label="Message Overages" 
+                  label="Additional Credits" 
                   amount={costs.overage}
-                  description="Messages exceeding plan limit"
+                  description="Credits for messages exceeding plan limit ($0.015/credit)"
                 />
               )}
               
@@ -352,7 +351,8 @@ export function PricingCalculator() {
 
             <div className="mt-4 text-xs text-muted-foreground space-y-1">
               <p>• Incoming messages are always free</p>
-              <p>• Third-party costs are estimates and paid separately</p>
+              <p>• Additional credits calculated at Large Bundle rate ($0.015/credit)</p>
+              <p>• Third-party costs (WhatsApp, SMS) are estimates and paid separately to providers</p>
               <p>• Enterprise plans include unlimited usage</p>
             </div>
           </div>
