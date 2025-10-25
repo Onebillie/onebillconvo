@@ -27,6 +27,240 @@ const ApiDocs = () => {
 
   const endpoints = [
     {
+      category: "Voice Calls",
+      items: [
+        {
+          name: "List Call Records",
+          method: "GET",
+          endpoint: "/api-calls-list",
+          description: "Retrieve call history with filtering options. Returns call logs, recordings, and transcripts that can be synced to external CRMs.",
+          request: `curl -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-calls-list?status=completed&limit=50"`,
+          response: `{
+  "success": true,
+  "calls": [
+    {
+      "id": "uuid",
+      "twilio_call_sid": "CAxxxx",
+      "direction": "inbound",
+      "from_number": "+1234567890",
+      "to_number": "+0987654321",
+      "status": "completed",
+      "duration_seconds": 180,
+      "recording_url": "https://...",
+      "transcript": "Call transcript...",
+      "started_at": "2025-10-20T10:00:00Z",
+      "ended_at": "2025-10-20T10:03:00Z",
+      "agent": {
+        "id": "uuid",
+        "full_name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  ],
+  "count": 50
+}`,
+        },
+        {
+          name: "Get Call Details",
+          method: "GET",
+          endpoint: "/api-calls-details",
+          description: "Get detailed information about a specific call including events, recording, and consent data.",
+          request: `curl -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-calls-details?call_id=uuid"`,
+          response: `{
+  "success": true,
+  "call": {
+    "id": "uuid",
+    "twilio_call_sid": "CAxxxx",
+    "direction": "inbound",
+    "from_number": "+1234567890",
+    "to_number": "+0987654321",
+    "status": "completed",
+    "duration_seconds": 180,
+    "recording_url": "https://...",
+    "transcript": "Call transcript...",
+    "events": [
+      {
+        "event_type": "ringing",
+        "created_at": "2025-10-20T10:00:00Z"
+      },
+      {
+        "event_type": "answered",
+        "created_at": "2025-10-20T10:00:05Z"
+      }
+    ],
+    "consent": {
+      "consent_given": true,
+      "consent_method": "voice"
+    }
+  }
+}`,
+        },
+        {
+          name: "Get Call Recording",
+          method: "GET",
+          endpoint: "/api-calls-recording",
+          description: "Retrieve a secure, short-lived URL to download call recording or voicemail. URLs expire after 1 hour.",
+          request: `curl -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-calls-recording?call_id=uuid"`,
+          response: `{
+  "success": true,
+  "recording_url": "https://api.twilio.com/...",
+  "expires_at": "2025-10-20T11:00:00Z",
+  "call_id": "uuid"
+}`,
+        },
+        {
+          name: "Monitor Active Calls",
+          method: "GET",
+          endpoint: "/api-calls-monitor",
+          description: "Real-time view of active calls, agent availability, and queue statistics. For dashboard and supervisor monitoring.",
+          request: `curl -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-calls-monitor"`,
+          response: `{
+  "success": true,
+  "metrics": {
+    "active_calls": 5,
+    "available_agents": 3,
+    "busy_agents": 2,
+    "total_agents": 5,
+    "queued_calls": 1
+  },
+  "active_calls": [
+    {
+      "id": "uuid",
+      "status": "in-progress",
+      "duration_seconds": 120,
+      "agent": {...}
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "uuid",
+      "status": "on-call",
+      "current_call_sid": "CAxxxx"
+    }
+  ],
+  "queues": [...]
+}`,
+        },
+        {
+          name: "Admin Call Actions",
+          method: "POST",
+          endpoint: "/api-calls-admin-action",
+          description: "Supervisor actions: monitor (silent listen), barge (speak to both), whisper (speak to agent only), or disconnect call.",
+          request: `curl -X POST \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "call_sid": "CAxxxx",
+    "action": "monitor",
+    "supervisor_id": "supervisor_phone_number"
+  }' \\
+  ${API_BASE_URL}/api-calls-admin-action`,
+          response: `{
+  "success": true,
+  "action": "monitor",
+  "call_sid": "CAxxxx"
+}`,
+          additionalInfo: "Available actions: monitor, barge, whisper, disconnect",
+        },
+      ],
+    },
+    {
+      category: "Call Departments & Routing",
+      items: [
+        {
+          name: "List Departments",
+          method: "GET",
+          endpoint: "/api-departments-manage",
+          description: "List all call queues/departments with routing rules, business hours, and settings.",
+          request: `curl -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-departments-manage"`,
+          response: `{
+  "success": true,
+  "departments": [
+    {
+      "id": "uuid",
+      "name": "sales",
+      "display_name": "Sales Team",
+      "phone_number": "+1234567890",
+      "routing_strategy": "round-robin",
+      "business_hours": {
+        "monday": {"start": "09:00", "end": "17:00"},
+        "tuesday": {"start": "09:00", "end": "17:00"}
+      },
+      "max_wait_time": 300,
+      "after_hours_action": "voicemail",
+      "enabled": true
+    }
+  ]
+}`,
+        },
+        {
+          name: "Create Department",
+          method: "POST",
+          endpoint: "/api-departments-manage",
+          description: "Create a new call queue/department with custom routing rules.",
+          request: `curl -X POST \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "support",
+    "display_name": "Customer Support",
+    "phone_number": "+1234567890",
+    "routing_strategy": "longest-idle",
+    "max_wait_time": 300,
+    "after_hours_action": "voicemail"
+  }' \\
+  ${API_BASE_URL}/api-departments-manage`,
+          response: `{
+  "success": true,
+  "department": {
+    "id": "uuid",
+    "name": "support",
+    "display_name": "Customer Support",
+    ...
+  }
+}`,
+          additionalInfo: "Routing strategies: round-robin, longest-idle, most-idle, skill-based",
+        },
+        {
+          name: "Update Department",
+          method: "PUT",
+          endpoint: "/api-departments-manage",
+          description: "Update department settings including routing, hours, and actions.",
+          request: `curl -X PUT \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "queue_id": "uuid",
+    "max_wait_time": 600,
+    "music_url": "https://example.com/music.mp3"
+  }' \\
+  ${API_BASE_URL}/api-departments-manage`,
+          response: `{
+  "success": true,
+  "department": {...}
+}`,
+        },
+        {
+          name: "Delete Department",
+          method: "DELETE",
+          endpoint: "/api-departments-manage",
+          description: "Remove a call queue/department.",
+          request: `curl -X DELETE \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api-departments-manage?queue_id=uuid"`,
+          response: `{
+  "success": true,
+  "message": "Department deleted"
+}`,
+        },
+      ],
+    },
+    {
       category: "Authentication",
       items: [
         {
@@ -593,11 +827,30 @@ const ApiDocs = () => {
                 <li>All existing endpoints remain the same</li>
               </ol>
             </div>
+
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-lg font-medium mb-2">Voice Calling Architecture</h3>
+              <p className="text-muted-foreground mb-3">
+                À La Carte Chat handles all calling and call routing internally. The API provides endpoints for:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground mb-3">
+                <li><strong>Call logs and recordings</strong> - Export to external CRMs via API</li>
+                <li><strong>Contact synchronization</strong> - Bi-directional sync with third-party systems</li>
+                <li><strong>Department routing</strong> - Configure call queues and routing rules</li>
+                <li><strong>Supervisor features</strong> - Monitor, barge, whisper, and manage active calls</li>
+              </ul>
+              <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                <strong>Note:</strong> All call handling, IVR, queuing, and agent management happens within À La Carte Chat. 
+                External systems receive call events and recordings via webhooks or API polling, but do not control call flow.
+              </p>
+            </div>
           </div>
         </Card>
 
-        <Tabs defaultValue="customers" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <Tabs defaultValue="voice calls" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9 gap-1">
+            <TabsTrigger value="voice calls">Voice Calls</TabsTrigger>
+            <TabsTrigger value="call departments & routing">Departments</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="conversations">Conversations</TabsTrigger>

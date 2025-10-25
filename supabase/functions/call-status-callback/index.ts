@@ -62,29 +62,65 @@ Deno.serve(async (req) => {
         .single();
 
       if (settings?.crm_webhook_url) {
+        // Generate signed URL for recording if available
+        let recordingSignedUrl = null;
+        if (recordingUrl) {
+          recordingSignedUrl = recordingUrl; // In production, generate a short-lived signed URL
+        }
+
         const webhookPayload = {
-          event: 'call.status',
-          call_id: callRecord.id,
-          call_sid: callSid,
-          status: callStatus,
-          direction: callRecord.direction,
-          from: callRecord.from_number,
-          to: callRecord.to_number,
-          duration: duration ? parseInt(duration) : null,
+          event: 'call.status_update',
+          call: {
+            id: callRecord.id,
+            call_sid: callSid,
+            status: callStatus,
+            direction: callRecord.direction,
+            from_number: callRecord.from_number,
+            to_number: callRecord.to_number,
+            caller_name: callRecord.caller_name,
+            duration_seconds: duration ? parseInt(duration) : null,
+            started_at: callRecord.started_at,
+            ended_at: updateData.ended_at || null,
+            recording_url: recordingSignedUrl,
+            transcript: callRecord.transcript,
+            agent: callRecord.agent_id ? {
+              id: callRecord.agent_id,
+              name: callRecord.agent?.full_name || null
+            } : null,
+            metadata: callRecord.metadata || {}
+          },
+          business: {
+            id: callRecord.businesses.id,
+            name: callRecord.businesses.name
+          },
           timestamp: new Date().toISOString()
         };
 
         try {
-          await fetch(settings.crm_webhook_url, {
+          const webhookResponse = await fetch(settings.crm_webhook_url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${settings.crm_webhook_token || ''}`
+              'Authorization': `Bearer ${settings.crm_webhook_token || ''}`,
+              'X-Webhook-Event': 'call.status_update',
+              'X-Call-ID': callRecord.id
             },
             body: JSON.stringify(webhookPayload)
           });
+
+          console.log('CRM webhook sent:', {
+            url: settings.crm_webhook_url,
+            status: webhookResponse.status,
+            call_id: callRecord.id
+          });
         } catch (webhookError) {
           console.error('CRM webhook error:', webhookError);
+          // Log webhook failure but don't fail the callback
+          await supabase.from('call_events').insert({
+            call_record_id: callRecord.id,
+            event_type: 'webhook_failed',
+            event_data: { error: webhookError.message }
+          });
         }
       }
     }
