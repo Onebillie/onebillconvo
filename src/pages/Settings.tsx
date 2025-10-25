@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, ChevronDown, Palette } from "lucide-react";
+import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette } from "lucide-react";
 import { UnifiedStaffManagement } from "@/components/settings/UnifiedStaffManagement";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { InMailAccordion } from "@/components/settings/InMailAccordion";
@@ -21,31 +21,72 @@ import { NotificationsAccordion } from "@/components/settings/NotificationsAccor
 import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
 import { WebsiteChatWidget } from "@/components/settings/WebsiteChatWidget";
 import { ThemeCustomization } from "@/components/settings/ThemeCustomization";
+import { GroupedSettingsNav } from "@/components/settings/GroupedSettingsNav";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Separator } from "@/components/ui/separator";
 
 export default function Settings() {
   const { profile, loading, isAdmin, isSuperAdmin, currentBusinessId } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState(isSuperAdmin ? "staff" : "subscription");
+  const [activeTab, setActiveTab] = useState("subscription");
 
-  const tabOptions = [
-    ...(isSuperAdmin ? [{ value: "staff", label: "Staff & Teams", icon: Users }] : []),
-    { value: "inmail", label: "In-Mail", icon: Mail },
-    { value: "subscription", label: "Subscription", icon: CreditCard },
-    { value: "channels", label: "Channels", icon: MessageSquare },
-    { value: "statuses", label: "Statuses", icon: Tags },
-    { value: "tasks", label: "Tasks", icon: CheckSquare },
-    { value: "business", label: "Business", icon: Building2 },
-    { value: "calendar", label: "Calendar", icon: Calendar },
-    { value: "ai", label: "AI Assistant", icon: Bot },
-    { value: "canned", label: "Quick Replies", icon: MessageCircle },
-    { value: "ai-approval", label: "AI Approval", icon: Shield },
-    { value: "notifications", label: "Notifications", icon: Bell },
-    { value: "theme", label: "Theme Colors", icon: Palette },
-    ...(isSuperAdmin ? [{ value: "api", label: "API Access", icon: Key }] : []),
+  const tabOptionsByGroup = [
+    {
+      group: "Account & Billing",
+      options: [
+        { value: "subscription", label: "Subscription", icon: CreditCard },
+        { value: "inmail", label: "In-Mail", icon: Mail },
+      ],
+    },
+    {
+      group: "Communication",
+      options: [
+        { value: "channels", label: "Channels", icon: MessageSquare },
+        { value: "canned", label: "Quick Replies", icon: MessageCircle },
+        { value: "statuses", label: "Statuses", icon: Tags },
+      ],
+    },
+    {
+      group: "Automation & AI",
+      options: [
+        { value: "ai", label: "AI Assistant", icon: Bot },
+        { value: "ai-approval", label: "AI Approval", icon: Shield },
+      ],
+    },
+    {
+      group: "Workflow",
+      options: [
+        { value: "tasks", label: "Tasks", icon: CheckSquare },
+        { value: "calendar", label: "Calendar", icon: Calendar },
+      ],
+    },
+    {
+      group: "Business",
+      options: [
+        { value: "business", label: "Business Info", icon: Building2 },
+        ...(isSuperAdmin ? [{ value: "staff", label: "Staff & Teams", icon: Users }] : []),
+      ],
+    },
+    {
+      group: "Customization",
+      options: [
+        { value: "theme", label: "Theme Colors", icon: Palette },
+        { value: "notifications", label: "Notifications", icon: Bell },
+      ],
+    },
+    ...(isSuperAdmin
+      ? [
+          {
+            group: "Advanced",
+            options: [{ value: "api", label: "API Access", icon: Key }],
+          },
+        ]
+      : []),
   ];
+
+  const allTabOptions = tabOptionsByGroup.flatMap((group) => group.options);
 
   if (loading) {
     return (
@@ -89,108 +130,184 @@ export default function Settings() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          {/* Mobile: Dropdown Menu */}
+          {/* Mobile: Grouped Dropdown Menu */}
           {isMobile ? (
-            <Select value={activeTab} onValueChange={setActiveTab}>
-              <SelectTrigger className="w-full h-12">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const option = tabOptions.find(opt => opt.value === activeTab);
-                      const Icon = option?.icon;
-                      return (
-                        <>
-                          {Icon && <Icon className="w-4 h-4" />}
-                          <span>{option?.label}</span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {tabOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{option.label}</span>
+            <>
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full h-12">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const option = allTabOptions.find((opt) => opt.value === activeTab);
+                        const Icon = option?.icon;
+                        return (
+                          <>
+                            {Icon && <Icon className="w-4 h-4" />}
+                            <span>{option?.label}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-[400px]">
+                  {tabOptionsByGroup.map((group, groupIdx) => (
+                    <div key={group.group}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {group.group}
                       </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+                      {group.options.map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              <span>{option.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                      {groupIdx < tabOptionsByGroup.length - 1 && (
+                        <Separator className="my-1" />
+                      )}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Mobile Tab Contents */}
+              {isSuperAdmin && (
+                <TabsContent value="staff">
+                  <UnifiedStaffManagement />
+                </TabsContent>
+              )}
+
+              <TabsContent value="inmail">
+                <InMailAccordion />
+              </TabsContent>
+
+              <TabsContent value="subscription">
+                <SubscriptionAccordion />
+              </TabsContent>
+
+              <TabsContent value="channels">
+                <ChannelSettings businessId={currentBusinessId} />
+              </TabsContent>
+
+              <TabsContent value="statuses">
+                <StatusesAccordion />
+              </TabsContent>
+
+              <TabsContent value="tasks">
+                <TasksAccordion />
+              </TabsContent>
+
+              <TabsContent value="business">
+                <BusinessAccordion />
+              </TabsContent>
+
+              <TabsContent value="calendar">
+                <CalendarAccordion />
+              </TabsContent>
+
+              <TabsContent value="ai">
+                <AIAccordion />
+              </TabsContent>
+
+              <TabsContent value="canned">
+                <QuickRepliesAccordion />
+              </TabsContent>
+
+              <TabsContent value="ai-approval">
+                <AIApprovalAccordion />
+              </TabsContent>
+
+              <TabsContent value="notifications">
+                <NotificationsAccordion />
+              </TabsContent>
+
+              <TabsContent value="theme">
+                {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
+              </TabsContent>
+
+              {isSuperAdmin && (
+                <TabsContent value="api">
+                  <ApiAccessAccordion />
+                </TabsContent>
+              )}
+            </>
           ) : (
-            /* Desktop: Horizontal Tabs */
-            <TabsList className="w-full overflow-x-auto whitespace-nowrap inline-flex flex-nowrap gap-1">
-              {tabOptions.map((option) => (
-                <TabsTrigger key={option.value} value={option.value} className="shrink-0">
-                  {option.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          )}
+            /* Desktop: Grouped Sidebar Navigation */
+            <div className="grid grid-cols-[280px_1fr] gap-6">
+              <GroupedSettingsNav
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                isSuperAdmin={isSuperAdmin}
+              />
 
-          {isSuperAdmin && (
-            <TabsContent value="staff" forceMount>
-              <UnifiedStaffManagement />
-            </TabsContent>
-          )}
+              {/* Desktop Tab Contents */}
+              <div className="min-w-0">
+                {isSuperAdmin && (
+                  <TabsContent value="staff">
+                    <UnifiedStaffManagement />
+                  </TabsContent>
+                )}
 
-          <TabsContent value="inmail" forceMount>
-            <InMailAccordion />
-          </TabsContent>
+                <TabsContent value="inmail">
+                  <InMailAccordion />
+                </TabsContent>
 
-          <TabsContent value="subscription" forceMount>
-            <SubscriptionAccordion />
-          </TabsContent>
+                <TabsContent value="subscription">
+                  <SubscriptionAccordion />
+                </TabsContent>
 
-          <TabsContent value="channels" forceMount>
-            <ChannelSettings businessId={currentBusinessId} />
-          </TabsContent>
+                <TabsContent value="channels">
+                  <ChannelSettings businessId={currentBusinessId} />
+                </TabsContent>
 
-          <TabsContent value="statuses" forceMount>
-            <StatusesAccordion />
-          </TabsContent>
+                <TabsContent value="statuses">
+                  <StatusesAccordion />
+                </TabsContent>
 
-          <TabsContent value="tasks" forceMount>
-            <TasksAccordion />
-          </TabsContent>
+                <TabsContent value="tasks">
+                  <TasksAccordion />
+                </TabsContent>
 
-          <TabsContent value="business" forceMount>
-            <BusinessAccordion />
-          </TabsContent>
+                <TabsContent value="business">
+                  <BusinessAccordion />
+                </TabsContent>
 
-          <TabsContent value="calendar" forceMount>
-            <CalendarAccordion />
-          </TabsContent>
+                <TabsContent value="calendar">
+                  <CalendarAccordion />
+                </TabsContent>
 
-          <TabsContent value="ai" forceMount>
-            <AIAccordion />
-          </TabsContent>
+                <TabsContent value="ai">
+                  <AIAccordion />
+                </TabsContent>
 
-          <TabsContent value="canned" forceMount>
-            <QuickRepliesAccordion />
-          </TabsContent>
+                <TabsContent value="canned">
+                  <QuickRepliesAccordion />
+                </TabsContent>
 
-          <TabsContent value="ai-approval" forceMount>
-            <AIApprovalAccordion />
-          </TabsContent>
+                <TabsContent value="ai-approval">
+                  <AIApprovalAccordion />
+                </TabsContent>
 
-          <TabsContent value="notifications" forceMount>
-            <NotificationsAccordion />
-          </TabsContent>
+                <TabsContent value="notifications">
+                  <NotificationsAccordion />
+                </TabsContent>
 
-          <TabsContent value="theme" forceMount>
-            {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
-          </TabsContent>
+                <TabsContent value="theme">
+                  {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
+                </TabsContent>
 
-          {isSuperAdmin && (
-            <TabsContent value="api" forceMount>
-              <ApiAccessAccordion />
-            </TabsContent>
+                {isSuperAdmin && (
+                  <TabsContent value="api">
+                    <ApiAccessAccordion />
+                  </TabsContent>
+                )}
+              </div>
+            </div>
           )}
         </Tabs>
       </div>
