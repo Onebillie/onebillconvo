@@ -53,6 +53,51 @@ Deno.serve(async (req) => {
         .eq('user_id', callRecord.agent_id);
     }
 
+    // Calculate and process call costs
+    if (callStatus === 'completed' && callRecord?.id) {
+      try {
+        console.log('Calculating call cost for:', callRecord.id);
+        
+        const costResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/calculate-call-cost`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+            },
+            body: JSON.stringify({ call_record_id: callRecord.id })
+          }
+        );
+
+        const costData = await costResponse.json();
+        console.log('Cost calculation result:', costData);
+
+        // If call was over plan limit, deduct credits
+        if (costData.success && !costData.withinPlanLimit && costData.billableAmount > 0) {
+          await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/deduct-call-credits`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+              },
+              body: JSON.stringify({
+                business_id: callRecord.business_id,
+                cost_cents: costData.billableAmount,
+                call_record_id: callRecord.id,
+                duration_minutes: costData.durationMinutes
+              })
+            }
+          );
+        }
+      } catch (costError) {
+        console.error('Error processing call costs:', costError);
+        // Don't fail the callback if cost calculation fails
+      }
+    }
+
     // Send webhook to CRM if configured
     if (callRecord?.businesses) {
       const { data: settings } = await supabase

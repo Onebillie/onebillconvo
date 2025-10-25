@@ -49,12 +49,12 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, quantity = 1 } = await req.json();
-    logStep("Request body parsed", { priceId, quantity });
+    const { priceId, quantity = 1, type, bundleId } = await req.json();
+    logStep("Request body parsed", { priceId, quantity, type, bundleId });
 
-    if (!priceId) {
-      logStep("ERROR: Missing priceId");
-      throw new Error("Price ID is required");
+    if (!priceId && !bundleId) {
+      logStep("ERROR: Missing priceId or bundleId");
+      throw new Error("Price ID or Bundle ID is required");
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -77,7 +77,66 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Create checkout session
+    // Handle voice credit bundles
+    if (type === 'voice_credits' && bundleId) {
+      logStep("Processing voice credits purchase", { bundleId });
+      
+      const { data: bundle } = await supabaseClient
+        .from('voice_credit_bundles')
+        .select('*')
+        .eq('id', bundleId)
+        .single();
+
+      if (!bundle) {
+        throw new Error('Bundle not found');
+      }
+
+      const { data: businessUser } = await supabaseClient
+        .from('business_users')
+        .select('business_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!businessUser) {
+        throw new Error('Business not found');
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email,
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: bundle.name,
+                description: `${bundle.minutes} voice calling minutes`,
+              },
+              unit_amount: bundle.price_cents,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${req.headers.get("origin")}/app/settings?tab=billing&voice_purchase=success`,
+        cancel_url: `${req.headers.get("origin")}/app/settings?tab=billing`,
+        metadata: {
+          user_id: user.id,
+          type: 'voice_credits',
+          business_id: businessUser.business_id,
+          bundle_id: bundleId,
+          minutes: bundle.minutes.toString(),
+        },
+      });
+
+      logStep("Voice credits checkout created", { sessionId: session.id });
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Create checkout session for subscription
     logStep("Creating checkout session", { priceId, quantity, customerId });
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

@@ -1017,6 +1017,10 @@ export type Database = {
           trial_converted: boolean | null
           trial_ends_at: string | null
           updated_at: string | null
+          voice_credit_balance: number | null
+          voice_minutes_used_period: number | null
+          voice_period_end: string | null
+          voice_period_start: string | null
         }
         Insert: {
           cancellation_feedback?: Json | null
@@ -1058,6 +1062,10 @@ export type Database = {
           trial_converted?: boolean | null
           trial_ends_at?: string | null
           updated_at?: string | null
+          voice_credit_balance?: number | null
+          voice_minutes_used_period?: number | null
+          voice_period_end?: string | null
+          voice_period_start?: string | null
         }
         Update: {
           cancellation_feedback?: Json | null
@@ -1099,6 +1107,10 @@ export type Database = {
           trial_converted?: boolean | null
           trial_ends_at?: string | null
           updated_at?: string | null
+          voice_credit_balance?: number | null
+          voice_minutes_used_period?: number | null
+          voice_period_end?: string | null
+          voice_period_start?: string | null
         }
         Relationships: []
       }
@@ -1359,9 +1371,11 @@ export type Database = {
         Row: {
           agent_id: string | null
           answered_at: string | null
+          billable_duration_seconds: number | null
           business_id: string
           call_type: string | null
           caller_name: string | null
+          charged_to_credits: boolean | null
           created_at: string
           direction: string
           duration_seconds: number | null
@@ -1371,23 +1385,30 @@ export type Database = {
           metadata: Json | null
           parent_call_sid: string | null
           queue_name: string | null
+          recording_cost_cents: number | null
           recording_sid: string | null
           recording_url: string | null
           started_at: string
           status: string
           to_number: string
+          total_cost_cents: number | null
           transcript: string | null
+          transcription_cost_cents: number | null
           transfer_type: string | null
           twilio_call_sid: string
+          twilio_cost_cents: number | null
           updated_at: string
           voicemail_url: string | null
+          within_plan_limit: boolean | null
         }
         Insert: {
           agent_id?: string | null
           answered_at?: string | null
+          billable_duration_seconds?: number | null
           business_id: string
           call_type?: string | null
           caller_name?: string | null
+          charged_to_credits?: boolean | null
           created_at?: string
           direction: string
           duration_seconds?: number | null
@@ -1397,23 +1418,30 @@ export type Database = {
           metadata?: Json | null
           parent_call_sid?: string | null
           queue_name?: string | null
+          recording_cost_cents?: number | null
           recording_sid?: string | null
           recording_url?: string | null
           started_at?: string
           status?: string
           to_number: string
+          total_cost_cents?: number | null
           transcript?: string | null
+          transcription_cost_cents?: number | null
           transfer_type?: string | null
           twilio_call_sid: string
+          twilio_cost_cents?: number | null
           updated_at?: string
           voicemail_url?: string | null
+          within_plan_limit?: boolean | null
         }
         Update: {
           agent_id?: string | null
           answered_at?: string | null
+          billable_duration_seconds?: number | null
           business_id?: string
           call_type?: string | null
           caller_name?: string | null
+          charged_to_credits?: boolean | null
           created_at?: string
           direction?: string
           duration_seconds?: number | null
@@ -1423,16 +1451,21 @@ export type Database = {
           metadata?: Json | null
           parent_call_sid?: string | null
           queue_name?: string | null
+          recording_cost_cents?: number | null
           recording_sid?: string | null
           recording_url?: string | null
           started_at?: string
           status?: string
           to_number?: string
+          total_cost_cents?: number | null
           transcript?: string | null
+          transcription_cost_cents?: number | null
           transfer_type?: string | null
           twilio_call_sid?: string
+          twilio_cost_cents?: number | null
           updated_at?: string
           voicemail_url?: string | null
+          within_plan_limit?: boolean | null
         }
         Relationships: [
           {
@@ -5353,6 +5386,204 @@ export type Database = {
           is_active?: boolean | null
           last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      voice_call_usage: {
+        Row: {
+          business_id: string
+          call_record_id: string | null
+          conference_minutes: number | null
+          created_at: string | null
+          credits_remaining: number | null
+          credits_used: number | null
+          id: string
+          inbound_minutes_local: number | null
+          inbound_minutes_tollfree: number | null
+          internal_minutes: number | null
+          our_markup_cents: number | null
+          outbound_minutes_local: number | null
+          outbound_minutes_tollfree: number | null
+          overage_minutes: number | null
+          period_end: string
+          period_start: string
+          recording_minutes: number | null
+          total_cost_cents: number | null
+          transcription_minutes: number | null
+          twilio_cost_cents: number | null
+          updated_at: string | null
+          within_plan_limit: boolean | null
+        }
+        Insert: {
+          business_id: string
+          call_record_id?: string | null
+          conference_minutes?: number | null
+          created_at?: string | null
+          credits_remaining?: number | null
+          credits_used?: number | null
+          id?: string
+          inbound_minutes_local?: number | null
+          inbound_minutes_tollfree?: number | null
+          internal_minutes?: number | null
+          our_markup_cents?: number | null
+          outbound_minutes_local?: number | null
+          outbound_minutes_tollfree?: number | null
+          overage_minutes?: number | null
+          period_end: string
+          period_start: string
+          recording_minutes?: number | null
+          total_cost_cents?: number | null
+          transcription_minutes?: number | null
+          twilio_cost_cents?: number | null
+          updated_at?: string | null
+          within_plan_limit?: boolean | null
+        }
+        Update: {
+          business_id?: string
+          call_record_id?: string | null
+          conference_minutes?: number | null
+          created_at?: string | null
+          credits_remaining?: number | null
+          credits_used?: number | null
+          id?: string
+          inbound_minutes_local?: number | null
+          inbound_minutes_tollfree?: number | null
+          internal_minutes?: number | null
+          our_markup_cents?: number | null
+          outbound_minutes_local?: number | null
+          outbound_minutes_tollfree?: number | null
+          overage_minutes?: number | null
+          period_end?: string
+          period_start?: string
+          recording_minutes?: number | null
+          total_cost_cents?: number | null
+          transcription_minutes?: number | null
+          twilio_cost_cents?: number | null
+          updated_at?: string | null
+          within_plan_limit?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_usage_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_usage_call_record_id_fkey"
+            columns: ["call_record_id"]
+            isOneToOne: false
+            referencedRelation: "call_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_credit_bundles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          minutes: number
+          name: string
+          price_cents: number
+          savings_percent: number | null
+          stripe_price_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minutes: number
+          name: string
+          price_cents: number
+          savings_percent?: number | null
+          stripe_price_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minutes?: number
+          name?: string
+          price_cents?: number
+          savings_percent?: number | null
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      voice_pricing_config: {
+        Row: {
+          can_conference: boolean | null
+          can_make_outbound: boolean | null
+          can_record: boolean | null
+          can_transcribe: boolean | null
+          can_transfer: boolean | null
+          created_at: string | null
+          id: string
+          included_inbound_minutes: number | null
+          included_outbound_minutes: number | null
+          included_phone_numbers: number | null
+          included_transcription_minutes: number | null
+          is_active: boolean | null
+          overage_inbound_cents: number | null
+          overage_outbound_cents: number | null
+          overage_transcription_cents: number | null
+          recording_retention_days: number | null
+          tier: string
+          twilio_inbound_cost_cents: number | null
+          twilio_outbound_cost_cents: number | null
+          twilio_recording_cost_cents: number | null
+          twilio_transcription_cost_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          can_conference?: boolean | null
+          can_make_outbound?: boolean | null
+          can_record?: boolean | null
+          can_transcribe?: boolean | null
+          can_transfer?: boolean | null
+          created_at?: string | null
+          id?: string
+          included_inbound_minutes?: number | null
+          included_outbound_minutes?: number | null
+          included_phone_numbers?: number | null
+          included_transcription_minutes?: number | null
+          is_active?: boolean | null
+          overage_inbound_cents?: number | null
+          overage_outbound_cents?: number | null
+          overage_transcription_cents?: number | null
+          recording_retention_days?: number | null
+          tier: string
+          twilio_inbound_cost_cents?: number | null
+          twilio_outbound_cost_cents?: number | null
+          twilio_recording_cost_cents?: number | null
+          twilio_transcription_cost_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          can_conference?: boolean | null
+          can_make_outbound?: boolean | null
+          can_record?: boolean | null
+          can_transcribe?: boolean | null
+          can_transfer?: boolean | null
+          created_at?: string | null
+          id?: string
+          included_inbound_minutes?: number | null
+          included_outbound_minutes?: number | null
+          included_phone_numbers?: number | null
+          included_transcription_minutes?: number | null
+          is_active?: boolean | null
+          overage_inbound_cents?: number | null
+          overage_outbound_cents?: number | null
+          overage_transcription_cents?: number | null
+          recording_retention_days?: number | null
+          tier?: string
+          twilio_inbound_cost_cents?: number | null
+          twilio_outbound_cost_cents?: number | null
+          twilio_recording_cost_cents?: number | null
+          twilio_transcription_cost_cents?: number | null
           updated_at?: string | null
         }
         Relationships: []

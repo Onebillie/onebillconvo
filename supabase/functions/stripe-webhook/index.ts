@@ -298,6 +298,62 @@ serve(async (req) => {
         break;
       }
 
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        
+        // Handle voice credit bundle purchases
+        if (session.metadata?.type === 'voice_credits') {
+          const businessId = session.metadata.business_id;
+          const minutes = parseInt(session.metadata.minutes || '0');
+          
+          logStep("Processing voice credits purchase", { businessId, minutes });
+          
+          if (businessId && minutes > 0) {
+            // Add minutes to voice_credit_balance
+            const { data: business } = await supabaseClient
+              .from('businesses')
+              .select('voice_credit_balance')
+              .eq('id', businessId)
+              .single();
+            
+            if (business) {
+              const newBalance = (business.voice_credit_balance || 0) + minutes;
+              
+              await supabaseClient
+                .from('businesses')
+                .update({ voice_credit_balance: newBalance })
+                .eq('id', businessId);
+              
+              logStep("Voice credits added", { 
+                previousBalance: business.voice_credit_balance,
+                addedMinutes: minutes,
+                newBalance 
+              });
+              
+              // Send email notification
+              const customer = await stripe.customers.retrieve(session.customer as string);
+              const email = (customer as Stripe.Customer).email;
+              
+              if (email) {
+                await supabaseClient.functions.invoke('send-transactional-email', {
+                  body: {
+                    to: email,
+                    subject: `${minutes} Voice Calling Minutes Added`,
+                    html: `
+                      <h2>Voice Credits Added Successfully!</h2>
+                      <p>${minutes} voice calling minutes have been added to your account.</p>
+                      <p><strong>New Balance:</strong> ${newBalance} minutes</p>
+                      <p><a href="https://alacartechat.com/app/settings?tab=billing">View Billing Details</a></p>
+                    `
+                  }
+                });
+              }
+            }
+          }
+        }
+        break;
+      }
+
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
