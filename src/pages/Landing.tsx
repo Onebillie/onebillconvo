@@ -310,13 +310,12 @@ const Landing = () => {
               </Button>
             </div>
 
-            <div className="bg-black rounded-2xl shadow-lg p-6 text-left border-2 border-accent">
-              <h3 className="font-bold text-xl mb-2 text-white">Starter</h3>
-              <div className="text-4xl font-extrabold my-3 text-white">
-                $29<span className="text-base font-medium">/mo</span>
-              </div>
-              <p className="text-xs text-white/70 mb-4">Per account</p>
-              <ul className="space-y-2 text-white text-sm mb-4">
+            <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-12 sm:mb-16">
+            <div className="bg-card rounded-2xl shadow-lg p-6 text-left">
+              <h3 className="font-bold text-xl mb-2 text-card-foreground">Free</h3>
+              <div className="text-4xl font-extrabold my-3 text-foreground">$0</div>
+              <p className="text-xs text-muted-foreground mb-4">Forever free</p>
+              <ul className="space-y-2 text-card-foreground text-sm mb-4">
                 <li>✓ 2 team members</li>
                 <li>✓ 1,000 WhatsApp msgs/mo</li>
                 <li>✓ Unlimited receiving</li>
