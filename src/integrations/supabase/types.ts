@@ -53,6 +53,53 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_availability: {
+        Row: {
+          agent_id: string
+          business_id: string
+          created_at: string
+          current_call_sid: string | null
+          device_number: string | null
+          device_type: string | null
+          id: string
+          last_call_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          business_id: string
+          created_at?: string
+          current_call_sid?: string | null
+          device_number?: string | null
+          device_type?: string | null
+          id?: string
+          last_call_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          business_id?: string
+          created_at?: string
+          current_call_sid?: string | null
+          device_number?: string | null
+          device_type?: string | null
+          id?: string
+          last_call_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_availability_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_assistant_config: {
         Row: {
           ai_provider_id: string | null
@@ -1174,6 +1221,283 @@ export type Database = {
             foreignKeyName: "calendar_sync_config_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_events: {
+        Row: {
+          call_record_id: string
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+        }
+        Insert: {
+          call_record_id: string
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+        }
+        Update: {
+          call_record_id?: string
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_events_call_record_id_fkey"
+            columns: ["call_record_id"]
+            isOneToOne: false
+            referencedRelation: "call_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_queues: {
+        Row: {
+          after_hours_action: string | null
+          after_hours_number: string | null
+          business_hours: Json | null
+          business_id: string
+          created_at: string
+          display_name: string
+          enabled: boolean | null
+          id: string
+          max_wait_time: number | null
+          metadata: Json | null
+          music_url: string | null
+          name: string
+          phone_number: string | null
+          routing_strategy: string
+          updated_at: string
+          voicemail_greeting_url: string | null
+        }
+        Insert: {
+          after_hours_action?: string | null
+          after_hours_number?: string | null
+          business_hours?: Json | null
+          business_id: string
+          created_at?: string
+          display_name: string
+          enabled?: boolean | null
+          id?: string
+          max_wait_time?: number | null
+          metadata?: Json | null
+          music_url?: string | null
+          name: string
+          phone_number?: string | null
+          routing_strategy?: string
+          updated_at?: string
+          voicemail_greeting_url?: string | null
+        }
+        Update: {
+          after_hours_action?: string | null
+          after_hours_number?: string | null
+          business_hours?: Json | null
+          business_id?: string
+          created_at?: string
+          display_name?: string
+          enabled?: boolean | null
+          id?: string
+          max_wait_time?: number | null
+          metadata?: Json | null
+          music_url?: string | null
+          name?: string
+          phone_number?: string | null
+          routing_strategy?: string
+          updated_at?: string
+          voicemail_greeting_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_queues_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_recording_consent: {
+        Row: {
+          call_record_id: string
+          consent_given: boolean
+          consent_method: string | null
+          id: string
+          recorded_at: string
+        }
+        Insert: {
+          call_record_id: string
+          consent_given: boolean
+          consent_method?: string | null
+          id?: string
+          recorded_at?: string
+        }
+        Update: {
+          call_record_id?: string
+          consent_given?: boolean
+          consent_method?: string | null
+          id?: string
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_recording_consent_call_record_id_fkey"
+            columns: ["call_record_id"]
+            isOneToOne: false
+            referencedRelation: "call_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_records: {
+        Row: {
+          agent_id: string | null
+          answered_at: string | null
+          business_id: string
+          call_type: string | null
+          caller_name: string | null
+          created_at: string
+          direction: string
+          duration_seconds: number | null
+          ended_at: string | null
+          from_number: string
+          id: string
+          metadata: Json | null
+          parent_call_sid: string | null
+          queue_name: string | null
+          recording_sid: string | null
+          recording_url: string | null
+          started_at: string
+          status: string
+          to_number: string
+          transcript: string | null
+          transfer_type: string | null
+          twilio_call_sid: string
+          updated_at: string
+          voicemail_url: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          answered_at?: string | null
+          business_id: string
+          call_type?: string | null
+          caller_name?: string | null
+          created_at?: string
+          direction: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number: string
+          id?: string
+          metadata?: Json | null
+          parent_call_sid?: string | null
+          queue_name?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          started_at?: string
+          status?: string
+          to_number: string
+          transcript?: string | null
+          transfer_type?: string | null
+          twilio_call_sid: string
+          updated_at?: string
+          voicemail_url?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          answered_at?: string | null
+          business_id?: string
+          call_type?: string | null
+          caller_name?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string
+          id?: string
+          metadata?: Json | null
+          parent_call_sid?: string | null
+          queue_name?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          started_at?: string
+          status?: string
+          to_number?: string
+          transcript?: string | null
+          transfer_type?: string | null
+          twilio_call_sid?: string
+          updated_at?: string
+          voicemail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_records_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_settings: {
+        Row: {
+          business_id: string
+          callback_mode_enabled: boolean | null
+          caller_lookup_url: string | null
+          created_at: string
+          crm_webhook_token: string | null
+          crm_webhook_url: string | null
+          id: string
+          ivr_enabled: boolean | null
+          metadata: Json | null
+          recording_enabled: boolean | null
+          require_recording_consent: boolean | null
+          retention_days: number | null
+          transcription_enabled: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          callback_mode_enabled?: boolean | null
+          caller_lookup_url?: string | null
+          created_at?: string
+          crm_webhook_token?: string | null
+          crm_webhook_url?: string | null
+          id?: string
+          ivr_enabled?: boolean | null
+          metadata?: Json | null
+          recording_enabled?: boolean | null
+          require_recording_consent?: boolean | null
+          retention_days?: number | null
+          transcription_enabled?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          callback_mode_enabled?: boolean | null
+          caller_lookup_url?: string | null
+          created_at?: string
+          crm_webhook_token?: string | null
+          crm_webhook_url?: string | null
+          id?: string
+          ivr_enabled?: boolean | null
+          metadata?: Json | null
+          recording_enabled?: boolean | null
+          require_recording_consent?: boolean | null
+          retention_days?: number | null
+          transcription_enabled?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
@@ -5509,6 +5833,7 @@ export type Database = {
         Args: { _device_fingerprint: string; _user_id: string }
         Returns: boolean
       }
+      is_onebillchat_user: { Args: never; Returns: boolean }
       mark_conversation_resolved: {
         Args: {
           _conversation_id: string
