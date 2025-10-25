@@ -106,9 +106,26 @@ export function ChannelConnectionWizard({ open, onClose, businessId }: ChannelCo
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setProgress(JSON.parse(saved));
+        const loadedProgress = JSON.parse(saved);
+        
+        // Ensure backward compatibility - add missing fields
+        const migratedProgress: WizardProgress = {
+          ...loadedProgress,
+          channelVerified: loadedProgress.channelVerified || {
+            email: false,
+            whatsapp: false,
+            sms: false,
+            facebook: false,
+            instagram: false,
+            website: false,
+          },
+        };
+        
+        setProgress(migratedProgress);
       } catch (e) {
         console.error("Failed to load wizard progress:", e);
+        // Clear corrupted data
+        localStorage.removeItem(STORAGE_KEY);
       }
     }
   }, []);
