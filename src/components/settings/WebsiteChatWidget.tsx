@@ -139,7 +139,10 @@ export const WebsiteChatWidget = () => {
 
       if (error) throw error;
 
-      toast.success('Settings saved! Changes will appear on your website automatically.');
+      toast.success('Settings saved!', {
+        description: 'Changes will appear automatically on next widget load. If changes don\'t appear immediately, press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to hard refresh.',
+        duration: 6000
+      });
     } catch (error) {
       console.error('Error saving:', error);
       toast.error('Failed to save settings');
@@ -155,9 +158,10 @@ export const WebsiteChatWidget = () => {
 
     const siteId = embedToken.embed_sites[0].site_id;
     const origin = window.location.origin;
+    const version = Date.now(); // Cache-busting parameter
     
     return `<!-- AlacarteChat Widget -->
-<script src="${origin}/embed-widget.js"></script>
+<script src="${origin}/embed-widget.js?v=${version}"></script>
 <script>
   AlacarteChatWidget.init({
     siteId: '${siteId}',

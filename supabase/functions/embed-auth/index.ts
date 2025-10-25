@@ -109,6 +109,62 @@ serve(async (req) => {
     } catch {
       body = {};
     }
+
+    // Handle session revalidation requests
+    if (body.action === 'revalidate') {
+      const sessionToken = req.headers.get('x-session-token');
+      
+      if (!sessionToken) {
+        return new Response(JSON.stringify({ success: false, error: 'Missing session token' }), 
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      
+      // Validate session token
+      const { data: session, error: sessionError } = await supabase
+        .from('embed_sessions')
+        .select('*')
+        .eq('session_token', sessionToken)
+        .eq('site_id', siteId)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+      
+      if (sessionError || !session) {
+        console.log('Session revalidation failed:', sessionError);
+        return new Response(JSON.stringify({ success: false, error: 'Session expired' }), 
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      
+      // Fetch FRESH customization from database
+      const { data: customization } = await supabase
+        .from("widget_customization")
+        .select("*")
+        .eq("business_id", business.id)
+        .maybeSingle();
+      
+      console.log('Session revalidated successfully, returning fresh customization');
+      
+      return new Response(JSON.stringify({
+        success: true,
+        session: {
+          session_token: sessionToken,
+          customer_id: session.customer_id,
+          conversation_id: session.conversation_id,
+          expires_at: session.expires_at
+        },
+        business_name: business.name,
+        customization: customization || {
+          primary_color: '#6366f1',
+          widget_position: 'bottom-right',
+          widget_size: 'medium',
+          widget_shape: 'circle',
+          icon_type: 'chat',
+          show_button_text: false,
+          button_text: 'Chat with us',
+          welcome_message: 'Hi! How can we help?',
+          greeting_message: 'Hi! How can we help?'
+        }
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     
     const name = body.customer_name ?? body.name;
     const email = body.customer_email ?? body.email;

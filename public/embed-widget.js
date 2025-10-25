@@ -31,19 +31,36 @@
         customData: options.customData || {}
       };
 
-      // Try to restore session from cookie
-      const savedSession = this.getSessionFromCookie();
-      if (savedSession && savedSession.sessionToken && savedSession.customerId) {
-        this.sessionToken = savedSession.sessionToken;
-        this.conversationId = savedSession.conversationId;
-        this.customerId = savedSession.customerId;
-        this.isAuthenticated = true;
+    // Try to restore session from cookie with fresh customization
+    const savedSession = this.getSessionFromCookie();
+    if (savedSession && savedSession.sessionToken && savedSession.customerId) {
+      // Validate session and fetch FRESH customization from server
+      this.revalidateSession(savedSession.sessionToken).then(freshAuth => {
+        if (freshAuth && freshAuth.success) {
+          this.sessionToken = freshAuth.session.session_token;
+          this.conversationId = freshAuth.session.conversation_id;
+          this.customerId = freshAuth.session.customer_id;
+          this.isAuthenticated = true;
+          this.initialized = true;
+          // Use FRESH customization from server, not from cookie
+          this.injectWidget(freshAuth.customization || {}, freshAuth.business_name || 'Support');
+          this.loadMessages();
+          this.startPolling();
+        } else {
+          // Session expired, clear cookie and show pre-chat form
+          this.clearSessionCookie();
+          this.initialized = true;
+          this.injectWidget({}, 'Support');
+          this.showPrechatForm();
+        }
+      }).catch(() => {
+        this.clearSessionCookie();
         this.initialized = true;
-        this.injectWidget(savedSession.customization || {}, savedSession.businessName || 'Support');
-        this.loadMessages();
-        this.startPolling();
-        return;
-      }
+        this.injectWidget({}, 'Support');
+        this.showPrechatForm();
+      });
+      return;
+    }
 
       // ALWAYS require pre-chat form for all users (mandatory 4 questions)
       this.requirePrechat = true;
@@ -66,8 +83,8 @@
           sessionToken: sessionData.sessionToken,
           conversationId: sessionData.conversationId,
           customerId: sessionData.customerId,
-          businessName: sessionData.businessName,
-          customization: sessionData.customization
+          businessName: sessionData.businessName
+          // REMOVED: customization (always fetch fresh from server)
         });
         document.cookie = `alacarte_chat_session=${encodeURIComponent(cookieData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
         console.log('[AlacarteChat] Session saved to cookie');
@@ -95,6 +112,34 @@
 
     clearSessionCookie: function() {
       document.cookie = 'alacarte_chat_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    },
+
+    revalidateSession: async function(sessionToken) {
+      try {
+        const response = await fetch(`${this.config.apiUrl}/embed-auth`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-site-id': this.config.siteId,
+            'x-session-token': sessionToken
+          },
+          body: JSON.stringify({ 
+            action: 'revalidate'
+          })
+        });
+        
+        if (!response.ok) {
+          console.log('[AlacarteChat] Session revalidation failed:', response.status);
+          return null;
+        }
+        
+        const data = await response.json();
+        console.log('[AlacarteChat] Session revalidated successfully');
+        return data;
+      } catch (error) {
+        console.error('[AlacarteChat] Session revalidation error:', error);
+        return null;
+      }
     },
 
     authenticate: async function(customerOverride) {
