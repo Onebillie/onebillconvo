@@ -229,22 +229,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Channels Marquee */}
-        <section className="bg-card py-12 sm:py-16 md:py-20 text-center px-4" id="features">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-foreground">
-            All your channels in one place
-          </h2>
-          <div className="overflow-hidden mask-marquee">
-            <div className="flex gap-3 sm:gap-4 animate-marquee">
-              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={i} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
-                  {item}
-                </div>)}
-              {["WhatsApp Business API", "SMS Messaging", "Email", "Instagram DMs", "Facebook Messenger", "Website Chat Widget", "Voice & Files", "Team Collaboration", "AI Assistant", "REST API", "Embed Widget", "SSO Integration"].map((item, i) => <div key={`dup-${i}`} className="min-w-[180px] sm:min-w-[240px] px-4 sm:px-6 py-6 sm:py-9 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground font-bold text-center shadow-md text-sm sm:text-base">
-                  {item}
-                </div>)}
-            </div>
-          </div>
-        </section>
 
         {/* Channels Overview */}
         <section className="py-20 px-6 bg-card">
