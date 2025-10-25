@@ -54,12 +54,18 @@ export const WebsiteChatWidget = () => {
       if (tokens && tokens.length > 0) {
         setEmbedToken(tokens[0]);
 
-        // Load customization for this token
-        const { data: custom } = await supabase
+        // Load customization for this specific token
+        const { data: custom, error: customError } = await supabase
           .from('widget_customization')
           .select('*')
           .eq('business_id', currentBusinessId)
-          .single();
+          .eq('embed_token_id', tokens[0].id)
+          .maybeSingle();
+
+        if (customError) {
+          console.error('Error loading customization:', customError);
+          toast.error('Failed to load widget settings');
+        }
 
         if (custom) {
           setCustomization({
@@ -125,21 +131,44 @@ export const WebsiteChatWidget = () => {
   };
 
   const saveCustomization = async () => {
-    if (!user || !currentBusinessId) return;
+    if (!user || !currentBusinessId || !embedToken) return;
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from('widget_customization')
         .upsert({
           embed_token_id: embedToken.id,
           business_id: currentBusinessId,
           ...customization,
-        });
+        }, {
+          onConflict: 'business_id,embed_token_id'
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Settings saved!', {
+      // Update local state with saved values
+      if (saved) {
+        setCustomization({
+          primary_color: saved.primary_color || '#6366f1',
+          secondary_color: saved.secondary_color || '#4f46e5',
+          text_color: saved.text_color || '#ffffff',
+          widget_position: saved.widget_position || 'bottom-right',
+          widget_size: saved.widget_size || 'medium',
+          widget_shape: saved.widget_shape || 'circle',
+          icon_type: saved.icon_type || 'chat',
+          show_button_text: saved.show_button_text || false,
+          button_text: saved.button_text || 'Chat',
+          greeting_message: saved.greeting_message || 'Hi! How can we help you today?',
+          welcome_message: saved.welcome_message || 'Welcome! How can we assist you?',
+          widget_type: saved.widget_type || 'bubble',
+        });
+      }
+
+      const savedTime = new Date().toLocaleTimeString();
+      toast.success(`Settings saved at ${savedTime}!`, {
         description: 'Changes will appear automatically on next widget load. If changes don\'t appear immediately, press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to hard refresh.',
         duration: 6000
       });

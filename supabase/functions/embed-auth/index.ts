@@ -134,11 +134,12 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       
-      // Fetch FRESH customization from database
+      // Fetch FRESH customization from database for this specific token
       const { data: customization } = await supabase
         .from("widget_customization")
         .select("*")
         .eq("business_id", business.id)
+        .eq("embed_token_id", siteData.embed_token_id)
         .maybeSingle();
       
       console.log('Session revalidated successfully, returning fresh customization');
@@ -280,11 +281,12 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch widget customization from widget_customization table (correct table name)
+    // Fetch widget customization for this specific token
     const { data: customization } = await supabase
       .from("widget_customization")
       .select("*")
       .eq("business_id", businessId)
+      .eq("embed_token_id", siteData.embed_token_id)
       .maybeSingle();
 
     console.log('Auth success:', { customerId, conversationId, businessId, businessName: business.name });
