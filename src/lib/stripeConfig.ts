@@ -26,6 +26,7 @@ export const STRIPE_PRODUCTS = {
       apiAccess: false,
       emailIntegration: true, // Can receive
       whatsappSending: 100,
+      marketing: false,
     },
     popular: false,
   },
@@ -52,6 +53,7 @@ export const STRIPE_PRODUCTS = {
       apiAccess: false,
       emailIntegration: true,
       whatsappSending: 1000,
+      marketing: false,
     },
     popular: true,
   },
@@ -80,6 +82,7 @@ export const STRIPE_PRODUCTS = {
       apiAccess: true,
       emailIntegration: true,
       whatsappSending: 10000,
+      marketing: false,
     },
     popular: false,
   },
@@ -108,6 +111,98 @@ export const STRIPE_PRODUCTS = {
       apiAccess: true,
       emailIntegration: true,
       whatsappSending: 999999,
+      marketing: false,
+    },
+    popular: false,
+  },
+} as const;
+
+// Marketing Add-On Pricing (30-40% cheaper than competitors)
+export const MARKETING_TIERS = {
+  marketing_starter: {
+    name: "Starter Marketing",
+    priceId: null, // TODO: Add Stripe price ID
+    productId: "prod_marketing_starter",
+    price: 19,
+    currency: "USD",
+    interval: "month",
+    features: [
+      "2,000 marketing messages/month",
+      "5 active campaigns",
+      "Basic segmentation",
+      "Email + SMS broadcasts",
+      "Basic analytics",
+      "1 marketing team member",
+    ],
+    limits: {
+      marketingMessages: 2000,
+      campaigns: 5,
+      channels: ["email", "sms"],
+      segmentation: "basic",
+      analytics: "basic",
+      teamMembers: 1,
+      abTesting: false,
+      automation: false,
+    },
+    popular: false,
+  },
+  marketing_professional: {
+    name: "Professional Marketing",
+    priceId: null, // TODO: Add Stripe price ID
+    productId: "prod_marketing_professional",
+    price: 49,
+    currency: "USD",
+    interval: "month",
+    features: [
+      "10,000 marketing messages/month",
+      "Unlimited campaigns",
+      "Advanced segmentation",
+      "All channels (WhatsApp, Email, SMS, Social)",
+      "A/B testing",
+      "Drip campaign automation",
+      "Advanced analytics",
+      "5 marketing team members",
+    ],
+    limits: {
+      marketingMessages: 10000,
+      campaigns: 999999,
+      channels: ["whatsapp", "email", "sms", "facebook", "instagram"],
+      segmentation: "advanced",
+      analytics: "advanced",
+      teamMembers: 5,
+      abTesting: true,
+      automation: "drip",
+    },
+    popular: true,
+  },
+  marketing_enterprise: {
+    name: "Enterprise Marketing",
+    priceId: null, // TODO: Add Stripe price ID
+    productId: "prod_marketing_enterprise",
+    price: 149,
+    currency: "USD",
+    interval: "month",
+    features: [
+      "Unlimited marketing messages",
+      "Unlimited campaigns",
+      "Custom audience segments",
+      "Full omnichannel broadcast",
+      "A/B/C/D testing",
+      "Advanced automation & triggers",
+      "Real-time analytics + custom reports",
+      "White-label options",
+      "Unlimited team members",
+    ],
+    limits: {
+      marketingMessages: 999999,
+      campaigns: 999999,
+      channels: ["whatsapp", "email", "sms", "facebook", "instagram"],
+      segmentation: "unlimited",
+      analytics: "custom",
+      teamMembers: 999999,
+      abTesting: true,
+      automation: "full",
+      whitelabel: true,
     },
     popular: false,
   },
@@ -136,7 +231,17 @@ export const CREDIT_BUNDLES = {
   },
 } as const;
 
+// Overage Pricing per message (when bundle exhausted)
+export const OVERAGE_PRICING = {
+  whatsapp: 0.05, // $0.05 per message
+  sms: 0.02, // $0.02 per message
+  email: 0.001, // $0.001 per email
+  facebook: 0.03, // $0.03 per message
+  instagram: 0.03, // $0.03 per message
+} as const;
+
 export type SubscriptionTier = keyof typeof STRIPE_PRODUCTS;
+export type MarketingTier = keyof typeof MARKETING_TIERS;
 export type CreditBundle = keyof typeof CREDIT_BUNDLES;
 
 export const getTierFromProductId = (productId: string | null): SubscriptionTier => {

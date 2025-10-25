@@ -1793,6 +1793,56 @@ export type Database = {
           },
         ]
       }
+      customer_segments: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_count: number | null
+          description: string | null
+          filters: Json
+          id: string
+          is_dynamic: boolean | null
+          last_calculated_at: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_count?: number | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          is_dynamic?: boolean | null
+          last_calculated_at?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_count?: number | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          is_dynamic?: boolean | null
+          last_calculated_at?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_segments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_tags: {
         Row: {
           created_at: string | null
@@ -2779,6 +2829,7 @@ export type Database = {
           failed_count: number | null
           id: string
           instagram_content: string | null
+          message_category: string | null
           name: string
           opened_count: number | null
           recipient_count: number | null
@@ -2809,6 +2860,7 @@ export type Database = {
           failed_count?: number | null
           id?: string
           instagram_content?: string | null
+          message_category?: string | null
           name: string
           opened_count?: number | null
           recipient_count?: number | null
@@ -2839,6 +2891,7 @@ export type Database = {
           failed_count?: number | null
           id?: string
           instagram_content?: string | null
+          message_category?: string | null
           name?: string
           opened_count?: number | null
           recipient_count?: number | null
@@ -2866,6 +2919,62 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_workflows: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          total_completed: number | null
+          total_enrolled: number | null
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string | null
+          workflow_steps: Json
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          total_completed?: number | null
+          total_enrolled?: number | null
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string | null
+          workflow_steps?: Json
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          total_completed?: number | null
+          total_enrolled?: number | null
+          trigger_config?: Json
+          trigger_type?: string
+          updated_at?: string | null
+          workflow_steps?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_workflows_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -2913,6 +3022,56 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_categories: {
+        Row: {
+          background_color: string
+          border_color: string
+          business_id: string | null
+          category_name: string
+          created_at: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          text_color: string
+          updated_at: string | null
+        }
+        Insert: {
+          background_color?: string
+          border_color?: string
+          business_id?: string | null
+          category_name: string
+          created_at?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          text_color?: string
+          updated_at?: string | null
+        }
+        Update: {
+          background_color?: string
+          border_color?: string
+          business_id?: string | null
+          category_name?: string
+          created_at?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          text_color?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_categories_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -3069,6 +3228,7 @@ export type Database = {
           ai_confidence: number | null
           bounce_reason: string | null
           business_id: string | null
+          category: string | null
           channel: string | null
           clicked_at: string | null
           content: string
@@ -3114,6 +3274,7 @@ export type Database = {
           ai_confidence?: number | null
           bounce_reason?: string | null
           business_id?: string | null
+          category?: string | null
           channel?: string | null
           clicked_at?: string | null
           content: string
@@ -3159,6 +3320,7 @@ export type Database = {
           ai_confidence?: number | null
           bounce_reason?: string | null
           business_id?: string | null
+          category?: string | null
           channel?: string | null
           clicked_at?: string | null
           content?: string
@@ -3628,6 +3790,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_tiers: {
+        Row: {
+          base_price: number
+          created_at: string | null
+          display_name: string
+          features: Json
+          id: string
+          is_active: boolean | null
+          marketing_campaigns_limit: number | null
+          marketing_messages_included: number | null
+          stripe_price_id: string | null
+          tier_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_price: number
+          created_at?: string | null
+          display_name: string
+          features?: Json
+          id?: string
+          is_active?: boolean | null
+          marketing_campaigns_limit?: number | null
+          marketing_messages_included?: number | null
+          stripe_price_id?: string | null
+          tier_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number
+          created_at?: string | null
+          display_name?: string
+          features?: Json
+          id?: string
+          is_active?: boolean | null
+          marketing_campaigns_limit?: number | null
+          marketing_messages_included?: number | null
+          stripe_price_id?: string | null
+          tier_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3849,6 +4053,88 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_media_comments: {
+        Row: {
+          business_id: string | null
+          comment_id: string
+          commenter_name: string
+          commenter_profile_picture: string | null
+          commenter_username: string | null
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          is_hidden: boolean | null
+          is_replied: boolean | null
+          parent_comment_id: string | null
+          platform: string
+          post_id: string
+          replied_at: string | null
+          sentiment: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          comment_id: string
+          commenter_name: string
+          commenter_profile_picture?: string | null
+          commenter_username?: string | null
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          is_replied?: boolean | null
+          parent_comment_id?: string | null
+          platform: string
+          post_id: string
+          replied_at?: string | null
+          sentiment?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          comment_id?: string
+          commenter_name?: string
+          commenter_profile_picture?: string | null
+          commenter_username?: string | null
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          is_replied?: boolean | null
+          parent_comment_id?: string | null
+          platform?: string
+          post_id?: string
+          replied_at?: string | null
+          sentiment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_comments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_comments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_comments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -4869,6 +5155,57 @@ export type Database = {
             columns: ["embed_token_id"]
             isOneToOne: false
             referencedRelation: "embed_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_enrollments: {
+        Row: {
+          completed_at: string | null
+          current_step: number | null
+          customer_id: string | null
+          enrolled_at: string | null
+          id: string
+          last_step_at: string | null
+          metadata: Json | null
+          status: string | null
+          workflow_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          current_step?: number | null
+          customer_id?: string | null
+          enrolled_at?: string | null
+          id?: string
+          last_step_at?: string | null
+          metadata?: Json | null
+          status?: string | null
+          workflow_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          current_step?: number | null
+          customer_id?: string | null
+          enrolled_at?: string | null
+          id?: string
+          last_step_at?: string | null
+          metadata?: Json | null
+          status?: string | null
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_enrollments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_enrollments_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_workflows"
             referencedColumns: ["id"]
           },
         ]

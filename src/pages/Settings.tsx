@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook } from "lucide-react";
+import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook, Package } from "lucide-react";
 import { UnifiedStaffManagement } from "@/components/settings/UnifiedStaffManagement";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { InMailAccordion } from "@/components/settings/InMailAccordion";
@@ -22,6 +22,8 @@ import { ApiAccessAccordion } from "@/components/settings/ApiAccessAccordion";
 import { WebsiteChatWidget } from "@/components/settings/WebsiteChatWidget";
 import { WebhookManagement } from "@/components/settings/WebhookManagement";
 import { ThemeCustomization } from "@/components/settings/ThemeCustomization";
+import { MessageCategorySettings } from "@/components/settings/MessageCategorySettings";
+import { CustomerSegments } from "@/components/settings/CustomerSegments";
 import { GroupedSettingsNav } from "@/components/settings/GroupedSettingsNav";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -200,6 +202,14 @@ export default function Settings() {
                 <WebhookManagement />
               </TabsContent>
 
+              <TabsContent value="message-categories">
+                <MessageCategorySettings />
+              </TabsContent>
+
+              <TabsContent value="customer-segments">
+                <CustomerSegments />
+              </TabsContent>
+
               <TabsContent value="statuses">
                 <StatusesAccordion />
               </TabsContent>
@@ -275,6 +285,14 @@ export default function Settings() {
 
                 <TabsContent value="webhooks">
                   <WebhookManagement />
+                </TabsContent>
+
+                <TabsContent value="message-categories">
+                  <MessageCategorySettings />
+                </TabsContent>
+
+                <TabsContent value="customer-segments">
+                  <CustomerSegments />
                 </TabsContent>
 
                 <TabsContent value="statuses">

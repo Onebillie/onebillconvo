@@ -59,6 +59,7 @@ export interface Message {
   is_read: boolean;
   platform: string;
   status?: string;
+  category?: string;
   replied_to_message_id?: string | null;
   external_message_id?: string | null;
   is_edited?: boolean;

@@ -16,10 +16,13 @@ import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
 import { Pencil, Reply, Search, Paperclip, Star, Pin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import DOMPurify from 'dompurify';
+import { cn } from "@/lib/utils";
+import * as Icons from "lucide-react";
 
 interface MessageListProps {
   messages: Message[];
@@ -37,7 +40,26 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
   const [infoMessage, setInfoMessage] = useState<Message | null>(null);
   const [deleteConfirmMessage, setDeleteConfirmMessage] = useState<Message | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [messageCategories, setMessageCategories] = useState<Record<string, any>>({});
   const { toast } = useToast();
+
+  // Fetch message categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('message_categories')
+        .select('*');
+      
+      if (data) {
+        const categoriesMap = data.reduce((acc, cat) => {
+          acc[cat.category_name] = cat;
+          return acc;
+        }, {} as Record<string, any>);
+        setMessageCategories(categoriesMap);
+      }
+    };
+    fetchCategories();
+  }, []);
   
   const {
     searchTerm,
@@ -399,12 +421,43 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                         )}
                         
                         <div className="relative max-w-[90%] lg:max-w-[75%]">
+                          {/* Category badge */}
+                          {message.category && message.category !== 'customer_service' && messageCategories[message.category] && (
+                            <Badge 
+                              className="absolute -top-2 -right-2 z-10 text-xs px-2 py-0.5"
+                              style={{
+                                backgroundColor: messageCategories[message.category].border_color,
+                                color: messageCategories[message.category].text_color,
+                              }}
+                            >
+                              {(() => {
+                                const IconComponent = (Icons as any)[messageCategories[message.category].icon];
+                                return IconComponent ? <IconComponent className="h-3 w-3 mr-1" /> : null;
+                              })()}
+                              {messageCategories[message.category].display_name}
+                            </Badge>
+                          )}
+                          
                           <div
-                            className={`w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 ${
+                            className={cn(
+                              "w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 transition-all",
                               message.direction === "outbound"
                                 ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            } ${message.is_deleted ? 'opacity-60 italic' : ''} ${message.platform === 'email' ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all' : ''}`}
+                                : message.category && messageCategories[message.category]
+                                  ? "bg-transparent"
+                                  : "bg-muted",
+                              message.is_deleted && 'opacity-60 italic',
+                              message.platform === 'email' && 'cursor-pointer hover:ring-2 hover:ring-primary/50'
+                            )}
+                            style={
+                              message.direction === "inbound" && message.category && messageCategories[message.category]
+                                ? {
+                                    backgroundColor: messageCategories[message.category].background_color,
+                                    color: messageCategories[message.category].text_color,
+                                    borderLeft: `4px solid ${messageCategories[message.category].border_color}`,
+                                  }
+                                : undefined
+                            }
                             onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
                           >
                           {/* Replied message preview */}

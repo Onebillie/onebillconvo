@@ -17,6 +17,7 @@ import {
   Bell,
   Key,
   Palette,
+  Package,
   LucideIcon,
 } from "lucide-react";
 
@@ -51,6 +52,14 @@ export function GroupedSettingsNav({ activeTab, onTabChange, isSuperAdmin }: Gro
         { value: "webhooks", label: "Webhooks", icon: Key },
         { value: "canned", label: "Quick Replies", icon: MessageCircle },
         { value: "statuses", label: "Statuses", icon: Tags },
+        { value: "message-categories", label: "Message Categories", icon: Package },
+        { value: "tasks", label: "Tasks", icon: CheckSquare },
+      ],
+    },
+    {
+      label: "Marketing",
+      tabs: [
+        { value: "customer-segments", label: "Customer Segments", icon: Users },
       ],
     },
     {

@@ -239,6 +239,7 @@ async function sendCampaignMessage(
       content: content,
       direction: 'outbound',
       platform: channel,
+      category: 'marketing',
       template_name: campaign.whatsapp_template_id,
       template_content: content,
       delivery_status: 'pending'
