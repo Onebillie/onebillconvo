@@ -414,39 +414,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Feature Details Grid */}
-        <section className="py-20 px-6">
-          <div className="max-w-[1200px] mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Powerful Features</h2>
-            <p className="text-center text-muted-foreground mb-12 text-lg">
-              Everything you need to manage customer conversations at scale
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {features.map((feature) => (
-                <div key={feature.title} className="bg-card rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <feature.icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-xl mb-2 text-card-foreground">{feature.title}</h3>
-                      <p className="text-muted-foreground mb-4">{feature.description}</p>
-                    </div>
-                  </div>
-                  <ul className="space-y-2 ml-16">
-                    {feature.benefits.map((benefit) => (
-                      <li key={benefit} className="flex items-start gap-2 text-sm text-card-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Channels Overview */}
         <section className="py-20 px-6 bg-card">
           <div className="max-w-[1200px] mx-auto">
@@ -525,6 +492,39 @@ const Landing = () => {
                   </li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Details Grid */}
+        <section className="py-20 px-6">
+          <div className="max-w-[1200px] mx-auto">
+            <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Powerful Features</h2>
+            <p className="text-center text-muted-foreground mb-12 text-lg">
+              Everything you need to manage customer conversations at scale
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {features.map((feature) => (
+                <div key={feature.title} className="bg-card rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="bg-primary/10 p-3 rounded-lg">
+                      <feature.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-xl mb-2 text-card-foreground">{feature.title}</h3>
+                      <p className="text-muted-foreground mb-4">{feature.description}</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2 ml-16">
+                    {feature.benefits.map((benefit) => (
+                      <li key={benefit} className="flex items-start gap-2 text-sm text-card-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </div>
         </section>
