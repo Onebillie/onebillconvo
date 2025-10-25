@@ -11,6 +11,7 @@ import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicHeader } from "@/components/PublicHeader";
+import { PricingCalculator } from "@/components/pricing/PricingCalculator";
 
 export default function Pricing() {
   const { user, subscriptionState } = useAuth();
@@ -164,6 +165,11 @@ export default function Pricing() {
               </Button>
             </Card>
           ))}
+        </div>
+
+        {/* Cost Calculator */}
+        <div className="mt-16">
+          <PricingCalculator />
         </div>
 
         {/* AI Assistant Pricing Details */}
