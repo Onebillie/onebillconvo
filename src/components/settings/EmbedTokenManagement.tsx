@@ -69,7 +69,9 @@ export function EmbedTokenManagement() {
   const [testToken, setTestToken] = useState<EmbedToken | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardTokenId, setWizardTokenId] = useState<string | null>(null);
+
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [customByToken, setCustomByToken] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchTokens();
@@ -98,6 +100,21 @@ export function EmbedTokenManagement() {
 
       if (error) throw error;
       setTokens(data || []);
+
+      // Fetch customization for tokens to render small preview icons
+      if (data && data.length > 0) {
+        const ids = data.map(t => t.id);
+        const { data: customs, error: custErr } = await supabase
+          .from('widget_customization')
+          .select('*')
+          .in('embed_token_id', ids)
+          .eq('business_id', businessUsers.business_id);
+        if (!custErr && customs) {
+          const map: Record<string, any> = {};
+          customs.forEach(c => { map[c.embed_token_id] = c; });
+          setCustomByToken(map);
+        }
+      }
     } catch (error) {
       console.error('Error fetching tokens:', error);
       toast({
@@ -290,7 +307,8 @@ export function EmbedTokenManagement() {
       return '<!-- Error: Token missing site_id. Please recreate the token. -->';
     }
     
-    const WIDGET_JS = 'https://6e3a8087-ec6e-43e0-a6a1-d8394f40b390.lovableproject.com/embed-widget.js';
+    const origin = window.location.origin;
+    const WIDGET_JS = `${origin}/embed-widget.js?v=${Date.now()}`;
     const baseCode = `<script src="${WIDGET_JS}"></script>
 <script>
   AlacarteChatWidget.init({
@@ -453,9 +471,33 @@ ${baseCode}`;
                               <span className="text-xs">Copy</span>
                             </Button>
                           </div>
-                          <code className="text-xs bg-muted/50 px-2 py-2 rounded block font-mono overflow-x-auto whitespace-pre-wrap">
-                            {getCodeForPlatform(token, 'html')}
-                          </code>
+                          <div className="flex items-start gap-4">
+                            <code className="text-xs bg-muted/50 px-2 py-2 rounded block font-mono overflow-x-auto whitespace-pre-wrap flex-1">
+                              {getCodeForPlatform(token, 'html')}
+                            </code>
+                            <div className="hidden md:block w-[140px] shrink-0">
+                              <div className="text-xs text-muted-foreground mb-2">Icon preview</div>
+                              <div className="h-[120px] rounded-lg border bg-background relative overflow-hidden">
+                                <div className="absolute inset-2 flex items-end justify-end p-2">
+                                  <div
+                                    className="flex items-center justify-center shadow-md"
+                                    style={{
+                                      width: '44px',
+                                      height: '44px',
+                                      background: (customByToken[token.id]?.primary_color) || '#6366f1',
+                                      color: (customByToken[token.id]?.text_color) || '#ffffff',
+                                      borderRadius: (customByToken[token.id]?.widget_shape) === 'square' ? '8px' : ((customByToken[token.id]?.widget_shape) === 'rounded' ? '14px' : '9999px')
+                                    }}
+                                    aria-label="Widget icon preview"
+                                  >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
