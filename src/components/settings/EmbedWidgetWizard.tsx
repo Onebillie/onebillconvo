@@ -4,13 +4,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, Code } from "lucide-react";
-import { WidgetTemplateGallery } from "./WidgetTemplateGallery";
 import { WidgetAppearanceEditor } from "./WidgetAppearanceEditor";
-import { WidgetMessagesEditor } from "./WidgetMessagesEditor";
-import { WidgetBehaviorSettings } from "./WidgetBehaviorSettings";
 import { WidgetLivePreview } from "./WidgetLivePreview";
 import { WidgetCodeDisplay } from "./WidgetCodeDisplay";
-import { WidgetPreset, getPresetById } from "@/lib/widgetPresets";
 import { Progress } from "@/components/ui/progress";
 
 interface EmbedWidgetWizardProps {
@@ -31,34 +27,35 @@ export const EmbedWidgetWizard = ({
   onSave,
 }: EmbedWidgetWizardProps) => {
   const [step, setStep] = useState(1);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [config, setConfig] = useState({
     widget_type: 'bubble',
     icon_type: 'chat',
+    widget_shape: 'circle',
     primary_color: '#6366f1',
-    secondary_color: '#4f46e5',
+    secondary_color: '#6366f1',
     text_color: '#ffffff',
     widget_size: 'medium',
     widget_position: 'bottom-right',
-    button_text: 'Chat with us',
+    button_text: '',
     show_button_text: false,
-    greeting_message: 'Hi! How can we help?',
-    welcome_message: 'Welcome! Send us a message.',
+    greeting_message: '',
+    welcome_message: 'Hi! How can we help you today?',
     offline_message: '',
-    show_unread_badge: true,
+    require_contact_info: false,
+    show_unread_badge: false,
     auto_open_delay: null,
-    sound_notifications: false,
+    sound_notifications: true,
+    start_minimized: true,
     custom_css: '',
   });
   const [saving, setSaving] = useState(false);
   const [siteId, setSiteId] = useState<string | null>(null);
 
-  const totalSteps = 6;
+  const totalSteps = 3;
 
   useEffect(() => {
     if (existingConfig) {
       setConfig(existingConfig);
-      setStep(2); // Skip template selection if editing
     }
   }, [existingConfig]);
 
@@ -86,13 +83,6 @@ export const EmbedWidgetWizard = ({
   }, [embedTokenId]);
 
 
-  const handlePresetSelect = (preset: WidgetPreset) => {
-    setSelectedPreset(preset.id);
-    setConfig({
-      ...config,
-      ...preset.config,
-    });
-  };
 
   const handleNext = () => {
     if (step < totalSteps) {
@@ -123,7 +113,7 @@ export const EmbedWidgetWizard = ({
 
       toast.success('Widget customization saved!');
       onSave();
-      setStep(6); // Go to code display step instead of closing
+      setStep(3); // Go to code display step instead of closing
     } catch (error: any) {
       console.error('Error saving widget customization:', error);
       toast.error('Failed to save widget customization');
@@ -136,35 +126,14 @@ export const EmbedWidgetWizard = ({
     switch (step) {
       case 1:
         return (
-          <WidgetTemplateGallery
-            selectedPreset={selectedPreset}
-            onSelectPreset={handlePresetSelect}
-          />
-        );
-      case 2:
-        return (
           <WidgetAppearanceEditor
             config={config}
             onConfigChange={setConfig}
           />
         );
-      case 3:
-        return (
-          <WidgetMessagesEditor
-            config={config}
-            onConfigChange={setConfig}
-          />
-        );
-      case 4:
-        return (
-          <WidgetBehaviorSettings
-            config={config}
-            onConfigChange={setConfig}
-          />
-        );
-      case 5:
+      case 2:
         return <WidgetLivePreview config={config} />;
-      case 6:
+      case 3:
         return (
           <WidgetCodeDisplay
             businessId={businessId}
@@ -179,15 +148,12 @@ export const EmbedWidgetWizard = ({
   };
 
   const stepTitles = [
-    'Choose Template',
-    'Customize Appearance',
-    'Configure Messages',
-    'Behavior Settings',
-    'Preview & Finish',
-    'Get Your Code',
+    'Configure Widget',
+    'Preview',
+    'Get Embed Code',
   ];
 
-  const canProceed = step === 1 ? selectedPreset !== null : true;
+  const canProceed = config.welcome_message?.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -228,19 +194,19 @@ export const EmbedWidgetWizard = ({
             </Button>
 
             <div className="flex gap-2">
-              {step < 5 ? (
+              {step < 2 ? (
                 <Button onClick={handleNext} disabled={!canProceed}>
                   Next
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
-              ) : step === 5 ? (
+              ) : step === 2 ? (
                 <Button onClick={handleSave} disabled={saving}>
                   {saving ? (
                     "Saving..."
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Save & Continue
+                      Save & Get Code
                     </>
                   )}
                 </Button>

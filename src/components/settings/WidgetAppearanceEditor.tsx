@@ -2,8 +2,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { widgetIcons } from "@/lib/widgetIcons";
-import { Check } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { MessageCircle, Circle, Square, Check } from "lucide-react";
 
 interface WidgetAppearanceEditorProps {
   config: any;
@@ -14,204 +15,153 @@ export const WidgetAppearanceEditor = ({
   config,
   onConfigChange,
 }: WidgetAppearanceEditorProps) => {
-  const positions = [
-    { id: 'top-left', label: 'Top Left' },
-    { id: 'top-center', label: 'Top Center' },
-    { id: 'top-right', label: 'Top Right' },
-    { id: 'bottom-left', label: 'Bottom Left' },
-    { id: 'bottom-center', label: 'Bottom Center' },
-    { id: 'bottom-right', label: 'Bottom Right' },
-  ];
-
-  const sizes = [
-    { id: 'small', label: 'Small', size: '48px' },
-    { id: 'medium', label: 'Medium', size: '60px' },
-    { id: 'large', label: 'Large', size: '80px' },
+  const iconShapes = [
+    { id: 'circle', label: 'Circle' },
+    { id: 'square', label: 'Square' },
+    { id: 'rounded', label: 'Rounded' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Customize Appearance</h3>
+        <h3 className="text-lg font-semibold mb-2">Widget Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Fine-tune colors, position, size, and icon
+          Configure the essential settings for your chat widget
         </p>
       </div>
 
-      {/* Colors */}
-      <div className="space-y-4">
-        <h4 className="font-medium">Colors</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="primary_color">Primary Color</Label>
-            <div className="flex gap-2">
-              <Input
-                id="primary_color"
-                type="color"
-                value={config.primary_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, primary_color: e.target.value })
-                }
-                className="w-20 h-10 cursor-pointer"
-              />
-              <Input
-                type="text"
-                value={config.primary_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, primary_color: e.target.value })
-                }
-                className="flex-1"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="secondary_color">Secondary Color</Label>
-            <div className="flex gap-2">
-              <Input
-                id="secondary_color"
-                type="color"
-                value={config.secondary_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, secondary_color: e.target.value })
-                }
-                className="w-20 h-10 cursor-pointer"
-              />
-              <Input
-                type="text"
-                value={config.secondary_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, secondary_color: e.target.value })
-                }
-                className="flex-1"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="text_color">Text Color</Label>
-            <div className="flex gap-2">
-              <Input
-                id="text_color"
-                type="color"
-                value={config.text_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, text_color: e.target.value })
-                }
-                className="w-20 h-10 cursor-pointer"
-              />
-              <Input
-                type="text"
-                value={config.text_color}
-                onChange={(e) =>
-                  onConfigChange({ ...config, text_color: e.target.value })
-                }
-                className="flex-1"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Icon Selection */}
-      <div className="space-y-4">
-        <h4 className="font-medium">Widget Icon</h4>
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-          {widgetIcons.map((icon) => (
-            <Button
-              key={icon.id}
-              variant={config.icon_type === icon.id ? "default" : "outline"}
-              className="h-16 relative"
-              onClick={() =>
-                onConfigChange({ ...config, icon_type: icon.id })
-              }
-              title={icon.name}
-            >
-              <icon.Icon className="h-6 w-6" />
-              {config.icon_type === icon.id && (
-                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-              )}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Size */}
-      <div className="space-y-4">
-        <h4 className="font-medium">Widget Size</h4>
-        <div className="grid grid-cols-3 gap-4">
-          {sizes.map((size) => (
+      {/* Icon Shape */}
+      <div className="space-y-3">
+        <Label>Widget Shape</Label>
+        <div className="grid grid-cols-3 gap-3">
+          {iconShapes.map((shape) => (
             <Card
-              key={size.id}
+              key={shape.id}
               className={`cursor-pointer transition-all ${
-                config.widget_size === size.id
+                config.widget_shape === shape.id
                   ? "ring-2 ring-primary"
                   : "hover:ring-1 hover:ring-primary/50"
               }`}
               onClick={() =>
-                onConfigChange({ ...config, widget_size: size.id })
+                onConfigChange({ ...config, widget_shape: shape.id })
               }
             >
               <CardContent className="p-4 flex flex-col items-center gap-2">
                 <div
-                  className="rounded-full border-2"
-                  style={{
-                    width: size.size,
-                    height: size.size,
-                    backgroundColor: config.primary_color,
-                    borderColor: config.secondary_color,
-                  }}
-                />
-                <span className="text-sm font-medium">{size.label}</span>
+                  className={`w-16 h-16 flex items-center justify-center ${
+                    shape.id === 'circle' ? 'rounded-full' : 
+                    shape.id === 'square' ? 'rounded-none' : 
+                    'rounded-2xl'
+                  }`}
+                  style={{ backgroundColor: config.primary_color }}
+                >
+                  <MessageCircle className="h-8 w-8 text-white" />
+                </div>
+                <span className="text-sm font-medium">{shape.label}</span>
+                {config.widget_shape === shape.id && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Position */}
-      <div className="space-y-4">
-        <h4 className="font-medium">Widget Position</h4>
-        <div className="grid grid-cols-3 gap-3">
-          {positions.map((position) => (
-            <Button
-              key={position.id}
-              variant={config.widget_position === position.id ? "default" : "outline"}
-              onClick={() =>
-                onConfigChange({ ...config, widget_position: position.id })
-              }
-            >
-              {position.label}
-            </Button>
-          ))}
+      {/* Widget Color */}
+      <div className="space-y-3">
+        <Label htmlFor="primary_color">Widget Color</Label>
+        <div className="flex gap-2">
+          <Input
+            id="primary_color"
+            type="color"
+            value={config.primary_color}
+            onChange={(e) =>
+              onConfigChange({ ...config, primary_color: e.target.value })
+            }
+            className="w-20 h-10 cursor-pointer"
+          />
+          <Input
+            type="text"
+            value={config.primary_color}
+            onChange={(e) =>
+              onConfigChange({ ...config, primary_color: e.target.value })
+            }
+            className="flex-1"
+            placeholder="#6366f1"
+          />
         </div>
       </div>
 
-      {/* Button Text */}
-      <div className="space-y-4">
+      {/* Welcome Message */}
+      <div className="space-y-3">
+        <Label htmlFor="welcome_message">Welcome Message *</Label>
+        <Textarea
+          id="welcome_message"
+          value={config.welcome_message}
+          onChange={(e) =>
+            onConfigChange({ ...config, welcome_message: e.target.value })
+          }
+          placeholder="Hi! How can we help you today?"
+          rows={3}
+          className="resize-none"
+        />
+        <p className="text-xs text-muted-foreground">
+          This message will be displayed when visitors open the chat
+        </p>
+      </div>
+
+      {/* Mandatory Fields */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium">Button Text</h4>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={config.show_button_text}
-              onChange={(e) =>
-                onConfigChange({ ...config, show_button_text: e.target.checked })
-              }
-              className="rounded"
-            />
-            Show text
-          </label>
-        </div>
-        {config.show_button_text && (
-          <Input
-            value={config.button_text}
-            onChange={(e) =>
-              onConfigChange({ ...config, button_text: e.target.value })
+          <div>
+            <Label>Require Name & Email</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ask visitors for their details before chatting
+            </p>
+          </div>
+          <Switch
+            checked={config.require_contact_info || false}
+            onCheckedChange={(checked) =>
+              onConfigChange({ ...config, require_contact_info: checked })
             }
-            placeholder="e.g., Chat With Us"
           />
-        )}
+        </div>
+      </div>
+
+      {/* Notification Sound */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Notification Sound</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Play sound when new messages arrive
+            </p>
+          </div>
+          <Switch
+            checked={config.sound_notifications || false}
+            onCheckedChange={(checked) =>
+              onConfigChange({ ...config, sound_notifications: checked })
+            }
+          />
+        </div>
+      </div>
+
+      {/* Default State */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Start Minimized</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Widget appears as a button by default
+            </p>
+          </div>
+          <Switch
+            checked={config.start_minimized !== false}
+            onCheckedChange={(checked) =>
+              onConfigChange({ ...config, start_minimized: checked })
+            }
+          />
+        </div>
       </div>
     </div>
   );
