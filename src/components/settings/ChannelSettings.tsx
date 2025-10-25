@@ -14,7 +14,8 @@ import { TemplateManagement } from "./TemplateManagement";
 import { EmbedTokenManagement } from "./EmbedTokenManagement";
 import { EmbedAISettings } from "./EmbedAISettings";
 import { ChannelConnectionWizard } from "./ChannelConnectionWizard";
-import { Globe, MessageSquare, Mail, Phone, Facebook, Instagram, FileText, Sparkles } from "lucide-react";
+import { Globe, MessageSquare, Mail, Phone, Facebook, Instagram, FileText, Sparkles, PhoneCall } from "lucide-react";
+import { TwilioVoiceManagement } from "./TwilioVoiceManagement";
 
 interface ChannelSettingsProps {
   businessId?: string;
@@ -109,6 +110,18 @@ export const ChannelSettings = ({ businessId }: ChannelSettingsProps) => {
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <SmsAccountManagement />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="voice" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-2">
+              <PhoneCall className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Voice Calls (Beta)</h3>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pt-4">
+            <TwilioVoiceManagement />
           </AccordionContent>
         </AccordionItem>
 
