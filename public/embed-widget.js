@@ -12,8 +12,10 @@
     shadowRoot: null,
     requirePrechat: false,
     isAuthenticated: false,
+    styleEl: null,
+    cachedCustomization: null,
 
-    init: function(options) {
+    init: async function(options) {
       if (this.initialized) {
         console.warn('[AlacarteChat] Widget already initialized');
         return;
@@ -31,47 +33,75 @@
         customData: options.customData || {}
       };
 
-    // Try to restore session from cookie with fresh customization
-    const savedSession = this.getSessionFromCookie();
-    if (savedSession && savedSession.sessionToken && savedSession.customerId) {
-      // Validate session and fetch FRESH customization from server
-      this.revalidateSession(savedSession.sessionToken).then(freshAuth => {
-        if (freshAuth && freshAuth.success) {
-          this.sessionToken = freshAuth.session.session_token;
-          this.conversationId = freshAuth.session.conversation_id;
-          this.customerId = freshAuth.session.customer_id;
-          this.isAuthenticated = true;
-          this.initialized = true;
-          // Use FRESH customization from server, not from cookie
-          this.injectWidget(freshAuth.customization || {}, freshAuth.business_name || 'Support');
-          this.loadMessages();
-          this.startPolling();
-        } else {
-          // Session expired, clear cookie and show pre-chat form
-          this.clearSessionCookie();
-          this.initialized = true;
-          this.injectWidget({}, 'Support');
-          this.showPrechatForm();
-        }
-      }).catch(() => {
-        this.clearSessionCookie();
-        this.initialized = true;
-        this.injectWidget({}, 'Support');
-        this.showPrechatForm();
-      });
-      return;
-    }
+      // Try to restore session from cookie with fresh customization
+      const savedSession = this.getSessionFromCookie();
+      if (savedSession && savedSession.sessionToken && savedSession.customerId) {
+        // Validate session and fetch FRESH customization from server
+        this.revalidateSession(savedSession.sessionToken).then(freshAuth => {
+          if (freshAuth && freshAuth.success) {
+            this.sessionToken = freshAuth.session.session_token;
+            this.conversationId = freshAuth.session.conversation_id;
+            this.customerId = freshAuth.session.customer_id;
+            this.isAuthenticated = true;
+            this.initialized = true;
+            // Use FRESH customization from server, not from cookie
+            this.injectWidget(freshAuth.customization || {}, freshAuth.business_name || 'Support');
+            this.loadMessages();
+            this.startPolling();
+          } else {
+            // Session expired, prefetch config before showing UI
+            this.fetchCustomization(this.config.siteId).then(config => {
+              this.clearSessionCookie();
+              this.initialized = true;
+              this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
+              this.showPrechatForm();
+            });
+          }
+        }).catch(() => {
+          this.fetchCustomization(this.config.siteId).then(config => {
+            this.clearSessionCookie();
+            this.initialized = true;
+            this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
+            this.showPrechatForm();
+          });
+        });
+        return;
+      }
 
-      // ALWAYS require pre-chat form for all users (mandatory 4 questions)
+      // No saved session - fetch customization before injecting widget
+      const config = await this.fetchCustomization(this.config.siteId);
       this.requirePrechat = true;
-
       this.initialized = true;
-      if (this.requirePrechat) {
-        // Inject shell UI and show pre-chat form; defer auth until user submits
-        this.injectWidget({}, 'Support');
-        this.showPrechatForm();
-      } else {
-        this.authenticate(this.config.customer);
+      
+      // Inject with fetched customization
+      this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
+      this.showPrechatForm();
+    },
+
+    fetchCustomization: async function(siteId) {
+      try {
+        console.log('[AlacarteChat] Fetching customization before widget injection...');
+        const response = await fetch(`${this.config.apiUrl}/embed-auth`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-site-id': siteId
+          },
+          body: JSON.stringify({ action: 'get_config' })
+        });
+
+        if (!response.ok) {
+          console.warn('[AlacarteChat] Failed to fetch config:', response.status);
+          return null;
+        }
+
+        const data = await response.json();
+        console.log('[AlacarteChat] Customization fetched successfully');
+        this.cachedCustomization = data.customization;
+        return data;
+      } catch (error) {
+        console.error('[AlacarteChat] Error fetching customization:', error);
+        return null;
       }
     },
 
@@ -197,14 +227,15 @@
         if (!this.shadowRoot) {
           this.injectWidget(data.customization || {}, data.business_name || 'Support');
         } else {
+          // Widget already exists - re-apply customization if it changed
+          this.applyCustomization(data.customization || {}, data.business_name);
+          
           // Enable input now that we're authenticated
           const sendBtn = this.shadowRoot.getElementById('send-btn');
           if (sendBtn) {
             sendBtn.disabled = false;
             console.log('[AlacarteChat] Send button enabled');
           }
-          const header = this.shadowRoot.querySelector('.chat-header h3');
-          if (header && data.business_name) header.textContent = data.business_name;
         }
         
         this.loadMessages();
@@ -220,22 +251,7 @@
       }
     },
 
-    injectWidget: function(customization, businessName) {
-      // Create host element with fixed positioning
-      const host = document.createElement('div');
-      host.id = 'alacarte-chat-host';
-      host.style.cssText = 'all:initial;position:fixed!important;z-index:2147483647!important;pointer-events:none!important;';
-      document.body.appendChild(host);
-
-      // Create shadow root for CSS isolation
-      if (!host.attachShadow) {
-        console.error('[AlacarteChat] Shadow DOM not supported');
-        return;
-      }
-      
-      this.shadowRoot = host.attachShadow({ mode: 'open' });
-
-      // Define styles with CSS reset
+    buildStyles: function(customization) {
       const sizeMap = {
         small: { size: '48px', iconSize: '24px' },
         medium: { size: '60px', iconSize: '28px' },
@@ -251,7 +267,6 @@
       const widgetSize = sizeMap[customization.widget_size || 'medium'] || sizeMap.medium;
       const borderRadius = shapeMap[customization.widget_shape || 'circle'] || '50%';
 
-      // Dynamic position styles
       const getPositionStyle = () => {
         const pos = customization.widget_position || 'bottom-right';
         switch(pos) {
@@ -265,7 +280,7 @@
         }
       };
 
-      const styles = `
+      return `
         *, *::before, *::after {
           box-sizing: border-box;
           margin: 0;
@@ -491,10 +506,39 @@
           }
         }
       `;
+    },
 
-      const styleEl = document.createElement('style');
-      styleEl.textContent = styles;
-      this.shadowRoot.appendChild(styleEl);
+    injectWidget: function(customization, businessName) {
+      // Store customization for later use
+      this.cachedCustomization = customization;
+
+      // Create host element with fixed positioning
+      const host = document.createElement('div');
+      host.id = 'alacarte-chat-host';
+      host.style.cssText = 'all:initial;position:fixed!important;z-index:2147483647!important;pointer-events:none!important;';
+      document.body.appendChild(host);
+
+      // Create shadow root for CSS isolation
+      if (!host.attachShadow) {
+        console.error('[AlacarteChat] Shadow DOM not supported');
+        return;
+      }
+      
+      this.shadowRoot = host.attachShadow({ mode: 'open' });
+
+      // Build and inject styles
+      const styles = this.buildStyles(customization);
+      this.styleEl = document.createElement('style');
+      this.styleEl.textContent = styles;
+      this.shadowRoot.appendChild(this.styleEl);
+
+      // Get widget size for button HTML
+      const sizeMap = {
+        small: { size: '48px', iconSize: '24px' },
+        medium: { size: '60px', iconSize: '28px' },
+        large: { size: '80px', iconSize: '36px' }
+      };
+      const widgetSize = sizeMap[customization.widget_size || 'medium'] || sizeMap.medium;
 
       // Create widget HTML
       const widgetHTML = `
@@ -746,6 +790,32 @@
     getCurrentMessages: function() {
       if (!this.shadowRoot) return [];
       return this.shadowRoot.querySelectorAll('.message:not(.inbound:first-child)');
+    },
+
+    applyCustomization: function(customization, businessName) {
+      if (!this.shadowRoot || !this.styleEl) {
+        console.warn('[AlacarteChat] Cannot apply customization - widget not injected');
+        return;
+      }
+
+      console.log('[AlacarteChat] Applying fresh customization to existing widget');
+      
+      // Update styles
+      this.styleEl.textContent = this.buildStyles(customization);
+      
+      // Update header text
+      const header = this.shadowRoot.querySelector('.chat-header h3');
+      if (header && businessName) {
+        header.textContent = businessName;
+      }
+
+      // Update button text if visible
+      const buttonText = this.shadowRoot.querySelector('.chat-button-text');
+      if (buttonText && customization.show_button_text) {
+        buttonText.textContent = customization.button_text || 'Chat';
+      }
+
+      this.cachedCustomization = customization;
     },
 
     escapeHtml: function(text) {

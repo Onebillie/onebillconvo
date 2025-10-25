@@ -110,6 +110,34 @@ serve(async (req) => {
       body = {};
     }
 
+    // Handle configuration fetch (no authentication required - just customization)
+    if (body.action === 'get_config') {
+      console.log('Fetching config for site:', siteId);
+      
+      const { data: customization } = await supabase
+        .from("widget_customization")
+        .select("*")
+        .eq("business_id", business.id)
+        .eq("embed_token_id", siteData.embed_token_id)
+        .maybeSingle();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        business_name: business.name,
+        customization: customization || {
+          primary_color: '#6366f1',
+          widget_position: 'bottom-right',
+          widget_size: 'medium',
+          widget_shape: 'circle',
+          icon_type: 'chat',
+          show_button_text: false,
+          button_text: 'Chat with us',
+          welcome_message: 'Hi! How can we help?',
+          greeting_message: 'Hi! How can we help?'
+        }
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Handle session revalidation requests
     if (body.action === 'revalidate') {
       const sessionToken = req.headers.get('x-session-token');
