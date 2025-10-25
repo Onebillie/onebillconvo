@@ -6,7 +6,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Reply, Heart, Star, Pin, Forward, Copy, Pencil, Info, Trash2, CheckSquare } from "lucide-react";
+import { Reply, Heart, Star, Pin, Forward, Copy, Pencil, Info, Trash2, CheckSquare, Activity, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { ReactNode } from "react";
 
 interface MessageContextMenuProps {
@@ -88,6 +89,18 @@ export const MessageContextMenu = ({
           <Info className="mr-2 h-4 w-4" />
           Info
         </ContextMenuItem>
+
+        <ContextMenuItem onClick={() => onInfo?.(message)} className="cursor-pointer">
+          <Activity className="mr-2 h-4 w-4" />
+          View Logs
+        </ContextMenuItem>
+
+        {(message as any).delivery_status === 'failed' && (
+          <ContextMenuItem onClick={() => toast.info('Retry functionality coming soon')} className="cursor-pointer">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Retry Send
+          </ContextMenuItem>
+        )}
         
         {canDelete && (
           <>

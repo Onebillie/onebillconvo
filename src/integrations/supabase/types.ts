@@ -1179,6 +1179,70 @@ export type Database = {
           },
         ]
       }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string | null
+          clicked_at: string | null
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message_id: string | null
+          opened_at: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canned_responses: {
         Row: {
           business_id: string
@@ -1779,6 +1843,7 @@ export type Database = {
           instagram_id: string | null
           instagram_username: string | null
           is_blocked: boolean | null
+          is_unsubscribed: boolean | null
           last_active: string | null
           last_contact_method: string | null
           last_name: string | null
@@ -1788,6 +1853,8 @@ export type Database = {
           notes: string | null
           phone: string
           sync_enabled: boolean | null
+          unsubscribe_reason: string | null
+          unsubscribed_at: string | null
           whatsapp_name: string | null
           whatsapp_phone: string | null
         }
@@ -1807,6 +1874,7 @@ export type Database = {
           instagram_id?: string | null
           instagram_username?: string | null
           is_blocked?: boolean | null
+          is_unsubscribed?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
           last_name?: string | null
@@ -1816,6 +1884,8 @@ export type Database = {
           notes?: string | null
           phone: string
           sync_enabled?: boolean | null
+          unsubscribe_reason?: string | null
+          unsubscribed_at?: string | null
           whatsapp_name?: string | null
           whatsapp_phone?: string | null
         }
@@ -1835,6 +1905,7 @@ export type Database = {
           instagram_id?: string | null
           instagram_username?: string | null
           is_blocked?: boolean | null
+          is_unsubscribed?: boolean | null
           last_active?: string | null
           last_contact_method?: string | null
           last_name?: string | null
@@ -1844,6 +1915,8 @@ export type Database = {
           notes?: string | null
           phone?: string
           sync_enabled?: boolean | null
+          unsubscribe_reason?: string | null
+          unsubscribed_at?: string | null
           whatsapp_name?: string | null
           whatsapp_phone?: string | null
         }
@@ -2689,6 +2762,114 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          business_id: string | null
+          channels: string[]
+          clicked_count: number | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          cta_buttons: Json | null
+          delivered_count: number | null
+          description: string | null
+          email_content: string | null
+          email_subject: string | null
+          facebook_content: string | null
+          failed_count: number | null
+          id: string
+          instagram_content: string | null
+          name: string
+          opened_count: number | null
+          recipient_count: number | null
+          recipient_filter: Json | null
+          scheduled_at: string | null
+          sent_count: number | null
+          sms_content: string | null
+          started_at: string | null
+          status: string | null
+          type: string
+          updated_at: string | null
+          whatsapp_template_id: string | null
+          whatsapp_variables: Json | null
+        }
+        Insert: {
+          business_id?: string | null
+          channels?: string[]
+          clicked_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          cta_buttons?: Json | null
+          delivered_count?: number | null
+          description?: string | null
+          email_content?: string | null
+          email_subject?: string | null
+          facebook_content?: string | null
+          failed_count?: number | null
+          id?: string
+          instagram_content?: string | null
+          name: string
+          opened_count?: number | null
+          recipient_count?: number | null
+          recipient_filter?: Json | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          sms_content?: string | null
+          started_at?: string | null
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+          whatsapp_template_id?: string | null
+          whatsapp_variables?: Json | null
+        }
+        Update: {
+          business_id?: string | null
+          channels?: string[]
+          clicked_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          cta_buttons?: Json | null
+          delivered_count?: number | null
+          description?: string | null
+          email_content?: string | null
+          email_subject?: string | null
+          facebook_content?: string | null
+          failed_count?: number | null
+          id?: string
+          instagram_content?: string | null
+          name?: string
+          opened_count?: number | null
+          recipient_count?: number | null
+          recipient_filter?: Json | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          sms_content?: string | null
+          started_at?: string | null
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+          whatsapp_template_id?: string | null
+          whatsapp_variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_attachments: {
         Row: {
           created_at: string | null
@@ -2729,6 +2910,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_logs: {
+        Row: {
+          created_at: string | null
+          delivery_attempt: number | null
+          error_code: string | null
+          error_details: Json | null
+          error_message: string | null
+          event_type: string
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          platform: string
+          status: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_attempt?: number | null
+          error_code?: string | null
+          error_details?: Json | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          platform: string
+          status?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_attempt?: number | null
+          error_code?: string | null
+          error_details?: Json | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          platform?: string
+          status?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
@@ -2833,14 +3067,17 @@ export type Database = {
       messages: {
         Row: {
           ai_confidence: number | null
+          bounce_reason: string | null
           business_id: string | null
           channel: string | null
+          clicked_at: string | null
           content: string
           conversation_id: string | null
           created_at: string | null
           customer_id: string | null
           deleted_at: string | null
           deleted_by: string | null
+          delivery_status: string | null
           direction: string
           edited_at: string | null
           edited_by: string | null
@@ -2854,29 +3091,38 @@ export type Database = {
           is_pinned: boolean | null
           is_read: boolean | null
           is_starred: boolean | null
+          last_error: Json | null
           metadata: Json | null
+          opened_at: string | null
           original_content: string | null
           pinned_at: string | null
           pinned_by: string | null
           platform: string | null
           replied_to_message_id: string | null
+          retry_count: number | null
           scheduled_at: string | null
           starred_at: string | null
           starred_by: string | null
           status: string | null
           subject: string | null
+          template_content: string | null
+          template_name: string | null
+          template_variables: Json | null
           thread_id: string | null
         }
         Insert: {
           ai_confidence?: number | null
+          bounce_reason?: string | null
           business_id?: string | null
           channel?: string | null
+          clicked_at?: string | null
           content: string
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          delivery_status?: string | null
           direction: string
           edited_at?: string | null
           edited_by?: string | null
@@ -2890,29 +3136,38 @@ export type Database = {
           is_pinned?: boolean | null
           is_read?: boolean | null
           is_starred?: boolean | null
+          last_error?: Json | null
           metadata?: Json | null
+          opened_at?: string | null
           original_content?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
           platform?: string | null
           replied_to_message_id?: string | null
+          retry_count?: number | null
           scheduled_at?: string | null
           starred_at?: string | null
           starred_by?: string | null
           status?: string | null
           subject?: string | null
+          template_content?: string | null
+          template_name?: string | null
+          template_variables?: Json | null
           thread_id?: string | null
         }
         Update: {
           ai_confidence?: number | null
+          bounce_reason?: string | null
           business_id?: string | null
           channel?: string | null
+          clicked_at?: string | null
           content?: string
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          delivery_status?: string | null
           direction?: string
           edited_at?: string | null
           edited_by?: string | null
@@ -2926,17 +3181,23 @@ export type Database = {
           is_pinned?: boolean | null
           is_read?: boolean | null
           is_starred?: boolean | null
+          last_error?: Json | null
           metadata?: Json | null
+          opened_at?: string | null
           original_content?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
           platform?: string | null
           replied_to_message_id?: string | null
+          retry_count?: number | null
           scheduled_at?: string | null
           starred_at?: string | null
           starred_by?: string | null
           status?: string | null
           subject?: string | null
+          template_content?: string | null
+          template_name?: string | null
+          template_variables?: Json | null
           thread_id?: string | null
         }
         Relationships: [
@@ -4212,6 +4473,53 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_config: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          events: string[]
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          secret: string
+          updated_at: string | null
+          url: string
+          webhook_type: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          events: string[]
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          secret: string
+          updated_at?: string | null
+          url: string
+          webhook_type: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          events?: string[]
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          secret?: string
+          updated_at?: string | null
+          url?: string
+          webhook_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_config_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_configs: {
         Row: {
           business_id: string
@@ -4414,6 +4722,54 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_broadcast_lists: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_ids: string[] | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_ids?: string[] | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_ids?: string[] | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_broadcast_lists_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_broadcast_lists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
