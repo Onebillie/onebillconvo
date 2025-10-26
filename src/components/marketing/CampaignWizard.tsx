@@ -20,31 +20,32 @@ import { CampaignPreview } from "./CampaignPreview";
 interface CampaignWizardProps {
   open: boolean;
   onClose: () => void;
+  editCampaign?: any;
 }
 
-export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
+export function CampaignWizard({ open, onClose, editCampaign }: CampaignWizardProps) {
   const [step, setStep] = useState(1);
   const [showTemplates, setShowTemplates] = useState(false);
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'broadcast' as 'broadcast' | 'drip' | 'newsletter',
-    channels: [] as string[],
-    whatsapp_template_id: '',
-    whatsapp_variables: {},
-    email_subject: '',
-    email_content: '',
-    sms_content: '',
-    recipient_filter: {
+    name: editCampaign?.name || '',
+    description: editCampaign?.description || '',
+    type: editCampaign?.type || 'broadcast' as 'broadcast' | 'drip' | 'newsletter',
+    channels: editCampaign?.channels || [] as string[],
+    whatsapp_template_id: editCampaign?.whatsapp_template_id || '',
+    whatsapp_variables: editCampaign?.whatsapp_variables || {},
+    email_subject: editCampaign?.email_subject || '',
+    email_content: editCampaign?.email_content || '',
+    sms_content: editCampaign?.sms_content || '',
+    recipient_filter: editCampaign?.recipient_filter || {
       includeAll: true,
       statusTags: [] as string[],
       excludeUnsubscribed: true,
       lastContactedDays: null as number | null,
       customerType: 'all' as 'all' | 'lead' | 'customer'
     },
-    template_id: null as string | null
+    template_id: editCampaign?.template_id || null as string | null
   });
 
   const handleChannelToggle = (channel: string) => {
@@ -87,30 +88,63 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
         .eq('user_id', user.id)
         .single();
 
-      const { data: campaign, error } = await supabase
-        .from('marketing_campaigns')
-        .insert({
-          name: formData.name,
-          description: formData.description,
-          type: formData.type,
-          channels: formData.channels,
-          business_id: businessUser!.business_id,
-          whatsapp_template_id: formData.whatsapp_template_id,
-          whatsapp_variables: formData.whatsapp_variables,
-          email_subject: formData.email_subject,
-          email_content: formData.email_content,
-          sms_content: formData.sms_content,
-          recipient_filter: formData.recipient_filter,
-          status: sendNow ? 'sending' : 'draft',
-          created_by: user.id,
-          template_id: formData.template_id
-        })
-        .select()
-        .single();
+      let campaign;
+      let error;
+
+      if (editCampaign) {
+        // Update existing campaign
+        const result = await supabase
+          .from('marketing_campaigns')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            type: formData.type,
+            channels: formData.channels,
+            whatsapp_template_id: formData.whatsapp_template_id,
+            whatsapp_variables: formData.whatsapp_variables,
+            email_subject: formData.email_subject,
+            email_content: formData.email_content,
+            sms_content: formData.sms_content,
+            recipient_filter: formData.recipient_filter,
+            status: sendNow ? 'sending' : editCampaign.status,
+            template_id: formData.template_id
+          })
+          .eq('id', editCampaign.id)
+          .select()
+          .single();
+        
+        campaign = result.data;
+        error = result.error;
+      } else {
+        // Create new campaign
+        const result = await supabase
+          .from('marketing_campaigns')
+          .insert({
+            name: formData.name,
+            description: formData.description,
+            type: formData.type,
+            channels: formData.channels,
+            business_id: businessUser!.business_id,
+            whatsapp_template_id: formData.whatsapp_template_id,
+            whatsapp_variables: formData.whatsapp_variables,
+            email_subject: formData.email_subject,
+            email_content: formData.email_content,
+            sms_content: formData.sms_content,
+            recipient_filter: formData.recipient_filter,
+            status: sendNow ? 'sending' : 'draft',
+            created_by: user.id,
+            template_id: formData.template_id
+          })
+          .select()
+          .single();
+
+        campaign = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 
-      toast.success(`Campaign ${sendNow ? 'started' : 'saved'} successfully`);
+      toast.success(`Campaign ${editCampaign ? 'updated' : sendNow ? 'started' : 'saved'} successfully`);
 
       // Execute campaign if sending now
       if (sendNow && campaign) {
@@ -132,6 +166,7 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            {editCampaign && <span className="text-sm text-muted-foreground mr-2">(Editing)</span>}
             {step === 1 && <><Sparkles className="w-5 h-5" />Campaign Setup</>}
             {step === 2 && 'Select Recipients'}
             {step === 3 && 'Create Content'}

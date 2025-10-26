@@ -9,8 +9,25 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Save, Eye, Copy, Trash2, Search, Filter } from "lucide-react";
+import { Save, Eye, Copy, Trash2, Search, Filter, MoreVertical, Edit } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Template {
   id: string;
@@ -50,6 +67,8 @@ export function TemplateLibrary({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [saveDialogOpen, setSaveDialogOpen] = useState(showSaveDialog);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateCategory, setTemplateCategory] = useState('');
@@ -92,23 +111,38 @@ export function TemplateLibrary({
 
       if (!businessUser) throw new Error('No business found');
 
-      const { data, error } = await supabase
-        .from('marketing_templates')
-        .insert({
-          ...templateData,
-          business_id: businessUser.business_id,
-          created_by: user.id
-        })
-        .select()
-        .single();
+      if (editingTemplate) {
+        // Update existing template
+        const { data, error } = await supabase
+          .from('marketing_templates')
+          .update(templateData)
+          .eq('id', editingTemplate.id)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } else {
+        // Create new template
+        const { data, error } = await supabase
+          .from('marketing_templates')
+          .insert({
+            ...templateData,
+            business_id: businessUser.business_id,
+            created_by: user.id
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketing-templates'] });
-      toast.success('Template saved successfully');
+      toast.success(editingTemplate ? 'Template updated successfully' : 'Template saved successfully');
       setSaveDialogOpen(false);
+      setEditingTemplate(null);
       setTemplateName('');
       setTemplateDescription('');
       setTemplateCategory('');
@@ -154,6 +188,24 @@ export function TemplateLibrary({
       sms_content: currentContent?.sms_content || null,
       whatsapp_content: currentContent?.whatsapp_content || null,
     });
+  };
+
+  const handleEditTemplate = (template: Template) => {
+    setEditingTemplate(template);
+    setTemplateName(template.name);
+    setTemplateDescription(template.description || '');
+    setTemplateCategory(template.category || '');
+    setTemplateIndustry(template.industry || '');
+    setSaveDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setSaveDialogOpen(false);
+    setEditingTemplate(null);
+    setTemplateName('');
+    setTemplateDescription('');
+    setTemplateCategory('');
+    setTemplateIndustry('');
   };
 
   const myTemplates = templates?.filter(t => !t.is_public) || [];
@@ -249,23 +301,34 @@ export function TemplateLibrary({
                         <Eye className="w-3 h-3 mr-1" />
                         Use
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(template.email_content || '');
-                          toast.success('Content copied');
-                        }}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteTemplateMutation.mutate(template.id)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            navigator.clipboard.writeText(template.email_content || '');
+                            toast.success('Content copied');
+                          }}>
+                            <Copy className="w-3 h-3 mr-2" />
+                            Copy Content
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditTemplate(template)}>
+                            <Edit className="w-3 h-3 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setDeletingTemplateId(template.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -283,12 +346,12 @@ export function TemplateLibrary({
       </Tabs>
 
       {/* Save Template Dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+      <Dialog open={saveDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save as Template</DialogTitle>
+            <DialogTitle>{editingTemplate ? 'Edit Template' : 'Save as Template'}</DialogTitle>
             <DialogDescription>
-              Save your current campaign content as a reusable template
+              {editingTemplate ? 'Update your template details' : 'Save your current campaign content as a reusable template'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -341,16 +404,36 @@ export function TemplateLibrary({
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              <Button variant="outline" onClick={handleDialogClose}>
                 Cancel
               </Button>
               <Button onClick={handleSaveTemplate} disabled={saveTemplateMutation.isPending}>
-                {saveTemplateMutation.isPending ? 'Saving...' : 'Save Template'}
+                {saveTemplateMutation.isPending ? 'Saving...' : editingTemplate ? 'Update Template' : 'Save Template'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingTemplateId} onOpenChange={() => setDeletingTemplateId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingTemplateId && deleteTemplateMutation.mutate(deletingTemplateId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Plus, BarChart3, Send, Users, Share2, TrendingUp } from "lucide-react";
+import { Plus, BarChart3, Send, Users, Share2, TrendingUp, MoreVertical, Pencil, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { CampaignWizard } from "@/components/marketing/CampaignWizard";
@@ -12,10 +12,31 @@ import { AudienceBuilder } from "@/components/marketing/AudienceBuilder";
 import { ReferralManager } from "@/components/marketing/ReferralManager";
 import { CampaignAnalytics } from "@/components/marketing/CampaignAnalytics";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function MarketingNew() {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+  const [editingCampaign, setEditingCampaign] = useState<any>(null);
+  const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['marketing-campaigns'],
@@ -75,6 +96,77 @@ export default function MarketingNew() {
       case 'draft': return 'outline';
       default: return 'secondary';
     }
+  };
+
+  const deleteCampaignMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const { error } = await supabase
+        .from('marketing_campaigns')
+        .delete()
+        .eq('id', campaignId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-stats'] });
+      toast.success('Campaign deleted successfully');
+      setDeletingCampaignId(null);
+    },
+    onError: (error) => {
+      toast.error('Failed to delete campaign');
+      console.error(error);
+    }
+  });
+
+  const duplicateCampaignMutation = useMutation({
+    mutationFn: async (campaign: any) => {
+      const { error } = await supabase
+        .from('marketing_campaigns')
+        .insert({
+          ...campaign,
+          id: undefined,
+          name: `${campaign.name} (Copy)`,
+          status: 'draft',
+          sent_count: 0,
+          opened_count: 0,
+          clicked_count: 0,
+          failed_count: 0,
+          started_at: null,
+          completed_at: null,
+          scheduled_at: null,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-stats'] });
+      toast.success('Campaign duplicated successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to duplicate campaign');
+      console.error(error);
+    }
+  });
+
+  const handleEdit = (campaign: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCampaign(campaign);
+    setShowWizard(true);
+  };
+
+  const handleDuplicate = (campaign: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateCampaignMutation.mutate(campaign);
+  };
+
+  const handleDelete = (campaignId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingCampaignId(campaignId);
+  };
+
+  const handleWizardClose = () => {
+    setShowWizard(false);
+    setEditingCampaign(null);
   };
 
   return (
@@ -183,9 +275,36 @@ export default function MarketingNew() {
                             {campaign.description || 'No description'}
                           </CardDescription>
                         </div>
-                        <Badge variant={getStatusColor(campaign.status)}>
-                          {getStatusIcon(campaign.status)} {campaign.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getStatusColor(campaign.status)}>
+                            {getStatusIcon(campaign.status)} {campaign.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => handleEdit(campaign, e)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => handleDuplicate(campaign, e)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={(e) => handleDelete(campaign.id, e)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -268,9 +387,30 @@ export default function MarketingNew() {
       {showWizard && (
         <CampaignWizard
           open={showWizard}
-          onClose={() => setShowWizard(false)}
+          onClose={handleWizardClose}
+          editCampaign={editingCampaign}
         />
       )}
+
+      <AlertDialog open={!!deletingCampaignId} onOpenChange={() => setDeletingCampaignId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Campaign</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this campaign? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingCampaignId && deleteCampaignMutation.mutate(deletingCampaignId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
