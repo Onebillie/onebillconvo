@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook, Package } from "lucide-react";
+import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook, Package, Database } from "lucide-react";
 import { UnifiedStaffManagement } from "@/components/settings/UnifiedStaffManagement";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { InMailAccordion } from "@/components/settings/InMailAccordion";
@@ -25,6 +25,7 @@ import { ThemeCustomization } from "@/components/settings/ThemeCustomization";
 import { MessageCategorySettings } from "@/components/settings/MessageCategorySettings";
 import { CustomerSegments } from "@/components/settings/CustomerSegments";
 import { GroupedSettingsNav } from "@/components/settings/GroupedSettingsNav";
+import { DataBackupManagement } from "@/components/settings/DataBackupManagement";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
@@ -80,14 +81,13 @@ export default function Settings() {
         { value: "notifications", label: "Notifications", icon: Bell },
       ],
     },
-    ...(isSuperAdmin
-      ? [
-          {
-            group: "Advanced",
-            options: [{ value: "api", label: "API Access", icon: Key }],
-          },
-        ]
-      : []),
+    {
+      group: "Advanced",
+      options: [
+        { value: "backup", label: "Data Backup", icon: Database },
+        ...(isSuperAdmin ? [{ value: "api", label: "API Access", icon: Key }] : []),
+      ],
+    },
   ];
 
   const allTabOptions = tabOptionsByGroup.flatMap((group) => group.options);
@@ -246,6 +246,10 @@ export default function Settings() {
                 {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
               </TabsContent>
 
+              <TabsContent value="backup">
+                {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
+              </TabsContent>
+
               {isSuperAdmin && (
                 <TabsContent value="api">
                   <ApiAccessAccordion />
@@ -329,6 +333,10 @@ export default function Settings() {
 
                 <TabsContent value="theme">
                   {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
+                </TabsContent>
+
+                <TabsContent value="backup">
+                  {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
                 </TabsContent>
 
                 {isSuperAdmin && (
