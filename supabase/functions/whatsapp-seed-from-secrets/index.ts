@@ -121,6 +121,7 @@ serve(async (req) => {
       JSON.stringify({ seeded: true, account_id: inserted.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+    */
   } catch (e: any) {
     console.error("whatsapp-seed-from-secrets error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
