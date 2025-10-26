@@ -37,6 +37,7 @@ import PaymentsTracking from "./pages/admin/PaymentsTracking";
 import SystemTesting from "./pages/admin/SystemTesting";
 import PaymentTesting from "./pages/admin/PaymentTesting";
 import EnterpriseAccounts from "./pages/admin/EnterpriseAccounts";
+import AuthEmailManagement from "./pages/admin/AuthEmailManagement";
 import VoiceBillingTest from "./pages/VoiceBillingTest";
 import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
@@ -94,6 +95,7 @@ function AppContent() {
             <Route path="pricing-config" element={<PricingConfig />} />
             <Route path="payments" element={<PaymentsTracking />} />
             <Route path="users" element={<UsersManagement />} />
+            <Route path="auth-emails" element={<AuthEmailManagement />} />
             <Route path="system" element={<SystemHealth />} />
             <Route path="testing" element={<SystemTesting />} />
             <Route path="payment-testing" element={<PaymentTesting />} />
