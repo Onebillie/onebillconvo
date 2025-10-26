@@ -14,6 +14,8 @@ import { RichContentEditor } from "./RichContentEditor";
 import { TemplateLibrary } from "./TemplateLibrary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AudienceSelector } from "./AudienceSelector";
+import { CampaignPreview } from "./CampaignPreview";
 
 interface CampaignWizardProps {
   open: boolean;
@@ -37,8 +39,10 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
     sms_content: '',
     recipient_filter: {
       includeAll: true,
-      statusTags: [],
-      excludeUnsubscribed: true
+      statusTags: [] as string[],
+      excludeUnsubscribed: true,
+      lastContactedDays: null as number | null,
+      customerType: 'all' as 'all' | 'lead' | 'customer'
     },
     template_id: null as string | null
   });
@@ -219,55 +223,10 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
 
           {/* Step 2: Recipients */}
           {step === 2 && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Audience Selection</CardTitle>
-                  <CardDescription>Choose who will receive this campaign</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="includeAll"
-                      checked={formData.recipient_filter.includeAll}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({
-                          ...prev,
-                          recipient_filter: { ...prev.recipient_filter, includeAll: !!checked }
-                        }))
-                      }
-                    />
-                    <Label htmlFor="includeAll" className="font-normal">
-                      Send to all customers
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="excludeUnsubscribed"
-                      checked={formData.recipient_filter.excludeUnsubscribed}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({
-                          ...prev,
-                          recipient_filter: { ...prev.recipient_filter, excludeUnsubscribed: !!checked }
-                        }))
-                      }
-                    />
-                    <Label htmlFor="excludeUnsubscribed" className="font-normal">
-                      Exclude unsubscribed customers
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-muted bg-muted/50">
-                <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">
-                    💡 Advanced filtering (by tags, behavior, status) coming in next update
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <AudienceSelector
+              recipientFilter={formData.recipient_filter}
+              onChange={(filter) => setFormData(prev => ({ ...prev, recipient_filter: filter }))}
+            />
           )}
 
           {/* Step 3: Content */}
@@ -371,54 +330,9 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
             </div>
           )}
 
-          {/* Step 4: Review */}
+          {/* Step 4: Review & Preview */}
           {step === 4 && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{formData.name}</CardTitle>
-                  <CardDescription>{formData.description || 'No description'}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Channels</Label>
-                    <div className="flex gap-2 mt-1">
-                      {formData.channels.map(channel => (
-                        <span key={channel} className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full capitalize font-medium">
-                          {channel}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Recipients</Label>
-                    <p className="text-sm mt-1">
-                      {formData.recipient_filter.includeAll ? 'All customers' : 'Filtered audience'}
-                      {formData.recipient_filter.excludeUnsubscribed && ' (excluding unsubscribed)'}
-                    </p>
-                  </div>
-
-                  {formData.channels.includes('email') && formData.email_content && (
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Email Preview</Label>
-                      <div className="mt-1 p-4 bg-muted rounded-lg">
-                        <p className="font-semibold text-sm mb-2">{formData.email_subject}</p>
-                        <p className="text-xs line-clamp-3">{formData.email_content.substring(0, 150)}...</p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card className="border-yellow-500/50 bg-yellow-500/5">
-                <CardContent className="p-4">
-                  <p className="text-sm">
-                    ⚠️ Review carefully before sending. Click "Send Now" to start immediately, or "Save Draft" to send later.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <CampaignPreview campaign={formData} />
           )}
 
           {/* Navigation */}
