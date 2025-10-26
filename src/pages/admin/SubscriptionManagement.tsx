@@ -87,6 +87,7 @@ export default function SubscriptionManagement() {
   const [showAuditDialog, setShowAuditDialog] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<Business | null>(null);
+  const [deletePreview, setDeletePreview] = useState<any>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
 
   useEffect(() => {
@@ -202,28 +203,42 @@ export default function SubscriptionManagement() {
     }
   };
 
-  const deleteBusiness = async (business: Business) => {
+  const showDeletePreview = async (business: Business) => {
     try {
-      // Log the deletion
-      await logAuditAction(business.id, "DELETE", {
-        business_name: business.name,
-        tier: business.subscription_tier,
-        status: business.subscription_status
+      // Call edge function to get preview of what will be deleted
+      const { data, error } = await supabase.functions.invoke('admin-delete-business', {
+        body: { business_id: business.id, confirm: false }
       });
 
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", business.id);
+      if (error) throw error;
+
+      setDeletePreview(data);
+      setDeleteConfirm(business);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteBusiness = async (business: Business) => {
+    try {
+      // Call edge function to actually delete with confirmation
+      const { data, error } = await supabase.functions.invoke('admin-delete-business', {
+        body: { business_id: business.id, confirm: true }
+      });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Business deleted successfully"
+        description: `Business deleted successfully. ${data.deleted_records || 0} records removed.`
       });
 
       setDeleteConfirm(null);
+      setDeletePreview(null);
       fetchBusinesses();
     } catch (error: any) {
       toast({
@@ -451,7 +466,7 @@ export default function SubscriptionManagement() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => setDeleteConfirm(business)}
+                        onClick={() => showDeletePreview(business)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -473,13 +488,57 @@ export default function SubscriptionManagement() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => {
+        setDeleteConfirm(null);
+        setDeletePreview(null);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Business?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone. 
-              All data will be permanently deleted, but an audit log entry will be preserved.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
+                </p>
+                {deletePreview && (
+                  <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
+                    <p className="font-semibold text-foreground">The following records will be permanently deleted:</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      {deletePreview.record_counts?.customers > 0 && (
+                        <li>• {deletePreview.record_counts.customers} customer(s)</li>
+                      )}
+                      {deletePreview.record_counts?.conversations > 0 && (
+                        <li>• {deletePreview.record_counts.conversations} conversation(s)</li>
+                      )}
+                      {deletePreview.record_counts?.messages > 0 && (
+                        <li>• {deletePreview.record_counts.messages} message(s)</li>
+                      )}
+                      {deletePreview.record_counts?.whatsapp_accounts > 0 && (
+                        <li>• {deletePreview.record_counts.whatsapp_accounts} WhatsApp account(s)</li>
+                      )}
+                      {deletePreview.record_counts?.email_accounts > 0 && (
+                        <li>• {deletePreview.record_counts.email_accounts} email account(s)</li>
+                      )}
+                      {deletePreview.record_counts?.training_conversations > 0 && (
+                        <li>• {deletePreview.record_counts.training_conversations} training conversation(s)</li>
+                      )}
+                      {deletePreview.record_counts?.business_users > 0 && (
+                        <li>• {deletePreview.record_counts.business_users} business user(s)</li>
+                      )}
+                      {deletePreview.record_counts?.ai_knowledge_documents > 0 && (
+                        <li>• {deletePreview.record_counts.ai_knowledge_documents} AI document(s)</li>
+                      )}
+                      {deletePreview.record_counts?.voice_call_usage > 0 && (
+                        <li>• {deletePreview.record_counts.voice_call_usage} voice usage record(s)</li>
+                      )}
+                      {deletePreview.record_counts?.call_records > 0 && (
+                        <li>• {deletePreview.record_counts.call_records} call record(s)</li>
+                      )}
+                    </ul>
+                    <p className="font-semibold text-destructive pt-2">⚠️ This operation is irreversible!</p>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -488,7 +547,7 @@ export default function SubscriptionManagement() {
               onClick={() => deleteConfirm && deleteBusiness(deleteConfirm)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
