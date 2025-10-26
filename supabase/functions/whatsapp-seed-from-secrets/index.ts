@@ -69,6 +69,21 @@ serve(async (req) => {
       );
     }
 
+    // SECURITY FIX: Do not automatically seed WhatsApp credentials
+    // Each business must configure their own WhatsApp account manually
+    // This prevents credential sharing between businesses
+    return new Response(
+      JSON.stringify({ 
+        seeded: false, 
+        reason: "auto_seeding_disabled",
+        message: "WhatsApp accounts must be configured manually for security reasons. Please add your WhatsApp Business API credentials in Settings > Channel Settings > WhatsApp."
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+    // DEPRECATED: Automatic seeding from environment secrets
+    // This code is kept for reference but will never execute
+    /*
     // Read secrets
     const PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID");
     const BUSINESS_ACCOUNT_ID = Deno.env.get("WHATSAPP_BUSINESS_ACCOUNT_ID");

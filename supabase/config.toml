@@ -209,3 +209,113 @@ verify_jwt = false
 
 [functions.training-assistant]
 verify_jwt = true
+
+[functions.admin-delete-business]
+verify_jwt = true
+
+[functions.aggregate-voice-usage]
+verify_jwt = false
+
+[functions.api-voice-balance]
+verify_jwt = false
+
+[functions.api-voice-usage]
+verify_jwt = false
+
+[functions.calculate-call-cost]
+verify_jwt = false
+
+[functions.call-generate-token]
+verify_jwt = true
+
+[functions.call-inbound-webhook]
+verify_jwt = false
+
+[functions.call-outbound]
+verify_jwt = true
+
+[functions.call-status-callback]
+verify_jwt = false
+
+[functions.call-transcription-callback]
+verify_jwt = false
+
+[functions.deduct-call-credits]
+verify_jwt = false
+
+[functions.pre-call-credit-check]
+verify_jwt = true
+
+[functions.purchase-voice-credits]
+verify_jwt = true
+
+[functions.admin-create-enterprise-trial]
+verify_jwt = true
+
+[functions.admin-manage-enterprise-payment]
+verify_jwt = true
+
+[functions.admin-manage-enterprise-user]
+verify_jwt = true
+
+[functions.api-calls-admin-action]
+verify_jwt = false
+
+[functions.api-calls-details]
+verify_jwt = false
+
+[functions.api-calls-list]
+verify_jwt = false
+
+[functions.api-calls-monitor]
+verify_jwt = false
+
+[functions.api-calls-recording]
+verify_jwt = false
+
+[functions.api-conversations-by-customer]
+verify_jwt = false
+
+[functions.api-customers-batch-lookup]
+verify_jwt = false
+
+[functions.api-customers-bulk-create]
+verify_jwt = false
+
+[functions.api-departments-manage]
+verify_jwt = false
+
+[functions.api-export-conversations]
+verify_jwt = false
+
+[functions.api-messages-since]
+verify_jwt = false
+
+[functions.api-upload-attachment]
+verify_jwt = false
+
+[functions.check-credit-expiry]
+verify_jwt = false
+
+[functions.embed-ai-triage]
+verify_jwt = false
+
+[functions.email-webhook-handler]
+verify_jwt = false
+
+[functions.execute-marketing-campaign]
+verify_jwt = true
+
+[functions.process-ai-document]
+verify_jwt = true
+
+[functions.process-notification-queue]
+verify_jwt = false
+
+[functions.queue-notification]
+verify_jwt = true
+
+[functions.track-cta-click]
+verify_jwt = false
+
+
