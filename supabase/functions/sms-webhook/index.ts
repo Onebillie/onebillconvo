@@ -111,6 +111,32 @@ serve(async (req) => {
 
     if (messageError) {
       console.error('Error inserting message:', messageError);
+    } else {
+      // Trigger notifications for the new message
+      try {
+        const { data: business } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', customer.business_id)
+          .single();
+
+        if (business?.owner_id) {
+          await supabase.functions.invoke('queue-notification', {
+            body: {
+              userId: business.owner_id,
+              businessId: customer.business_id,
+              notificationType: 'message',
+              channel: 'sms',
+              priority: 'immediate',
+              title: `New SMS from ${customer.name || from}`,
+              message: body.substring(0, 100) + (body.length > 100 ? '...' : ''),
+              link: `/app/dashboard?conversation=${conversation.id}`
+            }
+          });
+        }
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
     }
 
     // Return TwiML response

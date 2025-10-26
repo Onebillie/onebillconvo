@@ -369,30 +369,36 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
           .catch(err => console.error('Attachment processing error:', err));
       }
 
-      // Send push notification immediately (non-blocking)
-      const customerName = customer.name || customer.whatsapp_name || 'Unknown';
-      const preview = messageContent.length > 50 
-        ? messageContent.substring(0, 50) + '...' 
-        : messageContent;
-      
-      // Fire-and-forget push notification
-      supabase.functions.invoke('send-push-notification', {
-        body: {
-          payload: {
-            title: `[WhatsApp] ${customerName}`,
-            body: preview,
-            icon: '/icon-192.png',
-            badge: '/badge-72.png',
-            tag: `whatsapp-${conversation.id}`,
-            data: {
-              type: 'whatsapp',
-              conversationId: conversation.id,
-              customerId: customer.id,
-              messageType: message.type
+      // Queue notification for business users (non-blocking)
+      try {
+        const { data: business } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', businessId)
+          .single();
+
+        if (business?.owner_id) {
+          const customerName = customer.name || customer.whatsapp_name || 'Unknown';
+          const preview = messageContent.length > 50 
+            ? messageContent.substring(0, 50) + '...' 
+            : messageContent;
+          
+          await supabase.functions.invoke('queue-notification', {
+            body: {
+              userId: business.owner_id,
+              businessId: businessId,
+              notificationType: 'message',
+              channel: 'whatsapp',
+              priority: 'immediate',
+              title: `New WhatsApp from ${customerName}`,
+              message: preview,
+              link: `/app/dashboard?conversation=${conversation.id}`
             }
-          }
+          });
         }
-      }).catch(pushError => console.error('Push notification error:', pushError));
+      } catch (notifError) {
+        console.error('Notification error:', notifError);
+      }
     } catch (error) {
       console.error('Error processing message:', error);
     }

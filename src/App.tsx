@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import Landing from "./pages/Landing";
 import Features from "./pages/Features";
 import WhyUs from "./pages/WhyUs";
@@ -48,6 +49,19 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 const queryClient = new QueryClient();
 
 function AppContent() {
+  // Register service worker on app load for push notifications
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(registration => {
+          console.log('Service Worker registered:', registration);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+    }
+  }, []);
+
   return (
     <>
       <AccountFrozenBanner />

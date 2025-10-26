@@ -601,6 +601,43 @@ async function processIncomingEmail(
 
   if (messageError) throw messageError;
 
+  // Queue notification for business users
+  try {
+    const { data: emailAccount } = await supabase
+      .from('email_accounts')
+      .select('business_id')
+      .eq('id', accountId)
+      .single();
+
+    if (emailAccount?.business_id) {
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', emailAccount.business_id)
+        .single();
+
+      if (business?.owner_id) {
+        const preview = (email.body || email.subject).substring(0, 100) + 
+          ((email.body || email.subject).length > 100 ? '...' : '');
+        
+        await supabase.functions.invoke('queue-notification', {
+          body: {
+            userId: business.owner_id,
+            businessId: emailAccount.business_id,
+            notificationType: 'message',
+            channel: 'email',
+            priority: 'immediate',
+            title: `New email from ${customer.name || fromEmail}`,
+            message: preview,
+            link: `/app/dashboard?conversation=${conversation.id}`
+          }
+        });
+      }
+    }
+  } catch (notifError) {
+    console.error('Notification error:', notifError);
+  }
+
   // Handle attachments - separate inline from regular attachments
   if (email.attachments && email.attachments.length > 0) {
     const cidMap = new Map<string, string>();

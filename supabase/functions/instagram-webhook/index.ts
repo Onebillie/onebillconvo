@@ -131,6 +131,33 @@ async function processMessagingEvent(supabase: any, account: any, event: any) {
       console.error('Error storing message:', messageError);
     } else {
       console.log('Message stored successfully');
+      
+      // Queue notification for business users
+      try {
+        const { data: business } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', account.business_id)
+          .single();
+
+        if (business?.owner_id) {
+          const preview = messageText.substring(0, 100) + (messageText.length > 100 ? '...' : '');
+          await supabase.functions.invoke('queue-notification', {
+            body: {
+              userId: business.owner_id,
+              businessId: account.business_id,
+              notificationType: 'message',
+              channel: 'instagram',
+              priority: 'immediate',
+              title: `New Instagram DM from ${customer.name}`,
+              message: preview || 'Attachment received',
+              link: `/app/dashboard?conversation=${conversation.id}`
+            }
+          });
+        }
+      } catch (notifError) {
+        console.error('Notification error:', notifError);
+      }
     }
 
     // Handle attachments
