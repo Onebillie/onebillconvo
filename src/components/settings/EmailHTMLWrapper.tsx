@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export function EmailTemplateSettings() {
+export function EmailHTMLWrapper() {
   const [loading, setLoading] = useState(false);
   const [htmlTemplate, setHtmlTemplate] = useState("");
   const [bundleWindow, setBundleWindow] = useState(2);

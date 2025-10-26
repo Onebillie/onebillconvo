@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { WhatsAppAccountManagement } from "./WhatsAppAccountManagement";
 import { WhatsAppTemplateManagement } from "./WhatsAppTemplateManagement";
 import { EmailAccountManagement } from "./EmailAccountManagement";
-import { EmailTemplateSettings } from "./EmailTemplateSettings";
+import { EmailHTMLWrapper } from "./EmailHTMLWrapper";
 import { SmsAccountManagement } from "./SmsAccountManagement";
 import { FacebookAccountManagement } from "./FacebookAccountManagement";
 import { InstagramAccountManagement } from "./InstagramAccountManagement";
-import { TemplateManagement } from "./TemplateManagement";
+import { QuickReplyTemplates } from "./QuickReplyTemplates";
 import { EmbedTokenManagement } from "./EmbedTokenManagement";
 import { EmbedAISettings } from "./EmbedAISettings";
 import { ChannelConnectionWizard } from "./ChannelConnectionWizard";
@@ -97,7 +97,7 @@ export const ChannelSettings = ({ businessId }: ChannelSettingsProps) => {
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <EmailAccountManagement />
-            <EmailTemplateSettings />
+            <EmailHTMLWrapper />
           </AccordionContent>
         </AccordionItem>
 
@@ -157,7 +157,7 @@ export const ChannelSettings = ({ businessId }: ChannelSettingsProps) => {
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
-            <TemplateManagement />
+            <QuickReplyTemplates />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

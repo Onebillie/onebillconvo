@@ -22,7 +22,7 @@ interface Template {
   usage_count: number;
 }
 
-export const TemplateManagement = () => {
+export const QuickReplyTemplates = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
