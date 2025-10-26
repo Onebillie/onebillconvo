@@ -176,7 +176,9 @@ export default function Auth() {
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const redirectTo = `${window.location.origin}/auth`;
+    const redirectTo = window.location.hostname === 'localhost'
+      ? `${window.location.origin}/auth`
+      : 'https://alacartechat.com/auth';
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -215,10 +217,14 @@ export default function Auth() {
 
     setLoading(true);
     try {
+      const redirectUrl = window.location.hostname === 'localhost'
+        ? `${window.location.origin}/app/dashboard`
+        : 'https://alacartechat.com/app/dashboard';
+        
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/app/dashboard`,
+          emailRedirectTo: redirectUrl,
         },
       });
 

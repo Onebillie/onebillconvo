@@ -318,4 +318,40 @@ verify_jwt = true
 [functions.track-cta-click]
 verify_jwt = false
 
+[functions.webauthn-register-begin]
+verify_jwt = true
+
+[functions.webauthn-register-complete]
+verify_jwt = true
+
+[functions.webauthn-authenticate-begin]
+verify_jwt = false
+
+[functions.webauthn-authenticate-complete]
+verify_jwt = false
+
+[functions.send-auth-email]
+verify_jwt = false
+
+[functions."2fa-setup"]
+verify_jwt = true
+
+[functions."2fa-verify"]
+verify_jwt = false
+
+[functions."2fa-disable"]
+verify_jwt = true
+
+[functions.admin-validate-ip]
+verify_jwt = false
+
+[functions.business-backup]
+verify_jwt = true
+
+[functions.business-restore]
+verify_jwt = true
+
+[functions.test-notification]
+verify_jwt = true
+
 

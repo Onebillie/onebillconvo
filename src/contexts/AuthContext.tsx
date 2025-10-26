@@ -211,7 +211,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: string = 'agent') => {
-    const redirectUrl = `${window.location.origin}/app/onboarding`;
+    const redirectUrl = window.location.hostname === 'localhost'
+      ? `${window.location.origin}/app/onboarding`
+      : 'https://alacartechat.com/app/onboarding';
     
     const { data, error } = await supabase.auth.signUp({
       email,
