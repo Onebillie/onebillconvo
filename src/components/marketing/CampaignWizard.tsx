@@ -9,7 +9,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Send, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, Save, FileText, Sparkles } from "lucide-react";
+import { RichContentEditor } from "./RichContentEditor";
+import { TemplateLibrary } from "./TemplateLibrary";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CampaignWizardProps {
   open: boolean;
@@ -18,6 +22,7 @@ interface CampaignWizardProps {
 
 export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
   const [step, setStep] = useState(1);
+  const [showTemplates, setShowTemplates] = useState(false);
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -34,7 +39,8 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
       includeAll: true,
       statusTags: [],
       excludeUnsubscribed: true
-    }
+    },
+    template_id: null as string | null
   });
 
   const handleChannelToggle = (channel: string) => {
@@ -54,6 +60,16 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
 
     if (formData.channels.length === 0) {
       toast.error('Please select at least one channel');
+      return;
+    }
+
+    // Validate content for selected channels
+    if (formData.channels.includes('email') && !formData.email_content) {
+      toast.error('Please add email content');
+      return;
+    }
+    if (formData.channels.includes('sms') && !formData.sms_content) {
+      toast.error('Please add SMS content');
       return;
     }
 
@@ -82,7 +98,8 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
           sms_content: formData.sms_content,
           recipient_filter: formData.recipient_filter,
           status: sendNow ? 'sending' : 'draft',
-          created_by: user.id
+          created_by: user.id,
+          template_id: formData.template_id
         })
         .select()
         .single();
@@ -108,10 +125,10 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {step === 1 && 'Campaign Setup'}
+          <DialogTitle className="flex items-center gap-2">
+            {step === 1 && <><Sparkles className="w-5 h-5" />Campaign Setup</>}
             {step === 2 && 'Select Recipients'}
             {step === 3 && 'Create Content'}
             {step === 4 && 'Review & Send'}
@@ -119,6 +136,15 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Progress Indicator */}
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4].map((s) => (
+              <div key={s} className="flex items-center flex-1">
+                <div className={`h-2 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-muted'}`} />
+              </div>
+            ))}
+          </div>
+
           {/* Step 1: Campaign Setup */}
           {step === 1 && (
             <div className="space-y-4">
@@ -165,19 +191,26 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
               </div>
 
               <div>
-                <Label>Channels *</Label>
-                <div className="space-y-2 mt-2">
-                  {['whatsapp', 'email', 'sms', 'facebook', 'instagram'].map(channel => (
-                    <div key={channel} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={channel}
-                        checked={formData.channels.includes(channel)}
-                        onCheckedChange={() => handleChannelToggle(channel)}
-                      />
-                      <Label htmlFor={channel} className="font-normal cursor-pointer capitalize">
-                        {channel}
-                      </Label>
-                    </div>
+                <Label>Channels * (Select at least one)</Label>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  {['email', 'sms', 'whatsapp'].map(channel => (
+                    <Card 
+                      key={channel}
+                      className={`cursor-pointer transition-all ${
+                        formData.channels.includes(channel) 
+                          ? 'border-primary bg-primary/5' 
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => handleChannelToggle(channel)}
+                    >
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <Checkbox
+                          checked={formData.channels.includes(channel)}
+                          onCheckedChange={() => handleChannelToggle(channel)}
+                        />
+                        <span className="capitalize font-medium">{channel}</span>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -187,91 +220,153 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
           {/* Step 2: Recipients */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="includeAll"
-                  checked={formData.recipient_filter.includeAll}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({
-                      ...prev,
-                      recipient_filter: { ...prev.recipient_filter, includeAll: !!checked }
-                    }))
-                  }
-                />
-                <Label htmlFor="includeAll" className="font-normal">
-                  Send to all customers
-                </Label>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Audience Selection</CardTitle>
+                  <CardDescription>Choose who will receive this campaign</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="includeAll"
+                      checked={formData.recipient_filter.includeAll}
+                      onCheckedChange={(checked) => 
+                        setFormData(prev => ({
+                          ...prev,
+                          recipient_filter: { ...prev.recipient_filter, includeAll: !!checked }
+                        }))
+                      }
+                    />
+                    <Label htmlFor="includeAll" className="font-normal">
+                      Send to all customers
+                    </Label>
+                  </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="excludeUnsubscribed"
-                  checked={formData.recipient_filter.excludeUnsubscribed}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({
-                      ...prev,
-                      recipient_filter: { ...prev.recipient_filter, excludeUnsubscribed: !!checked }
-                    }))
-                  }
-                />
-                <Label htmlFor="excludeUnsubscribed" className="font-normal">
-                  Exclude unsubscribed customers
-                </Label>
-              </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="excludeUnsubscribed"
+                      checked={formData.recipient_filter.excludeUnsubscribed}
+                      onCheckedChange={(checked) => 
+                        setFormData(prev => ({
+                          ...prev,
+                          recipient_filter: { ...prev.recipient_filter, excludeUnsubscribed: !!checked }
+                        }))
+                      }
+                    />
+                    <Label htmlFor="excludeUnsubscribed" className="font-normal">
+                      Exclude unsubscribed customers
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <p className="text-sm text-muted-foreground">
-                Advanced filtering options will be available soon.
-              </p>
+              <Card className="border-muted bg-muted/50">
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">
+                    💡 Advanced filtering (by tags, behavior, status) coming in next update
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           )}
 
           {/* Step 3: Content */}
           {step === 3 && (
             <div className="space-y-4">
-              {formData.channels.includes('email') && (
-                <div className="space-y-2">
-                  <Label>Email Content</Label>
-                  <Input
-                    placeholder="Email Subject"
-                    value={formData.email_subject}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email_subject: e.target.value }))}
-                  />
-                  <Textarea
-                    placeholder="Email body... Use {{customer_name}} for personalization"
-                    value={formData.email_content}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email_content: e.target.value }))}
-                    rows={6}
-                  />
-                </div>
-              )}
-
-              {formData.channels.includes('sms') && (
-                <div className="space-y-2">
-                  <Label>SMS Content</Label>
-                  <Textarea
-                    placeholder="SMS message... Use {{customer_name}} for personalization"
-                    value={formData.sms_content}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sms_content: e.target.value }))}
-                    rows={4}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {formData.sms_content.length} characters
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg">Create Campaign Content</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use merge tags like {'{{first_name}}'} for personalization
                   </p>
                 </div>
-              )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTemplates(!showTemplates)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  {showTemplates ? 'Hide Templates' : 'Use Template'}
+                </Button>
+              </div>
 
-              {formData.channels.includes('whatsapp') && (
-                <div className="space-y-2">
-                  <Label>WhatsApp Template ID</Label>
-                  <Input
-                    placeholder="Enter approved template ID"
-                    value={formData.whatsapp_template_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_template_id: e.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Only approved WhatsApp templates can be used for marketing messages.
-                  </p>
-                </div>
+              {showTemplates ? (
+                <TemplateLibrary
+                  onSelectTemplate={(template) => {
+                    setFormData({
+                      ...formData,
+                      email_subject: template.email_subject || '',
+                      email_content: template.email_content || '',
+                      sms_content: template.sms_content || '',
+                      template_id: template.id
+                    });
+                    setShowTemplates(false);
+                    toast.success('Template loaded');
+                  }}
+                  currentContent={{
+                    email_subject: formData.email_subject,
+                    email_content: formData.email_content,
+                    sms_content: formData.sms_content,
+                    channels: formData.channels
+                  }}
+                />
+              ) : (
+                <Tabs defaultValue={formData.channels[0] || 'email'} className="w-full">
+                  <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${formData.channels.length}, 1fr)` }}>
+                    {formData.channels.includes('email') && (
+                      <TabsTrigger value="email">Email</TabsTrigger>
+                    )}
+                    {formData.channels.includes('sms') && (
+                      <TabsTrigger value="sms">SMS</TabsTrigger>
+                    )}
+                    {formData.channels.includes('whatsapp') && (
+                      <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  {formData.channels.includes('email') && (
+                    <TabsContent value="email" className="mt-4">
+                      <RichContentEditor
+                        value={formData.email_content}
+                        onChange={(value) => setFormData(prev => ({ ...prev, email_content: value }))}
+                        showSubject
+                        subject={formData.email_subject}
+                        onSubjectChange={(value) => setFormData(prev => ({ ...prev, email_subject: value }))}
+                        channel="email"
+                        placeholder="Write your email content with {{merge_tags}}..."
+                      />
+                    </TabsContent>
+                  )}
+
+                  {formData.channels.includes('sms') && (
+                    <TabsContent value="sms" className="mt-4">
+                      <RichContentEditor
+                        value={formData.sms_content}
+                        onChange={(value) => setFormData(prev => ({ ...prev, sms_content: value }))}
+                        channel="sms"
+                        placeholder="Write your SMS content (max 160 characters)..."
+                      />
+                    </TabsContent>
+                  )}
+
+                  {formData.channels.includes('whatsapp') && (
+                    <TabsContent value="whatsapp" className="mt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>WhatsApp Template ID</Label>
+                          <Input
+                            placeholder="Enter approved template ID"
+                            value={formData.whatsapp_template_id}
+                            onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_template_id: e.target.value }))}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Only approved WhatsApp templates can be used for marketing messages.
+                          </p>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  )}
+                </Tabs>
               )}
             </div>
           )}
@@ -279,21 +374,50 @@ export function CampaignWizard({ open, onClose }: CampaignWizardProps) {
           {/* Step 4: Review */}
           {step === 4 && (
             <div className="space-y-4">
-              <div className="p-4 border rounded-lg space-y-2">
-                <h3 className="font-semibold">{formData.name}</h3>
-                <p className="text-sm text-muted-foreground">{formData.description}</p>
-                <div className="flex gap-2">
-                  {formData.channels.map(channel => (
-                    <span key={channel} className="text-xs px-2 py-1 bg-secondary rounded capitalize">
-                      {channel}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{formData.name}</CardTitle>
+                  <CardDescription>{formData.description || 'No description'}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Channels</Label>
+                    <div className="flex gap-2 mt-1">
+                      {formData.channels.map(channel => (
+                        <span key={channel} className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full capitalize font-medium">
+                          {channel}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Recipients</Label>
+                    <p className="text-sm mt-1">
+                      {formData.recipient_filter.includeAll ? 'All customers' : 'Filtered audience'}
+                      {formData.recipient_filter.excludeUnsubscribed && ' (excluding unsubscribed)'}
+                    </p>
+                  </div>
+
+                  {formData.channels.includes('email') && formData.email_content && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Email Preview</Label>
+                      <div className="mt-1 p-4 bg-muted rounded-lg">
+                        <p className="font-semibold text-sm mb-2">{formData.email_subject}</p>
+                        <p className="text-xs line-clamp-3">{formData.email_content.substring(0, 150)}...</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
               
-              <p className="text-sm text-muted-foreground">
-                Review your campaign and click "Send Now" to start immediately, or "Save Draft" to send later.
-              </p>
+              <Card className="border-yellow-500/50 bg-yellow-500/5">
+                <CardContent className="p-4">
+                  <p className="text-sm">
+                    ⚠️ Review carefully before sending. Click "Send Now" to start immediately, or "Save Draft" to send later.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           )}
 

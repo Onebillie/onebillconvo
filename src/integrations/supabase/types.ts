@@ -3374,6 +3374,7 @@ export type Database = {
           failed_count: number | null
           id: string
           instagram_content: string | null
+          merge_tags: Json | null
           message_category: string | null
           name: string
           opened_count: number | null
@@ -3384,6 +3385,7 @@ export type Database = {
           sms_content: string | null
           started_at: string | null
           status: string | null
+          template_id: string | null
           type: string
           updated_at: string | null
           whatsapp_template_id: string | null
@@ -3405,6 +3407,7 @@ export type Database = {
           failed_count?: number | null
           id?: string
           instagram_content?: string | null
+          merge_tags?: Json | null
           message_category?: string | null
           name: string
           opened_count?: number | null
@@ -3415,6 +3418,7 @@ export type Database = {
           sms_content?: string | null
           started_at?: string | null
           status?: string | null
+          template_id?: string | null
           type?: string
           updated_at?: string | null
           whatsapp_template_id?: string | null
@@ -3436,6 +3440,7 @@ export type Database = {
           failed_count?: number | null
           id?: string
           instagram_content?: string | null
+          merge_tags?: Json | null
           message_category?: string | null
           name?: string
           opened_count?: number | null
@@ -3446,6 +3451,7 @@ export type Database = {
           sms_content?: string | null
           started_at?: string | null
           status?: string | null
+          template_id?: string | null
           type?: string
           updated_at?: string | null
           whatsapp_template_id?: string | null
@@ -3464,6 +3470,84 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_templates: {
+        Row: {
+          business_id: string
+          category: string | null
+          channels: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          email_content: string | null
+          email_subject: string | null
+          id: string
+          industry: string | null
+          is_public: boolean | null
+          name: string
+          sms_content: string | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          updated_at: string
+          usage_count: number | null
+          whatsapp_content: string | null
+        }
+        Insert: {
+          business_id: string
+          category?: string | null
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email_content?: string | null
+          email_subject?: string | null
+          id?: string
+          industry?: string | null
+          is_public?: boolean | null
+          name: string
+          sms_content?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          whatsapp_content?: string | null
+        }
+        Update: {
+          business_id?: string
+          category?: string | null
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email_content?: string | null
+          email_subject?: string | null
+          id?: string
+          industry?: string | null
+          is_public?: boolean | null
+          name?: string
+          sms_content?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          whatsapp_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
