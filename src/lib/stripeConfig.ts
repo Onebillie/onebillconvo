@@ -269,24 +269,31 @@ export const VOICE_OVERAGE_PRICING = {
 } as const;
 
 // Voice credit bundles (minutes)
+// NOTE: Create these products in Stripe Dashboard:
+// 1. Product: "Voice Calling Minutes - 500 Pack" → Price: $25 → Copy price ID to priceId below
+// 2. Product: "Voice Calling Minutes - 2000 Pack" → Price: $90 → Copy price ID to priceId below  
+// 3. Product: "Voice Calling Minutes - 5000 Pack" → Price: $200 → Copy price ID to priceId below
 export const VOICE_CREDIT_BUNDLES = {
   small: {
     name: "500 Minutes",
     minutes: 500,
-    price: 10,
+    price: 25,
     savings: 20,
+    priceId: "price_voice_500_minutes", // TODO: Replace with actual Stripe price ID
   },
   medium: {
     name: "2000 Minutes",
     minutes: 2000,
-    price: 35,
+    price: 90,
     savings: 30,
+    priceId: "price_voice_2000_minutes", // TODO: Replace with actual Stripe price ID
   },
   large: {
     name: "5000 Minutes",
     minutes: 5000,
-    price: 75,
+    price: 200,
     savings: 35,
+    priceId: "price_voice_5000_minutes", // TODO: Replace with actual Stripe price ID
   },
 } as const;
 

@@ -110,6 +110,10 @@ const Landing = () => {
     color: "bg-[#e55436]",
     icon: Mail
   }, {
+    name: "Voice Calling",
+    color: "bg-[#00A86B]",
+    icon: Phone
+  }, {
     name: "SMS",
     color: "bg-[#00C389]",
     icon: Phone
@@ -153,7 +157,7 @@ const Landing = () => {
               DEALS.
             </h1>
             <p className="mt-4 sm:mt-6 max-w-[760px] mx-auto text-muted-foreground text-sm sm:text-base px-2 md:text-2xl">
-              An Unified Team Inbox For All Your Communication Channels With Your Very Own AI ChatBot Ready To Respond
+              An Unified Team Inbox For WhatsApp, Email, SMS, Voice Calls & More. With Your Very Own AI ChatBot Ready To Respond
               When Your Team Can't
             </p>
             <Button onClick={() => navigate(user ? "/dashboard" : "/signup")} className="mt-6 sm:mt-7 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-lg">
@@ -213,6 +217,14 @@ const Landing = () => {
                 <circle cx="22" cy="29" r="3" fill="#fff" />
                 <circle cx="32" cy="29" r="3" fill="#fff" />
                 <circle cx="42" cy="29" r="3" fill="#fff" />
+              </svg>
+            </div>
+
+            {/* Voice Calling - right center */}
+            <div className="absolute right-[8%] top-[38%] w-10 sm:w-14 md:w-18 lg:w-24 h-10 sm:h-14 md:h-18 lg:h-24 animate-float-a">
+              <svg viewBox="0 0 64 64" className="w-full h-full">
+                <circle cx="32" cy="32" r="30" fill="#00A86B" />
+                <path d="M42 40c-3 3-8 3-11 0l-3-3c-1-1-3-1-4 0l-4 4c-1 1-1 3 0 4 5 5 13 5 18 0l4-4c1-1 1-3 0-4l-4-4c-1-1-3-1-4 0l-3 3c-3 3-3 8 0 11" fill="#fff" />
               </svg>
             </div>
 
