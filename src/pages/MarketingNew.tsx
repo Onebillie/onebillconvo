@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, BarChart3, Send, Users, Share2, TrendingUp, MoreVertical, Pencil, Copy, Trash2 } from "lucide-react";
+import { Plus, BarChart3, Send, Users, Share2, TrendingUp, MoreVertical, Pencil, Copy, Trash2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { CampaignWizard } from "@/components/marketing/CampaignWizard";
 import { AudienceBuilder } from "@/components/marketing/AudienceBuilder";
 import { ReferralManager } from "@/components/marketing/ReferralManager";
 import { CampaignAnalytics } from "@/components/marketing/CampaignAnalytics";
+import { EmailTemplateManager } from "@/components/marketing/EmailTemplateManager";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -241,6 +242,10 @@ export default function MarketingNew() {
               <Users className="w-4 h-4 mr-2" />
               Audiences
             </TabsTrigger>
+            <TabsTrigger value="templates">
+              <Mail className="w-4 h-4 mr-2" />
+              Email Templates
+            </TabsTrigger>
             <TabsTrigger value="referrals">
               <Share2 className="w-4 h-4 mr-2" />
               Referrals
@@ -360,6 +365,11 @@ export default function MarketingNew() {
           {/* Audiences Tab */}
           <TabsContent value="audiences">
             <AudienceBuilder />
+          </TabsContent>
+
+          {/* Email Templates Tab */}
+          <TabsContent value="templates">
+            <EmailTemplateManager />
           </TabsContent>
 
           {/* Referrals Tab */}
