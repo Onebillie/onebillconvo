@@ -67,6 +67,11 @@ const Landing = () => {
     benefits: ["Unlimited templates", "Variable placeholders", "Media attachments", "Team sharing"]
   }, {
     icon: BarChart3,
+    title: "Marketing Campaigns",
+    description: "Send targeted email, WhatsApp, and SMS campaigns with professional templates and AI-powered content.",
+    benefits: ["20+ pre-built templates", "AI content generation", "Audience segmentation", "Performance analytics"]
+  }, {
+    icon: BarChart3,
     title: "Analytics & Reporting",
     description: "Track team performance, response times, and customer satisfaction metrics.",
     benefits: ["Response time tracking", "Team performance", "Message volume trends", "Export capabilities"]

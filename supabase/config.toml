@@ -357,4 +357,12 @@ verify_jwt = true
 [functions.test-notification]
 verify_jwt = true
 
+[functions.api-templates]
+verify_jwt = false
+
+[functions.render-template]
+verify_jwt = true
+
+[functions.generate-marketing-content]
+verify_jwt = true
 

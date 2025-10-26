@@ -59,6 +59,7 @@ export function GroupedSettingsNav({ activeTab, onTabChange, isSuperAdmin }: Gro
     {
       label: "Marketing",
       tabs: [
+        { value: "email-templates", label: "Email Templates", icon: Mail },
         { value: "customer-segments", label: "Customer Segments", icon: Users },
       ],
     },

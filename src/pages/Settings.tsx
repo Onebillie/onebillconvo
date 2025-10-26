@@ -24,6 +24,7 @@ import { WebhookManagement } from "@/components/settings/WebhookManagement";
 import { ThemeCustomization } from "@/components/settings/ThemeCustomization";
 import { MessageCategorySettings } from "@/components/settings/MessageCategorySettings";
 import { CustomerSegments } from "@/components/settings/CustomerSegments";
+import { EmailTemplatesAccordion } from "@/components/settings/EmailTemplatesAccordion";
 import { GroupedSettingsNav } from "@/components/settings/GroupedSettingsNav";
 import { DataBackupManagement } from "@/components/settings/DataBackupManagement";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,6 +52,13 @@ export default function Settings() {
         { value: "webhooks", label: "Webhooks", icon: Webhook },
         { value: "canned", label: "Quick Replies", icon: MessageCircle },
         { value: "statuses", label: "Statuses", icon: Tags },
+      ],
+    },
+    {
+      group: "Marketing",
+      options: [
+        { value: "email-templates", label: "Email Templates", icon: Mail },
+        { value: "customer-segments", label: "Customer Segments", icon: Users },
       ],
     },
     {
@@ -212,6 +220,14 @@ export default function Settings() {
 
               <TabsContent value="statuses">
                 <StatusesAccordion />
+              </TabsContent>
+
+              <TabsContent value="email-templates">
+                <EmailTemplatesAccordion />
+              </TabsContent>
+
+              <TabsContent value="customer-segments">
+                <CustomerSegments />
               </TabsContent>
 
               <TabsContent value="tasks">
