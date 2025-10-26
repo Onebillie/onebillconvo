@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, User, Mail, Phone, Calendar, DollarSign, Building } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RichContentEditorProps {
   value: string;
@@ -67,13 +69,33 @@ export function RichContentEditor({
     if (!aiPrompt.trim()) return;
     
     setIsGenerating(true);
-    // TODO: Connect to Lovable AI
-    setTimeout(() => {
-      const generated = `Generated content based on: "${aiPrompt}"\n\nHi {{first_name}},\n\nThis is your personalized message...\n\nBest regards,\nThe Team`;
-      onChange(generated);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-marketing-content', {
+        body: {
+          prompt: aiPrompt,
+          channel: channel,
+          business_context: 'Professional business communication platform'
+        }
+      });
+
+      if (error) throw error;
+
+      if (channel === 'email' && data.subject && onSubjectChange) {
+        onSubjectChange(data.subject);
+        onChange(data.body || data.content);
+      } else {
+        onChange(data.content || data.body);
+      }
+      
+      toast.success('Content generated successfully!');
+    } catch (error: any) {
+      console.error('AI generation error:', error);
+      toast.error(error.message || 'Failed to generate content');
+    } finally {
       setIsGenerating(false);
       setAiPrompt('');
-    }, 1500);
+    }
   };
 
   const charCount = value.length;

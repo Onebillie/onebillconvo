@@ -807,6 +807,53 @@ export type Database = {
         }
         Relationships: []
       }
+      audience_segments: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          filters: Json
+          id: string
+          last_calculated_at: string | null
+          member_count: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          last_calculated_at?: string | null
+          member_count?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          last_calculated_at?: string | null
+          member_count?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_segments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auto_topup_settings: {
         Row: {
           bundle_size: string
@@ -1586,6 +1633,180 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_analytics: {
+        Row: {
+          bounced_count: number | null
+          campaign_id: string
+          clicked_count: number | null
+          conversion_count: number | null
+          conversion_value: number | null
+          delivered_count: number | null
+          failed_count: number | null
+          hourly_stats: Json | null
+          id: string
+          metrics_by_channel: Json | null
+          opened_count: number | null
+          replied_count: number | null
+          sent_count: number | null
+          unsubscribed_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          bounced_count?: number | null
+          campaign_id: string
+          clicked_count?: number | null
+          conversion_count?: number | null
+          conversion_value?: number | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          hourly_stats?: Json | null
+          id?: string
+          metrics_by_channel?: Json | null
+          opened_count?: number | null
+          replied_count?: number | null
+          sent_count?: number | null
+          unsubscribed_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bounced_count?: number | null
+          campaign_id?: string
+          clicked_count?: number | null
+          conversion_count?: number | null
+          conversion_value?: number | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          hourly_stats?: Json | null
+          id?: string
+          metrics_by_channel?: Json | null
+          opened_count?: number | null
+          replied_count?: number | null
+          sent_count?: number | null
+          unsubscribed_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_events: {
+        Row: {
+          campaign_id: string
+          channel: string
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          message_id: string | null
+          recipient_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          channel: string
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          message_id?: string | null
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          message_id?: string | null
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_link_clicks: {
+        Row: {
+          campaign_id: string
+          click_count: number | null
+          first_clicked_at: string
+          id: string
+          ip_address: string | null
+          last_clicked_at: string
+          link_url: string
+          recipient_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          click_count?: number | null
+          first_clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          last_clicked_at?: string
+          link_url: string
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          click_count?: number | null
+          first_clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          last_clicked_at?: string
+          link_url?: string
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_link_clicks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_link_clicks_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -4539,6 +4760,170 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_campaigns: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_referrals_per_user: number | null
+          name: string
+          referral_type: string
+          reward_description: string | null
+          reward_type: string
+          reward_value: number | null
+          successful_referrals: number | null
+          total_referrals: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_referrals_per_user?: number | null
+          name: string
+          referral_type?: string
+          reward_description?: string | null
+          reward_type: string
+          reward_value?: number | null
+          successful_referrals?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_referrals_per_user?: number | null
+          name?: string
+          referral_type?: string
+          reward_description?: string | null
+          reward_type?: string
+          reward_value?: number | null
+          successful_referrals?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_codes: {
+        Row: {
+          campaign_id: string
+          clicks: number | null
+          created_at: string
+          customer_id: string
+          expires_at: string | null
+          id: string
+          referral_code: string
+          referral_link: string | null
+          successful_referrals: number | null
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number | null
+          created_at?: string
+          customer_id: string
+          expires_at?: string | null
+          id?: string
+          referral_code: string
+          referral_link?: string | null
+          successful_referrals?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number | null
+          created_at?: string
+          customer_id?: string
+          expires_at?: string | null
+          id?: string
+          referral_code?: string
+          referral_link?: string | null
+          successful_referrals?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "referral_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_codes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_conversions: {
+        Row: {
+          conversion_type: string
+          conversion_value: number | null
+          created_at: string
+          id: string
+          referee_customer_id: string | null
+          referral_code_id: string
+          reward_issued: boolean | null
+          reward_issued_at: string | null
+        }
+        Insert: {
+          conversion_type: string
+          conversion_value?: number | null
+          created_at?: string
+          id?: string
+          referee_customer_id?: string | null
+          referral_code_id: string
+          reward_issued?: boolean | null
+          reward_issued_at?: string | null
+        }
+        Update: {
+          conversion_type?: string
+          conversion_value?: number | null
+          created_at?: string
+          id?: string
+          referee_customer_id?: string | null
+          referral_code_id?: string
+          reward_issued?: boolean | null
+          reward_issued_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_conversions_referee_customer_id_fkey"
+            columns: ["referee_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_conversions_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           business_id: string
@@ -6454,6 +6839,7 @@ export type Database = {
       cleanup_expired_embed_sessions: { Args: never; Returns: undefined }
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       cleanup_expired_sso_tokens: { Args: never; Returns: undefined }
+      generate_referral_code: { Args: never; Returns: string }
       generate_site_id: { Args: never; Returns: string }
       get_or_create_user_business: {
         Args: { _user_id: string }

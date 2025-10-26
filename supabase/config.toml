@@ -306,6 +306,9 @@ verify_jwt = false
 [functions.execute-marketing-campaign]
 verify_jwt = true
 
+[functions.generate-marketing-content]
+verify_jwt = true
+
 [functions.process-ai-document]
 verify_jwt = true
 

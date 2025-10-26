@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Marketing from "./pages/Marketing";
+import MarketingNew from "./pages/MarketingNew";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import SignUp from "./pages/SignUp";
@@ -75,7 +76,8 @@ function AppContent() {
           <Route path="/app" element={<Index />} />
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/settings" element={<Settings />} />
-          <Route path="/app/marketing" element={<Marketing />} />
+            <Route path="/app/marketing" element={<MarketingNew />} />
+            <Route path="/app/marketing-old" element={<Marketing />} />
           <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
           <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
           
