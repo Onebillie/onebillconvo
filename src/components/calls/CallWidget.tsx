@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { AudioDeviceSettings } from './AudioDeviceSettings';
 
 interface CallWidgetProps {
   onClose?: () => void;
@@ -16,6 +17,7 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
   const [duration, setDuration] = useState(0);
   const [callerInfo, setCallerInfo] = useState<{ name?: string; number: string } | null>(null);
   const [device, setDevice] = useState<any>(null);
+  const [activeConnection, setActiveConnection] = useState<any>(null);
   const timerRef = useRef<number>();
 
   useEffect(() => {
@@ -28,6 +30,15 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
 
   const initializeTwilioDevice = async () => {
     try {
+      // Request microphone permission first
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permError) {
+        toast.error('Microphone access required for calls. Please grant permission in your browser settings.');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('call-generate-token');
       
       if (error || !data.token) {
@@ -40,7 +51,11 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
       script.src = 'https://sdk.twilio.com/js/client/v1.14/twilio.min.js';
       script.onload = () => {
         const Device = (window as any).Twilio.Device;
-        const newDevice = new Device(data.token);
+        const newDevice = new Device(data.token, {
+          codecPreferences: ['opus', 'pcmu'],
+          enableRingingState: true,
+          closeProtection: true
+        });
 
         newDevice.on('ready', () => {
           console.log('Twilio device ready');
@@ -49,10 +64,11 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
 
         newDevice.on('error', (error: any) => {
           console.error('Twilio device error:', error);
-          toast.error('Call system error');
+          toast.error(`Call system error: ${error.message || 'Unknown error'}`);
         });
 
         newDevice.on('incoming', (conn: any) => {
+          setActiveConnection(conn);
           setCallStatus('ringing');
           setCallerInfo({ number: conn.parameters.From });
           toast('Incoming call', {
@@ -78,9 +94,16 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
   };
 
   const handleAnswer = (conn: any) => {
-    conn.accept();
-    setCallStatus('connected');
-    startTimer();
+    try {
+      conn.accept();
+      setActiveConnection(conn);
+      setCallStatus('connected');
+      startTimer();
+      toast.success('Call connected');
+    } catch (error) {
+      console.error('Error answering call:', error);
+      toast.error('Failed to answer call');
+    }
   };
 
   const handleDial = async (number: string) => {
@@ -91,12 +114,24 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
 
     try {
       const connection = device.connect({ To: number });
+      setActiveConnection(connection);
       setCallStatus('ringing');
       setCallerInfo({ number });
       
       connection.on('accept', () => {
         setCallStatus('connected');
         startTimer();
+        toast.success('Call connected');
+      });
+
+      connection.on('disconnect', () => {
+        handleEndCall();
+      });
+
+      connection.on('error', (error: any) => {
+        console.error('Connection error:', error);
+        toast.error('Call failed');
+        handleEndCall();
       });
     } catch (error) {
       console.error('Error dialing:', error);
@@ -105,29 +140,67 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
   };
 
   const handleEndCall = () => {
-    if (device?.activeConnection()) {
-      device.activeConnection().disconnect();
+    try {
+      if (activeConnection) {
+        activeConnection.disconnect();
+      } else if (device?.activeConnection()) {
+        device.activeConnection().disconnect();
+      }
+    } catch (error) {
+      console.error('Error ending call:', error);
     }
+    
+    setActiveConnection(null);
     setCallStatus('idle');
     setCallerInfo(null);
     setDuration(0);
+    setIsMuted(false);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const toggleMute = () => {
-    if (device?.activeConnection()) {
-      device.activeConnection().mute(!isMuted);
-      setIsMuted(!isMuted);
+    try {
+      const conn = activeConnection || device?.activeConnection();
+      if (conn) {
+        conn.mute(!isMuted);
+        setIsMuted(!isMuted);
+        toast.success(isMuted ? 'Microphone unmuted' : 'Microphone muted');
+      }
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+      toast.error('Failed to toggle mute');
     }
   };
 
-  const toggleHold = () => {
-    if (callStatus === 'on-hold') {
-      setCallStatus('connected');
-      // Resume logic
-    } else {
-      setCallStatus('on-hold');
-      // Hold logic via API
+  const toggleHold = async () => {
+    try {
+      const conn = activeConnection || device?.activeConnection();
+      if (!conn) return;
+
+      if (callStatus === 'on-hold') {
+        // Resume call
+        const { error } = await supabase.functions.invoke('call-control', {
+          body: { action: 'resume', callSid: conn.parameters.CallSid }
+        });
+        
+        if (!error) {
+          setCallStatus('connected');
+          toast.success('Call resumed');
+        }
+      } else {
+        // Hold call
+        const { error } = await supabase.functions.invoke('call-control', {
+          body: { action: 'hold', callSid: conn.parameters.CallSid }
+        });
+        
+        if (!error) {
+          setCallStatus('on-hold');
+          toast.success('Call on hold');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling hold:', error);
+      toast.error('Failed to toggle hold');
     }
   };
 
@@ -192,23 +265,28 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
                 size="icon"
                 className="rounded-full"
                 onClick={toggleMute}
+                title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
               </Button>
 
               <Button
-                variant="outline"
+                variant={callStatus === 'on-hold' ? 'default' : 'outline'}
                 size="icon"
                 className="rounded-full"
                 onClick={toggleHold}
+                title={callStatus === 'on-hold' ? 'Resume' : 'Hold'}
               >
                 {callStatus === 'on-hold' ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
               </Button>
+
+              <AudioDeviceSettings device={device} />
 
               <Button
                 variant="outline"
                 size="icon"
                 className="rounded-full"
+                title="Transfer call"
               >
                 <PhoneForwarded className="h-5 w-5" />
               </Button>
@@ -217,6 +295,7 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
                 variant="outline"
                 size="icon"
                 className="rounded-full"
+                title="Show dialpad"
               >
                 <Grid3x3 className="h-5 w-5" />
               </Button>
