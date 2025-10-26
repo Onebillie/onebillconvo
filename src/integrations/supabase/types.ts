@@ -5865,6 +5865,51 @@ export type Database = {
         }
         Relationships: []
       }
+      webauthn_credentials: {
+        Row: {
+          aaguid: string | null
+          counter: number | null
+          created_at: string | null
+          credential_id: string
+          device_name: string | null
+          device_type: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          transports: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          aaguid?: string | null
+          counter?: number | null
+          created_at?: string | null
+          credential_id: string
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          transports?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          aaguid?: string | null
+          counter?: number | null
+          created_at?: string | null
+          credential_id?: string
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          transports?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_config: {
         Row: {
           business_id: string | null

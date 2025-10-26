@@ -14,6 +14,9 @@ import {
   storeDeviceFingerprint,
   getStoredDeviceFingerprint 
 } from "@/lib/deviceFingerprint";
+import { TwoFactorVerification } from "@/components/admin/TwoFactorVerification";
+import { BiometricLogin } from "@/components/admin/BiometricLogin";
+import { checkBiometricSupport } from "@/lib/webauthn";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -21,6 +24,9 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [checkingTrustedDevice, setCheckingTrustedDevice] = useState(true);
   const [deviceFingerprint, setDeviceFingerprint] = useState<string>("");
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [hasBiometric, setHasBiometric] = useState(false);
   const navigate = useNavigate();
   const { startAdminSession } = useAuth();
 
@@ -34,6 +40,10 @@ export default function AdminLogin() {
           storeDeviceFingerprint(fingerprint);
         }
         setDeviceFingerprint(fingerprint);
+
+        // Check for biometric support
+        const support = await checkBiometricSupport();
+        setHasBiometric(support.supported && support.platformAuthenticator);
       } catch (error) {
         console.error('Error initializing device fingerprint:', error);
       } finally {
@@ -42,6 +52,52 @@ export default function AdminLogin() {
     };
     initFingerprint();
   }, []);
+
+  const completeAdminLogin = async (uid: string, fingerprint: string) => {
+    try {
+      const deviceName = getDeviceName();
+
+      // Start admin session
+      await startAdminSession();
+      
+      // Update admin session with device info and mark as trusted
+      const { data: sessions } = await supabase
+        .from('admin_sessions')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (sessions && sessions.length > 0) {
+        await supabase
+          .from('admin_sessions')
+          .update({
+            device_fingerprint: fingerprint,
+            device_name: deviceName,
+            is_trusted: true,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+          })
+          .eq('id', sessions[0].id);
+      }
+
+      // Send security alert
+      await supabase.functions.invoke('admin-login-alert', {
+        body: {
+          userId: uid,
+          email: email,
+          timestamp: new Date().toISOString(),
+          deviceName: deviceName,
+        }
+      }).catch(err => console.error("Failed to send login alert:", err));
+
+      toast.success(`Admin access granted - Device trusted for 30 days`);
+      navigate('/admin');
+    } catch (error: any) {
+      console.error('Admin login completion error:', error);
+      toast.error(error.message || "Failed to complete login");
+    }
+  };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +110,6 @@ export default function AdminLogin() {
       setDeviceFingerprint(fingerprint);
       storeDeviceFingerprint(fingerprint);
     }
-
-    const deviceName = getDeviceName();
 
     try {
       // First, sign in
@@ -89,46 +143,40 @@ export default function AdminLogin() {
         return;
       }
 
-      // Start admin session with device fingerprint
-      await startAdminSession();
-      
-      // Update admin session with device info and mark as trusted
-      const { data: sessions } = await supabase
-        .from('admin_sessions')
-        .select('id')
+      // Check if 2FA is enabled
+      const { data: twoFactorData } = await supabase
+        .from('two_factor_auth')
+        .select('enabled')
         .eq('user_id', authData.user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .single();
 
-      if (sessions && sessions.length > 0) {
-        await supabase
-          .from('admin_sessions')
-          .update({
-            device_fingerprint: fingerprint,
-            device_name: deviceName,
-            is_trusted: true,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-          })
-          .eq('id', sessions[0].id);
+      if (twoFactorData?.enabled) {
+        // Need 2FA verification
+        setUserId(authData.user.id);
+        setNeeds2FA(true);
+        setLoading(false);
+        return;
       }
 
-      // Send security alert
-      await supabase.functions.invoke('admin-login-alert', {
-        body: {
-          userId: authData.user.id,
-          email: authData.user.email,
-          timestamp: new Date().toISOString(),
-          deviceName: deviceName,
-        }
-      }).catch(err => console.error("Failed to send login alert:", err));
-
-      toast.success(`Admin access granted - Device trusted for 30 days`);
-      navigate('/admin');
+      // Continue with admin session creation
+      await completeAdminLogin(authData.user.id, fingerprint);
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handle2FASuccess = async () => {
+    if (userId && deviceFingerprint) {
+      await completeAdminLogin(userId, deviceFingerprint);
+    }
+  };
+
+  const handleBiometricSuccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && deviceFingerprint) {
+      await completeAdminLogin(user.id, deviceFingerprint);
     }
   };
 
@@ -143,6 +191,23 @@ export default function AdminLogin() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Show 2FA verification screen if needed
+  if (needs2FA && userId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-950/20 via-background to-orange-950/20 p-4">
+        <TwoFactorVerification
+          userId={userId}
+          onSuccess={handle2FASuccess}
+          onCancel={() => {
+            setNeeds2FA(false);
+            setUserId(null);
+            supabase.auth.signOut();
+          }}
+        />
       </div>
     );
   }
@@ -212,6 +277,22 @@ export default function AdminLogin() {
             >
               {loading ? "Authenticating..." : "Sign In as SuperAdmin"}
             </Button>
+
+            {hasBiometric && email && (
+              <div className="space-y-2">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or
+                    </span>
+                  </div>
+                </div>
+                <BiometricLogin email={email} onSuccess={handleBiometricSuccess} />
+              </div>
+            )}
           </form>
 
           <div className="mt-4 text-center space-y-2">
