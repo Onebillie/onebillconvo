@@ -4,7 +4,7 @@ import { Users, UserPlus } from "lucide-react";
 
 export const StaffAccordion = () => {
   return (
-    <Accordion type="multiple" defaultValue={["staff"]} className="w-full space-y-4">
+    <Accordion type="multiple" defaultValue={[]} className="w-full space-y-4">
       <AccordionItem value="staff" className="border rounded-lg px-4">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
