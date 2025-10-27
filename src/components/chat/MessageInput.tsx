@@ -19,6 +19,7 @@ interface MessageInputProps {
   customerEmail?: string;
   lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram";
   onMessageSent: () => void;
+  onOptimisticMessage?: (message: any) => void;
   customer?: Customer;
   initialMessage?: string;
 }
@@ -30,6 +31,7 @@ export const MessageInput = ({
   customerEmail,
   lastContactMethod = "whatsapp",
   onMessageSent,
+  onOptimisticMessage,
   customer,
   initialMessage,
 }: MessageInputProps) => {
@@ -114,6 +116,9 @@ export const MessageInput = ({
 
     sendingRef.current = true;
     setIsSending(true);
+
+    // Initialize attachment URLs array (used for optimistic update)
+    let attachmentUrls: any[] = [];
 
     // Check message limits for WhatsApp sending (only if sending via WhatsApp)
     if (sendVia === "whatsapp") {
@@ -245,8 +250,6 @@ export const MessageInput = ({
         if (error) throw error;
       } else {
         // Send via WhatsApp
-        let attachmentUrls: any[] = [];
-
         // Upload voice note if exists
         if (voiceNote) {
           const fileName = `voice-${Date.now()}.webm`;
@@ -346,6 +349,31 @@ export const MessageInput = ({
           });
           return;
         }
+      }
+
+      // Create optimistic message to show immediately
+      const optimisticMessage = {
+        id: `temp-${Date.now()}`,
+        content: processedMessage,
+        direction: 'outbound' as const,
+        created_at: new Date().toISOString(),
+        customer_id: customerId,
+        conversation_id: conversationId,
+        is_read: true,
+        platform: sendVia,
+        status: 'sent',
+        message_attachments: attachmentUrls.map((att: any) => ({
+          id: `temp-att-${Date.now()}`,
+          filename: att.filename,
+          url: att.url,
+          type: att.type,
+          size: 0,
+        })),
+      };
+
+      // Show message immediately (optimistic update)
+      if (onOptimisticMessage) {
+        onOptimisticMessage(optimisticMessage);
       }
 
       setNewMessage("");

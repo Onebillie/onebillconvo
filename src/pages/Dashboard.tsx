@@ -764,6 +764,14 @@ const Dashboard = () => {
               customerPhone={selectedConversation.customer.phone || ""}
               customerEmail={selectedConversation.customer.email}
               lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+              onOptimisticMessage={(message) => {
+                // Immediately show the sent message (optimistic update)
+                setMessages(prev => {
+                  // Avoid duplicates
+                  if (prev.some(m => m.id === message.id)) return prev;
+                  return [...prev, message];
+                });
+              }}
               onMessageSent={() => {
                 fetchMessages(selectedConversation.id);
                 setShowAISuggestions(false);
