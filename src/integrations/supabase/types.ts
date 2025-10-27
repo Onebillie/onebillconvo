@@ -3601,12 +3601,15 @@ export type Database = {
           opened_count: number | null
           recipient_count: number | null
           recipient_filter: Json | null
+          save_as_template: boolean | null
           scheduled_at: string | null
+          sender_email_account_id: string | null
           sent_count: number | null
           sms_content: string | null
           started_at: string | null
           status: string | null
           template_id: string | null
+          test_email_sent: boolean | null
           type: string
           updated_at: string | null
           whatsapp_template_id: string | null
@@ -3634,12 +3637,15 @@ export type Database = {
           opened_count?: number | null
           recipient_count?: number | null
           recipient_filter?: Json | null
+          save_as_template?: boolean | null
           scheduled_at?: string | null
+          sender_email_account_id?: string | null
           sent_count?: number | null
           sms_content?: string | null
           started_at?: string | null
           status?: string | null
           template_id?: string | null
+          test_email_sent?: boolean | null
           type?: string
           updated_at?: string | null
           whatsapp_template_id?: string | null
@@ -3667,12 +3673,15 @@ export type Database = {
           opened_count?: number | null
           recipient_count?: number | null
           recipient_filter?: Json | null
+          save_as_template?: boolean | null
           scheduled_at?: string | null
+          sender_email_account_id?: string | null
           sent_count?: number | null
           sms_content?: string | null
           started_at?: string | null
           status?: string | null
           template_id?: string | null
+          test_email_sent?: boolean | null
           type?: string
           updated_at?: string | null
           whatsapp_template_id?: string | null
@@ -3694,10 +3703,82 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "marketing_campaigns_sender_email_account_id_fkey"
+            columns: ["sender_email_account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "marketing_campaigns_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "marketing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_email_templates: {
+        Row: {
+          business_id: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          html_content: string
+          id: string
+          is_favorite: boolean | null
+          last_used_at: string | null
+          name: string
+          subject: string
+          tags: string[] | null
+          text_content: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          business_id: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          html_content: string
+          id?: string
+          is_favorite?: boolean | null
+          last_used_at?: string | null
+          name: string
+          subject: string
+          tags?: string[] | null
+          text_content?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          business_id?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          html_content?: string
+          id?: string
+          is_favorite?: boolean | null
+          last_used_at?: string | null
+          name?: string
+          subject?: string
+          tags?: string[] | null
+          text_content?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_email_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]

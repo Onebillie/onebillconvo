@@ -7,11 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PersistentHeader } from "@/components/PersistentHeader";
-import { CampaignWizard } from "@/components/marketing/CampaignWizard";
+import { ImprovedCampaignBuilder } from "@/components/marketing/ImprovedCampaignBuilder";
 import { AudienceBuilder } from "@/components/marketing/AudienceBuilder";
 import { ReferralManager } from "@/components/marketing/ReferralManager";
 import { CampaignAnalytics } from "@/components/marketing/CampaignAnalytics";
-import { EmailTemplateManager } from "@/components/marketing/EmailTemplateManager";
+import { TemplateManager } from "@/components/marketing/TemplateManager";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -369,7 +369,7 @@ export default function MarketingNew() {
 
           {/* Email Templates Tab */}
           <TabsContent value="templates">
-            <EmailTemplateManager />
+            <TemplateManager />
           </TabsContent>
 
           {/* Referrals Tab */}
@@ -395,7 +395,7 @@ export default function MarketingNew() {
       </div>
 
       {showWizard && (
-        <CampaignWizard
+        <ImprovedCampaignBuilder
           open={showWizard}
           onClose={handleWizardClose}
           editCampaign={editingCampaign}
