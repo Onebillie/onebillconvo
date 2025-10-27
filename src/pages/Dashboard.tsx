@@ -345,6 +345,20 @@ const Dashboard = () => {
   // Real-time message handlers with deduplication
   const handleNewMessage = useCallback((newMessage: Message) => {
     setMessages(prev => {
+      // Replace matching optimistic temp message if present
+      if (newMessage.direction === 'outbound') {
+        const tempIndex = prev.findIndex(m =>
+          typeof m.id === 'string' && m.id.startsWith('temp-') &&
+          m.direction === 'outbound' &&
+          m.content === newMessage.content
+        );
+        if (tempIndex !== -1) {
+          const copy = [...prev];
+          copy[tempIndex] = newMessage;
+          return copy;
+        }
+      }
+
       // Check if message already exists by ID or external_message_id
       const exists = prev.some(
         msg => msg.id === newMessage.id || 
@@ -773,7 +787,6 @@ const Dashboard = () => {
                 });
               }}
               onMessageSent={() => {
-                fetchMessages(selectedConversation.id);
                 setShowAISuggestions(false);
               }}
               customer={selectedConversation.customer}
