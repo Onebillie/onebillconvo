@@ -78,6 +78,9 @@ export interface Message {
   pinned_by?: string;
   forwarded_from?: string;
   original_content?: string;
+  template_name?: string;
+  template_content?: string;
+  template_variables?: any;
   metadata?: {
     button_clicked?: boolean;
     button_text?: string;

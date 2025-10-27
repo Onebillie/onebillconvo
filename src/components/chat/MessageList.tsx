@@ -506,7 +506,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                                   className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
                                   dangerouslySetInnerHTML={{ 
                                     __html: DOMPurify.sanitize(
-                                      searchTerm ? highlightText(message.content) : message.content,
+                                      searchTerm ? highlightText(message.template_content || message.content) : (message.template_content || message.content),
                                       { ALLOWED_TAGS: ['mark', 'br'], ALLOWED_ATTR: ['class'] }
                                     ) 
                                   }}

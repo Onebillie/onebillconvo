@@ -414,15 +414,15 @@ serve(async (req) => {
             template_name: templateName,
             template_content: templateContent,
             template_variables: templateVariables ? { variables: templateVariables } : null,
-          direction: 'outbound',
-          platform: 'whatsapp',
-          external_message_id: responseData.messages[0].id,
-          platform_message_id: responseData.messages[0].id,
-          delivery_status: 'sent',
-          status: 'sent',
-          thread_id: conversation.id,
-          is_read: true,
-          business_id: customer.business_id
+            direction: 'outbound',
+            platform: 'whatsapp',
+            external_message_id: responseData.messages[0].id,
+            platform_message_id: responseData.messages[0].id,
+            delivery_status: 'sent',
+            status: 'sent',
+            thread_id: conversation.id,
+            is_read: true,
+            business_id: customer.business_id
           })
           .select()
           .single();
