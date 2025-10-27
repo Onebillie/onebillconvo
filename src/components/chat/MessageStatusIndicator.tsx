@@ -17,7 +17,7 @@ export const MessageStatusIndicator = ({ status, className = '' }: MessageStatus
     case 'delivered':
       return <CheckCheck className={`${iconClass} text-muted-foreground`} />;
     case 'read':
-      return <CheckCheck className={`${iconClass} text-blue-500`} />;
+      return <CheckCheck className={`${iconClass} text-primary`} />;
     case 'failed':
       return <XCircle className={`${iconClass} text-destructive`} />;
     default:
