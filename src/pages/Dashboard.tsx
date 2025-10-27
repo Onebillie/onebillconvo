@@ -387,9 +387,10 @@ const Dashboard = () => {
     });
   }, []);
 
-  // Set up real-time subscriptions (only when tab is visible)
+  // Set up real-time subscriptions (always active for selected conversation)
+  // Tab visibility should not affect realtime - only polling
   useRealtimeMessages(
-    isTabVisible ? (selectedConversation?.id || null) : null,
+    selectedConversation?.id || null,
     handleNewMessage,
     handleMessageUpdate
   );
