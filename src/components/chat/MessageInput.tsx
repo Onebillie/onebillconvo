@@ -265,7 +265,39 @@ export const MessageInput = ({
 
         if (error) throw error;
       } else {
-        // Send via WhatsApp
+        // Send via WhatsApp with PERSIST-FIRST strategy
+        
+        // Get business_id for the message
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
+        // STEP 1: Create pending message in DB FIRST (never lose messages)
+        const { data: pendingMsg, error: pendingError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            customer_id: customerId,
+            content: processedMessage,
+            direction: 'outbound',
+            platform: 'whatsapp',
+            status: 'pending',
+            delivery_status: 'pending',
+            is_read: true,
+            business_id: businessData?.business_id
+          })
+          .select()
+          .single();
+
+        if (pendingError) {
+          throw new Error('Failed to create pending message: ' + pendingError.message);
+        }
+
+        console.log('Created pending message:', pendingMsg.id);
+
         // Upload voice note if exists
         if (voiceNote) {
           const fileName = `voice-${Date.now()}.webm`;
@@ -289,40 +321,40 @@ export const MessageInput = ({
           });
         }
 
-          // Upload attachments if any (store in customer-specific folder)
-          if (attachments.length > 0) {
-            for (const file of attachments) {
-              const fileExt = file.name.split(".").pop();
-              const fileName = `${Date.now()}_${file.name}`;
-              const filePath = `customers/${customerId}/media/${fileName}`;
+        // Upload attachments if any
+        if (attachments.length > 0) {
+          for (const file of attachments) {
+            const fileName = `${Date.now()}_${file.name}`;
+            const filePath = `customers/${customerId}/media/${fileName}`;
 
-              const { error: uploadError } = await supabase.storage
-                .from("customer_bills")
-                .upload(filePath, file, {
-                  upsert: false
-                });
-
-              if (uploadError) throw uploadError;
-
-              const {
-                data: { publicUrl },
-              } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
-
-              attachmentUrls.push({
-                url: publicUrl,
-                filename: file.name,
-                type: file.type,
+            const { error: uploadError } = await supabase.storage
+              .from("customer_bills")
+              .upload(filePath, file, {
+                upsert: false
               });
-            }
-          }
 
-        // Send message via WhatsApp API
+            if (uploadError) throw uploadError;
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("customer_bills").getPublicUrl(filePath);
+
+            attachmentUrls.push({
+              url: publicUrl,
+              filename: file.name,
+              type: file.type,
+            });
+          }
+        }
+
+        // STEP 2: Send via WhatsApp API with pending message ID
         const { data, error } = await supabase.functions.invoke("whatsapp-send", {
           body: {
             to: customerPhone,
             message: processedMessage,
             attachments: attachmentUrls,
             conversation_id: conversationId,
+            message_id: pendingMsg.id, // Pass the pending message ID
           },
         });
 

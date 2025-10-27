@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.whatsapp-send]
 verify_jwt = false
 
+[functions.whatsapp-media-proxy]
+verify_jwt = false
+
 [functions.whatsapp-templates]
 verify_jwt = true
 
@@ -22,6 +25,12 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.whatsapp-submit-template]
+verify_jwt = true
+
+[functions.backfill-whatsapp-outbound]
+verify_jwt = true
+
+[functions.data-consistency-check]
 verify_jwt = true
 
 [functions.send-transactional-email]
@@ -365,4 +374,3 @@ verify_jwt = true
 
 [functions.generate-marketing-content]
 verify_jwt = true
-

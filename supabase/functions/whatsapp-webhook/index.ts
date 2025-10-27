@@ -431,9 +431,9 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 
       console.log('Message processed successfully:', newMessage.id);
 
-      // Handle attachments in background (non-blocking)
+      // Handle attachments - create instant proxy URL then process in background
       if (message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio' || message.type === 'voice') {
-        handleAttachment(message, newMessage.id, customer.id, supabase, whatsappAccountId)
+        handleAttachmentInstant(message, newMessage.id, customer.id, supabase, whatsappAccountId)
           .catch(err => console.error('Attachment processing error:', err));
       }
 
@@ -473,7 +473,7 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
   }
 }
 
-async function handleAttachment(message: any, messageId: string, customerId: string, supabase: any, whatsappAccountId?: string) {
+async function handleAttachmentInstant(message: any, messageId: string, customerId: string, supabase: any, whatsappAccountId?: string) {
   const startTime = Date.now();
   try {
     let mediaId, filename, mimeType, duration;
@@ -505,6 +505,32 @@ async function handleAttachment(message: any, messageId: string, customerId: str
 
     console.log(`Processing attachment: ${filename} (${mimeType}), mediaId: ${mediaId}`);
 
+    // INSTANT: Create proxy URL immediately for realtime display
+    const proxyUrl = `https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/whatsapp-media-proxy?mediaId=${mediaId}${whatsappAccountId ? `&accountId=${whatsappAccountId}` : ''}`;
+    
+    const { data: instantAttachment, error: instantError } = await supabase
+      .from('message_attachments')
+      .insert({
+        message_id: messageId,
+        filename,
+        url: proxyUrl,
+        type: mimeType,
+        size: 0,
+        duration_seconds: duration || null,
+      })
+      .select()
+      .single();
+
+    if (instantError) {
+      console.error('Error creating instant attachment:', instantError);
+      return;
+    }
+
+    console.log(`Created instant attachment with proxy URL in ${Date.now() - startTime}ms`);
+
+    // BACKGROUND: Download and upload to permanent storage
+    const attachmentId = instantAttachment.id;
+    
     // Get access token (prefer account-specific, fallback to env)
     let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
     
@@ -541,7 +567,7 @@ async function handleAttachment(message: any, messageId: string, customerId: str
     // Download media file with timeout
     const downloadStart = Date.now();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const fileResponse = await fetch(mediaUrl, {
@@ -562,10 +588,10 @@ async function handleAttachment(message: any, messageId: string, customerId: str
       const file = new Uint8Array(fileBuffer);
       console.log(`Downloaded ${file.length} bytes in ${Date.now() - downloadStart}ms`);
 
-      // Upload to Supabase Storage in customer-specific folder
+      // Upload to Supabase Storage
       const uploadStart = Date.now();
       const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('customer_bills')
         .upload(filePath, file, {
           contentType: mimeType,
@@ -579,31 +605,28 @@ async function handleAttachment(message: any, messageId: string, customerId: str
 
       console.log(`Uploaded to storage in ${Date.now() - uploadStart}ms`);
 
-      // Create attachment record with public URL
+      // Get permanent public URL
       const { data: publicUrlData } = supabase.storage
         .from('customer_bills')
         .getPublicUrl(filePath);
 
-      const publicUrl = publicUrlData?.publicUrl || null;
+      const publicUrl = publicUrlData?.publicUrl;
 
-      const { error: attachmentError } = await supabase
+      // UPDATE: Replace proxy URL with permanent Storage URL
+      const { error: updateError } = await supabase
         .from('message_attachments')
-        .insert({
-          message_id: messageId,
-          filename,
-          url: publicUrl ?? filePath,
-          type: mimeType,
+        .update({
+          url: publicUrl,
           size: file.length,
-          duration_seconds: duration || null,
-        });
+        })
+        .eq('id', attachmentId);
 
-      if (attachmentError) {
-        console.error('Error creating attachment record:', attachmentError);
-        return;
+      if (updateError) {
+        console.error('Error updating attachment with permanent URL:', updateError);
+      } else {
+        const totalTime = Date.now() - startTime;
+        console.log(`Attachment fully processed: ${filename} (${file.length} bytes) in ${totalTime}ms`);
       }
-
-      const totalTime = Date.now() - startTime;
-      console.log(`Attachment processed successfully: ${filename} (${file.length} bytes) in ${totalTime}ms`);
     } catch (fetchError: any) {
       if (fetchError.name === 'AbortError') {
         console.error('Media download timeout after 30s');

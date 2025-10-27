@@ -19,7 +19,17 @@ serve(async (req) => {
 
   try {
     const requestId = `whatsapp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const { to, message, attachments, whatsapp_account_id, conversation_id, templateName, templateLanguage, templateVariables } = await req.json();
+    const { 
+      to, 
+      message, 
+      attachments, 
+      whatsapp_account_id, 
+      conversation_id, 
+      templateName, 
+      templateLanguage, 
+      templateVariables,
+      message_id // NEW: Accept pre-created message ID from persist-first strategy
+    } = await req.json();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -98,6 +108,19 @@ serve(async (req) => {
 
     if (!accessToken || !phoneNumberId) {
       console.error(`[${requestId}] No WhatsApp credentials found. conversation_id: ${conversation_id}, whatsapp_account_id: ${whatsapp_account_id}, to: ${to}`);
+      
+      // Update pending message to failed if message_id provided
+      if (message_id) {
+        await supabase
+          .from('messages')
+          .update({ 
+            status: 'failed', 
+            delivery_status: 'failed',
+            metadata: { last_error: 'No active WhatsApp account found' }
+          })
+          .eq('id', message_id);
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: 'No active WhatsApp account found',
@@ -109,9 +132,15 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[${requestId}] Using WhatsApp account: ${whatsappAccountId}, to: ${to}, conversation_id: ${conversation_id || 'none'}, templateName: ${templateName || 'none'}`);
+    console.log(`[${requestId}] Using WhatsApp account: ${whatsappAccountId}, to: ${to}, conversation_id: ${conversation_id || 'none'}, message_id: ${message_id || 'none'}, templateName: ${templateName || 'none'}`);
 
     if (!to) {
+      if (message_id) {
+        await supabase
+          .from('messages')
+          .update({ status: 'failed', delivery_status: 'failed', metadata: { last_error: 'Missing required field: to' } })
+          .eq('id', message_id);
+      }
       return new Response(
         JSON.stringify({ error: 'Missing required field: to' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -119,6 +148,12 @@ serve(async (req) => {
     }
     
     if (!templateName && !message) {
+      if (message_id) {
+        await supabase
+          .from('messages')
+          .update({ status: 'failed', delivery_status: 'failed', metadata: { last_error: 'Missing required field: message or templateName' } })
+          .eq('id', message_id);
+      }
       return new Response(
         JSON.stringify({ error: 'Missing required field: message or templateName' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -159,6 +194,18 @@ serve(async (req) => {
           const currentCount = business.message_count_current_period || 0;
           if (currentCount >= limit) {
             console.log(`[${requestId}] Message limit reached for business ${customerForLimit.business_id}: ${currentCount}/${limit}`);
+            
+            if (message_id) {
+              await supabase
+                .from('messages')
+                .update({ 
+                  status: 'failed', 
+                  delivery_status: 'failed',
+                  metadata: { last_error: `Message limit reached: ${currentCount}/${limit}` }
+                })
+                .eq('id', message_id);
+            }
+            
             return new Response(
               JSON.stringify({ 
                 error: 'Message limit reached',
@@ -188,9 +235,6 @@ serve(async (req) => {
         }
       };
       
-      // CRITICAL: Only add components if templateVariables is explicitly provided AND not empty
-      // Meta's API requires this field ONLY when the template has variables
-      // Sending components for templates without variables causes error #132000
       if (templateVariables !== undefined && templateVariables !== null && Array.isArray(templateVariables) && templateVariables.length > 0) {
         whatsappPayload.template.components = [
           {
@@ -301,6 +345,19 @@ serve(async (req) => {
         fullResponse: JSON.stringify(responseData)
       });
       console.error(`[${requestId}] Request payload:`, JSON.stringify(whatsappPayload, null, 2));
+      
+      // Update pending message to failed if message_id provided
+      if (message_id) {
+        await supabase
+          .from('messages')
+          .update({ 
+            status: 'failed', 
+            delivery_status: 'failed',
+            metadata: { last_error: errorMessage, error_code: errorCode }
+          })
+          .eq('id', message_id);
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: `Meta API Error: ${errorMessage}`,
@@ -320,91 +377,127 @@ serve(async (req) => {
       console.log(`[${requestId}] No business_id found for message count increment`);
     }
 
-    // Priority 1: Use conversation_id if provided (most reliable)
-    let conversation = null;
-    let customer = null;
-    
-    if (conversation_id) {
-      const { data: convData } = await supabase
-        .from('conversations')
-        .select('id, customer_id, business_id, customers(id, business_id)')
-        .eq('id', conversation_id)
+    // Get template content if using a template
+    let templateContent = message;
+    if (templateName) {
+      const { data: template } = await supabase
+        .from('whatsapp_templates')
+        .select('body')
+        .eq('name', templateName)
         .single();
       
-      if (convData) {
-        conversation = convData;
-        customer = convData.customers;
-        console.log(`[${requestId}] Using conversation from conversation_id: ${conversation_id}`);
+      templateContent = template?.body || `Template: ${templateName}`;
+      
+      // Replace variables in template
+      if (templateVariables && Array.isArray(templateVariables)) {
+        templateVariables.forEach((val: string, idx: number) => {
+          templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
+        });
       }
     }
-    
-    // Priority 2: Find customer and conversation by phone if conversation_id not provided
-    if (!conversation) {
-      const { data: customerData } = await supabase
-        .from('customers')
-        .select('id, business_id')
-        .eq('phone', cleanPhoneNumber)
-        .maybeSingle();
 
-      if (customerData) {
-        customer = customerData;
+    // PERSIST-FIRST STRATEGY: Update existing message OR insert new one
+    if (message_id) {
+      // Update the pending message row
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({
+          external_message_id: responseData.messages[0].id,
+          platform_message_id: responseData.messages[0].id,
+          delivery_status: 'sent',
+          status: 'sent',
+          template_name: templateName || null,
+          template_content: templateContent || null,
+          template_variables: templateVariables ? { variables: templateVariables } : null,
+        })
+        .eq('id', message_id);
+      
+      if (updateError) {
+        console.error(`[${requestId}] Error updating pending message:`, updateError);
+      } else {
+        console.log(`[${requestId}] Updated pending message ${message_id} with WhatsApp message ID`);
         
-        let { data: convData, error: conversationSelectError } = await supabase
+        // Log events
+        await logMessageEvent(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+          message_id,
+          'sent',
+          'success',
+          'whatsapp',
+          { message_id: responseData.messages[0].id }
+        );
+        
+        // Handle attachments
+        if (attachments && attachments.length > 0) {
+          const attachment = attachments[0];
+          await supabase
+            .from('message_attachments')
+            .insert({
+              message_id: message_id,
+              filename: attachment.filename,
+              url: attachment.url,
+              type: attachment.type,
+              size: attachment.size || 0,
+            });
+        }
+      }
+    } else {
+      // Legacy path: Create new message (backward compatibility)
+      let conversation = null;
+      let customer = null;
+      
+      if (conversation_id) {
+        const { data: convData } = await supabase
           .from('conversations')
-          .select('*')
-          .eq('customer_id', customer.id)
-          .eq('status', 'active')
-          .order('updated_at', { ascending: false })
-          .limit(1)
+          .select('id, customer_id, business_id, customers(id, business_id)')
+          .eq('id', conversation_id)
+          .single();
+        
+        if (convData) {
+          conversation = convData;
+          customer = convData.customers;
+        }
+      }
+      
+      if (!conversation) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('id, business_id')
+          .eq('phone', cleanPhoneNumber)
           .maybeSingle();
 
-        if (conversationSelectError) {
-          console.error('Select conversation error:', conversationSelectError);
-        }
-
-        if (!convData) {
-          const { data: newConv, error: newConvError } = await supabase
+        if (customerData) {
+          customer = customerData;
+          
+          let { data: convData } = await supabase
             .from('conversations')
-            .insert({ 
-              customer_id: customer.id, 
-              status: 'active',
-              whatsapp_account_id: whatsappAccountId,
-              business_id: customer.business_id
-            })
-            .select()
-            .single();
-          if (newConvError) {
-            console.error('Create conversation error:', newConvError);
-          } else {
+            .select('*')
+            .eq('customer_id', customer.id)
+            .eq('status', 'active')
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!convData) {
+            const { data: newConv } = await supabase
+              .from('conversations')
+              .insert({ 
+                customer_id: customer.id, 
+                status: 'active',
+                whatsapp_account_id: whatsappAccountId,
+                business_id: customer.business_id
+              })
+              .select()
+              .single();
             convData = newConv;
           }
+          
+          conversation = convData;
         }
-        
-        conversation = convData;
       }
-    }
 
-    if (conversation && customer) {
-        // Get template content if using a template
-        let templateContent = message;
-        if (templateName) {
-          const { data: template } = await supabase
-            .from('whatsapp_templates')
-            .select('body')
-            .eq('name', templateName)
-            .single();
-          
-          templateContent = template?.body || `Template: ${templateName}`;
-          
-          // Replace variables in template
-          if (templateVariables && Array.isArray(templateVariables)) {
-            templateVariables.forEach((val: string, idx: number) => {
-              templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
-            });
-          }
-        }
-
-        // Store outbound message in database
+      if (conversation && customer) {
         const { data: outboundMsg, error: msgError } = await supabase
           .from('messages')
           .insert({
@@ -428,7 +521,6 @@ serve(async (req) => {
           .single();
 
         if (outboundMsg) {
-          // Log message created
           await logMessageEvent(
             Deno.env.get('SUPABASE_URL')!,
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -439,7 +531,6 @@ serve(async (req) => {
             { to: cleanPhoneNumber, template: templateName }
           );
 
-          // Log message sent
           await logMessageEvent(
             Deno.env.get('SUPABASE_URL')!,
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -454,9 +545,8 @@ serve(async (req) => {
         if (msgError) {
           console.error(`[${requestId}] Error creating message record:`, msgError);
         } else if (attachments && attachments.length > 0 && outboundMsg) {
-          // Create attachment records for outbound media
           const attachment = attachments[0];
-          const { error: attachError } = await supabase
+          await supabase
             .from('message_attachments')
             .insert({
               message_id: outboundMsg.id,
@@ -465,15 +555,8 @@ serve(async (req) => {
               type: attachment.type,
               size: attachment.size || 0,
             });
-          
-          if (attachError) {
-            console.error(`[${requestId}] Error creating attachment record:`, attachError);
-          } else {
-            console.log(`[${requestId}] Attachment record created for outbound message`);
-          }
         }
 
-        // Update conversation timestamp
         await supabase
           .from('conversations')
           .update({ updated_at: new Date().toISOString() })
