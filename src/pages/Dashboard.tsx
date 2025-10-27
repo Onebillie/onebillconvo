@@ -131,6 +131,8 @@ const Dashboard = () => {
           first_name,
           last_name,
           phone,
+          whatsapp_phone,
+          whatsapp_name,
           email,
           avatar,
           last_active,
@@ -778,7 +780,7 @@ const Dashboard = () => {
             <MessageInput
               conversationId={selectedConversation.id}
               customerId={selectedConversation.customer.id}
-              customerPhone={selectedConversation.customer.phone || ""}
+              customerPhone={selectedConversation.customer.whatsapp_phone || selectedConversation.customer.phone || ""}
               customerEmail={selectedConversation.customer.email}
               lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
               onOptimisticMessage={(message) => {

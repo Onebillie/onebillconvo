@@ -320,46 +320,71 @@ serve(async (req) => {
       console.log(`[${requestId}] No business_id found for message count increment`);
     }
 
-    // Find customer and conversation
-    const { data: customer } = await supabase
-      .from('customers')
-      .select('id, business_id')
-      .eq('phone', cleanPhoneNumber)
-      .single();
-
-    if (customer) {
-      let { data: conversation, error: conversationSelectError } = await supabase
+    // Priority 1: Use conversation_id if provided (most reliable)
+    let conversation = null;
+    let customer = null;
+    
+    if (conversation_id) {
+      const { data: convData } = await supabase
         .from('conversations')
-        .select('*')
-        .eq('customer_id', customer.id)
-        .eq('status', 'active')
-        .order('updated_at', { ascending: false })
-        .limit(1)
+        .select('id, customer_id, business_id, customers(id, business_id)')
+        .eq('id', conversation_id)
+        .single();
+      
+      if (convData) {
+        conversation = convData;
+        customer = convData.customers;
+        console.log(`[${requestId}] Using conversation from conversation_id: ${conversation_id}`);
+      }
+    }
+    
+    // Priority 2: Find customer and conversation by phone if conversation_id not provided
+    if (!conversation) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('id, business_id')
+        .eq('phone', cleanPhoneNumber)
         .maybeSingle();
 
-      if (conversationSelectError) {
-        console.error('Select conversation error:', conversationSelectError);
-      }
-
-      if (!conversation) {
-          const { data: newConv, error: newConvError } = await supabase
+      if (customerData) {
+        customer = customerData;
+        
+        let { data: convData, error: conversationSelectError } = await supabase
           .from('conversations')
-          .insert({ 
-            customer_id: customer.id, 
-            status: 'active',
-            whatsapp_account_id: whatsappAccountId,
-            business_id: customer.business_id
-          })
-          .select()
-          .single();
-        if (newConvError) {
-          console.error('Create conversation error:', newConvError);
-        } else {
-          conversation = newConv;
-        }
-      }
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('status', 'active')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (conversation) {
+        if (conversationSelectError) {
+          console.error('Select conversation error:', conversationSelectError);
+        }
+
+        if (!convData) {
+          const { data: newConv, error: newConvError } = await supabase
+            .from('conversations')
+            .insert({ 
+              customer_id: customer.id, 
+              status: 'active',
+              whatsapp_account_id: whatsappAccountId,
+              business_id: customer.business_id
+            })
+            .select()
+            .single();
+          if (newConvError) {
+            console.error('Create conversation error:', newConvError);
+          } else {
+            convData = newConv;
+          }
+        }
+        
+        conversation = convData;
+      }
+    }
+
+    if (conversation && customer) {
         // Get template content if using a template
         let templateContent = message;
         if (templateName) {

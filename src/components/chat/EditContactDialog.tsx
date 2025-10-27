@@ -224,10 +224,32 @@ export const EditContactDialog = ({
 
               {whatsappName && (
                 <div className="space-y-2">
-                  <Label htmlFor="whatsappName" className="flex items-center gap-2">
-                    WhatsApp Name
-                    <Lock className="h-3 w-3 text-muted-foreground" />
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="whatsappName" className="flex items-center gap-2">
+                      WhatsApp Name
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (!firstName && !lastName) {
+                          const parts = whatsappName.split(' ');
+                          setFirstName(parts[0] || '');
+                          setLastName(parts.slice(1).join(' ') || '');
+                          toast({
+                            title: "Success",
+                            description: "WhatsApp name copied to First/Last name fields",
+                          });
+                        }
+                      }}
+                      disabled={!!(firstName || lastName)}
+                      className="h-7 text-xs"
+                    >
+                      Use WhatsApp Name
+                    </Button>
+                  </div>
                   <Input
                     id="whatsappName"
                     value={whatsappName}

@@ -86,7 +86,7 @@ serve(async (req) => {
 async function processStatusUpdates(statuses: any[], supabase: any) {
   for (const status of statuses) {
     try {
-      const { id: messageId, status: messageStatus } = status;
+      const { id: messageId, status: messageStatus, recipient_id } = status;
       
       let newStatus = 'sent';
       if (messageStatus === 'delivered') {
@@ -98,19 +98,64 @@ async function processStatusUpdates(statuses: any[], supabase: any) {
       }
 
       // Update message status
-      const { error } = await supabase
+      const { data: updatedMessages, error } = await supabase
         .from('messages')
         .update({ 
           status: newStatus,
           is_read: messageStatus === 'read' ? true : undefined
         })
         .eq('external_message_id', messageId)
-        .eq('platform', 'whatsapp');
+        .eq('platform', 'whatsapp')
+        .select('id');
 
       if (error) {
         console.error('Error updating message status:', error);
-      } else {
+      } else if (updatedMessages && updatedMessages.length > 0) {
         console.log(`WhatsApp message ${messageId} status updated to ${newStatus}`);
+      } else {
+        // Backfill: No message found for this status update, create a placeholder
+        console.log(`No message found for external_message_id ${messageId}, creating placeholder`);
+        
+        if (recipient_id) {
+          const normalizedPhone = recipient_id.replace(/^\+/, '').replace(/^00/, '');
+          
+          // Find customer and their latest active conversation
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('id, business_id')
+            .eq('phone', normalizedPhone)
+            .maybeSingle();
+          
+          if (customer) {
+            const { data: conversation } = await supabase
+              .from('conversations')
+              .select('id')
+              .eq('customer_id', customer.id)
+              .eq('status', 'active')
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (conversation) {
+              // Create minimal outbound message placeholder
+              await supabase
+                .from('messages')
+                .insert({
+                  conversation_id: conversation.id,
+                  customer_id: customer.id,
+                  content: '[Message sent via external interface]',
+                  direction: 'outbound',
+                  platform: 'whatsapp',
+                  external_message_id: messageId,
+                  status: newStatus,
+                  is_read: messageStatus === 'read' ? true : false,
+                  business_id: customer.business_id
+                });
+              
+              console.log(`Created placeholder message for status update ${messageId}`);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error processing status update:', error);
@@ -185,13 +230,36 @@ async function processMessages(messageData: any, supabase: any, accountId?: stri
 
       let customer;
       if (existingCustomer) {
-        // Update only whatsapp_name and last_active, preserve user-edited name
+        // Build update object
+        const updateData: any = {
+          whatsapp_name: whatsappName,
+          last_active: new Date().toISOString(),
+        };
+        
+        // Auto-populate name fields if they're empty or look like placeholder numbers
+        const nameIsEmpty = !existingCustomer.name || existingCustomer.name.trim() === '' || /^\d+$/.test(existingCustomer.name);
+        const firstNameIsEmpty = !existingCustomer.first_name || existingCustomer.first_name.trim() === '';
+        const lastNameIsEmpty = !existingCustomer.last_name || existingCustomer.last_name.trim() === '';
+        
+        if (nameIsEmpty && whatsappName) {
+          updateData.name = whatsappName;
+        }
+        if (firstNameIsEmpty && whatsappName) {
+          updateData.first_name = whatsappName.split(' ')[0] || whatsappName;
+        }
+        if (lastNameIsEmpty && whatsappName) {
+          const lastNameParts = whatsappName.split(' ').slice(1).join(' ');
+          updateData.last_name = lastNameParts || null;
+        }
+        
+        // Fill whatsapp_phone if empty
+        if (!existingCustomer.whatsapp_phone) {
+          updateData.whatsapp_phone = normalizedPhone;
+        }
+        
         const { data: updatedCustomer, error: updateError } = await supabase
           .from('customers')
-          .update({
-            whatsapp_name: whatsappName,
-            last_active: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('phone', normalizedPhone)
           .select()
           .single();
