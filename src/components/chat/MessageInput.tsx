@@ -163,6 +163,22 @@ export const MessageInput = ({
         processedMessage = populateTemplateWithContactData(newMessage, customer);
       }
 
+      // Optimistic update immediately for better UX (especially on mobile PWAs)
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMessageEarly = {
+        id: tempId,
+        content: processedMessage,
+        direction: 'outbound' as const,
+        created_at: new Date().toISOString(),
+        customer_id: customerId,
+        conversation_id: conversationId,
+        is_read: true,
+        platform: sendVia,
+        status: 'sending',
+        message_attachments: [] as any[],
+      };
+      onOptimisticMessage?.(optimisticMessageEarly);
+
       if (sendVia === "email" && customerEmail) {
         // Get business_id and settings
         const { data: { user } } = await supabase.auth.getUser();
@@ -351,31 +367,7 @@ export const MessageInput = ({
         }
       }
 
-      // Create optimistic message to show immediately
-      const optimisticMessage = {
-        id: `temp-${Date.now()}`,
-        content: processedMessage,
-        direction: 'outbound' as const,
-        created_at: new Date().toISOString(),
-        customer_id: customerId,
-        conversation_id: conversationId,
-        is_read: true,
-        platform: sendVia,
-        status: 'sent',
-        message_attachments: attachmentUrls.map((att: any) => ({
-          id: `temp-att-${Date.now()}`,
-          filename: att.filename,
-          url: att.url,
-          type: att.type,
-          size: 0,
-        })),
-      };
-
-      // Show message immediately (optimistic update)
-      if (onOptimisticMessage) {
-        onOptimisticMessage(optimisticMessage);
-      }
-
+      // Clear draft and UI after initiating send (final status will sync via realtime)
       setNewMessage("");
       setAttachments([]);
       setVoiceNote(null);
