@@ -47,8 +47,19 @@ export const ProfileEditDialog = ({ open, onOpenChange }: ProfileEditDialogProps
       }
 
       const file = event.target.files[0];
+      
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 2MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const fileExt = file.name.split(".").pop();
-      const filePath = `${profile?.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${profile?.id}-${crypto.randomUUID()}.${fileExt}`;
 
       // Upload to Supabase Storage
       const { error: uploadError, data } = await supabase.storage

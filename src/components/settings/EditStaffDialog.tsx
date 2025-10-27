@@ -72,9 +72,19 @@ export const EditStaffDialog = ({
     if (!e.target.files || !e.target.files[0] || !staffMember) return;
 
     const file = e.target.files[0];
+    
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const fileExt = file.name.split(".").pop();
-    const fileName = `${staffMember.id}-${Math.random()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const filePath = `${staffMember.id}-${crypto.randomUUID()}.${fileExt}`;
 
     setUploading(true);
     try {
