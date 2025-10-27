@@ -345,17 +345,18 @@ const Dashboard = () => {
   // Real-time message handlers with deduplication
   const handleNewMessage = useCallback((newMessage: Message) => {
     setMessages(prev => {
-      // Replace matching optimistic temp message if present
+      // Replace matching optimistic temp message if present (same content/platform, recent)
       if (newMessage.direction === 'outbound') {
         const tempIndex = prev.findIndex(m =>
           typeof m.id === 'string' && m.id.startsWith('temp-') &&
           m.direction === 'outbound' &&
+          m.platform === newMessage.platform &&
           m.content === newMessage.content
         );
         if (tempIndex !== -1) {
           const copy = [...prev];
           copy[tempIndex] = newMessage;
-          return copy;
+          return copy.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         }
       }
 
@@ -365,7 +366,8 @@ const Dashboard = () => {
         (msg.external_message_id && msg.external_message_id === newMessage.external_message_id)
       );
       if (exists) return prev;
-      return [...prev, newMessage];
+      const next = [...prev, newMessage];
+      return next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
     
     if (newMessage.direction === 'inbound' && selectedConversation) {
@@ -377,13 +379,11 @@ const Dashboard = () => {
 
   const handleMessageUpdate = useCallback((updatedMessage: Message) => {
     setMessages(prev => {
-      // Deduplicate while updating
       const existingIndex = prev.findIndex(msg => msg.id === updatedMessage.id);
       if (existingIndex === -1) return prev;
-      
       const newMessages = [...prev];
       newMessages[existingIndex] = updatedMessage;
-      return newMessages;
+      return newMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
   }, []);
 
@@ -445,6 +445,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (selectedConversation) {
+      // Clear current messages immediately to avoid stale flashes when switching
+      setMessages([]);
       fetchMessages(selectedConversation.id);
       markAsRead(selectedConversation.id);
       setShowAISuggestions(false);
@@ -782,9 +784,9 @@ const Dashboard = () => {
               onOptimisticMessage={(message) => {
                 // Immediately show the sent message (optimistic update)
                 setMessages(prev => {
-                  // Avoid duplicates
                   if (prev.some(m => m.id === message.id)) return prev;
-                  return [...prev, message];
+                  const next = [...prev, message];
+                  return next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                 });
               }}
               onMessageSent={() => {

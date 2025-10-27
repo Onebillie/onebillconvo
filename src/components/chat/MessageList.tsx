@@ -477,20 +477,20 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
 
                           {/* Email content with smart formatting */}
                           {message.platform === 'email' ? (
-                            <>
-                              <EmailMessageRenderer 
-                                content={message.content} 
-                                subject={message.subject}
-                                compact={true}
-                              />
-                              {message.message_attachments && message.message_attachments.length > 0 && (
-                                <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
-                                  <Paperclip className="w-3 h-3" />
-                                  <span>{message.message_attachments.length} attachment{message.message_attachments.length > 1 ? 's' : ''}</span>
-                                </div>
-                              )}
-                            </>
-                          ) : (
+                              <>
+                                <EmailMessageRenderer 
+                                  content={message.content} 
+                                  subject={message.subject}
+                                  compact={false}
+                                />
+                                {message.message_attachments && message.message_attachments.length > 0 && (
+                                  <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
+                                    <Paperclip className="w-3 h-3" />
+                                    <span>{message.message_attachments.length} attachment{message.message_attachments.length > 1 ? 's' : ''}</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
                             <>
                               {message.metadata?.button_clicked ? (
                                 <div className="inline-flex items-center gap-2 text-sm mb-1">

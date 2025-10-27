@@ -28,6 +28,7 @@ interface EnhancedTemplateSelectorProps {
   customerPhone?: string;
   customerEmail?: string;
   onTemplateSent: () => void;
+  onOptimisticMessage?: (message: any) => void;
 }
 
 export const EnhancedTemplateSelector = ({
@@ -36,6 +37,7 @@ export const EnhancedTemplateSelector = ({
   customerPhone,
   customerEmail,
   onTemplateSent,
+  onOptimisticMessage,
 }: EnhancedTemplateSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,11 +84,13 @@ export const EnhancedTemplateSelector = ({
   const sendTemplate = async (template: Template) => {
     setSending(template.id);
     try {
+      const tempId = `temp-${Date.now()}`;
+      let appliedContent = template.content || '';
+
       if (template.platform === 'whatsapp') {
         if (!customerPhone) {
           throw new Error("Customer phone number not available");
         }
-        
         // Detect variables in template content like {{1}}, {{2}}, ...
         const variableMatches = (template.content || '').match(/\{\{(\d+)\}\}/g);
         const hasVariables = variableMatches && variableMatches.length > 0;
@@ -97,9 +101,10 @@ export const EnhancedTemplateSelector = ({
           templateLanguage: (template.variables as any)?.template_language || 'en',
         };
 
+        let values: string[] = [];
         if (hasVariables && variableMatches) {
           const indices = Array.from(new Set(variableMatches.map((v) => parseInt(v.replace(/\{|\}/g, ''), 10)))).sort((a,b)=>a-b);
-          const values: string[] = [];
+          values = [];
           for (const idx of indices) {
             const val = window.prompt(`Enter value for {{${idx}}}`, '');
             if (!val) {
@@ -114,17 +119,48 @@ export const EnhancedTemplateSelector = ({
             values.push(val);
           }
           payload.templateVariables = values;
+
+          // Apply variables locally for optimistic preview
+          appliedContent = indices.reduce((acc, idx, i) => acc.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), values[i] || ''), appliedContent);
         }
-        
+
+        // Optimistic message
+        onOptimisticMessage?.({
+          id: tempId,
+          content: appliedContent,
+          direction: 'outbound',
+          created_at: new Date().toISOString(),
+          customer_id: customerId,
+          conversation_id: conversationId,
+          is_read: true,
+          platform: 'whatsapp',
+          status: 'sending',
+          message_attachments: [],
+        });
+
         const { error } = await supabase.functions.invoke("whatsapp-send", {
           body: payload,
         });
-
         if (error) throw error;
       } else if (template.platform === 'email') {
         if (!customerEmail) {
           throw new Error("Customer email not available");
         }
+
+        // Optimistic message for email
+        onOptimisticMessage?.({
+          id: tempId,
+          content: appliedContent,
+          subject: template.name,
+          direction: 'outbound',
+          created_at: new Date().toISOString(),
+          customer_id: customerId,
+          conversation_id: conversationId,
+          is_read: true,
+          platform: 'email',
+          status: 'sending',
+          message_attachments: [],
+        });
 
         // Get business_id
         const { data: { user } } = await supabase.auth.getUser();
@@ -157,9 +193,22 @@ export const EnhancedTemplateSelector = ({
             customer_id: customerId,
           },
         });
-
         if (error) throw error;
       } else {
+        // Plain text - insert as regular message (also optimistic)
+        onOptimisticMessage?.({
+          id: tempId,
+          content: appliedContent,
+          direction: 'outbound',
+          created_at: new Date().toISOString(),
+          customer_id: customerId,
+          conversation_id: conversationId,
+          is_read: true,
+          platform: 'text',
+          status: 'sending',
+          message_attachments: [],
+        });
+
         // Get business_id
         const { data: { user } } = await supabase.auth.getUser();
         const { data: businessData } = await supabase
@@ -168,7 +217,6 @@ export const EnhancedTemplateSelector = ({
           .eq('user_id', user?.id)
           .maybeSingle();
 
-        // Plain text - insert as regular message
         const { error } = await supabase
           .from('messages')
           .insert({
@@ -182,7 +230,6 @@ export const EnhancedTemplateSelector = ({
             is_read: true,
             business_id: businessData?.business_id
           });
-
         if (error) throw error;
       }
 
