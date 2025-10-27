@@ -30,6 +30,9 @@ verify_jwt = true
 [functions.backfill-whatsapp-outbound]
 verify_jwt = true
 
+[functions.whatsapp-recover-from-meta]
+verify_jwt = false
+
 [functions.data-consistency-check]
 verify_jwt = true
 
