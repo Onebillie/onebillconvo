@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ interface ApiKey {
 }
 
 export function ApiAccessManagement() {
+  const { currentBusinessId } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState("");
@@ -52,6 +54,11 @@ export function ApiAccessManagement() {
       return;
     }
 
+    if (!currentBusinessId) {
+      toast.error("No business context found");
+      return;
+    }
+
     try {
       const apiKey = `sk_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
       const keyPrefix = apiKey.substring(0, 12);
@@ -60,6 +67,7 @@ export function ApiAccessManagement() {
         name: newKeyName,
         key_hash: apiKey,
         key_prefix: keyPrefix,
+        business_id: currentBusinessId,
       });
 
       if (error) throw error;

@@ -6916,7 +6916,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_low_voice_credits: { Args: never; Returns: undefined }
       cleanup_expired_embed_sessions: { Args: never; Returns: undefined }
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       cleanup_expired_sso_tokens: { Args: never; Returns: undefined }
@@ -6968,7 +6967,6 @@ export type Database = {
       }
       normalize_phone: { Args: { phone_num: string }; Returns: string }
       sync_all_email_accounts: { Args: never; Returns: undefined }
-      trigger_email_sync: { Args: never; Returns: undefined }
       user_belongs_to_business: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
