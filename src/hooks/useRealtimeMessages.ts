@@ -53,12 +53,34 @@ export const useRealtimeMessages = (
           try {
             const { data: fullMessage } = await supabase
               .from('messages')
-              .select('*, message_attachments(*)')
+              .select(`
+                *,
+                message_attachments (
+                  id,
+                  file_name,
+                  file_url,
+                  file_type,
+                  file_size,
+                  duration_seconds
+                )
+              `)
               .eq('id', (payload.new as any).message_id)
               .maybeSingle();
 
             if (fullMessage && fullMessage.conversation_id === conversationId && isSubscribed) {
-              onMessageUpdate(fullMessage as unknown as Message);
+              // Map database fields to expected structure
+              const mappedMessage = {
+                ...fullMessage,
+                message_attachments: fullMessage.message_attachments?.map((att: any) => ({
+                  id: att.id,
+                  filename: att.file_name,
+                  url: att.file_url,
+                  type: att.file_type,
+                  size: att.file_size,
+                  duration_seconds: att.duration_seconds
+                }))
+              };
+              onMessageUpdate(mappedMessage as unknown as Message);
             }
           } catch (e) {
             console.error('Realtime attachment fetch failed', e);
@@ -76,12 +98,34 @@ export const useRealtimeMessages = (
           try {
             const { data: fullMessage } = await supabase
               .from('messages')
-              .select('*, message_attachments(*)')
+              .select(`
+                *,
+                message_attachments (
+                  id,
+                  file_name,
+                  file_url,
+                  file_type,
+                  file_size,
+                  duration_seconds
+                )
+              `)
               .eq('id', (payload.new as any).message_id)
               .maybeSingle();
 
             if (fullMessage && fullMessage.conversation_id === conversationId && isSubscribed) {
-              onMessageUpdate(fullMessage as unknown as Message);
+              // Map database fields to expected structure
+              const mappedMessage = {
+                ...fullMessage,
+                message_attachments: fullMessage.message_attachments?.map((att: any) => ({
+                  id: att.id,
+                  filename: att.file_name,
+                  url: att.file_url,
+                  type: att.file_type,
+                  size: att.file_size,
+                  duration_seconds: att.duration_seconds
+                }))
+              };
+              onMessageUpdate(mappedMessage as unknown as Message);
             }
           } catch (e) {
             console.error('Realtime attachment fetch failed (update)', e);

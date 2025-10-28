@@ -311,26 +311,34 @@ const Dashboard = () => {
         *,
         message_attachments (
           id,
-          filename,
-          url,
-          type,
-          size,
+          file_name,
+          file_url,
+          file_type,
+          file_size,
           duration_seconds
         )
       `)
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true }) // Fetch in correct order to avoid reversing
-      .limit(100); // Reduced from 200 for faster loading
+      .order('created_at', { ascending: true })
+      .limit(100);
 
     if (error) {
       console.error('Error fetching messages:', error);
       return;
     }
 
-    // No need to reverse - already in correct order
+    // Map database fields to expected structure
     const messages = (data || []).map(msg => ({
       ...msg,
-      direction: msg.direction as 'inbound' | 'outbound'
+      direction: msg.direction as 'inbound' | 'outbound',
+      message_attachments: msg.message_attachments?.map((att: any) => ({
+        id: att.id,
+        filename: att.file_name,
+        url: att.file_url,
+        type: att.file_type,
+        size: att.file_size,
+        duration_seconds: att.duration_seconds
+      }))
     }));
     
     setMessages(messages);
