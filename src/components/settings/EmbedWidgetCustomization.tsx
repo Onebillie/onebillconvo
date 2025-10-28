@@ -50,7 +50,32 @@ export function EmbedWidgetCustomization({ businessId }: { businessId: string })
       .maybeSingle();
 
     if (data) {
-      setCustomization(prev => ({ ...prev, ...data }));
+      setCustomization(prev => ({ 
+        ...prev, 
+        primary_color: data.primary_color || prev.primary_color,
+        secondary_color: data.secondary_color || prev.secondary_color,
+        text_color: data.text_color || prev.text_color,
+        widget_position: data.widget_position || prev.widget_position,
+        greeting_message: data.greeting_message || prev.greeting_message,
+        offline_message: data.offline_message || prev.offline_message,
+        custom_css: data.custom_css || prev.custom_css,
+        sizing_mode: (data.sizing_mode as 'fixed' | 'responsive' | 'fullscreen' | 'custom') || prev.sizing_mode,
+        layout_mode: (data.layout_mode as 'floating' | 'embedded' | 'fullscreen' | 'sidebar') || prev.layout_mode,
+        mobile_width: data.mobile_width || prev.mobile_width,
+        mobile_height: data.mobile_height || prev.mobile_height,
+        tablet_width: data.tablet_width || prev.tablet_width,
+        tablet_height: data.tablet_height || prev.tablet_height,
+        desktop_width: data.desktop_width || prev.desktop_width,
+        desktop_height: data.desktop_height || prev.desktop_height,
+        custom_width: data.custom_width || prev.custom_width,
+        custom_height: data.custom_height || prev.custom_height,
+        max_width: data.max_width || prev.max_width,
+        max_height: data.max_height || prev.max_height,
+        min_width: data.min_width || prev.min_width,
+        min_height: data.min_height || prev.min_height,
+        enable_mobile_fullscreen: data.enable_mobile_fullscreen ?? prev.enable_mobile_fullscreen,
+        hide_header_on_mobile: data.hide_header_on_mobile ?? prev.hide_header_on_mobile,
+      }));
     }
   };
 
