@@ -46,7 +46,18 @@ serve(async (req) => {
       .eq('id', keyData.id);
 
     const body = await req.json();
-    const { customer_id, scope = 'conversation', expires_in_minutes = 60, metadata = {} } = body;
+    const { 
+      customer_id, 
+      scope = 'conversation', 
+      expires_in_minutes = 60, 
+      metadata = {},
+      sizing_config = null
+    } = body;
+
+    // Merge sizing config into metadata if provided
+    if (sizing_config) {
+      metadata.sizing_config = sizing_config;
+    }
 
     // Validate scope
     if (!['conversation', 'inbox'].includes(scope)) {

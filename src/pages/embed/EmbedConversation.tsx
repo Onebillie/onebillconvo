@@ -16,6 +16,22 @@ interface EmbedCustomization {
   border_radius?: string;
   logo_url?: string;
   custom_css?: string;
+  sizing_mode?: string;
+  layout_mode?: string;
+  mobile_width?: string;
+  mobile_height?: string;
+  tablet_width?: string;
+  tablet_height?: string;
+  desktop_width?: string;
+  desktop_height?: string;
+  custom_width?: string;
+  custom_height?: string;
+  max_width?: string;
+  max_height?: string;
+  min_width?: string;
+  min_height?: string;
+  enable_mobile_fullscreen?: boolean;
+  hide_header_on_mobile?: boolean;
 }
 
 export default function EmbedConversation() {
@@ -150,8 +166,33 @@ export default function EmbedConversation() {
     '--background-color': customization.background_color || '#ffffff',
     '--text-color': customization.text_color || '#1f2937',
     '--border-radius': customization.border_radius || '0.5rem',
+    '--embed-width': customization.custom_width || '100%',
+    '--embed-height': customization.custom_height || '100%',
+    '--embed-max-width': customization.max_width || '100vw',
+    '--embed-max-height': customization.max_height || '100vh',
+    '--embed-min-width': customization.min_width || '300px',
+    '--embed-min-height': customization.min_height || '400px',
+    '--mobile-width': customization.mobile_width || '100%',
+    '--mobile-height': customization.mobile_height || '100vh',
+    '--tablet-width': customization.tablet_width || '400px',
+    '--tablet-height': customization.tablet_height || '600px',
+    '--desktop-width': customization.desktop_width || '450px',
+    '--desktop-height': customization.desktop_height || '700px',
     fontFamily: customization.font_family || 'system-ui',
   } as React.CSSProperties;
+
+  const layoutClasses = {
+    floating: 'fixed bottom-4 right-4 rounded-lg shadow-2xl',
+    embedded: 'w-full h-full',
+    fullscreen: 'fixed inset-0 w-screen h-screen',
+    sidebar: 'fixed inset-y-0 right-0 h-screen shadow-2xl'
+  };
+
+  const sizeClasses = customization.sizing_mode === 'responsive' 
+    ? 'w-full h-full max-w-[var(--embed-max-width)] max-h-[var(--embed-max-height)] min-w-[var(--embed-min-width)] min-h-[var(--embed-min-height)]'
+    : customization.sizing_mode === 'fullscreen'
+    ? 'w-screen h-screen'
+    : 'w-[var(--embed-width)] h-[var(--embed-height)]';
 
   if (loading) {
     return (
@@ -181,8 +222,36 @@ export default function EmbedConversation() {
       {customization.custom_css && (
         <style dangerouslySetInnerHTML={{ __html: customization.custom_css }} />
       )}
-      <div className="flex flex-col h-screen" style={customStyle}>
-        <div className="border-b px-4 py-3" style={{ backgroundColor: 'var(--background-color)' }}>
+      <style>{`
+        /* Responsive breakpoints */
+        @media (max-width: 768px) {
+          .embed-container {
+            width: var(--mobile-width) !important;
+            height: var(--mobile-height) !important;
+            ${customization.enable_mobile_fullscreen ? 'position: fixed !important; inset: 0 !important; max-width: 100vw !important; max-height: 100vh !important;' : ''}
+          }
+          ${customization.hide_header_on_mobile ? '.embed-header { display: none !important; }' : ''}
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .embed-container {
+            width: var(--tablet-width) !important;
+            height: var(--tablet-height) !important;
+          }
+        }
+
+        @media (min-width: 1025px) {
+          .embed-container {
+            width: var(--desktop-width) !important;
+            height: var(--desktop-height) !important;
+          }
+        }
+      `}</style>
+      <div 
+        className={`embed-container flex flex-col ${layoutClasses[customization.layout_mode as keyof typeof layoutClasses] || layoutClasses.floating} ${sizeClasses}`}
+        style={customStyle}
+      >
+        <div className="embed-header border-b px-4 py-3" style={{ backgroundColor: 'var(--background-color)' }}>
           <div className="flex items-center gap-3">
             {customization.logo_url && (
               <img src={customization.logo_url} alt="Logo" className="h-8 w-auto" />

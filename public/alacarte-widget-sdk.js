@@ -140,6 +140,43 @@
     }
 
     /**
+     * Resize the widget programmatically
+     * @param {Object} dimensions - Width/height configuration
+     * @param {string} dimensions.width - Width (e.g., '100%', '450px')
+     * @param {string} dimensions.height - Height (e.g., '100%', '600px')
+     * @param {string} dimensions.maxWidth - Max width
+     * @param {string} dimensions.maxHeight - Max height
+     */
+    resize(dimensions) {
+      this._sendMessage({ 
+        action: 'resize', 
+        payload: dimensions 
+      });
+    }
+
+    /**
+     * Set layout mode
+     * @param {string} mode - 'floating', 'embedded', 'fullscreen', 'sidebar'
+     */
+    setLayoutMode(mode) {
+      this._sendMessage({ 
+        action: 'setLayoutMode', 
+        payload: { mode } 
+      });
+    }
+
+    /**
+     * Set sizing mode
+     * @param {string} mode - 'fixed', 'responsive', 'fullscreen', 'custom'
+     */
+    setSizingMode(mode) {
+      this._sendMessage({ 
+        action: 'setSizingMode', 
+        payload: { mode } 
+      });
+    }
+
+    /**
      * Destroy widget and clean up
      */
     destroy() {

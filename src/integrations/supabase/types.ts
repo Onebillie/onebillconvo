@@ -3027,15 +3027,32 @@ export type Database = {
           border_radius: string | null
           business_id: string
           chat_icon_type: string | null
+          compact_mode_threshold: string | null
           created_at: string
           custom_css: string | null
+          custom_height: string | null
+          custom_width: string | null
+          desktop_height: string | null
+          desktop_width: string | null
+          enable_mobile_fullscreen: boolean | null
           font_family: string | null
           greeting_message: string | null
+          hide_header_on_mobile: boolean | null
           id: string
+          layout_mode: string | null
           logo_url: string | null
+          max_height: string | null
+          max_width: string | null
+          min_height: string | null
+          min_width: string | null
+          mobile_height: string | null
+          mobile_width: string | null
           offline_message: string | null
           primary_color: string | null
           secondary_color: string | null
+          sizing_mode: string | null
+          tablet_height: string | null
+          tablet_width: string | null
           text_color: string | null
           updated_at: string
           widget_position: string | null
@@ -3045,15 +3062,32 @@ export type Database = {
           border_radius?: string | null
           business_id: string
           chat_icon_type?: string | null
+          compact_mode_threshold?: string | null
           created_at?: string
           custom_css?: string | null
+          custom_height?: string | null
+          custom_width?: string | null
+          desktop_height?: string | null
+          desktop_width?: string | null
+          enable_mobile_fullscreen?: boolean | null
           font_family?: string | null
           greeting_message?: string | null
+          hide_header_on_mobile?: boolean | null
           id?: string
+          layout_mode?: string | null
           logo_url?: string | null
+          max_height?: string | null
+          max_width?: string | null
+          min_height?: string | null
+          min_width?: string | null
+          mobile_height?: string | null
+          mobile_width?: string | null
           offline_message?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          sizing_mode?: string | null
+          tablet_height?: string | null
+          tablet_width?: string | null
           text_color?: string | null
           updated_at?: string
           widget_position?: string | null
@@ -3063,15 +3097,32 @@ export type Database = {
           border_radius?: string | null
           business_id?: string
           chat_icon_type?: string | null
+          compact_mode_threshold?: string | null
           created_at?: string
           custom_css?: string | null
+          custom_height?: string | null
+          custom_width?: string | null
+          desktop_height?: string | null
+          desktop_width?: string | null
+          enable_mobile_fullscreen?: boolean | null
           font_family?: string | null
           greeting_message?: string | null
+          hide_header_on_mobile?: boolean | null
           id?: string
+          layout_mode?: string | null
           logo_url?: string | null
+          max_height?: string | null
+          max_width?: string | null
+          min_height?: string | null
+          min_width?: string | null
+          mobile_height?: string | null
+          mobile_width?: string | null
           offline_message?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          sizing_mode?: string | null
+          tablet_height?: string | null
+          tablet_width?: string | null
           text_color?: string | null
           updated_at?: string
           widget_position?: string | null
