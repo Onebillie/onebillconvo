@@ -377,3 +377,6 @@ verify_jwt = true
 
 [functions.generate-marketing-content]
 verify_jwt = true
+
+[functions.admin-merge-customers]
+verify_jwt = true
