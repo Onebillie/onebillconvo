@@ -129,10 +129,10 @@ export default function EmbedInbox() {
         *,
         message_attachments (
           id,
-          file_name,
-          file_url,
-          file_type,
-          file_size,
+          filename,
+          url,
+          type,
+          size,
           duration_seconds
         )
       `)
@@ -148,10 +148,10 @@ export default function EmbedInbox() {
       ...msg,
       message_attachments: msg.message_attachments?.map((att: any) => ({
         id: att.id,
-        filename: att.file_name,
-        url: att.file_url,
-        type: att.file_type,
-        size: att.file_size,
+        filename: att.filename,
+        url: att.url,
+        type: att.type,
+        size: att.size,
         duration_seconds: att.duration_seconds,
       })),
     }));

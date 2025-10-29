@@ -49,10 +49,10 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
         .from('message_attachments')
         .select(`
           id,
-          file_name,
-          file_url,
-          file_type,
-          file_size,
+          filename,
+          url,
+          type,
+          size,
           created_at,
           message_id,
           messages!inner(customer_id)
@@ -64,10 +64,10 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
 
       const mapped = (data || []).map((att: any) => ({
         id: att.id,
-        filename: att.file_name,
-        url: att.file_url,
-        type: att.file_type,
-        size: att.file_size,
+        filename: att.filename,
+        url: att.url,
+        type: att.type,
+        size: att.size,
         created_at: att.created_at,
         message_id: att.message_id,
       }));
