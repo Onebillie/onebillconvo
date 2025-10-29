@@ -123,13 +123,58 @@
           })
         });
 
+        console.log('[AlacarteChat] Auth response status:', response.status);
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('[AlacarteChat] Auth failed:', response.status, errorText);
+          
+          // Try to parse error details for better debugging
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('[AlacarteChat] Error details:', errorJson);
+          } catch {}
+          
+          // Ensure widget UI exists
           if (!this.shadowRoot) {
             this.injectWidget({}, 'Support');
           }
-          this.showPrechatForm();
+          
+          // Show user-friendly error message in the chat
+          const messages = this.shadowRoot.getElementById('chat-messages');
+          if (messages) {
+            const errorMsg = document.createElement('div');
+            errorMsg.style.cssText = `
+              padding: 12px; 
+              margin: 8px 16px; 
+              background: #fee2e2; 
+              color: #991b1b; 
+              border-radius: 8px; 
+              font-size: 13px; 
+              text-align: center;
+              border: 1px solid #fca5a5;
+            `;
+            errorMsg.innerHTML = `
+              <strong>Connection failed</strong><br/>
+              <small>Please check your details and try again. If the problem persists, refresh the page.</small>
+            `;
+            messages.appendChild(errorMsg);
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => errorMsg.remove(), 8000);
+          }
+          
+          // Keep the form visible but don't regenerate it - preserves user's entered data
+          const form = this.shadowRoot?.getElementById('prechat-form');
+          const submitBtn = form?.querySelector('.prechat-submit');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Try again';
+          } else {
+            // Form doesn't exist yet, show it
+            this.showPrechatForm();
+          }
+          
           return false;
         }
 
@@ -169,10 +214,47 @@
         return true;
       } catch (error) {
         console.error('[AlacarteChat] Authentication failed:', error);
+        
+        // Ensure widget UI exists
         if (!this.shadowRoot) {
           this.injectWidget({}, 'Support');
         }
-        this.showPrechatForm();
+        
+        // Show user-friendly error message
+        const messages = this.shadowRoot.getElementById('chat-messages');
+        if (messages) {
+          const errorMsg = document.createElement('div');
+          errorMsg.style.cssText = `
+            padding: 12px; 
+            margin: 8px 16px; 
+            background: #fee2e2; 
+            color: #991b1b; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            text-align: center;
+            border: 1px solid #fca5a5;
+          `;
+          errorMsg.innerHTML = `
+            <strong>Connection failed</strong><br/>
+            <small>Please check your details and try again. If the problem persists, refresh the page.</small>
+          `;
+          messages.appendChild(errorMsg);
+          
+          // Auto-remove after 8 seconds
+          setTimeout(() => errorMsg.remove(), 8000);
+        }
+        
+        // Keep the form visible but don't regenerate it - preserves user's data
+        const form = this.shadowRoot?.getElementById('prechat-form');
+        const submitBtn = form?.querySelector('.prechat-submit');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Try again';
+        } else {
+          // Form doesn't exist yet, show it
+          this.showPrechatForm();
+        }
+        
         return false;
       }
     },
@@ -398,6 +480,12 @@
           font-size: 14px;
           outline: none;
           font-family: inherit;
+          color: #1f2937 !important;
+          background: #ffffff !important;
+        }
+        
+        .chat-input::placeholder {
+          color: #9ca3af !important;
         }
         
         .chat-input:focus {
@@ -831,16 +919,28 @@
       // Also update prechat form styles if present
       const pc = (customization && customization.primary_color) || '#6366f1';
       if (this.prechatStyleEl) {
-        this.prechatStyleEl.textContent = `
-          .prechat-form { padding: 16px; }
-          .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-          .prechat-grid .full { grid-column: span 2; }
-          .prechat-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
-          .prechat-input:focus { border-color: ${pc}; outline: none; box-shadow: 0 0 0 2px ${pc}22; }
-          .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
-          .prechat-submit { padding: 10px 16px; background: ${pc}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
-          .prechat-submit:hover { opacity: 0.9; }
-        `;
+      this.prechatStyleEl.textContent = `
+        .prechat-form { padding: 16px; }
+        .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .prechat-grid .full { grid-column: span 2; }
+        .prechat-input { 
+          width: 100%; 
+          padding: 10px 12px; 
+          border: 1px solid #e5e7eb; 
+          border-radius: 8px; 
+          font-size: 14px;
+          color: #1f2937 !important;
+          background: #ffffff !important;
+        }
+        .prechat-input::placeholder {
+          color: #9ca3af !important;
+        }
+        .prechat-input:focus { border-color: ${pc}; outline: none; box-shadow: 0 0 0 2px ${pc}22; }
+        .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+        .prechat-submit { padding: 10px 16px; background: ${pc}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
+        .prechat-submit:hover { opacity: 0.9; }
+        .prechat-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+      `;
       }
       
       // Update header text
@@ -883,11 +983,23 @@
         .prechat-form { padding: 16px; }
         .prechat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .prechat-grid .full { grid-column: span 2; }
-        .prechat-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .prechat-input { 
+          width: 100%; 
+          padding: 10px 12px; 
+          border: 1px solid #e5e7eb; 
+          border-radius: 8px; 
+          font-size: 14px;
+          color: #1f2937 !important;
+          background: #ffffff !important;
+        }
+        .prechat-input::placeholder {
+          color: #9ca3af !important;
+        }
         .prechat-input:focus { border-color: ${primaryColor}; outline: none; box-shadow: 0 0 0 2px ${primaryColor}22; }
         .prechat-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
         .prechat-submit { padding: 10px 16px; background: ${primaryColor}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
         .prechat-submit:hover { opacity: 0.9; }
+        .prechat-submit:disabled { opacity: 0.5; cursor: not-allowed; }
       `;
 
       // Hide chat input until authenticated
@@ -930,6 +1042,13 @@
           return;
         }
         
+        // Disable submit button during authentication
+        const submitBtn = form.querySelector('.prechat-submit');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Connecting...';
+        }
+        
         const ok = await this.authenticate({ name: `${first} ${last}`.trim(), email, phone });
         if (ok) {
           // Restore chat UI
@@ -939,6 +1058,7 @@
           if (form) form.remove();
           this.loadMessages();
         }
+        // If authentication failed, the error handler will re-enable the button
       });
     }
   };
