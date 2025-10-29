@@ -40,7 +40,7 @@ interface MergeConversationsDialogProps {
   onOpenChange: (open: boolean) => void;
   duplicateCustomers: Customer[];
   conversations: Conversation[];
-  onMergeComplete: () => void;
+  onMergeComplete: (canonicalConversationId?: string) => void;
 }
 
 export const MergeConversationsDialog = ({
@@ -86,130 +86,42 @@ export const MergeConversationsDialog = ({
     setMerging(true);
 
     try {
-      const primaryCustomer = duplicateCustomers.find((c) => c.id === primaryCustomerId);
-      const otherCustomers = duplicateCustomers.filter((c) => c.id !== primaryCustomerId);
+      const duplicateIds = duplicateCustomers
+        .filter(c => c.id !== primaryCustomerId)
+        .map(c => c.id);
 
-      // Collect all unique emails and set the chosen one as primary
-      const allEmails = new Set<string>();
-      duplicateCustomers.forEach((customer) => {
-        if (customer.email) allEmails.add(customer.email);
-        if (customer.alternate_emails) {
-          customer.alternate_emails.forEach((email) => allEmails.add(email));
-        }
+      console.log('Calling admin-merge-customers:', {
+        primary_customer_id: primaryCustomerId,
+        duplicate_customer_ids: duplicateIds,
+        default_email: defaultEmail,
       });
 
-      // Remove the selected default email from alternates
-      allEmails.delete(defaultEmail);
+      const { data, error } = await supabase.functions.invoke('admin-merge-customers', {
+        body: {
+          primary_customer_id: primaryCustomerId,
+          duplicate_customer_ids: duplicateIds,
+          default_email: defaultEmail,
+        },
+      });
 
-      // Update primary customer with selected default email and all other emails as alternates
-      const { error: updateError } = await supabase
-        .from("customers")
-        .update({
-          email: defaultEmail,
-          alternate_emails: Array.from(allEmails),
-        })
-        .eq("id", primaryCustomerId);
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Merge failed');
 
-      if (updateError) throw updateError;
-
-      // Merge conversations safely respecting unique constraint: only one active conversation per customer
-      // 1) Fetch fresh conversations for all duplicates (to have status field)
-      const allCustomerIds = duplicateCustomers.map((c) => c.id);
-      const { data: allConversations, error: fetchConvsError } = await supabase
-        .from("conversations")
-        .select("id, customer_id, status, created_at, last_message_at, whatsapp_account_id")
-        .in("customer_id", allCustomerIds);
-      if (fetchConvsError) throw fetchConvsError;
-
-      const toProcess = (allConversations || []) as DbConversation[];
-
-      // Determine the primary active conversation (if any)
-      let primaryActive = toProcess.find(
-        (c) => c.customer_id === primaryCustomerId && c.status === "active"
-      ) || null;
-
-      // 2) Handle active conversations from other customers
-      const otherActive = toProcess.filter(
-        (c) => c.customer_id !== primaryCustomerId && c.status === "active"
-      );
-
-      for (const src of otherActive) {
-        if (!primaryActive) {
-          // Keep this one as the active conversation by reassigning it
-          const { error } = await supabase
-            .from("conversations")
-            .update({ customer_id: primaryCustomerId })
-            .eq("id", src.id);
-          if (error) throw error;
-          primaryActive = { ...src, customer_id: primaryCustomerId };
-        } else {
-          // Merge messages into the existing primary active conversation and delete the source
-          const { error: moveErr } = await supabase
-            .from("messages")
-            .update({ conversation_id: primaryActive.id })
-            .eq("conversation_id", src.id);
-          if (moveErr) throw moveErr;
-
-          const { error: delErr } = await supabase
-            .from("conversations")
-            .delete()
-            .eq("id", src.id);
-          if (delErr) throw delErr;
-        }
-      }
-
-      // 3) Reassign non-active conversations from other customers to the primary customer
-      const otherNonActive = toProcess.filter(
-        (c) => c.customer_id !== primaryCustomerId && c.status !== "active"
-      );
-      for (const conv of otherNonActive) {
-        const { error } = await supabase
-          .from("conversations")
-          .update({ customer_id: primaryCustomerId })
-          .eq("id", conv.id);
-        if (error) throw error;
-      }
-
-      // 4) Recalculate last_message_at for the kept active conversation based on merged messages
-      if (primaryActive) {
-        const { data: latest, error: latestErr } = await supabase
-          .from("messages")
-          .select("created_at")
-          .eq("conversation_id", primaryActive.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (latestErr) throw latestErr;
-        if (latest?.created_at) {
-          await supabase
-            .from("conversations")
-            .update({ last_message_at: latest.created_at })
-            .eq("id", primaryActive.id);
-        }
-      }
-
-      // 5) Delete the duplicate customers after their conversations have been moved/merged
-      for (const customer of otherCustomers) {
-        const { error: deleteError } = await supabase
-          .from("customers")
-          .delete()
-          .eq("id", customer.id);
-        if (deleteError) throw deleteError;
-      }
-
-
+      console.log('Merge successful:', data);
+      
       toast({
         title: "Contacts Merged",
-        description: `Successfully merged ${otherCustomers.length} duplicate contact(s)`,
+        description: `Successfully merged ${duplicateIds.length} duplicate contact(s)`,
       });
-
-      onMergeComplete();
+      
+      // Pass the canonical conversation ID to parent so it can be selected
+      onMergeComplete(data.canonical_conversation_id);
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error merging contacts:", error);
       toast({
         title: "Merge Failed",
-        description: error.message,
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     } finally {

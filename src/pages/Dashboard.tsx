@@ -902,11 +902,21 @@ const Dashboard = () => {
           onOpenChange={setMergeDialogOpen}
           duplicateCustomers={mergeDialogData.duplicateCustomers}
           conversations={mergeDialogData.conversations}
-          onMergeComplete={() => {
+          onMergeComplete={(canonicalConversationId) => {
             setMergeDialogOpen(false);
             setMergeDialogData(null);
             fetchConversations();
-            setSelectedConversation(null);
+            // Select the merged canonical conversation if provided
+            if (canonicalConversationId) {
+              const canonicalConv = conversations.find(c => c.id === canonicalConversationId);
+              if (canonicalConv) {
+                setSelectedConversation(canonicalConv);
+              } else {
+                setSelectedConversation(null);
+              }
+            } else {
+              setSelectedConversation(null);
+            }
           }}
         />
       )}
