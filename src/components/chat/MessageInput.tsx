@@ -652,7 +652,7 @@ export const MessageInput = ({
             <img 
               src={isEmbedActive ? chatbotOnlineIcon : chatbotOfflineIcon} 
               alt={isEmbedActive ? "Online" : "Offline"} 
-              className="h-4 w-4" 
+              className="h-4 w-4 object-contain" 
             />
           </button>
           {customer?.facebook_psid && (
