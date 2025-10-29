@@ -611,40 +611,50 @@ export const MessageInput = ({
           >
             <Phone className="h-4 w-4" />
           </button>
-          {/* Website Widget button - show when customer has used embed */}
-          {lastContactMethod === "embed" && (
-            <button
-              onClick={() => {
-                if (isEmbedActive) {
-                  setSendVia("embed");
-                } else {
-                  toast({
-                    title: "Widget Offline",
-                    description: "The customer's chat widget is not currently active. Messages will be queued until they return.",
-                    variant: "destructive",
-                  });
-                }
-              }}
+          {/* Website Widget button - always visible, active when customer has embed session */}
+          <button
+            onClick={() => {
+              if (lastContactMethod === "embed" && isEmbedActive) {
+                setSendVia("embed");
+              } else if (lastContactMethod === "embed" && !isEmbedActive) {
+                toast({
+                  title: "Widget Offline",
+                  description: "The customer's chat widget is not currently active.",
+                  variant: "destructive",
+                });
+              } else {
+                toast({
+                  title: "Not Available",
+                  description: "This customer hasn't used the website widget yet.",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className={cn(
+              "px-3 py-2 text-sm font-medium transition-colors border-l",
+              sendVia === "embed"
+                ? "bg-green-600 text-white"
+                : lastContactMethod === "embed" && isEmbedActive
+                ? "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800"
+                : "bg-muted/50 opacity-50 cursor-not-allowed"
+            )}
+            title={
+              lastContactMethod === "embed" && isEmbedActive 
+                ? "Website Widget (Active - Customer Online)" 
+                : lastContactMethod === "embed" && !isEmbedActive
+                ? "Website Widget (Offline - Customer Left)"
+                : "Website Widget (Not Used)"
+            }
+          >
+            <img 
+              src={wwwGlobeIcon} 
+              alt="WWW" 
               className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors border-l",
-                sendVia === "embed"
-                  ? "bg-green-600 text-white"
-                  : isEmbedActive
-                  ? "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800"
-                  : "bg-gray-200 dark:bg-gray-700 opacity-50 cursor-not-allowed"
-              )}
-              title={isEmbedActive ? "Website Widget (Active - Customer Online)" : "Website Widget (Offline - Customer Left)"}
-            >
-              <img 
-                src={wwwGlobeIcon} 
-                alt="WWW" 
-                className={cn(
-                  "h-4 w-4",
-                  !isEmbedActive && "grayscale opacity-50"
-                )} 
-              />
-            </button>
-          )}
+                "h-4 w-4",
+                !(lastContactMethod === "embed" && isEmbedActive) && "grayscale opacity-50"
+              )} 
+            />
+          </button>
           {customer?.facebook_psid && (
             <button
               onClick={() => setSendVia("facebook")}
