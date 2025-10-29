@@ -15,6 +15,10 @@
     styleEl: null,
     prechatStyleEl: null,
     cachedCustomization: null,
+    supabaseClient: null,
+    presenceChannel: null,
+    presenceInterval: null,
+    cleanupTimer: null,
 
     init: async function(options) {
       if (this.initialized) {
@@ -43,6 +47,27 @@
       // Inject with fetched customization
       this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
       this.showPrechatForm();
+
+      // Cleanup presence when page unloads
+      window.addEventListener('beforeunload', () => {
+        this.cleanup();
+      });
+
+      // Cleanup on visibility change (tab close/switch)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          // User switched tabs or closed - clean up presence after 30 seconds
+          this.cleanupTimer = setTimeout(() => {
+            this.cleanup();
+          }, 30000);
+        } else if (document.visibilityState === 'visible') {
+          // User came back - cancel cleanup
+          if (this.cleanupTimer) {
+            clearTimeout(this.cleanupTimer);
+            this.cleanupTimer = null;
+          }
+        }
+      });
     },
 
     fetchCustomization: async function(siteId) {
@@ -121,6 +146,9 @@
 
         // PRIVACY-FIRST: Store session in memory only (no cookies, no persistence)
         // Session will be cleared when page unloads or widget closes
+
+        // Initialize presence tracking
+        this.initializePresence(data.session.conversation_id);
         
         if (!this.shadowRoot) {
           this.injectWidget(data.customization || {}, data.business_name || 'Support');
@@ -496,6 +524,105 @@
         }
       } else {
         this.startPolling();
+        // Don't clean up presence when minimizing - keep showing as online
+        // Only clean up on actual browser close or page unload
+      }
+    },
+
+    initializePresence: function(conversationId) {
+      console.log('[AlacarteChat] Initializing presence tracking...', conversationId);
+      
+      // Use the public anon key (same as in src/integrations/supabase/client.ts)
+      const SUPABASE_URL = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydGxybmZkcWZramxrcGZpcnpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTQ5NTcsImV4cCI6MjA3Mzc3MDk1N30.9mXWW_V8jJEjxiohExZWrh4rNRlKf2yocahkSNkjJHs';
+      
+      // Dynamically import Supabase from CDN
+      if (!window.supabase) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload = () => {
+          this.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          this.startPresenceTracking(conversationId);
+        };
+        script.onerror = () => {
+          console.error('[AlacarteChat] Failed to load Supabase SDK');
+        };
+        document.head.appendChild(script);
+      } else {
+        this.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        this.startPresenceTracking(conversationId);
+      }
+    },
+
+    startPresenceTracking: function(conversationId) {
+      console.log('[AlacarteChat] Starting presence tracking for conversation:', conversationId);
+      
+      this.presenceChannel = this.supabaseClient
+        .channel(`embed-presence-${conversationId}`)
+        .on('presence', { event: 'sync' }, () => {
+          const state = this.presenceChannel.presenceState();
+          console.log('[AlacarteChat] Presence synced:', state);
+        })
+        .on('presence', { event: 'join' }, ({ key }) => {
+          console.log('[AlacarteChat] Presence joined:', key);
+        })
+        .on('presence', { event: 'leave' }, ({ key }) => {
+          console.log('[AlacarteChat] Presence left:', key);
+        })
+        .subscribe(async (status) => {
+          console.log('[AlacarteChat] Presence channel status:', status);
+          if (status === 'SUBSCRIBED') {
+            // Initial presence track
+            await this.presenceChannel.track({
+              online_at: new Date().toISOString(),
+              conversation_id: conversationId,
+              user_agent: navigator.userAgent,
+              page: 'embed_widget'
+            });
+            console.log('[AlacarteChat] Initial presence tracked');
+          }
+        });
+      
+      // Heartbeat every 15 seconds to keep presence alive
+      this.presenceInterval = setInterval(async () => {
+        if (this.presenceChannel && this.isAuthenticated) {
+          await this.presenceChannel.track({
+            online_at: new Date().toISOString(),
+            conversation_id: conversationId,
+            user_agent: navigator.userAgent,
+            page: 'embed_widget'
+          });
+          console.log('[AlacarteChat] Presence heartbeat sent');
+        }
+      }, 15000);
+    },
+
+    cleanup: function() {
+      console.log('[AlacarteChat] Cleaning up presence and resources');
+      
+      // Stop presence heartbeat
+      if (this.presenceInterval) {
+        clearInterval(this.presenceInterval);
+        this.presenceInterval = null;
+      }
+      
+      // Untrack presence
+      if (this.presenceChannel) {
+        this.presenceChannel.untrack();
+        this.supabaseClient.removeChannel(this.presenceChannel);
+        this.presenceChannel = null;
+      }
+      
+      // Stop polling
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+      
+      // Clear cleanup timer
+      if (this.cleanupTimer) {
+        clearTimeout(this.cleanupTimer);
+        this.cleanupTimer = null;
       }
     },
 
