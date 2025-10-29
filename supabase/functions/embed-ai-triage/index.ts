@@ -46,6 +46,12 @@ serve(async (req) => {
 
     const businessId = session.embed_sites.business_id;
 
+    // Update customer's last_contact_method to embed
+    await supabase
+      .from('customers')
+      .update({ last_contact_method: 'embed' })
+      .eq('id', session.customer_id);
+
     // Get AI settings
     const { data: aiSettings } = await supabase
       .from('embed_ai_settings')

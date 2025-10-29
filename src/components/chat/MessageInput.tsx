@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram, Monitor } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -17,7 +17,7 @@ interface MessageInputProps {
   customerId: string;
   customerPhone: string;
   customerEmail?: string;
-  lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram";
+  lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed";
   onMessageSent: () => void;
   onOptimisticMessage?: (message: any) => void;
   customer?: Customer;
@@ -45,7 +45,7 @@ export const MessageInput = ({
   const [voiceNote, setVoiceNote] = useState<{ blob: Blob; duration: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram">(lastContactMethod || "whatsapp");
+  const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed">(lastContactMethod || "whatsapp");
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [currentUsage, setCurrentUsage] = useState(0);
   const [messageLimit, setMessageLimit] = useState(0);
@@ -264,6 +264,30 @@ export const MessageInput = ({
         });
 
         if (error) throw error;
+      } else if (sendVia === "embed") {
+        // Send via embed widget (internal messaging)
+        // Get business_id for the message
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
+        const { error: insertError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            customer_id: customerId,
+            content: processedMessage,
+            direction: 'outbound',
+            platform: 'embed',
+            status: 'delivered',
+            is_read: true,
+            business_id: businessData?.business_id
+          });
+
+        if (insertError) throw insertError;
       } else {
         // Send via WhatsApp with PERSIST-FIRST strategy
         
@@ -585,6 +609,21 @@ export const MessageInput = ({
               <Instagram className="h-4 w-4" />
             </button>
           )}
+          {/* Show embed/widget option if the last contact was via embed */}
+          {lastContactMethod === "embed" && (
+            <button
+              onClick={() => setSendVia("embed")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-l",
+                sendVia === "embed"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+              title="Website Widget"
+            >
+              <Monitor className="h-4 w-4" />
+            </button>
+          )}
         </div>
         
         <input
@@ -622,6 +661,7 @@ export const MessageInput = ({
             sendVia === "sms" ? "Type SMS message..." :
             sendVia === "facebook" ? "Type Facebook message..." :
             sendVia === "instagram" ? "Type Instagram message..." :
+            sendVia === "embed" ? "Type widget message..." :
             "Type WhatsApp message..."
           }
           value={newMessage}

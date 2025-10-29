@@ -790,7 +790,10 @@ const Dashboard = () => {
               customerId={selectedConversation.customer.id}
               customerPhone={selectedConversation.customer.whatsapp_phone || selectedConversation.customer.phone || ""}
               customerEmail={selectedConversation.customer.email}
-              lastContactMethod={selectedConversation.customer.last_contact_method as "whatsapp" | "email"}
+              lastContactMethod={
+                selectedConversation.customer.last_contact_method as 
+                "whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed"
+              }
               onOptimisticMessage={(message) => {
                 // Immediately show the sent message (optimistic update)
                 setMessages(prev => {

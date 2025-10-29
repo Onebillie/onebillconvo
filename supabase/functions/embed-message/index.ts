@@ -83,6 +83,12 @@ serve(async (req) => {
 
       console.log('[embed-message] Message inserted successfully:', { messageId: newMessage.id });
 
+      // Update customer's last_contact_method to embed
+      await supabase
+        .from('customers')
+        .update({ last_contact_method: 'embed' })
+        .eq('id', session.customer_id);
+
       // Send notifications asynchronously (fire-and-forget) to avoid blocking response
       Promise.resolve().then(async () => {
         try {
