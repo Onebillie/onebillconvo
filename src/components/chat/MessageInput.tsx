@@ -611,6 +611,40 @@ export const MessageInput = ({
           >
             <Phone className="h-4 w-4" />
           </button>
+          {/* Website Widget button - show when customer has used embed */}
+          {lastContactMethod === "embed" && (
+            <button
+              onClick={() => {
+                if (isEmbedActive) {
+                  setSendVia("embed");
+                } else {
+                  toast({
+                    title: "Widget Offline",
+                    description: "The customer's chat widget is not currently active. Messages will be queued until they return.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-l",
+                sendVia === "embed"
+                  ? "bg-green-600 text-white"
+                  : isEmbedActive
+                  ? "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800"
+                  : "bg-gray-200 dark:bg-gray-700 opacity-50 cursor-not-allowed"
+              )}
+              title={isEmbedActive ? "Website Widget (Active - Customer Online)" : "Website Widget (Offline - Customer Left)"}
+            >
+              <img 
+                src={wwwGlobeIcon} 
+                alt="WWW" 
+                className={cn(
+                  "h-4 w-4",
+                  !isEmbedActive && "grayscale opacity-50"
+                )} 
+              />
+            </button>
+          )}
           {customer?.facebook_psid && (
             <button
               onClick={() => setSendVia("facebook")}
@@ -637,23 +671,6 @@ export const MessageInput = ({
               title="Instagram DM"
             >
               <Instagram className="h-4 w-4" />
-            </button>
-          )}
-          {/* Show embed/widget option if the last contact was via embed */}
-          {lastContactMethod === "embed" && (
-            <button
-              onClick={() => setSendVia("embed")}
-              className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors border-l",
-                sendVia === "embed"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted",
-                !isEmbedActive && "opacity-50 cursor-not-allowed"
-              )}
-              title={isEmbedActive ? "Website Widget (Active)" : "Website Widget (Offline)"}
-              disabled={!isEmbedActive}
-            >
-              <img src={wwwGlobeIcon} alt="WWW" className="h-4 w-4" />
             </button>
           )}
         </div>
