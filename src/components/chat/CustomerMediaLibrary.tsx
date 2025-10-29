@@ -49,10 +49,10 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
         .from('message_attachments')
         .select(`
           id,
-          filename,
-          url,
-          type,
-          size,
+          file_name,
+          file_url,
+          file_type,
+          file_size,
           created_at,
           message_id,
           messages!inner(customer_id)
@@ -62,7 +62,17 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
 
       if (error) throw error;
 
-      setMedia(data || []);
+      const mapped = (data || []).map((att: any) => ({
+        id: att.id,
+        filename: att.file_name,
+        url: att.file_url,
+        type: att.file_type,
+        size: att.file_size,
+        created_at: att.created_at,
+        message_id: att.message_id,
+      }));
+
+      setMedia(mapped);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -73,7 +83,6 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
       setLoading(false);
     }
   };
-
   const filterMedia = () => {
     let filtered = [...media];
 

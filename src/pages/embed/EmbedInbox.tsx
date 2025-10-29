@@ -127,7 +127,14 @@ export default function EmbedInbox() {
       .from('messages')
       .select(`
         *,
-        message_attachments(*)
+        message_attachments (
+          id,
+          file_name,
+          file_url,
+          file_type,
+          file_size,
+          duration_seconds
+        )
       `)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
@@ -137,9 +144,20 @@ export default function EmbedInbox() {
       return;
     }
 
-    setMessages((data || []) as Message[]);
-  };
+    const mapped = (data || []).map((msg: any) => ({
+      ...msg,
+      message_attachments: msg.message_attachments?.map((att: any) => ({
+        id: att.id,
+        filename: att.file_name,
+        url: att.file_url,
+        type: att.file_type,
+        size: att.file_size,
+        duration_seconds: att.duration_seconds,
+      })),
+    }));
 
+    setMessages(mapped as Message[]);
+  };
   const handleConversationSelect = (conversation: Conversation) => {
     setSelectedConversation(conversation.id);
     loadMessages(conversation.id);
