@@ -36,11 +36,11 @@ export const ChannelIndicator = ({ channel, isActive = true }: ChannelIndicatorP
     case "embed":
       return (
         <div className="min-w-7 h-7 flex items-center justify-center">
-          <img 
-            src={isActive ? chatbotOnlineIcon : chatbotOfflineIcon} 
-            alt={isActive ? "Online" : "Offline"} 
-            className="h-7 w-7" 
-          />
+        <img 
+          src={isActive ? chatbotOnlineIcon : chatbotOfflineIcon} 
+          alt={isActive ? "Online" : "Offline"} 
+          className="h-7 w-7 object-contain" 
+        />
         </div>
       );
     default: // whatsapp
