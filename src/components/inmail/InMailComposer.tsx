@@ -82,6 +82,34 @@ export const InMailComposer = ({
     setTeamMembers(data || []);
   };
 
+  const handleVoiceNote = async (audioBlob: Blob, duration: number) => {
+    if (!formData.recipientId || !currentBusinessId) return;
+
+    const formDataToSend = new FormData();
+    formDataToSend.append('audio', audioBlob, 'voice-note.webm');
+    formDataToSend.append('recipientId', formData.recipientId);
+    formDataToSend.append('subject', formData.subject || 'Voice Note');
+    formDataToSend.append('businessId', currentBusinessId);
+    formDataToSend.append('duration', duration.toString());
+    if (conversationId) formDataToSend.append('conversationId', conversationId);
+    if (taskId) formDataToSend.append('taskId', taskId);
+
+    try {
+      const { error } = await supabase.functions.invoke('inmail-upload-voice-note', {
+        body: formDataToSend,
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Voice note sent' });
+      setRecordingVoiceNote(false);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Voice note error:', error);
+      toast({ title: 'Failed to send voice note', variant: 'destructive' });
+    }
+  };
+
   const handleSend = async () => {
     await sendMessage(
       formData.recipient,
