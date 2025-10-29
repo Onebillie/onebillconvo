@@ -116,9 +116,42 @@ Respond with a JSON object containing:
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI API error:', aiResponse.status, errorText);
+      
+      // Fallback to default welcome message instead of failing
+      const { data: customization } = await supabase
+        .from('embed_customizations')
+        .select('greeting_message')
+        .eq('business_id', businessId)
+        .single();
+      
+      const fallbackResponse = {
+        department: 'general',
+        intent: 'general',
+        confidence: 0.3,
+        first_response: customization?.greeting_message || 'Thank you for contacting us! A team member will be with you shortly.',
+      };
+      
+      // Send fallback message if enabled
+      if (aiSettings.ai_first_response_enabled) {
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: session.conversation_id,
+            content: fallbackResponse.first_response,
+            direction: 'outbound',
+            platform: 'embed',
+            status: 'delivered',
+            metadata: { system_message: true, ai_fallback: true },
+          });
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'AI service error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          success: true,
+          triage: fallbackResponse,
+          fallback: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -135,29 +168,42 @@ Respond with a JSON object containing:
       triageResult = JSON.parse(jsonStr);
     } catch (e) {
       console.error('Failed to parse AI response:', e, aiContent);
+      
+      // Get customization to use configured greeting as fallback
+      const { data: customization } = await supabase
+        .from('embed_customizations')
+        .select('greeting_message')
+        .eq('business_id', businessId)
+        .single();
+      
       triageResult = {
         department: 'general',
         intent: 'general',
         confidence: 0.5,
-        first_response: 'Thank you for your message! A member of our team will be with you shortly.',
+        first_response: customization?.greeting_message || 'Thank you for your message! A member of our team will be with you shortly.',
       };
     }
 
     // Send AI response as first message if enabled
     if (aiSettings.ai_first_response_enabled && triageResult.first_response) {
-      await supabase
+      const { error: insertError } = await supabase
         .from('messages')
         .insert({
           conversation_id: session.conversation_id,
           content: triageResult.first_response,
           direction: 'outbound',
-          channel: 'embed',
+          platform: 'embed',
           status: 'delivered',
           metadata: {
             ai_generated: true,
             triage_result: triageResult,
           },
         });
+      
+      if (insertError) {
+        console.error('Failed to insert AI first response:', insertError);
+        // Continue anyway - don't fail the request
+      }
     }
 
     // Update conversation with department info

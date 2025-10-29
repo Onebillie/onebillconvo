@@ -309,7 +309,6 @@ serve(async (req) => {
           delivery_status: 'sent',
           direction: 'outbound',
           platform: 'email',
-          channel: 'email',
           status: 'sent',
           is_read: true,
           business_id: conversation?.business_id

@@ -116,7 +116,6 @@ serve(async (req) => {
           content,
           direction: 'outbound',
           platform: 'sms',
-          channel: 'sms',
           status: 'sent',
           delivery_status: 'sent',
           platform_message_id: twilioData.sid,

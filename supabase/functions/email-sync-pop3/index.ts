@@ -464,7 +464,6 @@ async function processIncomingEmail(
       subject: email.subject,
       direction: 'inbound',
       status: 'delivered',
-      channel: 'email',
       platform: 'email',
       external_message_id: email.messageId,
       created_at: email.date.toISOString(),

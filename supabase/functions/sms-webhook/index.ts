@@ -102,7 +102,6 @@ serve(async (req) => {
         content: body,
         direction: 'inbound',
         platform: 'sms',
-        channel: 'sms',
         status: 'received',
         is_read: false,
         business_id: customer.business_id,

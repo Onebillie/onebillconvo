@@ -271,6 +271,8 @@ serve(async (req) => {
     }
 
     let conversationId: string;
+    let isNewConversation = false;
+    
     if (activeConv) {
       conversationId = activeConv.id;
       console.log('Active conversation found:', conversationId);
@@ -292,6 +294,7 @@ serve(async (req) => {
       }
       
       conversationId = newConv.id;
+      isNewConversation = true;
       console.log('New conversation created:', conversationId);
     }
 
@@ -316,6 +319,31 @@ serve(async (req) => {
       .eq("business_id", businessId)
       .eq("embed_token_id", siteData.embed_token_id)
       .maybeSingle();
+    
+    // Send welcome message for new conversations (but only if AI triage is disabled or AI first response is disabled)
+    if (isNewConversation) {
+      const { data: aiSettings } = await supabase
+        .from('embed_ai_settings')
+        .select('ai_triage_enabled, ai_first_response_enabled')
+        .eq('business_id', businessId)
+        .maybeSingle();
+      
+      const shouldSendWelcome = !aiSettings?.ai_triage_enabled || !aiSettings?.ai_first_response_enabled;
+      
+      if (shouldSendWelcome && customization?.greeting_message) {
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            content: customization.greeting_message,
+            direction: 'outbound',
+            platform: 'embed',
+            status: 'delivered',
+            metadata: { system_message: true, welcome: true }
+          });
+        console.log('Welcome message sent:', customization.greeting_message);
+      }
+    }
 
     console.log('Auth success:', { customerId, conversationId, businessId, businessName: business.name });
 

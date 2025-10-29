@@ -589,7 +589,6 @@ async function processIncomingEmail(
       subject: email.subject,
       direction: 'inbound',
       platform: 'email',
-      channel: 'email',
       external_message_id: email.messageId,
       replied_to_message_id: repliedToMessageId,
       thread_id: threadId,
