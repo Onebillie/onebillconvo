@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram, Monitor } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -621,7 +621,7 @@ export const MessageInput = ({
               )}
               title="Website Widget"
             >
-              <Monitor className="h-4 w-4" />
+              <Globe className="h-4 w-4" />
             </button>
           )}
         </div>

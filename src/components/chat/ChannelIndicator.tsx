@@ -1,4 +1,4 @@
-import { Mail, MessageCircle, Phone, Instagram, Monitor } from "lucide-react";
+import { Mail, MessageCircle, Phone, Instagram, Globe } from "lucide-react";
 
 interface ChannelIndicatorProps {
   channel: "whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed";
@@ -33,7 +33,7 @@ export const ChannelIndicator = ({ channel }: ChannelIndicatorProps) => {
     case "embed":
       return (
         <div className="min-w-7 h-7 px-2 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-          <Monitor className="h-3 w-3" />
+          <Globe className="h-3 w-3" />
         </div>
       );
     default: // whatsapp
