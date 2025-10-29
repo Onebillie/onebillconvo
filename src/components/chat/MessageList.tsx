@@ -29,11 +29,16 @@ interface MessageListProps {
   onCreateTask?: (message: Message) => void;
   onMessageUpdate?: () => void;
   isEmbedActive?: boolean;
+  hasMoreMessages?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
-export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive }: MessageListProps) => {
+export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeight = useRef<number>(0);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [emailDetailMessage, setEmailDetailMessage] = useState<Message | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({});
@@ -138,6 +143,16 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
       supabase.removeChannel(channel);
     };
   }, [messages]);
+
+  // Preserve scroll position when loading older messages
+  useEffect(() => {
+    if (scrollRef.current && prevScrollHeight.current > 0 && isLoadingMore === false) {
+      const newScrollHeight = scrollRef.current.scrollHeight;
+      const heightDifference = newScrollHeight - prevScrollHeight.current;
+      scrollRef.current.scrollTop += heightDifference;
+      prevScrollHeight.current = 0;
+    }
+  }, [messages, isLoadingMore]);
 
   // Message action handlers
   const handleStar = async (message: Message) => {
@@ -350,10 +365,39 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
           onNext={goToNextMatch}
           onPrevious={goToPreviousMatch}
           onClear={clearSearch}
-          onClose={() => setShowSearch(false)}
+      onClose={() => setShowSearch(false)}
         />
       )}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10">
+        {!showSearch && hasMoreMessages && (
+          <div className="sticky top-0 z-10 flex justify-center py-2 mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (scrollRef.current) {
+                  prevScrollHeight.current = scrollRef.current.scrollHeight;
+                }
+                onLoadMore?.();
+              }}
+              disabled={isLoadingMore}
+              className="bg-background/95 backdrop-blur shadow-sm"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Icons.Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading older messages...
+                </>
+              ) : (
+                <>
+                  <Icons.ArrowUp className="h-4 w-4 mr-2" />
+                  Load Older Messages
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        
         {!showSearch && messages.length > 5 && (
           <div className="sticky top-0 z-10 flex justify-center py-2">
             <Button

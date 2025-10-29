@@ -68,6 +68,9 @@ const Dashboard = () => {
     assignedTo: null,
   });
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messageOffset, setMessageOffset] = useState(0);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -342,7 +345,9 @@ const Dashboard = () => {
     applyFilters(conversations, newFilters);
   }, [conversations, applyFilters]);
 
-  const fetchMessages = useCallback(async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string, offset = 0, append = false) => {
+    const MESSAGE_PAGE_SIZE = 100;
+    
     const { data, error } = await (supabase as any)
       .from('messages')
       .select(`
@@ -357,16 +362,17 @@ const Dashboard = () => {
         )
       `)
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(100);
+      .order('created_at', { ascending: false })
+      .range(offset, offset + MESSAGE_PAGE_SIZE);
 
     if (error) {
       console.error('Error fetching messages:', error);
+      setIsLoadingMore(false);
       return;
     }
 
     // Map database fields to expected structure
-    const messages = (data || []).map(msg => ({
+    const fetchedMessages = (data || []).reverse().map(msg => ({
       ...msg,
       direction: msg.direction as 'inbound' | 'outbound',
       message_attachments: msg.message_attachments?.map((att: any) => ({
@@ -379,8 +385,24 @@ const Dashboard = () => {
       }))
     }));
     
-    setMessages(messages);
+    if (append) {
+      setMessages(prev => [...fetchedMessages, ...prev]);
+    } else {
+      setMessages(fetchedMessages);
+      setMessageOffset(fetchedMessages.length);
+    }
+    
+    setHasMoreMessages((data?.length || 0) > MESSAGE_PAGE_SIZE);
+    setIsLoadingMore(false);
   }, []);
+
+  const loadMoreMessages = useCallback(() => {
+    if (!selectedConversation || isLoadingMore || !hasMoreMessages) return;
+    setIsLoadingMore(true);
+    const newOffset = messageOffset;
+    fetchMessages(selectedConversation.id, newOffset, true);
+    setMessageOffset(prev => prev + 100);
+  }, [selectedConversation, messageOffset, isLoadingMore, hasMoreMessages, fetchMessages]);
 
   const markAsRead = useCallback(async (conversationId: string) => {
     await supabase
@@ -495,7 +517,9 @@ const Dashboard = () => {
     if (selectedConversation) {
       // Clear current messages immediately to avoid stale flashes when switching
       setMessages([]);
-      fetchMessages(selectedConversation.id);
+      setMessageOffset(0);
+      setHasMoreMessages(false);
+      fetchMessages(selectedConversation.id, 0, false);
       markAsRead(selectedConversation.id);
       setShowAISuggestions(false);
       setLatestInboundMessage("");
@@ -760,7 +784,7 @@ const Dashboard = () => {
                   
                   <RefreshButton
                     onRefresh={async () => {
-                      await fetchMessages(selectedConversation.id);
+                      await fetchMessages(selectedConversation.id, 0, false);
                       await fetchConversations();
                       toast({
                         title: "Refreshed",
@@ -771,7 +795,7 @@ const Dashboard = () => {
                   
                   <EmailSyncButton onSyncComplete={() => {
                     if (selectedConversation) {
-                      fetchMessages(selectedConversation.id);
+                      fetchMessages(selectedConversation.id, 0, false);
                     }
                     fetchConversations();
                   }} />
@@ -782,7 +806,7 @@ const Dashboard = () => {
                       customerId={selectedConversation.customer.id}
                       customerPhone={selectedConversation.customer.phone}
                       customerEmail={selectedConversation.customer.email}
-                      onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                      onTemplateSent={() => fetchMessages(selectedConversation.id, 0, false)}
                     />
                   </div>
                   
@@ -804,7 +828,7 @@ const Dashboard = () => {
                 
                 <RefreshButton
                   onRefresh={async () => {
-                    await fetchMessages(selectedConversation.id);
+                    await fetchMessages(selectedConversation.id, 0, false);
                     await fetchConversations();
                     toast({
                       title: "Refreshed",
@@ -815,7 +839,7 @@ const Dashboard = () => {
                 
                 <EmailSyncButton onSyncComplete={() => {
                   if (selectedConversation) {
-                    fetchMessages(selectedConversation.id);
+                    fetchMessages(selectedConversation.id, 0, false);
                   }
                   fetchConversations();
                 }} />
@@ -835,7 +859,7 @@ const Dashboard = () => {
                   customerId={selectedConversation.customer.id}
                   customerPhone={selectedConversation.customer.phone}
                   customerEmail={selectedConversation.customer.email}
-                  onTemplateSent={() => fetchMessages(selectedConversation.id)}
+                  onTemplateSent={() => fetchMessages(selectedConversation.id, 0, false)}
                 />
               </div>
             )}
@@ -852,8 +876,11 @@ const Dashboard = () => {
                     setSelectedMessageForTask(message);
                     setTaskDialogOpen(true);
                   }}
-                  onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                  onMessageUpdate={() => fetchMessages(selectedConversation.id, 0, false)}
                   isEmbedActive={isEmbedActive}
+                  hasMoreMessages={hasMoreMessages}
+                  onLoadMore={loadMoreMessages}
+                  isLoadingMore={isLoadingMore}
                 />
               </div>
             </div>
