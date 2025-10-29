@@ -56,32 +56,48 @@ export default function EmbedConversation() {
     validateTokenAndLoadData();
   }, [token]);
 
-  // Broadcast presence when widget is active
+  // Broadcast presence when widget is active - ENHANCED TRACKING
   useEffect(() => {
     if (!conversationId) return;
 
+    console.log('[EmbedConversation] Setting up presence for conversation:', conversationId);
     const presenceChannel = supabase.channel(`embed-presence-${conversationId}`)
       .on('presence', { event: 'sync' }, () => {
-        console.log('[EmbedConversation] Presence synced');
+        const state = presenceChannel.presenceState();
+        console.log('[EmbedConversation] Presence synced, active clients:', Object.keys(state).length);
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        console.log('[EmbedConversation] Client joined:', key);
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        console.log('[EmbedConversation] Client left:', key);
       })
       .subscribe(async (status) => {
+        console.log('[EmbedConversation] Channel status:', status);
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({
+          const trackResult = await presenceChannel.track({
             online_at: new Date().toISOString(),
             conversation_id: conversationId,
+            user_agent: navigator.userAgent,
+            page: 'embed_conversation'
           });
+          console.log('[EmbedConversation] Initial presence tracked:', trackResult);
         }
       });
 
-    // Update presence every 30 seconds to keep it alive
-    const presenceInterval = setInterval(() => {
-      presenceChannel.track({
+    // Update presence every 15 seconds to keep it alive (more frequent)
+    const presenceInterval = setInterval(async () => {
+      const trackResult = await presenceChannel.track({
         online_at: new Date().toISOString(),
         conversation_id: conversationId,
+        user_agent: navigator.userAgent,
+        page: 'embed_conversation'
       });
-    }, 30000);
+      console.log('[EmbedConversation] Presence heartbeat sent:', trackResult);
+    }, 15000);
 
     return () => {
+      console.log('[EmbedConversation] Cleaning up presence for:', conversationId);
       clearInterval(presenceInterval);
       presenceChannel.untrack();
       supabase.removeChannel(presenceChannel);

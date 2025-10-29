@@ -57,32 +57,48 @@ export default function EmbedInbox() {
     validateTokenAndLoadData();
   }, [token]);
 
-  // Broadcast presence when widget is active
+  // Broadcast presence when widget is active - ENHANCED TRACKING
   useEffect(() => {
     if (!selectedConversation) return;
 
+    console.log('[EmbedInbox] Setting up presence for conversation:', selectedConversation);
     const presenceChannel = supabase.channel(`embed-presence-${selectedConversation}`)
       .on('presence', { event: 'sync' }, () => {
-        console.log('[EmbedInbox] Presence synced');
+        const state = presenceChannel.presenceState();
+        console.log('[EmbedInbox] Presence synced, active clients:', Object.keys(state).length);
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        console.log('[EmbedInbox] Client joined:', key);
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        console.log('[EmbedInbox] Client left:', key);
       })
       .subscribe(async (status) => {
+        console.log('[EmbedInbox] Channel status:', status);
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({
+          const trackResult = await presenceChannel.track({
             online_at: new Date().toISOString(),
             conversation_id: selectedConversation,
+            user_agent: navigator.userAgent,
+            page: 'embed_inbox'
           });
+          console.log('[EmbedInbox] Initial presence tracked:', trackResult);
         }
       });
 
-    // Update presence every 30 seconds to keep it alive
-    const presenceInterval = setInterval(() => {
-      presenceChannel.track({
+    // Update presence every 15 seconds to keep it alive (more frequent)
+    const presenceInterval = setInterval(async () => {
+      const trackResult = await presenceChannel.track({
         online_at: new Date().toISOString(),
         conversation_id: selectedConversation,
+        user_agent: navigator.userAgent,
+        page: 'embed_inbox'
       });
-    }, 30000);
+      console.log('[EmbedInbox] Presence heartbeat sent:', trackResult);
+    }, 15000);
 
     return () => {
+      console.log('[EmbedInbox] Cleaning up presence for:', selectedConversation);
       clearInterval(presenceInterval);
       presenceChannel.untrack();
       supabase.removeChannel(presenceChannel);

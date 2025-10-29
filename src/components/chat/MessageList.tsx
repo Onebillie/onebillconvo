@@ -420,8 +420,10 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                         )}
                         
                         {message.direction === "inbound" && (
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold mt-1">
-                            {message.platform === 'email' ? '@' : 'W'}
+                          <div className="flex-shrink-0 mt-1">
+                            <ChannelIndicator 
+                              channel={message.platform as any || "whatsapp"} 
+                            />
                           </div>
                         )}
                         

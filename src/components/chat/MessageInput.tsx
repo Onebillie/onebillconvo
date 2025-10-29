@@ -94,33 +94,35 @@ export const MessageInput = ({
     setSendVia(lastContactMethod || "whatsapp");
   }, [conversationId, storageKey, initialMessage, lastContactMethod]);
 
-  // Track embed widget session status via presence
+  // Track embed widget session status via presence - ALWAYS TRACK when embed
   useEffect(() => {
-    if (lastContactMethod !== "embed") {
-      setIsEmbedActive(false);
-      return;
-    }
-
+    // Always track presence if this conversation has embed history
     const channel = supabase.channel(`embed-presence-${conversationId}`)
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const hasActiveClients = Object.keys(state).length > 0;
+        console.log('[MessageInput] Presence sync - active clients:', hasActiveClients, 'state:', state);
         setIsEmbedActive(hasActiveClients);
       })
-      .on('presence', { event: 'join' }, () => {
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('[MessageInput] Client joined:', key, newPresences);
         setIsEmbedActive(true);
       })
-      .on('presence', { event: 'leave' }, () => {
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        console.log('[MessageInput] Client left:', key);
         const state = channel.presenceState();
         const hasActiveClients = Object.keys(state).length > 0;
         setIsEmbedActive(hasActiveClients);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[MessageInput] Presence channel status:', status);
+      });
 
     return () => {
+      console.log('[MessageInput] Removing presence channel');
       supabase.removeChannel(channel);
     };
-  }, [conversationId, lastContactMethod]);
+  }, [conversationId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
