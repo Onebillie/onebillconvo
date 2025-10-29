@@ -34,42 +34,8 @@
         customData: options.customData || {}
       };
 
-      // Try to restore session from cookie with fresh customization
-      const savedSession = this.getSessionFromCookie();
-      if (savedSession && savedSession.sessionToken && savedSession.customerId) {
-        // Validate session and fetch FRESH customization from server
-        this.revalidateSession(savedSession.sessionToken).then(freshAuth => {
-          if (freshAuth && freshAuth.success) {
-            this.sessionToken = freshAuth.session.session_token;
-            this.conversationId = freshAuth.session.conversation_id;
-            this.customerId = freshAuth.session.customer_id;
-            this.isAuthenticated = true;
-            this.initialized = true;
-            // Use FRESH customization from server, not from cookie
-            this.injectWidget(freshAuth.customization || {}, freshAuth.business_name || 'Support');
-            this.loadMessages();
-            this.startPolling();
-          } else {
-            // Session expired, prefetch config before showing UI
-            this.fetchCustomization(this.config.siteId).then(config => {
-              this.clearSessionCookie();
-              this.initialized = true;
-              this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
-              this.showPrechatForm();
-            });
-          }
-        }).catch(() => {
-          this.fetchCustomization(this.config.siteId).then(config => {
-            this.clearSessionCookie();
-            this.initialized = true;
-            this.injectWidget(config?.customization || {}, config?.business_name || 'Support');
-            this.showPrechatForm();
-          });
-        });
-        return;
-      }
-
-      // No saved session - fetch customization before injecting widget
+      // PRIVACY-FIRST: No session persistence across page loads
+      // Always start with a clean slate - fetch customization and show prechat form
       const config = await this.fetchCustomization(this.config.siteId);
       this.requirePrechat = true;
       this.initialized = true;
@@ -106,72 +72,9 @@
       }
     },
 
-    // Cookie management for session persistence
-    setSessionCookie: function(sessionData) {
-      try {
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-        const cookieData = JSON.stringify({
-          sessionToken: sessionData.sessionToken,
-          conversationId: sessionData.conversationId,
-          customerId: sessionData.customerId,
-          businessName: sessionData.businessName
-          // REMOVED: customization (always fetch fresh from server)
-        });
-        document.cookie = `alacarte_chat_session=${encodeURIComponent(cookieData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-        console.log('[AlacarteChat] Session saved to cookie');
-      } catch (error) {
-        console.error('[AlacarteChat] Failed to save session cookie:', error);
-      }
-    },
-
-    getSessionFromCookie: function() {
-      const name = 'alacarte_chat_session=';
-      const decodedCookie = decodeURIComponent(document.cookie);
-      const cookieArray = decodedCookie.split(';');
-      for (let i = 0; i < cookieArray.length; i++) {
-        let cookie = cookieArray[i].trim();
-        if (cookie.indexOf(name) === 0) {
-          try {
-            return JSON.parse(cookie.substring(name.length));
-          } catch (e) {
-            return null;
-          }
-        }
-      }
-      return null;
-    },
-
-    clearSessionCookie: function() {
-      document.cookie = 'alacarte_chat_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    },
-
-    revalidateSession: async function(sessionToken) {
-      try {
-        const response = await fetch(`${this.config.apiUrl}/embed-auth`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-site-id': this.config.siteId,
-            'x-session-token': sessionToken
-          },
-          body: JSON.stringify({ 
-            action: 'revalidate'
-          })
-        });
-        
-        if (!response.ok) {
-          console.log('[AlacarteChat] Session revalidation failed:', response.status);
-          return null;
-        }
-        
-        const data = await response.json();
-        console.log('[AlacarteChat] Session revalidated successfully');
-        return data;
-      } catch (error) {
-        console.error('[AlacarteChat] Session revalidation error:', error);
-        return null;
-      }
-    },
+    // PRIVACY-FIRST: No session persistence
+    // Sessions are in-memory only and clear on page unload/refresh
+    // This ensures customers always start with a clean slate
 
     authenticate: async function(customerOverride) {
       console.log('[AlacarteChat] Starting authentication...', { 
@@ -215,15 +118,9 @@
         this.conversationId = data.session.conversation_id;
         this.customerId = data.session.customer_id;
         this.isAuthenticated = true;
-        
-        // Save session to cookie for persistence
-        this.setSessionCookie({
-          sessionToken: this.sessionToken,
-          conversationId: this.conversationId,
-          customerId: this.customerId,
-          businessName: data.business_name,
-          customization: data.customization
-        });
+
+        // PRIVACY-FIRST: Store session in memory only (no cookies, no persistence)
+        // Session will be cleared when page unloads or widget closes
         
         if (!this.shadowRoot) {
           this.injectWidget(data.customization || {}, data.business_name || 'Support');

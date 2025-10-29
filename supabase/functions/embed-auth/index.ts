@@ -217,109 +217,60 @@ serve(async (req) => {
     
     const normalizedPhone = normalizePhone(phone);
     
-    // Check for existing customers by email or normalized phone
-    // Build query to check both original and normalized phone formats
-    let query = supabase
-      .from("customers")
-      .select("id, name, email, phone, alternate_emails")
-      .eq("business_id", businessId);
-    
-    const conditions: string[] = [];
-    if (email) conditions.push(`email.eq.${email}`, `alternate_emails.cs.{${email}}`);
-    if (normalizedPhone) conditions.push(`phone.eq.${normalizedPhone}`);
-    
-    const { data: existingCustomers, error: lookupError } = conditions.length > 0
-      ? await query.or(conditions.join(','))
-      : { data: null, error: null };
-    
-    if (lookupError) {
-      console.error('Customer lookup error:', lookupError);
-      return new Response(JSON.stringify({ error: "Database error during customer lookup" }), 
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // PRIVACY-FIRST: Always create a new "session contact" for widget sessions
+    // This ensures no conversation history is ever leaked to the widget
+    // Admin can later merge these session contacts if they match existing customers
+    const customerName = name || email || normalizedPhone || 'Anonymous';
+    const { data: newCustomer, error: customerError } = await supabase
+      .from('customers')
+      .insert({
+        business_id: businessId,
+        name: customerName,
+        email: email || null,
+        phone: normalizedPhone || null,
+        last_contact_method: 'embed',
+        last_active: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (customerError || !newCustomer) {
+      console.error('[embed-auth] Error creating customer:', customerError);
+      return new Response(JSON.stringify({ error: 'Failed to create customer' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    if (existingCustomers && existingCustomers.length > 0) {
-      // Use the first existing customer
-      customerId = existingCustomers[0].id;
-      console.log('Existing customer found:', customerId);
-      
-      // If multiple matches found, create merge suggestion immediately
-      if (existingCustomers.length > 1) {
-        const customerIds = existingCustomers.map(c => c.id);
-        console.log('⚠️ DUPLICATE DETECTED: Creating merge suggestion for', customerIds);
-        
-        // Create merge suggestion record for admin review
-        await supabase.from('customer_merge_suggestions').insert({
-          business_id: businessId,
-          customer_ids: customerIds,
-          match_type: email ? 'email' : 'phone',
-          match_value: email || phone,
-          status: 'pending',
-          created_via: 'embed_auth',
-          priority: 'high'
-        });
-      }
-    } else {
-      // Create new customer with normalized phone
-      const { data: newCustomer, error: insertError } = await supabase
-        .from("customers")
-        .insert({ 
-          business_id: businessId, 
-          name: name || "Anonymous", 
-          email: email || null, 
-          phone: normalizedPhone || "unknown",
-          last_contact_method: 'embed'
-        })
-        .select("id")
-        .single();
+    customerId = newCustomer.id;
+    console.log('[embed-auth] New session customer created:', customerId);
 
-      if (insertError || !newCustomer) {
-        console.error('Customer creation error:', insertError);
-        return new Response(JSON.stringify({ error: "Failed to create customer", details: insertError?.message }), 
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      
-      customerId = newCustomer.id;
-      console.log('New customer created:', customerId);
+    // PRIVACY-FIRST: Always create a new conversation for each widget session
+    // This ensures no previous messages are visible to the customer
+    const { data: newConversation, error: conversationError } = await supabase
+      .from('conversations')
+      .insert({
+        customer_id: customerId,
+        business_id: businessId,
+        status: 'active',
+        priority: 5,
+        metadata: { 
+          source: 'embed', 
+          channel: 'website_widget',
+          privacy_scoped: true,
+          session_start: new Date().toISOString()
+        }
+      })
+      .select('id')
+      .single();
+
+    if (conversationError || !newConversation) {
+      console.error('[embed-auth] Error creating conversation:', conversationError);
+      return new Response(JSON.stringify({ error: 'Failed to create conversation' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-
-    const { data: activeConv, error: convLookupError } = await supabase.from("conversations").select("id")
-      .eq("customer_id", customerId).eq("business_id", businessId)
-      .is("resolved_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
-
-    if (convLookupError) {
-      console.error('Conversation lookup error:', convLookupError);
-      return new Response(JSON.stringify({ error: "Database error during conversation lookup" }), 
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    let conversationId: string;
-    let isNewConversation = false;
     
-    if (activeConv) {
-      conversationId = activeConv.id;
-      console.log('Active conversation found:', conversationId);
-    } else {
-      const { data: newConv, error: convInsertError } = await supabase.from("conversations")
-        .insert({ 
-          customer_id: customerId, 
-          business_id: businessId, 
-          status: "active",
-          priority: 5,
-          metadata: { source: 'embed', is_urgent: true, channel: 'website_widget' }
-        })
-        .select("id").single();
-      
-      if (convInsertError || !newConv) {
-        console.error('Conversation creation error:', convInsertError);
-        return new Response(JSON.stringify({ error: "Failed to create conversation", details: convInsertError?.message }), 
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      
-      conversationId = newConv.id;
-      isNewConversation = true;
-      console.log('New conversation created:', conversationId);
-    }
+    let conversationId = newConversation.id;
+    let isNewConversation = true;
+    console.log('[embed-auth] New privacy-scoped conversation created:', conversationId);
 
     const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);

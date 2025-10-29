@@ -33,6 +33,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
 import { ConversationFilters as FilterType } from "@/types/chat";
 import { DuplicateContactsBanner } from "@/components/conversations/DuplicateContactsBanner";
+import { MergeConversationsDialog } from "@/components/conversations/MergeConversationsDialog";
 import { EmailSyncButton } from "@/components/chat/EmailSyncButton";
 import { LimitReachedBanner } from "@/components/LimitReachedBanner";
 import { RefreshButton } from "@/components/chat/RefreshButton";
@@ -44,6 +45,7 @@ import { CreditExpiryBanner } from "@/components/CreditExpiryBanner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { WhatsAppAnalyticsWidget } from "@/components/dashboard/WhatsAppAnalyticsWidget";
 import { useThemePreferences } from "@/hooks/useThemePreferences";
+import { useMergeSuggestion } from "@/hooks/useMergeSuggestion";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut, currentBusinessId } = useAuth();
@@ -77,7 +79,17 @@ const Dashboard = () => {
   const [latestInboundMessage, setLatestInboundMessage] = useState<string>("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(true);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeDialogData, setMergeDialogData] = useState<{
+    duplicateCustomers: any[];
+    conversations: any[];
+  } | null>(null);
   const navigate = useNavigate();
+
+  // Check for merge suggestions when conversation is selected
+  const { suggestions: mergeSuggestions } = useMergeSuggestion(
+    selectedConversation?.customer || null
+  );
 
   // Refs for resizable panel
   const desktopContainerRef = useRef<HTMLDivElement>(null);
@@ -461,8 +473,53 @@ const Dashboard = () => {
       markAsRead(selectedConversation.id);
       setShowAISuggestions(false);
       setLatestInboundMessage("");
+
+      // Check if this is a widget conversation (privacy_scoped metadata)
+      const isWidgetConversation = selectedConversation.metadata?.privacy_scoped === true;
+      
+      // If it's a widget conversation and we have merge suggestions, prompt admin
+      if (isWidgetConversation && mergeSuggestions.length > 0) {
+        // Fetch conversations for the suggested duplicate customers
+        const fetchMergeData = async () => {
+          const customerIds = mergeSuggestions.map(s => s.customer.id);
+          customerIds.push(selectedConversation.customer.id);
+
+          const { data: convs } = await supabase
+            .from('conversations')
+            .select(`
+              *,
+              customers (
+                id,
+                name,
+                first_name,
+                last_name,
+                phone,
+                email,
+                alternate_emails,
+                avatar
+              )
+            `)
+            .in('customer_id', customerIds)
+            .eq('is_archived', false);
+
+          if (convs && convs.length > 0) {
+            const allCustomers = [
+              selectedConversation.customer,
+              ...mergeSuggestions.map(s => s.customer)
+            ];
+
+            setMergeDialogData({
+              duplicateCustomers: allCustomers,
+              conversations: convs
+            });
+            setMergeDialogOpen(true);
+          }
+        };
+
+        fetchMergeData();
+      }
     }
-  }, [selectedConversation, fetchMessages, markAsRead]);
+  }, [selectedConversation, fetchMessages, markAsRead, mergeSuggestions]);
 
   const handleDeleteConversation = async (conversationId: string) => {
     try {
@@ -839,6 +896,20 @@ const Dashboard = () => {
         hasUnsavedChanges={hasUnsavedChanges}
         message="You have an unsaved message. Are you sure you want to leave?"
       />
+      {mergeDialogData && (
+        <MergeConversationsDialog
+          open={mergeDialogOpen}
+          onOpenChange={setMergeDialogOpen}
+          duplicateCustomers={mergeDialogData.duplicateCustomers}
+          conversations={mergeDialogData.conversations}
+          onMergeComplete={() => {
+            setMergeDialogOpen(false);
+            setMergeDialogData(null);
+            fetchConversations();
+            setSelectedConversation(null);
+          }}
+        />
+      )}
       <div className="h-screen flex flex-col bg-background">
         <PersistentHeader />
         {isMobile ? (

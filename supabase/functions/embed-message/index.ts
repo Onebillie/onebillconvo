@@ -43,8 +43,15 @@ serve(async (req) => {
     }
 
     if (action === 'get_messages') {
-      const { data: messages } = await supabase.from('messages').select('*')
-        .eq('conversation_id', session.conversation_id).order('created_at', { ascending: true });
+      // PRIVACY-FIRST: Only return messages created during or after this session
+      // This prevents any historical messages from being visible in the widget
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', session.conversation_id)
+        .gte('created_at', session.created_at)
+        .order('created_at', { ascending: true });
+      
       return new Response(JSON.stringify({ messages }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
