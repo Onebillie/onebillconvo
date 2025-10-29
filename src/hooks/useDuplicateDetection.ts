@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatIrishPhone } from "@/lib/phoneUtils";
 
 interface DuplicateGroup {
   customers: any[];
@@ -52,12 +53,13 @@ export const useDuplicateDetection = () => {
           });
         }
 
-        // Group by phone
+        // Group by phone (normalized for comparison)
         if (customer.phone) {
-          if (!phoneGroups.has(customer.phone)) {
-            phoneGroups.set(customer.phone, []);
+          const normalizedPhone = formatIrishPhone(customer.phone);
+          if (!phoneGroups.has(normalizedPhone)) {
+            phoneGroups.set(normalizedPhone, []);
           }
-          phoneGroups.get(customer.phone)!.push(customer);
+          phoneGroups.get(normalizedPhone)!.push(customer);
         }
       });
 

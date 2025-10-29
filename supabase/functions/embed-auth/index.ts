@@ -203,12 +203,34 @@ serve(async (req) => {
     let customerId: string;
     const businessId = business.id;
     
-    // Check for existing customers by email or phone
-    const { data: existingCustomers, error: lookupError } = await supabase
+    // Normalize phone number for consistent matching
+    const normalizePhone = (phoneNum: string | null): string | null => {
+      if (!phoneNum) return null;
+      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
+      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+      if (cleaned.startsWith('353')) return cleaned;
+      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
+      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
+      return cleaned;
+    };
+    
+    const normalizedPhone = normalizePhone(phone);
+    
+    // Check for existing customers by email or normalized phone
+    // Build query to check both original and normalized phone formats
+    let query = supabase
       .from("customers")
       .select("id, name, email, phone, alternate_emails")
-      .eq("business_id", businessId)
-      .or(`email.eq.${email},phone.eq.${phone}${email ? `,alternate_emails.cs.{${email}}` : ''}`);
+      .eq("business_id", businessId);
+    
+    const conditions: string[] = [];
+    if (email) conditions.push(`email.eq.${email}`, `alternate_emails.cs.{${email}}`);
+    if (normalizedPhone) conditions.push(`phone.eq.${normalizedPhone}`);
+    
+    const { data: existingCustomers, error: lookupError } = conditions.length > 0
+      ? await query.or(conditions.join(','))
+      : { data: null, error: null };
     
     if (lookupError) {
       console.error('Customer lookup error:', lookupError);
@@ -238,14 +260,15 @@ serve(async (req) => {
         });
       }
     } else {
-      // Create new customer with all required fields
+      // Create new customer with normalized phone
       const { data: newCustomer, error: insertError } = await supabase
         .from("customers")
         .insert({ 
           business_id: businessId, 
           name: name || "Anonymous", 
           email: email || null, 
-          phone: phone || "unknown" 
+          phone: normalizedPhone || "unknown",
+          last_contact_method: 'embed'
         })
         .select("id")
         .single();

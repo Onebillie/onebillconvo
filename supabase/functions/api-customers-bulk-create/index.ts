@@ -44,6 +44,18 @@ serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', keyData.id);
 
+    // Normalize phone number helper
+    const normalizePhone = (phoneNum: string): string => {
+      if (!phoneNum) return phoneNum;
+      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
+      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+      if (cleaned.startsWith('353')) return cleaned;
+      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
+      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
+      return cleaned;
+    };
+
     const { customers } = await req.json();
 
     if (!Array.isArray(customers) || customers.length === 0) {
@@ -87,8 +99,10 @@ serve(async (req) => {
           continue;
         }
 
-        // Check if customer already exists (by email or phone)
+        // Check if customer already exists (by email or normalized phone)
         let existingCustomer = null;
+        const normalizedPhone = customer.phone ? normalizePhone(customer.phone) : null;
+        
         if (customer.email) {
           const { data } = await supabase
             .from('customers')
@@ -99,12 +113,12 @@ serve(async (req) => {
           existingCustomer = data;
         }
         
-        if (!existingCustomer && customer.phone) {
+        if (!existingCustomer && normalizedPhone) {
           const { data } = await supabase
             .from('customers')
             .select('id')
             .eq('business_id', keyData.business_id)
-            .eq('phone', customer.phone)
+            .eq('phone', normalizedPhone)
             .maybeSingle();
           existingCustomer = data;
         }
@@ -113,7 +127,7 @@ serve(async (req) => {
           name: customer.name,
           first_name: customer.first_name,
           last_name: customer.last_name,
-          phone: customer.phone,
+          phone: normalizedPhone,
           email: customer.email,
           address: customer.address,
           notes: customer.notes,

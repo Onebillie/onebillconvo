@@ -45,6 +45,18 @@ serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', apiKeyData.id);
 
+    // Normalize phone number helper
+    const normalizePhone = (phoneNum: string): string => {
+      if (!phoneNum) return phoneNum;
+      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
+      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+      if (cleaned.startsWith('353')) return cleaned;
+      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
+      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
+      return cleaned;
+    };
+
     const { identifiers } = await req.json();
 
     if (!identifiers || !Array.isArray(identifiers) || identifiers.length === 0) {
@@ -68,9 +80,9 @@ serve(async (req) => {
       .select('*')
       .eq('business_id', business_id);
 
-    // Build OR conditions for all identifiers
+    // Build OR conditions for all identifiers with normalized phones
     const emails = identifiers.filter(i => i.email).map(i => i.email);
-    const phones = identifiers.filter(i => i.phone).map(i => i.phone);
+    const phones = identifiers.filter(i => i.phone).map(i => normalizePhone(i.phone));
     const ids = identifiers.filter(i => i.id).map(i => i.id);
     const externalIds = identifiers.filter(i => i.external_id).map(i => i.external_id);
 

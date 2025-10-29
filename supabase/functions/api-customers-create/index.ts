@@ -49,14 +49,46 @@ serve(async (req) => {
       );
     }
 
+    // Normalize phone number for consistent matching
+    const normalizePhone = (phoneNum: string): string => {
+      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
+      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+      if (cleaned.startsWith('353')) return cleaned;
+      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
+      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
+      return cleaned;
+    };
+    
+    const normalizedPhone = normalizePhone(phone);
+    const normalizedWhatsApp = whatsapp_phone ? normalizePhone(whatsapp_phone) : normalizedPhone;
+
+    // Check for existing customer with same email or phone
+    const { data: existingCustomer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('business_id', business_id)
+      .or(`email.eq.${email || 'null'},phone.eq.${normalizedPhone}`)
+      .maybeSingle();
+
+    if (existingCustomer) {
+      return new Response(
+        JSON.stringify({ error: 'Customer with this email or phone already exists', customer_id: existingCustomer.id }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const { data: customer, error: createError } = await supabase
       .from('customers')
       .insert({
         name,
         email,
-        phone,
+        phone: normalizedPhone,
         business_id,
-        whatsapp_phone: whatsapp_phone || phone,
+        whatsapp_phone: normalizedWhatsApp,
         address,
         notes,
       })
