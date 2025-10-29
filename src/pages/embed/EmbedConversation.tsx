@@ -56,6 +56,38 @@ export default function EmbedConversation() {
     validateTokenAndLoadData();
   }, [token]);
 
+  // Broadcast presence when widget is active
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const presenceChannel = supabase.channel(`embed-presence-${conversationId}`)
+      .on('presence', { event: 'sync' }, () => {
+        console.log('[EmbedConversation] Presence synced');
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            conversation_id: conversationId,
+          });
+        }
+      });
+
+    // Update presence every 30 seconds to keep it alive
+    const presenceInterval = setInterval(() => {
+      presenceChannel.track({
+        online_at: new Date().toISOString(),
+        conversation_id: conversationId,
+      });
+    }, 30000);
+
+    return () => {
+      clearInterval(presenceInterval);
+      presenceChannel.untrack();
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [conversationId]);
+
   // Set up real-time subscription for messages
   useEffect(() => {
     if (!conversationId) return;

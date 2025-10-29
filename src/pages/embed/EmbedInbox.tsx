@@ -57,6 +57,38 @@ export default function EmbedInbox() {
     validateTokenAndLoadData();
   }, [token]);
 
+  // Broadcast presence when widget is active
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const presenceChannel = supabase.channel(`embed-presence-${selectedConversation}`)
+      .on('presence', { event: 'sync' }, () => {
+        console.log('[EmbedInbox] Presence synced');
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            conversation_id: selectedConversation,
+          });
+        }
+      });
+
+    // Update presence every 30 seconds to keep it alive
+    const presenceInterval = setInterval(() => {
+      presenceChannel.track({
+        online_at: new Date().toISOString(),
+        conversation_id: selectedConversation,
+      });
+    }, 30000);
+
+    return () => {
+      clearInterval(presenceInterval);
+      presenceChannel.untrack();
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [selectedConversation]);
+
   // Set up real-time subscription for messages
   useEffect(() => {
     if (!selectedConversation) return;

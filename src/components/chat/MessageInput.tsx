@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram, Globe } from "lucide-react";
+import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import wwwGlobeIcon from "@/assets/www-globe-icon.png";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export const MessageInput = ({
   const [sendVia, setSendVia] = useState<"whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed">(lastContactMethod || "whatsapp");
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [currentUsage, setCurrentUsage] = useState(0);
+  const [isEmbedActive, setIsEmbedActive] = useState(false);
   const [messageLimit, setMessageLimit] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
@@ -91,6 +93,34 @@ export const MessageInput = ({
     // Reset channel based on customer's last contact method
     setSendVia(lastContactMethod || "whatsapp");
   }, [conversationId, storageKey, initialMessage, lastContactMethod]);
+
+  // Track embed widget session status via presence
+  useEffect(() => {
+    if (lastContactMethod !== "embed") {
+      setIsEmbedActive(false);
+      return;
+    }
+
+    const channel = supabase.channel(`embed-presence-${conversationId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const hasActiveClients = Object.keys(state).length > 0;
+        setIsEmbedActive(hasActiveClients);
+      })
+      .on('presence', { event: 'join' }, () => {
+        setIsEmbedActive(true);
+      })
+      .on('presence', { event: 'leave' }, () => {
+        const state = channel.presenceState();
+        const hasActiveClients = Object.keys(state).length > 0;
+        setIsEmbedActive(hasActiveClients);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, lastContactMethod]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -617,11 +647,13 @@ export const MessageInput = ({
                 "px-3 py-2 text-sm font-medium transition-colors border-l",
                 sendVia === "embed"
                   ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                  : "hover:bg-muted",
+                !isEmbedActive && "opacity-50 cursor-not-allowed"
               )}
-              title="Website Widget"
+              title={isEmbedActive ? "Website Widget (Active)" : "Website Widget (Offline)"}
+              disabled={!isEmbedActive}
             >
-              <Globe className="h-4 w-4" />
+              <img src={wwwGlobeIcon} alt="WWW" className="h-4 w-4" />
             </button>
           )}
         </div>
