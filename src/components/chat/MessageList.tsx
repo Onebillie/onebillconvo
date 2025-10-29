@@ -28,9 +28,10 @@ interface MessageListProps {
   messages: Message[];
   onCreateTask?: (message: Message) => void;
   onMessageUpdate?: () => void;
+  isEmbedActive?: boolean;
 }
 
-export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: MessageListProps) => {
+export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
@@ -422,7 +423,8 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
                         {message.direction === "inbound" && (
                           <div className="flex-shrink-0 mt-1">
                             <ChannelIndicator 
-                              channel={message.platform as any || "whatsapp"} 
+                              channel={message.platform as any || "whatsapp"}
+                              isActive={message.platform === "embed" ? isEmbedActive : undefined}
                             />
                           </div>
                         )}

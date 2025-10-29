@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Send, Paperclip, X, Image as ImageIcon, Mail, Phone, MessageCircle, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import wwwGlobeIcon from "@/assets/www-globe-icon.png";
+import chatbotOnlineIcon from "@/assets/chatbot-online-icon.png";
+import chatbotOfflineIcon from "@/assets/chatbot-offline-icon.png";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
@@ -649,12 +650,9 @@ export const MessageInput = ({
             }
           >
             <img 
-              src={wwwGlobeIcon} 
-              alt="WWW" 
-              className={cn(
-                "h-4 w-4",
-                !(lastContactMethod === "embed" && isEmbedActive) && "grayscale opacity-50"
-              )} 
+              src={isEmbedActive ? chatbotOnlineIcon : chatbotOfflineIcon} 
+              alt={isEmbedActive ? "Online" : "Offline"} 
+              className="h-4 w-4" 
             />
           </button>
           {customer?.facebook_psid && (

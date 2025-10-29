@@ -418,7 +418,7 @@ export default function EmbedConversation() {
         </div>
         
         <div className="flex-1 overflow-hidden" style={{ backgroundColor: 'var(--background-color)' }}>
-          <MessageList messages={messages} />
+          <MessageList messages={messages} isEmbedActive={true} />
         </div>
 
         <div className="border-t" style={{ backgroundColor: 'var(--background-color)' }}>

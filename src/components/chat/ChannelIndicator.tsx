@@ -1,5 +1,6 @@
 import { Mail, MessageCircle, Phone, Instagram, Globe } from "lucide-react";
-import wwwGlobeIcon from "@/assets/www-globe-icon.png";
+import chatbotOnlineIcon from "@/assets/chatbot-online-icon.png";
+import chatbotOfflineIcon from "@/assets/chatbot-offline-icon.png";
 
 interface ChannelIndicatorProps {
   channel: "whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed";
@@ -34,8 +35,12 @@ export const ChannelIndicator = ({ channel, isActive = true }: ChannelIndicatorP
       );
     case "embed":
       return (
-        <div className={`min-w-7 h-7 px-2 rounded-full flex items-center justify-center ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}>
-          <img src={wwwGlobeIcon} alt="WWW" className="h-4 w-4 invert" />
+        <div className="min-w-7 h-7 flex items-center justify-center">
+          <img 
+            src={isActive ? chatbotOnlineIcon : chatbotOfflineIcon} 
+            alt={isActive ? "Online" : "Offline"} 
+            className="h-7 w-7" 
+          />
         </div>
       );
     default: // whatsapp

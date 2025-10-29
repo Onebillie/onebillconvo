@@ -84,6 +84,7 @@ const Dashboard = () => {
     duplicateCustomers: any[];
     conversations: any[];
   } | null>(null);
+  const [isEmbedActive, setIsEmbedActive] = useState(false);
   const navigate = useNavigate();
 
   // Check for merge suggestions when conversation is selected
@@ -113,6 +114,31 @@ const Dashboard = () => {
     }, 100);
     return () => clearTimeout(timer);
   }, []); // Run only once on mount
+
+  // Track embed widget session status via presence
+  useEffect(() => {
+    if (!selectedConversation?.id) return;
+
+    const channel = supabase.channel(`embed-presence-${selectedConversation.id}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const isActive = Object.keys(state).length > 0;
+        setIsEmbedActive(isActive);
+      })
+      .on('presence', { event: 'join' }, () => {
+        setIsEmbedActive(true);
+      })
+      .on('presence', { event: 'leave' }, () => {
+        const state = channel.presenceState();
+        const isActive = Object.keys(state).length > 0;
+        setIsEmbedActive(isActive);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation?.id]);
 
 
   // Handle URL parameters to auto-select conversation
@@ -827,6 +853,7 @@ const Dashboard = () => {
                     setTaskDialogOpen(true);
                   }}
                   onMessageUpdate={() => fetchMessages(selectedConversation.id)}
+                  isEmbedActive={isEmbedActive}
                 />
               </div>
             </div>
