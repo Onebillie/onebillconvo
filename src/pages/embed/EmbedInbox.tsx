@@ -57,6 +57,88 @@ export default function EmbedInbox() {
     validateTokenAndLoadData();
   }, [token]);
 
+  // Set up real-time subscription for messages
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    console.log('[EmbedInbox] Setting up real-time subscription for conversation:', selectedConversation);
+
+    const channel = supabase
+      .channel(`embed-inbox-messages-${selectedConversation}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation}`,
+        },
+        async (payload) => {
+          console.log('[EmbedInbox] New message received:', payload.new);
+          // Fetch the full message with attachments
+          const { data } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              message_attachments (
+                id,
+                filename,
+                url,
+                type,
+                size,
+                duration_seconds
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (data) {
+            setMessages((prev) => [...prev, data as Message]);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation}`,
+        },
+        async (payload) => {
+          console.log('[EmbedInbox] Message updated:', payload.new);
+          // Fetch the full message with attachments
+          const { data } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              message_attachments (
+                id,
+                filename,
+                url,
+                type,
+                size,
+                duration_seconds
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (data) {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === data.id ? (data as Message) : msg))
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[EmbedInbox] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation]);
+
   const validateTokenAndLoadData = async () => {
     try {
       const supabaseUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
