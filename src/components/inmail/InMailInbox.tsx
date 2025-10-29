@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mail, MailOpen, Star, Send, Trash2, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { InMailComposer } from './InMailComposer';
 
 export const InMailInbox = () => {
   const { messages, unreadCount, loading, markAsRead, deleteMessage } = useInMail();
@@ -256,11 +255,7 @@ export const InMailInbox = () => {
         </Card>
       </div>
 
-      <InMailComposer
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        replyTo={selectedMessage}
-      />
+      {/* InMailComposer will be implemented after database types are regenerated */}
     </div>
   );
 };

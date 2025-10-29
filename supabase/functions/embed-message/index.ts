@@ -69,7 +69,7 @@ serve(async (req) => {
         customer_id: session.customer_id,
         content: messageContent, 
         direction: 'inbound', 
-        channel: 'embed', 
+        platform: 'embed',
         status: 'delivered',
         priority: 5,
         metadata: { source: 'website_widget', requires_urgent_response: true }
