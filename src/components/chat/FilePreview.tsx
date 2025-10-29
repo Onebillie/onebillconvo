@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, memo } from 'react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FilePreviewProps {
   attachment: {
@@ -13,9 +14,10 @@ interface FilePreviewProps {
   onClick?: () => void;
 }
 
-export const FilePreview = ({ attachment, onClick }: FilePreviewProps) => {
+export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   const isImage = attachment.type?.startsWith('image/');
   const isPDF = attachment.type === 'application/pdf';
@@ -41,6 +43,22 @@ export const FilePreview = ({ attachment, onClick }: FilePreviewProps) => {
     window.open(attachment.url, '_blank');
   };
 
+  const handleRetry = () => {
+    setImageError(false);
+    setImageLoading(true);
+    setRetryCount(prev => prev + 1);
+  };
+
+  // Generate optimized image URL for Supabase Storage
+  const getOptimizedImageUrl = (url: string) => {
+    if (url.includes('/storage/v1/object/public/')) {
+      // Replace with render endpoint for transformation
+      const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
+      return `${optimizedUrl}?width=800&quality=75`;
+    }
+    return url;
+  };
+
   const handleImageError = () => {
     console.error('Failed to load image:', attachment.url, 'Type:', attachment.type);
     setImageError(true);
@@ -52,62 +70,69 @@ export const FilePreview = ({ attachment, onClick }: FilePreviewProps) => {
   };
 
   if (isImage) {
-    // Show error state if image failed to load
-    if (imageError) {
-      return (
-        <div className="mt-2">
-          <div className="p-3 bg-background/10 rounded-lg border border-destructive/50 max-w-xs">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="w-4 h-4 text-destructive" />
-              <p className="text-sm font-medium">Image failed to load</p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs truncate opacity-70">{attachment.filename}</p>
-              </div>
+    const imageUrl = getOptimizedImageUrl(attachment.url);
+    
+    return (
+      <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group" onClick={onClick}>
+        {imageLoading && (
+          <Skeleton className="w-full h-48" />
+        )}
+        {imageError ? (
+          <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-lg min-h-[200px]">
+            <AlertCircle className="h-12 w-12 text-destructive mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">Failed to load image</p>
+            <div className="flex gap-2">
               <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRetry();
+                }}
                 size="sm"
                 variant="outline"
-                onClick={handleDownload}
               >
-                <Download className="w-3 h-3 mr-1" />
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+                size="sm"
+                variant="outline"
+              >
+                <Download className="h-4 w-4 mr-2" />
                 Download
               </Button>
             </div>
           </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="mt-2 group relative">
-        {imageLoading && (
-          <div className="w-full max-w-xs h-48 rounded-lg bg-muted/50 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin opacity-50" />
-          </div>
+        ) : (
+          <img
+            key={`${attachment.id}-${retryCount}`}
+            src={imageUrl}
+            alt={attachment.filename}
+            className="max-w-full h-auto cursor-pointer transition-transform hover:scale-105"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="high"
+            onLoad={() => setImageLoading(false)}
+            onError={() => {
+              setImageLoading(false);
+              setImageError(true);
+            }}
+          />
         )}
-        <img
-          src={attachment.url}
-          alt={attachment.filename}
-          className={`w-full max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover ${imageLoading ? 'hidden' : ''}`}
-          onClick={onClick || handleDownload}
-          onError={handleImageError}
-          onLoad={handleImageLoad}
-          loading="lazy"
-          crossOrigin="anonymous"
-        />
-        {!imageLoading && (
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+        {!imageLoading && !imageError && (
+          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
-              size="icon"
-              variant="secondary"
-              className="shadow-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDownload();
               }}
+              size="sm"
+              variant="secondary"
             >
-              <Download className="w-4 h-4" />
+              <Download className="h-4 w-4" />
             </Button>
           </div>
         )}
@@ -145,4 +170,4 @@ export const FilePreview = ({ attachment, onClick }: FilePreviewProps) => {
       </div>
     </div>
   );
-};
+});

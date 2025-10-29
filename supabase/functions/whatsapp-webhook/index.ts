@@ -503,34 +503,8 @@ async function handleAttachmentInstant(message: any, messageId: string, customer
       return;
     }
 
-    console.log(`Processing attachment: ${filename} (${mimeType}), mediaId: ${mediaId}`);
+    console.log(`[Attachment] Processing: ${filename} (${mimeType}), mediaId: ${mediaId}`);
 
-    // INSTANT: Create proxy URL immediately for realtime display
-    const proxyUrl = `https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/whatsapp-media-proxy?mediaId=${mediaId}${whatsappAccountId ? `&accountId=${whatsappAccountId}` : ''}`;
-    
-    const { data: instantAttachment, error: instantError } = await supabase
-      .from('message_attachments')
-      .insert({
-        message_id: messageId,
-        filename,
-        url: proxyUrl,
-        type: mimeType,
-        size: 0,
-        duration_seconds: duration || null,
-      })
-      .select()
-      .single();
-
-    if (instantError) {
-      console.error('Error creating instant attachment:', instantError);
-      return;
-    }
-
-    console.log(`Created instant attachment with proxy URL in ${Date.now() - startTime}ms`);
-
-    // BACKGROUND: Download and upload to permanent storage
-    const attachmentId = instantAttachment.id;
-    
     // Get access token (prefer account-specific, fallback to env)
     let accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
     
@@ -541,12 +515,13 @@ async function handleAttachmentInstant(message: any, messageId: string, customer
         .eq('id', whatsappAccountId)
         .single();
       
-      if (account) {
+      if (account?.access_token) {
         accessToken = account.access_token;
       }
     }
 
-    // Get media URL from WhatsApp API
+    // Fetch media metadata first to get file size
+    const metadataStart = Date.now();
     const mediaResponse = await fetch(
       `https://graph.facebook.com/v18.0/${mediaId}`,
       {
@@ -557,84 +532,128 @@ async function handleAttachmentInstant(message: any, messageId: string, customer
     );
 
     if (!mediaResponse.ok) {
-      console.error('Failed to get media URL');
+      console.error('[Attachment] Failed to get media metadata');
       return;
     }
 
     const mediaData = await mediaResponse.json();
     const mediaUrl = mediaData.url;
+    const fileSize = mediaData.file_size || 0;
+    console.log(`[Attachment] Got metadata in ${Date.now() - metadataStart}ms, size: ${fileSize} bytes`);
 
-    // Download media file with timeout
-    const downloadStart = Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    // INSTANT: Create proxy URL immediately for realtime display (WITH SIZE)
+    const proxyUrl = `https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/whatsapp-media-proxy?mediaId=${mediaId}${whatsappAccountId ? `&accountId=${whatsappAccountId}` : ''}`;
+    
+    const { data: instantAttachment, error: instantError } = await supabase
+      .from('message_attachments')
+      .insert({
+        message_id: messageId,
+        filename,
+        url: proxyUrl,
+        type: mimeType,
+        size: fileSize,
+        duration_seconds: duration || null,
+      })
+      .select()
+      .single();
 
-    try {
-      const fileResponse = await fetch(mediaUrl, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        signal: controller.signal,
-      });
+    if (instantError) {
+      console.error('[Attachment] Error creating instant attachment:', instantError);
+      return;
+    }
 
-      clearTimeout(timeoutId);
+    console.log(`[Attachment] Created instant attachment with proxy URL in ${Date.now() - startTime}ms`);
 
-      if (!fileResponse.ok) {
-        console.error(`Failed to download media file: ${fileResponse.status} ${fileResponse.statusText}`);
-        return;
-      }
+    // BACKGROUND: Download and upload to permanent storage with retry
+    const attachmentId = instantAttachment.id;
+    const maxRetries = 3;
+    const retryDelays = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const downloadStart = Date.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const fileBuffer = await fileResponse.arrayBuffer();
-      const file = new Uint8Array(fileBuffer);
-      console.log(`Downloaded ${file.length} bytes in ${Date.now() - downloadStart}ms`);
-
-      // Upload to Supabase Storage
-      const uploadStart = Date.now();
-      const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
-      const { error: uploadError } = await supabase.storage
-        .from('customer_bills')
-        .upload(filePath, file, {
-          contentType: mimeType,
-          upsert: false,
+        const fileResponse = await fetch(mediaUrl, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
         });
 
-      if (uploadError) {
-        console.error('Error uploading file to storage:', uploadError);
-        return;
-      }
+        clearTimeout(timeoutId);
 
-      console.log(`Uploaded to storage in ${Date.now() - uploadStart}ms`);
+        if (!fileResponse.ok) {
+          throw new Error(`HTTP ${fileResponse.status}: ${fileResponse.statusText}`);
+        }
 
-      // Get permanent public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('customer_bills')
-        .getPublicUrl(filePath);
+        const fileBuffer = await fileResponse.arrayBuffer();
+        const file = new Uint8Array(fileBuffer);
+        console.log(`[Attachment] Downloaded ${file.length} bytes in ${Date.now() - downloadStart}ms (attempt ${attempt + 1})`);
 
-      const publicUrl = publicUrlData?.publicUrl;
+        // Upload to Supabase Storage
+        const uploadStart = Date.now();
+        const filePath = `customers/${customerId}/media/${Date.now()}_${filename}`;
+        const { error: uploadError } = await supabase.storage
+          .from('customer_bills')
+          .upload(filePath, file, {
+            contentType: mimeType,
+            upsert: false,
+          });
 
-      // UPDATE: Replace proxy URL with permanent Storage URL
-      const { error: updateError } = await supabase
-        .from('message_attachments')
-        .update({
-          url: publicUrl,
-          size: file.length,
-        })
-        .eq('id', attachmentId);
+        if (uploadError) {
+          console.error('[Attachment] Error uploading to storage:', uploadError);
+          return;
+        }
 
-      if (updateError) {
-        console.error('Error updating attachment with permanent URL:', updateError);
-      } else {
-        const totalTime = Date.now() - startTime;
-        console.log(`Attachment fully processed: ${filename} (${file.length} bytes) in ${totalTime}ms`);
-      }
-    } catch (fetchError: any) {
-      if (fetchError.name === 'AbortError') {
-        console.error('Media download timeout after 30s');
-      } else {
-        throw fetchError;
+        console.log(`[Attachment] Uploaded to storage in ${Date.now() - uploadStart}ms`);
+
+        // Get permanent public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('customer_bills')
+          .getPublicUrl(filePath);
+
+        const publicUrl = publicUrlData?.publicUrl;
+
+        // UPDATE: Replace proxy URL with permanent Storage URL (triggers realtime update)
+        const { error: updateError } = await supabase
+          .from('message_attachments')
+          .update({
+            url: publicUrl,
+            size: file.length,
+          })
+          .eq('id', attachmentId);
+
+        if (updateError) {
+          console.error('[Attachment] Error updating with permanent URL:', updateError);
+        } else {
+          const totalTime = Date.now() - startTime;
+          console.log(`[Attachment] ✓ Fully processed: ${filename} (${file.length} bytes) in ${totalTime}ms`);
+        }
+        
+        // Success - break retry loop
+        break;
+        
+      } catch (fetchError: any) {
+        const isLastAttempt = attempt === maxRetries - 1;
+        
+        if (fetchError.name === 'AbortError') {
+          console.error(`[Attachment] Download timeout (attempt ${attempt + 1}/${maxRetries})`);
+        } else {
+          console.error(`[Attachment] Download error (attempt ${attempt + 1}/${maxRetries}):`, fetchError.message);
+        }
+        
+        if (!isLastAttempt) {
+          const delay = retryDelays[attempt];
+          console.log(`[Attachment] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          console.error(`[Attachment] Failed after ${maxRetries} attempts`);
+        }
       }
     }
   } catch (error) {
-    console.error('Error handling attachment:', error);
+    console.error('[Attachment] Unexpected error:', error);
   }
 }

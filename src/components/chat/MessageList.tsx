@@ -279,12 +279,13 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
     });
   };
 
-  const renderAttachment = (attachment: any) => {
+  // Memoized attachment renderer to prevent re-renders
+  const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
 
     if (isVoiceNote) {
       return (
-        <div key={attachment.id} className="mt-2">
+        <div className="mt-2">
           <VoicePlayer 
             audioUrl={attachment.url} 
             duration={attachment.duration_seconds}
@@ -293,7 +294,11 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate }: Me
       );
     }
 
-    return <FilePreview key={attachment.id} attachment={attachment} />;
+    return <FilePreview attachment={attachment} />;
+  });
+
+  const renderAttachment = (attachment: any) => {
+    return <AttachmentItem key={attachment.id} attachment={attachment} />;
   };
 
   const formatDateSeparator = (date: Date) => {
