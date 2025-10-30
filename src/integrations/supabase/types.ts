@@ -3144,6 +3144,7 @@ export type Database = {
           customer_id: string | null
           expires_at: string
           id: string
+          last_presence_at: string | null
           session_token: string
           site_id: string
         }
@@ -3153,6 +3154,7 @@ export type Database = {
           customer_id?: string | null
           expires_at: string
           id?: string
+          last_presence_at?: string | null
           session_token: string
           site_id: string
         }
@@ -3162,6 +3164,7 @@ export type Database = {
           customer_id?: string | null
           expires_at?: string
           id?: string
+          last_presence_at?: string | null
           session_token?: string
           site_id?: string
         }
@@ -6817,6 +6820,7 @@ export type Database = {
           auto_open_delay: number | null
           business_id: string
           button_text: string | null
+          conversation_starters: Json | null
           created_at: string
           custom_css: string | null
           custom_icon_url: string | null
@@ -6844,6 +6848,7 @@ export type Database = {
           auto_open_delay?: number | null
           business_id: string
           button_text?: string | null
+          conversation_starters?: Json | null
           created_at?: string
           custom_css?: string | null
           custom_icon_url?: string | null
@@ -6871,6 +6876,7 @@ export type Database = {
           auto_open_delay?: number | null
           business_id?: string
           button_text?: string | null
+          conversation_starters?: Json | null
           created_at?: string
           custom_css?: string | null
           custom_icon_url?: string | null

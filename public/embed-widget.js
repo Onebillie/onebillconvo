@@ -19,6 +19,9 @@
     presenceChannel: null,
     presenceInterval: null,
     cleanupTimer: null,
+    sessionStatus: 'online',
+    presenceHeartbeatInterval: null,
+    notificationSound: null,
 
     init: async function(options) {
       if (this.initialized) {
@@ -179,6 +182,15 @@
         }
 
         const data = await response.json();
+        console.log('[AlacarteChat] Auth response data:', data);
+
+        // Check if duplicate customer was found
+        if (data.duplicate_found) {
+          console.log('[AlacarteChat] Duplicate customer detected');
+          this.showMergeDialog(data.existing_customer, data.new_details);
+          return false;
+        }
+
         console.log('[AlacarteChat] Auth successful', {
           conversationId: data.session.conversation_id,
           customerId: data.session.customer_id
@@ -188,12 +200,14 @@
         this.conversationId = data.session.conversation_id;
         this.customerId = data.session.customer_id;
         this.isAuthenticated = true;
+        this.sessionStatus = 'online';
 
         // PRIVACY-FIRST: Store session in memory only (no cookies, no persistence)
         // Session will be cleared when page unloads or widget closes
 
         // Initialize presence tracking
         this.initializePresence(data.session.conversation_id);
+        this.startPresenceHeartbeat();
         
         if (!this.shadowRoot) {
           this.injectWidget(data.customization || {}, data.business_name || 'Support');
@@ -209,8 +223,12 @@
           }
         }
         
+        // Show greeting with conversation starters
+        this.showGreeting(data.customization || {});
+        
         this.loadMessages();
         this.startPolling();
+        this.updateSessionStatus('online');
         return true;
       } catch (error) {
         console.error('[AlacarteChat] Authentication failed:', error);
@@ -396,12 +414,22 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 8px;
+        }
+        
+        .status-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #10b981;
+          flex-shrink: 0;
         }
         
         .chat-header h3 {
           font-size: 16px;
           font-weight: 600;
           margin: 0;
+          flex: 1;
         }
         
         .close-btn {
@@ -565,6 +593,7 @@
           
           <div class="chat-window" id="chat-window">
             <div class="chat-header">
+              <div class="status-indicator" id="status-dot"></div>
               <h3>${businessName}</h3>
               <button class="close-btn" id="close-chat">&times;</button>
             </div>
@@ -694,6 +723,12 @@
         this.presenceInterval = null;
       }
       
+      // Stop custom presence heartbeat
+      if (this.presenceHeartbeatInterval) {
+        clearInterval(this.presenceHeartbeatInterval);
+        this.presenceHeartbeatInterval = null;
+      }
+      
       // Untrack presence
       if (this.presenceChannel) {
         this.presenceChannel.untrack();
@@ -739,10 +774,11 @@
       }
     },
 
-    renderMessages: function(messages) {
+    renderMessages: function(messages, playSound = false) {
       const container = this.shadowRoot.getElementById('chat-messages');
       // Remove all messages except the greeting
       const existingMessages = container.querySelectorAll('.message:not([data-greeting="true"])');
+      const oldCount = existingMessages.length;
       existingMessages.forEach(msg => msg.remove());
 
       messages.forEach(msg => {
@@ -758,6 +794,11 @@
       });
 
       container.scrollTop = container.scrollHeight;
+      
+      // Play notification sound if new messages arrived
+      if (playSound && messages.length > oldCount) {
+        this.playNotificationSound();
+      }
     },
 
     sendMessage: async function() {
@@ -881,7 +922,7 @@
         if (data.messages && data.messages.length > currentMessages.length) {
           this.unreadCount += (data.messages.length - currentMessages.length);
           this.updateUnreadBadge();
-          this.renderMessages(data.messages);
+          this.renderMessages(data.messages, true); // Play sound on new messages
         }
       } catch (error) {
         console.error('[AlacarteChat] Polling error:', error);
@@ -962,6 +1003,205 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    },
+
+    showMergeDialog: function(existingCustomer, newDetails) {
+      const messages = this.shadowRoot.getElementById('chat-messages');
+      if (!messages) return;
+      
+      messages.innerHTML = `
+        <div style="padding: 20px; text-align: center;">
+          <h4 style="margin: 0 0 12px; font-size: 16px; font-weight: 600;">Welcome back!</h4>
+          <p style="margin: 0 0 16px; font-size: 14px; color: #6b7280;">
+            We found an existing account with these details:
+          </p>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin: 0 0 16px; text-align: left;">
+            <strong style="display: block; margin-bottom: 4px;">${this.escapeHtml(existingCustomer.name)}</strong>
+            ${existingCustomer.email ? `<div style="font-size: 13px; color: #6b7280;">${this.escapeHtml(existingCustomer.email)}</div>` : ''}
+            ${existingCustomer.phone ? `<div style="font-size: 13px; color: #6b7280;">${this.escapeHtml(existingCustomer.phone)}</div>` : ''}
+          </div>
+          <p style="margin: 0 0 16px; font-size: 14px; color: #6b7280;">
+            Would you like to continue with your previous conversations?
+          </p>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button class="merge-btn" data-action="merge" style="flex: 1; padding: 10px 16px; background: ${this.cachedCustomization?.primary_color || '#6366f1'}; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+              Continue with existing
+            </button>
+            <button class="merge-btn" data-action="new" style="flex: 1; padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+              Start fresh
+            </button>
+          </div>
+        </div>
+      `;
+      
+      this.shadowRoot.querySelectorAll('.merge-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const action = e.target.dataset.action;
+          // Disable buttons
+          this.shadowRoot.querySelectorAll('.merge-btn').forEach(b => b.disabled = true);
+          
+          if (action === 'new') {
+            // User chose to start fresh - show prechat form again
+            this.showPrechatForm();
+          } else {
+            // User chose to merge - authenticate with existing customer ID
+            // TODO: This needs backend support to accept customer_id directly
+            // For now, we'll create new and let admin merge later
+            this.showPrechatForm();
+          }
+        });
+      });
+    },
+
+    showGreeting: function(customization) {
+      if (!customization.greeting_message && !customization.conversation_starters?.length) return;
+      
+      const messages = this.shadowRoot.getElementById('chat-messages');
+      if (!messages) return;
+      
+      // Check if greeting already exists
+      if (messages.querySelector('[data-greeting="true"]')) return;
+      
+      const greetingEl = document.createElement('div');
+      greetingEl.className = 'message outbound';
+      greetingEl.setAttribute('data-greeting', 'true');
+      
+      let startersHTML = '';
+      if (customization.conversation_starters?.length) {
+        const starters = Array.isArray(customization.conversation_starters) 
+          ? customization.conversation_starters 
+          : [];
+        startersHTML = `
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+            ${starters.map(starter => `
+              <button class="quick-reply-btn" data-text="${this.escapeHtml(starter.text || '')}" 
+                style="padding: 8px 12px; background: white; border: 1px solid ${customization.primary_color || '#6366f1'}; 
+                color: ${customization.primary_color || '#6366f1'}; border-radius: 8px; cursor: pointer; font-size: 13px; 
+                text-align: left; transition: all 0.2s;">
+                ${this.escapeHtml(starter.text || '')}
+              </button>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      greetingEl.innerHTML = `
+        <div class="message-bubble">${this.escapeHtml(customization.greeting_message || 'Hi! How can we help?')}</div>
+        ${startersHTML}
+      `;
+      
+      messages.appendChild(greetingEl);
+      messages.scrollTop = messages.scrollHeight;
+      
+      // Add click handlers for quick replies
+      this.shadowRoot.querySelectorAll('.quick-reply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const text = btn.dataset.text;
+          const input = this.shadowRoot.getElementById('message-input');
+          if (input && text) {
+            input.value = text;
+            this.sendMessage();
+          }
+        });
+        
+        // Hover effects
+        btn.addEventListener('mouseenter', (e) => {
+          e.target.style.background = customization.primary_color || '#6366f1';
+          e.target.style.color = 'white';
+        });
+        btn.addEventListener('mouseleave', (e) => {
+          e.target.style.background = 'white';
+          e.target.style.color = customization.primary_color || '#6366f1';
+        });
+      });
+    },
+
+    startPresenceHeartbeat: function() {
+      if (this.presenceHeartbeatInterval) return;
+      
+      this.presenceHeartbeatInterval = setInterval(async () => {
+        if (!this.sessionToken) return;
+        
+        try {
+          const response = await fetch(`${this.config.apiUrl}/embed-presence`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-session-token': this.sessionToken
+            },
+            body: JSON.stringify({ 
+              action: 'heartbeat',
+              timestamp: new Date().toISOString()
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.session_valid) {
+              this.updateSessionStatus('online');
+            }
+          } else {
+            this.updateSessionStatus('offline');
+          }
+        } catch (err) {
+          console.warn('[AlacarteChat] Presence heartbeat failed:', err);
+          this.updateSessionStatus('away');
+        }
+      }, 10000); // Every 10 seconds
+    },
+
+    updateSessionStatus: function(status) {
+      this.sessionStatus = status;
+      const dot = this.shadowRoot?.getElementById('status-dot');
+      if (!dot) return;
+      
+      dot.className = 'status-indicator';
+      if (status === 'online') {
+        dot.style.background = '#10b981';
+        dot.title = 'Connected';
+      } else if (status === 'offline') {
+        dot.style.background = '#ef4444';
+        dot.title = 'Disconnected';
+      } else if (status === 'away') {
+        dot.style.background = '#f59e0b';
+        dot.title = 'Away';
+      }
+    },
+
+    playNotificationSound: function() {
+      const customization = this.cachedCustomization || {};
+      if (!customization.sound_notifications) return;
+      
+      const chatWindow = this.shadowRoot?.getElementById('chat-window');
+      if (chatWindow?.classList.contains('open')) return; // Don't play if window is open
+      
+      if (!this.notificationSound) {
+        // Create audio element with notification sound (simple beep)
+        this.notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDBz0PPXezAgEGa/7+2mUxQJR5fiz3I/Dwc9o+fvrl0SE0Si4vK8bSMGKIPR8tmORggYarvvtJZLFAtOp+LvvG8pBzaV2PPNfSoHJXvJ8duRPQkWYLnr7KZUEQpHn+HywXAiBDJ20fPYeTEfDma97uymVBQKR5jiz3FAEAg9o+jxrVwQEUSj4u+9cyQHKoTR8tqPRAgWaLvusmJMEAxKqOLwvWsjBi6H0fLXjUEJE2G8' + '7OukUhELSJ/h8r9yIwUwdNHz2noyCRBivu7vpVIRCkee4c9+Pw8HPKPo8a5bEBJEo+LvvnQnBymE0fHZj0UIFWi77rNmTBEOSqjh8LxrIwYuh9Hy140/CRNgve7rpVMSC0if4fK+ciQFMXXR89x8LwcPY77u66ZVEQpHn+HPfj8PBzyj6PGuWxAR');
+      }
+      
+      this.notificationSound.play().catch(err => 
+        console.log('[AlacarteChat] Could not play notification sound:', err)
+      );
+      
+      // Desktop notification
+      this.showDesktopNotification('New message');
+    },
+
+    showDesktopNotification: function(message) {
+      if (!('Notification' in window)) return;
+      
+      if (Notification.permission === 'granted') {
+        new Notification(this.config.businessName || 'New Message', {
+          body: message,
+          icon: this.cachedCustomization?.custom_icon_url || '/favicon.png',
+          badge: '/favicon.png',
+          tag: 'alacarte-chat-' + this.conversationId,
+          requireInteraction: false
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
     },
 
     showPrechatForm: function() {

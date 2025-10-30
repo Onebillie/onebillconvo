@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MessageCircle, Circle, Square, Check } from "lucide-react";
+import { MessageCircle, Circle, Square, Check, Plus, X } from "lucide-react";
+import { useState } from "react";
 
 interface WidgetAppearanceEditorProps {
   config: any;
@@ -15,6 +16,26 @@ export const WidgetAppearanceEditor = ({
   config,
   onConfigChange,
 }: WidgetAppearanceEditorProps) => {
+  const [newStarter, setNewStarter] = useState("");
+  const conversationStarters = config.conversation_starters || [];
+
+  const addStarter = () => {
+    if (newStarter.trim()) {
+      onConfigChange({
+        ...config,
+        conversation_starters: [...conversationStarters, { text: newStarter.trim() }]
+      });
+      setNewStarter("");
+    }
+  };
+
+  const removeStarter = (index: number) => {
+    onConfigChange({
+      ...config,
+      conversation_starters: conversationStarters.filter((_: any, i: number) => i !== index)
+    });
+  };
+
   const iconShapes = [
     { id: 'circle', label: 'Circle' },
     { id: 'square', label: 'Square' },
@@ -92,21 +113,77 @@ export const WidgetAppearanceEditor = ({
         </div>
       </div>
 
-      {/* Welcome Message */}
+      {/* Welcome Message (Pre-Chat) */}
       <div className="space-y-3">
-        <Label htmlFor="welcome_message">Welcome Message *</Label>
+        <Label htmlFor="welcome_message">Welcome Message (Pre-Chat)</Label>
         <Textarea
           id="welcome_message"
           value={config.welcome_message}
           onChange={(e) =>
             onConfigChange({ ...config, welcome_message: e.target.value })
           }
-          placeholder="Hi! How can we help you today?"
-          rows={3}
+          placeholder="Welcome! Please fill in your details to start chatting."
+          rows={2}
           className="resize-none"
         />
         <p className="text-xs text-muted-foreground">
-          This message will be displayed when visitors open the chat
+          Shown in the widget before the user fills in contact form
+        </p>
+      </div>
+
+      {/* Greeting Message (Post-Auth) */}
+      <div className="space-y-3">
+        <Label htmlFor="greeting_message">Greeting Message (Post-Auth) *</Label>
+        <Textarea
+          id="greeting_message"
+          value={config.greeting_message || config.welcome_message}
+          onChange={(e) =>
+            onConfigChange({ ...config, greeting_message: e.target.value })
+          }
+          placeholder="Hi! How can we help you today?"
+          rows={2}
+          className="resize-none"
+        />
+        <p className="text-xs text-muted-foreground">
+          First message shown to user after they authenticate
+        </p>
+      </div>
+
+      {/* Conversation Starters */}
+      <div className="space-y-3">
+        <Label>Conversation Starters (Quick Replies)</Label>
+        <div className="space-y-2">
+          {conversationStarters.map((starter: any, index: number) => (
+            <div key={index} className="flex items-center gap-2">
+              <Input
+                value={starter.text}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeStarter(index)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Input
+              value={newStarter}
+              onChange={(e) => setNewStarter(e.target.value)}
+              placeholder="e.g., Track my order"
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addStarter())}
+            />
+            <Button type="button" onClick={addStarter} size="icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Quick reply buttons shown below the greeting message
         </p>
       </div>
 

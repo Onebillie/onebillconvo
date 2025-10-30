@@ -217,9 +217,50 @@ serve(async (req) => {
     
     const normalizedPhone = normalizePhone(phone);
     
-    // PRIVACY-FIRST: Always create a new "session contact" for widget sessions
-    // This ensures no conversation history is ever leaked to the widget
-    // Admin can later merge these session contacts if they match existing customers
+    // Check for existing customers with matching email or phone
+    let existingCustomers: any[] = [];
+    if (email || normalizedPhone) {
+      const { data: customers, error: lookupError } = await supabase
+        .from('customers')
+        .select('id, name, email, phone')
+        .eq('business_id', businessId)
+        .or(
+          email && normalizedPhone 
+            ? `email.eq.${email},phone.eq.${normalizedPhone}`
+            : email 
+              ? `email.eq.${email}`
+              : `phone.eq.${normalizedPhone}`
+        );
+      
+      if (!lookupError && customers && customers.length > 0) {
+        existingCustomers = customers;
+        console.log('[embed-auth] Found existing customers:', existingCustomers.length);
+      }
+    }
+    
+    // If existing customer found, return duplicate_found flag for merge flow
+    if (existingCustomers.length > 0) {
+      const existingCustomer = existingCustomers[0];
+      console.log('[embed-auth] Duplicate customer detected:', existingCustomer.id);
+      
+      return new Response(JSON.stringify({
+        success: true,
+        duplicate_found: true,
+        existing_customer: {
+          id: existingCustomer.id,
+          name: existingCustomer.name,
+          email: existingCustomer.email,
+          phone: existingCustomer.phone
+        },
+        new_details: {
+          name,
+          email,
+          phone: normalizedPhone
+        }
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    
+    // No duplicate found - create new customer
     const customerName = name || email || normalizedPhone || 'Anonymous';
     const { data: newCustomer, error: customerError } = await supabase
       .from('customers')
