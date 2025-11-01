@@ -138,19 +138,19 @@ async function processStatusUpdates(statuses: any[], supabase: any) {
             
             if (conversation) {
               // Create minimal outbound message placeholder
-              await supabase
-                .from('messages')
-                .insert({
-                  conversation_id: conversation.id,
-                  customer_id: customer.id,
-                  content: '[Message sent via external interface]',
-                  direction: 'outbound',
-                  platform: 'whatsapp',
-                  external_message_id: messageId,
-                  status: newStatus,
-                  is_read: messageStatus === 'read' ? true : false,
-                  business_id: customer.business_id
-                });
+          await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversation.id,
+              customer_id: customer.id,
+              content: '[Message sent from WhatsApp Business app or Meta Business Suite - content not captured by OneBillChat]',
+              direction: 'outbound',
+              platform: 'whatsapp',
+              external_message_id: messageId,
+              status: newStatus,
+              is_read: messageStatus === 'read' ? true : false,
+              business_id: customer.business_id
+            });
               
               console.log(`Created placeholder message for status update ${messageId}`);
             }

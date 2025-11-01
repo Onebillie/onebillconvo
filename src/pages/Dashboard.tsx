@@ -363,6 +363,7 @@ const Dashboard = () => {
       `)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .range(offset, offset + MESSAGE_PAGE_SIZE);
 
     if (error) {

@@ -14,7 +14,7 @@ import { EmailDetailModal } from "./EmailDetailModal";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
-import { Pencil, Reply, Search, Paperclip, Star, Pin } from "lucide-react";
+import { Pencil, Reply, Search, Paperclip, Star, Pin, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -318,16 +318,23 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
   };
 
   const formatDateSeparator = (date: Date) => {
+    // Normalize to local timezone
+    const localDate = new Date(date);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    // Compare using local date strings
+    const localDateStr = localDate.toLocaleDateString();
+    const todayStr = today.toLocaleDateString();
+    const yesterdayStr = yesterday.toLocaleDateString();
+
+    if (localDateStr === todayStr) {
       return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (localDateStr === yesterdayStr) {
       return "Yesterday";
     } else {
-      return format(date, "EEE dd MMM");
+      return format(localDate, "EEE dd MMM");
     }
   };
 
@@ -465,11 +472,16 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                         )}
                         
                         {message.direction === "inbound" && (
-                          <div className="flex-shrink-0 mt-1">
+                          <div className="flex-shrink-0 mt-1 flex flex-col items-center gap-1">
                             <ChannelIndicator 
                               channel={message.platform as any || "whatsapp"}
                               isActive={message.platform === "embed" ? isEmbedActive : undefined}
                             />
+                            {!['whatsapp', 'email', 'sms', 'facebook', 'instagram', 'embed'].includes(message.platform) && (
+                              <div className="text-[10px] text-muted-foreground capitalize">
+                                {message.platform}
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -489,47 +501,64 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                               })()}
                               {messageCategories[message.category].display_name}
                             </Badge>
-                          )}
-                          
-                          <div
-                            className={cn(
-                              "w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 transition-all",
-                              message.direction === "outbound"
-                                ? "bg-primary text-primary-foreground"
-                                : message.category && messageCategories[message.category]
-                                  ? "bg-transparent"
-                                  : "bg-muted",
-                              message.is_deleted && 'opacity-60 italic',
-                              message.platform === 'email' && 'cursor-pointer hover:ring-2 hover:ring-primary/50'
-                            )}
-                            style={
-                              message.direction === "inbound" && message.category && messageCategories[message.category]
-                                ? {
-                                    backgroundColor: messageCategories[message.category].background_color,
-                                    color: messageCategories[message.category].text_color,
-                                    borderLeft: `4px solid ${messageCategories[message.category].border_color}`,
-                                  }
-                                : undefined
-                            }
-                            onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
-                          >
-                          {/* Replied message preview */}
-                          {repliedToMessage && (
-                            <div className="mb-2 pb-2 border-b border-current/20 opacity-70">
-                              <div className="flex items-center gap-1 mb-1">
-                                <Reply className="w-3 h-3" />
-                                <span className="text-xs font-medium">
-                                  {repliedToMessage.direction === 'inbound' ? 'Customer' : 'You'}
-                                </span>
-                              </div>
-                              <p className="text-xs truncate">
-                                {repliedToMessage.content}
-                              </p>
-                            </div>
-                          )}
+                           )}
+                           
+                           <div
+                             className={cn(
+                               "w-full break-words [overflow-wrap:anywhere] rounded-lg px-4 py-3 transition-all",
+                               message.direction === "outbound"
+                                 ? "bg-primary text-primary-foreground"
+                                 : message.category && messageCategories[message.category]
+                                   ? "bg-transparent"
+                                   : "bg-muted",
+                               message.is_deleted && 'opacity-60 italic',
+                               message.platform === 'email' && 'cursor-pointer hover:ring-2 hover:ring-primary/50',
+                               // Highlight external placeholder messages
+                               (message.content.includes('[Message sent from') && message.content.includes('external')) && 'bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500'
+                             )}
+                             style={
+                               message.direction === "inbound" && message.category && messageCategories[message.category]
+                                 ? {
+                                     backgroundColor: messageCategories[message.category].background_color,
+                                     color: messageCategories[message.category].text_color,
+                                     borderLeft: `4px solid ${messageCategories[message.category].border_color}`,
+                                   }
+                                 : undefined
+                             }
+                             onDoubleClick={() => message.platform === 'email' && setEmailDetailMessage(message)}
+                           >
+                           {/* Replied message preview */}
+                           {repliedToMessage && (
+                             <div className="mb-2 pb-2 border-b border-current/20 opacity-70">
+                               <div className="flex items-center gap-1 mb-1">
+                                 <Reply className="w-3 h-3" />
+                                 <span className="text-xs font-medium">
+                                   {repliedToMessage.direction === 'inbound' ? 'Customer' : 'You'}
+                                 </span>
+                               </div>
+                               <p className="text-xs truncate">
+                                 {repliedToMessage.content}
+                               </p>
+                             </div>
+                           )}
 
-                          {/* Email content with smart formatting */}
-                          {message.platform === 'email' ? (
+                           {/* External placeholder message warning */}
+                           {message.content.includes('[Message sent from') && message.content.includes('external') ? (
+                             <div className="flex items-start gap-2 text-sm">
+                               <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                               <div>
+                                 <div className="font-medium text-orange-700 dark:text-orange-400 mb-1">
+                                   Message sent externally
+                                 </div>
+                                 <div className="text-xs text-muted-foreground">
+                                   This message was sent outside OneBillChat (WhatsApp Business app or Meta Business Suite) and its content wasn't captured.
+                                 </div>
+                               </div>
+                             </div>
+                           ) : (
+                             <>
+                           {/* Email content with smart formatting */}
+                           {message.platform === 'email' ? (
                               <>
                                 <EmailMessageRenderer 
                                   content={message.content} 
@@ -565,15 +594,17 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   }}
                                 />
                               )}
-                              {/* Attachments for non-email */}
-                              {message.message_attachments &&
-                                message.message_attachments.map((attachment) =>
-                                  renderAttachment(attachment)
-                                )}
-                            </>
-                          )}
-                          
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                               {/* Attachments for non-email */}
+                               {message.message_attachments &&
+                                 message.message_attachments.map((attachment) =>
+                                   renderAttachment(attachment)
+                                 )}
+                               </>
+                           )}
+                           </>
+                           )}
+                           
+                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-xs opacity-70">
                                 {new Date(message.created_at).toLocaleString([], {
                                   year: 'numeric',
