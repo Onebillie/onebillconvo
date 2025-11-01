@@ -257,7 +257,7 @@ const Landing = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {channels.map(channel => <div key={channel.name} className="bg-background rounded-xl p-8 text-center shadow-lg hover:shadow-xl transition-all">
                   <div className={`${channel.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4`}>
-                    <channel.icon className="w-8 h-8 text-white" />
+                    <channel.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <h3 className="font-bold text-xl text-foreground">{channel.name}</h3>
                 </div>)}
@@ -359,19 +359,19 @@ const Landing = () => {
         {/* Metrics */}
         <section className="bg-card py-12 sm:py-16 md:py-20 px-4 sm:px-6">
           <div className="max-w-[1200px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="rounded-xl sm:rounded-2xl bg-[#12b886] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="rounded-xl sm:rounded-2xl bg-primary text-primary-foreground p-6 sm:p-8 md:p-11 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold">66%</div>
               <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Faster response times</div>
             </div>
-            <div className="rounded-xl sm:rounded-2xl bg-[#4dabf7] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="rounded-xl sm:rounded-2xl bg-secondary text-secondary-foreground p-6 sm:p-8 md:p-11 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold">3x</div>
               <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">More conversations handled</div>
             </div>
-            <div className="rounded-xl sm:rounded-2xl bg-[#ff922b] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="rounded-xl sm:rounded-2xl bg-accent text-accent-foreground p-6 sm:p-8 md:p-11 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold">45%</div>
               <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Boost in customer satisfaction</div>
             </div>
-            <div className="rounded-xl sm:rounded-2xl bg-[#e64980] text-white p-6 sm:p-8 md:p-11 text-center">
+            <div className="rounded-xl sm:rounded-2xl bg-destructive text-destructive-foreground p-6 sm:p-8 md:p-11 text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold">6+</div>
               <div className="text-xs sm:text-sm opacity-95 mt-1 sm:mt-2">Channels unified</div>
             </div>
@@ -432,15 +432,15 @@ const Landing = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-6 bg-[#0e0e10] text-white text-center">
+        <section className="py-20 px-6 bg-primary text-primary-foreground text-center">
           <div className="max-w-[800px] mx-auto">
             <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => navigate("/signup")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
+              <Button onClick={() => navigate("/signup")} className="rounded-full bg-card text-card-foreground hover:bg-card/90 font-bold px-8 py-6">
                 Start Free Trial
               </Button>
-              <Button onClick={() => navigate("/pricing")} className="rounded-full bg-white text-[#0e0e10] hover:bg-white/90 font-bold px-8 py-6">
+              <Button onClick={() => navigate("/pricing")} className="rounded-full bg-card text-card-foreground hover:bg-card/90 font-bold px-8 py-6">
                 View Pricing
               </Button>
             </div>

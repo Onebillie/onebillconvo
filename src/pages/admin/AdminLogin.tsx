@@ -217,7 +217,7 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md border-red-900/20 shadow-2xl">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-orange-600 rounded-xl flex items-center justify-center mb-2">
-            <Shield className="w-8 h-8 text-white" />
+            <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-red-600">SuperAdmin Portal</CardTitle>
           <CardDescription className="text-center">

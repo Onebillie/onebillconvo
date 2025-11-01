@@ -164,7 +164,7 @@ export const TwoFactorSetup = () => {
                   Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
                 </p>
                 {setupData.qrCodeImage && (
-                  <div className="flex justify-center p-4 bg-white rounded-lg">
+                  <div className="flex justify-center p-4 bg-card rounded-lg">
                     <img src={setupData.qrCodeImage} alt="2FA QR Code" className="w-48 h-48" />
                   </div>
                 )}
