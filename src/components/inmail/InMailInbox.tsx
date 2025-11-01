@@ -1,18 +1,96 @@
 import { useState } from 'react';
 import { useInMail } from '@/hooks/useInMail';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, MailOpen, Star, Send, Trash2, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Mail, MailOpen, Star, Send, Trash2, AlertCircle, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export const InMailInbox = () => {
-  const { messages, unreadCount, loading, markAsRead, deleteMessage } = useInMail();
+  const { messages, unreadCount, loading, markAsRead, deleteMessage, sendMessage } = useInMail();
+  const { user, currentBusinessId } = useAuth();
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'sent' | 'priority'>('all');
+  const [composerData, setComposerData] = useState({
+    recipientId: '',
+    subject: '',
+    content: '',
+    priority: 'normal' as 'low' | 'normal' | 'high'
+  });
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+
+  const fetchStaffMembers = async () => {
+    if (!currentBusinessId) return;
+    setLoadingStaff(true);
+    try {
+      const { data, error } = await supabase
+        .from('business_users')
+        .select(`
+          user_id,
+          profiles!inner(id, full_name, email, avatar_url)
+        `)
+        .eq('business_id', currentBusinessId)
+        .neq('user_id', user?.id || '');
+
+      if (error) throw error;
+      setStaffMembers(data?.map((bu: any) => bu.profiles) || []);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load team members",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  const handleOpenComposer = () => {
+    fetchStaffMembers();
+    setComposerOpen(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!composerData.recipientId || !composerData.subject || !composerData.content) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await sendMessage(
+        composerData.recipientId,
+        composerData.subject,
+        composerData.content,
+        composerData.priority
+      );
+      
+      setComposerOpen(false);
+      setComposerData({
+        recipientId: '',
+        subject: '',
+        content: '',
+        priority: 'normal'
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
 
   const handleMessageClick = (message: any) => {
     setSelectedMessage(message);
@@ -63,9 +141,9 @@ export const InMailInbox = () => {
             <Badge variant="destructive">{unreadCount}</Badge>
           )}
         </div>
-        <Button onClick={() => setComposerOpen(true)}>
-          <Send className="w-4 h-4 mr-2" />
-          Compose
+        <Button onClick={handleOpenComposer}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Message
         </Button>
       </div>
 
@@ -255,7 +333,92 @@ export const InMailInbox = () => {
         </Card>
       </div>
 
-      {/* InMailComposer will be implemented after database types are regenerated */}
+      {/* Message Composer Dialog */}
+      <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>New Message</DialogTitle>
+            <DialogDescription>
+              Send an internal message to a team member
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">To</label>
+              <Select
+                value={composerData.recipientId}
+                onValueChange={(value) => setComposerData(prev => ({ ...prev, recipientId: value }))}
+                disabled={loadingStaff}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffMembers.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={staff.avatar_url} />
+                          <AvatarFallback>{staff.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span>{staff.full_name || staff.email}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priority</label>
+              <Select
+                value={composerData.priority}
+                onValueChange={(value: 'low' | 'normal' | 'high') => 
+                  setComposerData(prev => ({ ...prev, priority: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject</label>
+              <Input
+                placeholder="Message subject..."
+                value={composerData.subject}
+                onChange={(e) => setComposerData(prev => ({ ...prev, subject: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                placeholder="Type your message..."
+                className="min-h-[150px]"
+                value={composerData.content}
+                onChange={(e) => setComposerData(prev => ({ ...prev, content: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setComposerOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSendMessage}>
+                <Send className="h-4 w-4 mr-2" />
+                Send Message
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
