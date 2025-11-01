@@ -78,19 +78,19 @@ serve(async (req) => {
       });
     }
 
-    // 3. Check for payment processing failures
-    const { data: recentPaymentErrors } = await supabaseClient
+    // 3. Check for frozen accounts or subscription issues
+    const { data: recentBusinessIssues } = await supabaseClient
       .from("businesses")
-      .select("id, name, last_error")
-      .not("last_error", "is", null)
+      .select("id, name, is_frozen, subscription_status")
+      .eq("is_frozen", true)
       .gte("updated_at", lastHour);
 
-    if (recentPaymentErrors && recentPaymentErrors.length > 5) {
+    if (recentBusinessIssues && recentBusinessIssues.length > 5) {
       alerts.push({
-        type: "PAYMENT_PROCESSING_ERRORS",
+        type: "BUSINESS_ACCOUNT_ISSUES",
         severity: "high",
-        message: `${recentPaymentErrors.length} businesses experiencing payment errors`,
-        details: { businesses: recentPaymentErrors.slice(0, 10) },
+        message: `${recentBusinessIssues.length} business accounts frozen or having issues`,
+        details: { businesses: recentBusinessIssues.slice(0, 10) },
         timestamp: now.toISOString(),
       });
     }
