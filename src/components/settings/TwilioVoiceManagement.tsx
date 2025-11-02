@@ -8,13 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Shield, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Phone, Shield, Eye, EyeOff, ExternalLink, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TwilioAutoSetup } from './TwilioAutoSetup';
 
 export const TwilioVoiceManagement = () => {
   const { currentBusinessId, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isOneBillChat, setIsOneBillChat] = useState(false);
+  const [showAutoSetup, setShowAutoSetup] = useState(false);
   const [settings, setSettings] = useState<any>({
     twilio_account_sid: '',
     twilio_auth_token: '',
@@ -110,12 +112,28 @@ export const TwilioVoiceManagement = () => {
 
   return (
     <div className="space-y-6">
-      <Alert>
-        <Phone className="h-4 w-4" />
-        <AlertDescription>
-          Configure your Twilio credentials to enable voice calling. You'll need your Account SID, Auth Token, API Key, API Secret, and TwiML App SID from your Twilio Console.
-        </AlertDescription>
-      </Alert>
+      <div className="flex items-start justify-between gap-4">
+        <Alert className="flex-1">
+          <Phone className="h-4 w-4" />
+          <AlertDescription>
+            Configure your Twilio credentials to enable voice calling. Use the auto-setup wizard for quick configuration, or enter credentials manually.
+          </AlertDescription>
+        </Alert>
+        <Button 
+          onClick={() => setShowAutoSetup(true)}
+          className="shrink-0"
+          size="lg"
+        >
+          <Sparkles className="h-4 w-4 mr-2" />
+          Auto Setup
+        </Button>
+      </div>
+
+      <TwilioAutoSetup
+        open={showAutoSetup}
+        onOpenChange={setShowAutoSetup}
+        onSuccess={loadSettings}
+      />
 
       <Tabs defaultValue="credentials" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
