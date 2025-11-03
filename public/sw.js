@@ -70,12 +70,14 @@ self.addEventListener('notificationclick', function(event) {
 
 self.addEventListener('install', function(event) {
   console.log('Service Worker installing');
-  self.skipWaiting();
+  // Remove skipWaiting() to prevent forced page refreshes
+  // New SW will activate when all pages are closed
 });
 
 self.addEventListener('activate', function(event) {
   console.log('Service Worker activating');
-  event.waitUntil(clients.claim());
+  // Remove clients.claim() to prevent taking control and forcing refresh
+  // SW will handle new page loads naturally
 });
 
 // Handle subscription changes (e.g., iOS Safari key rotations)

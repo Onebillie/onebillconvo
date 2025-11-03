@@ -60,6 +60,12 @@ const queryClient = new QueryClient({
 function AppContent() {
   // Register service worker on app load for push notifications
   useEffect(() => {
+    // Skip SW registration in development to prevent HMR refresh issues
+    if (import.meta.env.DEV) {
+      console.log('Service Worker registration skipped in development mode');
+      return;
+    }
+
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then(registration => {
