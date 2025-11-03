@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -35,8 +34,10 @@ export default function Settings() {
   const { profile, loading, isAdmin, isSuperAdmin, currentBusinessId } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState("subscription");
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // URL is the single source of truth for active tab
+  const activeTab = searchParams.get('tab') ?? 'subscription';
 
 
   const tabOptionsByGroup = [
@@ -102,22 +103,6 @@ export default function Settings() {
 
   const allTabOptions = tabOptionsByGroup.flatMap((group) => group.options);
 
-  // Sync active tab with URL query param (?tab=...) - AVOID INFINITE LOOP
-  useEffect(() => {
-    const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab !== activeTab) {
-      setActiveTab(urlTab);
-    }
-  }, [searchParams]); // Remove activeTab dependency to avoid infinite loop
-
-  // Update URL when active tab changes (SPA, no full reload)
-  useEffect(() => {
-    const current = searchParams.get('tab');
-    if (activeTab && current !== activeTab) {
-      setSearchParams({ tab: activeTab }, { replace: true }); // Use replace instead of push
-    }
-  }, [activeTab]); // Remove searchParams dependency to avoid infinite loop
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -159,11 +144,11 @@ export default function Settings() {
           </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="space-y-4 sm:space-y-6">
           {/* Mobile: Grouped Dropdown Menu */}
           {isMobile ? (
             <>
-              <Select value={activeTab} onValueChange={setActiveTab}>
+              <Select value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}>
                 <SelectTrigger className="w-full h-12">
                   <SelectValue>
                     <div className="flex items-center gap-2">
@@ -207,85 +192,81 @@ export default function Settings() {
 
               {/* Mobile Tab Contents */}
               {isSuperAdmin && (
-                <TabsContent value="staff">
+                <TabsContent value="staff" forceMount>
                   <UnifiedStaffManagement />
                 </TabsContent>
               )}
 
-              <TabsContent value="inmail">
+              <TabsContent value="inmail" forceMount>
                 <InMailAccordion />
               </TabsContent>
 
-              <TabsContent value="subscription">
+              <TabsContent value="subscription" forceMount>
                 <SubscriptionAccordion />
               </TabsContent>
 
-              <TabsContent value="channels">
+              <TabsContent value="channels" forceMount>
                 <ChannelSettings businessId={currentBusinessId} />
               </TabsContent>
 
-              <TabsContent value="webhooks">
+              <TabsContent value="webhooks" forceMount>
                 <WebhookManagement />
               </TabsContent>
 
-              <TabsContent value="message-categories">
+              <TabsContent value="message-categories" forceMount>
                 <MessageCategorySettings />
               </TabsContent>
 
-              <TabsContent value="customer-segments">
+              <TabsContent value="customer-segments" forceMount>
                 <CustomerSegments />
               </TabsContent>
 
-              <TabsContent value="statuses">
+              <TabsContent value="statuses" forceMount>
                 <StatusesAccordion />
               </TabsContent>
 
-              <TabsContent value="email-templates">
+              <TabsContent value="email-templates" forceMount>
                 <EmailTemplatesAccordion />
               </TabsContent>
 
-              <TabsContent value="customer-segments">
-                <CustomerSegments />
-              </TabsContent>
-
-              <TabsContent value="tasks">
+              <TabsContent value="tasks" forceMount>
                 <TasksAccordion />
               </TabsContent>
 
-              <TabsContent value="business">
+              <TabsContent value="business" forceMount>
                 <BusinessAccordion />
               </TabsContent>
 
-              <TabsContent value="calendar">
+              <TabsContent value="calendar" forceMount>
                 <CalendarAccordion />
               </TabsContent>
 
-              <TabsContent value="ai">
+              <TabsContent value="ai" forceMount>
                 <AIAccordion />
               </TabsContent>
 
-              <TabsContent value="canned">
+              <TabsContent value="canned" forceMount>
                 <QuickRepliesAccordion />
               </TabsContent>
 
-              <TabsContent value="ai-approval">
+              <TabsContent value="ai-approval" forceMount>
                 <AIApprovalAccordion />
               </TabsContent>
 
-              <TabsContent value="notifications">
+              <TabsContent value="notifications" forceMount>
                 <NotificationsAccordion />
               </TabsContent>
 
-              <TabsContent value="theme">
+              <TabsContent value="theme" forceMount>
                 {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
               </TabsContent>
 
-              <TabsContent value="backup">
+              <TabsContent value="backup" forceMount>
                 {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
               </TabsContent>
 
               {isSuperAdmin && (
-                <TabsContent value="api">
+                <TabsContent value="api" forceMount>
                   <ApiAccessAccordion />
                 </TabsContent>
               )}
@@ -296,7 +277,7 @@ export default function Settings() {
               <div className="sticky top-6 self-start">
                 <GroupedSettingsNav
                   activeTab={activeTab}
-                  onTabChange={setActiveTab}
+                  onTabChange={(v) => setSearchParams({ tab: v }, { replace: true })}
                   isSuperAdmin={isSuperAdmin}
                 />
               </div>
@@ -304,77 +285,81 @@ export default function Settings() {
               {/* Desktop Tab Contents */}
               <div className="min-w-0">
                 {isSuperAdmin && (
-                  <TabsContent value="staff">
+                  <TabsContent value="staff" forceMount>
                     <UnifiedStaffManagement />
                   </TabsContent>
                 )}
 
-                <TabsContent value="inmail">
+                <TabsContent value="inmail" forceMount>
                   <InMailAccordion />
                 </TabsContent>
 
-                <TabsContent value="subscription">
+                <TabsContent value="subscription" forceMount>
                   <SubscriptionAccordion />
                 </TabsContent>
 
-                <TabsContent value="channels">
+                <TabsContent value="channels" forceMount>
                   <ChannelSettings businessId={currentBusinessId} />
                 </TabsContent>
 
-                <TabsContent value="webhooks">
+                <TabsContent value="webhooks" forceMount>
                   <WebhookManagement />
                 </TabsContent>
 
-                <TabsContent value="message-categories">
+                <TabsContent value="message-categories" forceMount>
                   <MessageCategorySettings />
                 </TabsContent>
 
-                <TabsContent value="customer-segments">
+                <TabsContent value="customer-segments" forceMount>
                   <CustomerSegments />
                 </TabsContent>
 
-                <TabsContent value="statuses">
+                <TabsContent value="statuses" forceMount>
                   <StatusesAccordion />
                 </TabsContent>
 
-                <TabsContent value="tasks">
+                <TabsContent value="email-templates" forceMount>
+                  <EmailTemplatesAccordion />
+                </TabsContent>
+
+                <TabsContent value="tasks" forceMount>
                   <TasksAccordion />
                 </TabsContent>
 
-                <TabsContent value="business">
+                <TabsContent value="business" forceMount>
                   <BusinessAccordion />
                 </TabsContent>
 
-                <TabsContent value="calendar">
+                <TabsContent value="calendar" forceMount>
                   <CalendarAccordion />
                 </TabsContent>
 
-                <TabsContent value="ai">
+                <TabsContent value="ai" forceMount>
                   <AIAccordion />
                 </TabsContent>
 
-                <TabsContent value="canned">
+                <TabsContent value="canned" forceMount>
                   <QuickRepliesAccordion />
                 </TabsContent>
 
-                <TabsContent value="ai-approval">
+                <TabsContent value="ai-approval" forceMount>
                   <AIApprovalAccordion />
                 </TabsContent>
 
-                <TabsContent value="notifications">
+                <TabsContent value="notifications" forceMount>
                   <NotificationsAccordion />
                 </TabsContent>
 
-                <TabsContent value="theme">
+                <TabsContent value="theme" forceMount>
                   {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
                 </TabsContent>
 
-                <TabsContent value="backup">
+                <TabsContent value="backup" forceMount>
                   {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
                 </TabsContent>
 
                 {isSuperAdmin && (
-                  <TabsContent value="api">
+                  <TabsContent value="api" forceMount>
                     <ApiAccessAccordion />
                   </TabsContent>
                 )}
