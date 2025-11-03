@@ -77,6 +77,16 @@ function AppContent() {
     }
   }, []);
 
+  // Navigation diagnostic: assert no hard reloads
+  useEffect(() => {
+    const onLoad = () => {
+      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+      console.debug('Navigation type:', nav?.type);
+    };
+    window.addEventListener('load', onLoad);
+    return () => window.removeEventListener('load', onLoad);
+  }, []);
+
   return (
     <>
       <AccountFrozenBanner />

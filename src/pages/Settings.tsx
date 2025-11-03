@@ -145,52 +145,63 @@ export default function Settings() {
         </div>
         
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="space-y-4 sm:space-y-6">
-          {/* Mobile: Grouped Dropdown Menu */}
-          {isMobile ? (
-            <>
-              <Select value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}>
-                <SelectTrigger className="w-full h-12">
-                  <SelectValue>
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const option = allTabOptions.find((opt) => opt.value === activeTab);
-                        const Icon = option?.icon;
-                        return (
-                          <>
-                            {Icon && <Icon className="w-4 h-4" />}
-                            <span>{option?.label}</span>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[400px]">
-                  {tabOptionsByGroup.map((group, groupIdx) => (
-                    <div key={group.group}>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        {group.group}
-                      </div>
-                      {group.options.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="flex items-center gap-2">
-                              <Icon className="w-4 h-4" />
-                              <span>{option.label}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                      {groupIdx < tabOptionsByGroup.length - 1 && (
-                        <Separator className="my-1" />
-                      )}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="grid gap-6 md:grid-cols-[280px_1fr]">
+            <div className="self-start md:sticky md:top-6">
+              {isMobile ? (
+                <>
+                  <Select value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}>
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const option = allTabOptions.find((opt) => opt.value === activeTab);
+                            const Icon = option?.icon;
+                            return (
+                              <>
+                                {Icon && <Icon className="w-4 h-4" />}
+                                <span>{option?.label}</span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[400px]">
+                      {tabOptionsByGroup.map((group, groupIdx) => (
+                        <div key={group.group}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            {group.group}
+                          </div>
+                          {group.options.map((option) => {
+                            const Icon = option.icon;
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="w-4 h-4" />
+                                  <span>{option.label}</span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                          {groupIdx < tabOptionsByGroup.length - 1 && (
+                            <Separator className="my-1" />
+                          )}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              ) : (
+                <GroupedSettingsNav
+                  activeTab={activeTab}
+                  onTabChange={(v) => setSearchParams({ tab: v }, { replace: true })}
+                  isSuperAdmin={isSuperAdmin}
+                />
+              )}
+            </div>
 
-              {/* Mobile Tab Contents */}
+            {/* Single Tab Contents (shared for mobile and desktop) */}
+            <div className="min-w-0">
               {isSuperAdmin && (
                 <TabsContent value="staff" forceMount>
                   <UnifiedStaffManagement />
@@ -270,102 +281,8 @@ export default function Settings() {
                   <ApiAccessAccordion />
                 </TabsContent>
               )}
-            </>
-          ) : (
-            /* Desktop: Grouped Sidebar Navigation */
-            <div className="grid grid-cols-[280px_1fr] gap-6">
-              <div className="sticky top-6 self-start">
-                <GroupedSettingsNav
-                  activeTab={activeTab}
-                  onTabChange={(v) => setSearchParams({ tab: v }, { replace: true })}
-                  isSuperAdmin={isSuperAdmin}
-                />
-              </div>
-
-              {/* Desktop Tab Contents */}
-              <div className="min-w-0">
-                {isSuperAdmin && (
-                  <TabsContent value="staff" forceMount>
-                    <UnifiedStaffManagement />
-                  </TabsContent>
-                )}
-
-                <TabsContent value="inmail" forceMount>
-                  <InMailAccordion />
-                </TabsContent>
-
-                <TabsContent value="subscription" forceMount>
-                  <SubscriptionAccordion />
-                </TabsContent>
-
-                <TabsContent value="channels" forceMount>
-                  <ChannelSettings businessId={currentBusinessId} />
-                </TabsContent>
-
-                <TabsContent value="webhooks" forceMount>
-                  <WebhookManagement />
-                </TabsContent>
-
-                <TabsContent value="message-categories" forceMount>
-                  <MessageCategorySettings />
-                </TabsContent>
-
-                <TabsContent value="customer-segments" forceMount>
-                  <CustomerSegments />
-                </TabsContent>
-
-                <TabsContent value="statuses" forceMount>
-                  <StatusesAccordion />
-                </TabsContent>
-
-                <TabsContent value="email-templates" forceMount>
-                  <EmailTemplatesAccordion />
-                </TabsContent>
-
-                <TabsContent value="tasks" forceMount>
-                  <TasksAccordion />
-                </TabsContent>
-
-                <TabsContent value="business" forceMount>
-                  <BusinessAccordion />
-                </TabsContent>
-
-                <TabsContent value="calendar" forceMount>
-                  <CalendarAccordion />
-                </TabsContent>
-
-                <TabsContent value="ai" forceMount>
-                  <AIAccordion />
-                </TabsContent>
-
-                <TabsContent value="canned" forceMount>
-                  <QuickRepliesAccordion />
-                </TabsContent>
-
-                <TabsContent value="ai-approval" forceMount>
-                  <AIApprovalAccordion />
-                </TabsContent>
-
-                <TabsContent value="notifications" forceMount>
-                  <NotificationsAccordion />
-                </TabsContent>
-
-                <TabsContent value="theme" forceMount>
-                  {currentBusinessId && <ThemeCustomization businessId={currentBusinessId} />}
-                </TabsContent>
-
-                <TabsContent value="backup" forceMount>
-                  {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
-                </TabsContent>
-
-                {isSuperAdmin && (
-                  <TabsContent value="api" forceMount>
-                    <ApiAccessAccordion />
-                  </TabsContent>
-                )}
-              </div>
             </div>
-          )}
+          </div>
         </Tabs>
       </div>
     </div>

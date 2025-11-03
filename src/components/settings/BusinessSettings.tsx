@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Download, Bell } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useDraft } from "@/hooks/useDraft";
 
 interface BusinessInfo {
   id: string;
@@ -26,7 +27,7 @@ export const BusinessSettings = () => {
   const [loading, setLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { permission, subscribeToPush, unsubscribeFromPush } = usePushNotifications();
-  const [formData, setFormData] = useState<BusinessInfo>({
+  const initialFormData: BusinessInfo = {
     id: "",
     company_name: "",
     company_logo: "",
@@ -37,7 +38,17 @@ export const BusinessSettings = () => {
     reply_to_email: "",
     email_subject_template: "",
     email_signature: "",
-  });
+  };
+  const [formData, setFormData, clearDraft] = useDraft<BusinessInfo>(
+    "settings:business",
+    initialFormData
+  );
+
+  const mounts = useRef(0);
+  useEffect(() => {
+    mounts.current += 1;
+    console.debug('BusinessSettings mounts:', mounts.current);
+  }, []);
 
   useEffect(() => {
     fetchBusinessSettings();
@@ -67,7 +78,7 @@ export const BusinessSettings = () => {
     }
 
     if (data) {
-      setFormData(data);
+      setFormData((prev) => ({ ...prev, ...data }));
     }
   };
 
@@ -121,6 +132,7 @@ export const BusinessSettings = () => {
       if (error) throw error;
 
       toast({ title: "Success", description: "Business settings updated successfully" });
+      clearDraft();
     } catch (error: any) {
       toast({
         title: "Error",
