@@ -70,6 +70,19 @@ function AppContent() {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then(registration => {
           console.log('Service Worker registered:', registration);
+          
+          // Guard against SW updates forcing reload while modals are open
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // Dynamic import to avoid circular dependency
+            import('@/stores/modalStore').then(({ useModalStore }) => {
+              const isModalOpen = useModalStore.getState().isAnyModalOpen();
+              if (isModalOpen) {
+                console.log('SW update detected but modal is open - reload deferred');
+                return;
+              }
+              console.log('SW controller changed - safe to refresh');
+            });
+          });
         })
         .catch(error => {
           console.error('Service Worker registration failed:', error);

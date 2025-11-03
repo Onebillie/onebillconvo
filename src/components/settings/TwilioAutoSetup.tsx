@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,27 +8,24 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useModalStore } from '@/stores/modalStore';
+import { useState } from 'react';
 
 interface TwilioAutoSetupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-type SetupStep = 'method' | 'credentials' | 'phone' | 'processing' | 'success';
+export const TwilioAutoSetup = ({ onSuccess }: TwilioAutoSetupProps) => {
+  const {
+    twilioSetupOpen,
+    twilioSetupState,
+    setTwilioSetupOpen,
+    setTwilioSetupState,
+    resetTwilioSetup
+  } = useModalStore();
 
-export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSetupProps) => {
-  const [step, setStep] = useState<SetupStep>('method');
-  const [setupMethod, setSetupMethod] = useState<'auto' | 'manual'>('auto');
-  const [credentials, setCredentials] = useState({
-    accountSid: '',
-    authToken: ''
-  });
-  const [phoneOptions, setPhoneOptions] = useState({
-    purchasePhone: false,
-    countryCode: 'US',
-    areaCode: ''
-  });
+  const { step, setupMethod, credentials, phoneOptions, error } = twilioSetupState;
+
   const [processing, setProcessing] = useState({
     validateCredentials: false,
     createTwimlApp: false,
@@ -37,16 +33,13 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
     purchasePhone: false,
     configureWebhooks: false
   });
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const handleMethodSelect = (method: 'auto' | 'manual') => {
-    setSetupMethod(method);
     if (method === 'manual') {
-      onOpenChange(false);
+      setTwilioSetupOpen(false);
       toast.info('Manual setup selected. Please enter your Twilio credentials manually.');
     } else {
-      setStep('credentials');
+      setTwilioSetupState({ setupMethod: method, step: 'credentials' });
     }
   };
 
@@ -55,12 +48,11 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
       toast.error('Please enter both Account SID and Auth Token');
       return;
     }
-    setStep('phone');
+    setTwilioSetupState({ step: 'phone' });
   };
 
   const handleSetupStart = async () => {
-    setStep('processing');
-    setError(null);
+    setTwilioSetupState({ step: 'processing', error: null });
     
     try {
       // Step 1: Validate credentials
@@ -117,7 +109,10 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
         throw new Error(data.error || 'Setup failed');
       }
 
-      setResult(data.credentials);
+      setTwilioSetupState({ 
+        result: data.credentials,
+        step: 'success'
+      });
       setProcessing({
         validateCredentials: false,
         createTwimlApp: false,
@@ -125,13 +120,14 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
         purchasePhone: false,
         configureWebhooks: false
       });
-      setStep('success');
       
       toast.success('Twilio setup completed successfully!');
 
     } catch (err: any) {
       console.error('Setup error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      setTwilioSetupState({ 
+        error: err.message || 'An unexpected error occurred'
+      });
       setProcessing({
         validateCredentials: false,
         createTwimlApp: false,
@@ -145,17 +141,12 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
 
   const handleFinish = () => {
     onSuccess();
-    onOpenChange(false);
-    // Reset state
-    setStep('method');
-    setCredentials({ accountSid: '', authToken: '' });
-    setPhoneOptions({ purchasePhone: false, countryCode: 'US', areaCode: '' });
-    setResult(null);
-    setError(null);
+    resetTwilioSetup();
+    setTwilioSetupOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={twilioSetupOpen} onOpenChange={setTwilioSetupOpen}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -232,7 +223,9 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
                 <Input
                   id="accountSid"
                   value={credentials.accountSid}
-                  onChange={(e) => setCredentials({ ...credentials, accountSid: e.target.value })}
+                  onChange={(e) => setTwilioSetupState({ 
+                    credentials: { ...credentials, accountSid: e.target.value }
+                  })}
                   placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 />
               </div>
@@ -243,14 +236,16 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
                   id="authToken"
                   type="password"
                   value={credentials.authToken}
-                  onChange={(e) => setCredentials({ ...credentials, authToken: e.target.value })}
+                  onChange={(e) => setTwilioSetupState({ 
+                    credentials: { ...credentials, authToken: e.target.value }
+                  })}
                   placeholder="Your Twilio Auth Token"
                 />
               </div>
             </div>
 
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setStep('method')}>
+              <Button variant="outline" onClick={() => setTwilioSetupState({ step: 'method' })}>
                 Back
               </Button>
               <Button onClick={handleCredentialsSubmit}>
@@ -268,7 +263,9 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
                 id="purchasePhone"
                 checked={phoneOptions.purchasePhone}
                 onCheckedChange={(checked) => 
-                  setPhoneOptions({ ...phoneOptions, purchasePhone: checked as boolean })
+                  setTwilioSetupState({ 
+                    phoneOptions: { ...phoneOptions, purchasePhone: checked as boolean }
+                  })
                 }
               />
               <div className="space-y-1">
@@ -291,9 +288,11 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
                 
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
-                  <Select
+                  <Select 
                     value={phoneOptions.countryCode}
-                    onValueChange={(value) => setPhoneOptions({ ...phoneOptions, countryCode: value })}
+                    onValueChange={(value) => setTwilioSetupState({ 
+                      phoneOptions: { ...phoneOptions, countryCode: value }
+                    })}
                   >
                     <SelectTrigger id="country">
                       <SelectValue />
@@ -313,7 +312,9 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
                   <Input
                     id="areaCode"
                     value={phoneOptions.areaCode}
-                    onChange={(e) => setPhoneOptions({ ...phoneOptions, areaCode: e.target.value })}
+                    onChange={(e) => setTwilioSetupState({ 
+                      phoneOptions: { ...phoneOptions, areaCode: e.target.value }
+                    })}
                     placeholder="e.g., 353, 415"
                   />
                 </div>
@@ -321,7 +322,7 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
             )}
 
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setStep('credentials')}>
+              <Button variant="outline" onClick={() => setTwilioSetupState({ step: 'credentials' })}>
                 Back
               </Button>
               <Button onClick={handleSetupStart}>
@@ -369,7 +370,7 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
         )}
 
         {/* Step 5: Success */}
-        {step === 'success' && result && (
+        {step === 'success' && twilioSetupState.result && (
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-center py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500" />
@@ -377,10 +378,10 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
 
             <h3 className="text-xl font-semibold text-center">Twilio is Ready!</h3>
 
-            {result.phone_number && (
+            {twilioSetupState.result.phone_number && (
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Your phone number</p>
-                <p className="text-2xl font-bold">{result.phone_number}</p>
+                <p className="text-2xl font-bold">{twilioSetupState.result.phone_number}</p>
               </div>
             )}
 
@@ -389,11 +390,11 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">TwiML App:</span>
-                  <span className="font-mono text-xs">{result.twiml_app_sid}</span>
+                  <span className="font-mono text-xs">{twilioSetupState.result.twiml_app_sid}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">API Key:</span>
-                  <span className="font-mono text-xs">{result.api_key}</span>
+                  <span className="font-mono text-xs">{twilioSetupState.result.api_key}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Webhooks:</span>

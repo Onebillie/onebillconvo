@@ -13,12 +13,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TwilioAutoSetup } from './TwilioAutoSetup';
 import { useFormAutosave } from '@/hooks/useFormAutosave';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { useModalStore } from '@/stores/modalStore';
 
 export const TwilioVoiceManagement = () => {
   const { currentBusinessId, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isOneBillChat, setIsOneBillChat] = useState(false);
-  const [showAutoSetup, setShowAutoSetup] = useState(false);
+  const { setTwilioSetupOpen } = useModalStore();
   const [settings, setSettings] = useState<any>({
     twilio_account_sid: '',
     twilio_auth_token: '',
@@ -167,7 +168,7 @@ export const TwilioVoiceManagement = () => {
           </AlertDescription>
         </Alert>
         <Button 
-          onClick={() => setShowAutoSetup(true)}
+          onClick={() => setTwilioSetupOpen(true)}
           className="shrink-0"
           size="lg"
         >
@@ -176,11 +177,7 @@ export const TwilioVoiceManagement = () => {
         </Button>
       </div>
 
-      <TwilioAutoSetup
-        open={showAutoSetup}
-        onOpenChange={setShowAutoSetup}
-        onSuccess={loadSettings}
-      />
+      <TwilioAutoSetup onSuccess={loadSettings} />
 
       <Tabs defaultValue="credentials" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
