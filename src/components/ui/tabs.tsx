@@ -40,7 +40,7 @@ const TabsContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & {
     forceMount?: boolean;
   }
->(({ className, forceMount, ...props }, ref) => (
+>(({ className, forceMount = true, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
     forceMount={forceMount ? true : undefined}
