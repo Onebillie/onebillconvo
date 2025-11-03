@@ -156,18 +156,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Only trigger navigation on actual sign-in/sign-out events, not token refreshes
-        const shouldNavigate = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
-        
-        if (session?.user) {
+        // Only set loading and fetch profile on actual sign-in/sign-out, not token refreshes
+        if (event === 'SIGNED_IN' && session?.user) {
           setLoading(true);
           setTimeout(() => {
             fetchProfile(session.user.id).finally(() => setLoading(false));
           }, 0);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
         }
+        // For TOKEN_REFRESHED and USER_UPDATED: keep session/user in sync but don't remount app
       }
     );
 
@@ -279,12 +278,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isSuperAdmin = userRole === 'superadmin';
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';
 
-  // Auto-refresh subscription every 60 seconds
+  // Auto-refresh subscription every 60 seconds (paused when tab hidden or on settings page)
   useEffect(() => {
     if (!user) return;
 
     const interval = setInterval(() => {
-      checkSubscription();
+      // Skip if document is hidden or user is on settings page
+      const isOnSettings = window.location.pathname.startsWith('/app/settings');
+      if (!document.hidden && !isOnSettings) {
+        checkSubscription();
+      }
     }, 60000);
 
     return () => clearInterval(interval);

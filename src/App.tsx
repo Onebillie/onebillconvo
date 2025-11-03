@@ -46,7 +46,16 @@ import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Prevent form data loss on tab switch
+      refetchOnReconnect: true,
+      retry: 1,
+      staleTime: 60_000,
+    },
+  },
+});
 
 function AppContent() {
   // Register service worker on app load for push notifications

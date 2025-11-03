@@ -283,6 +283,12 @@ export const TwilioAutoSetup = ({ open, onOpenChange, onSuccess }: TwilioAutoSet
 
             {phoneOptions.purchasePhone && (
               <div className="pl-9 space-y-4">
+                <Alert className="bg-muted/50">
+                  <AlertDescription className="text-sm">
+                    💾 Your edits are autosaved locally and will persist if you switch tabs
+                  </AlertDescription>
+                </Alert>
+                
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
                   <Select

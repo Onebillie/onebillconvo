@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Phone, Shield, Eye, EyeOff, ExternalLink, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TwilioAutoSetup } from './TwilioAutoSetup';
+import { useFormAutosave } from '@/hooks/useFormAutosave';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 
 export const TwilioVoiceManagement = () => {
   const { currentBusinessId, user } = useAuth();
@@ -41,6 +43,34 @@ export const TwilioVoiceManagement = () => {
     twimlAppSid: false
   });
 
+  // Track initial settings and load state for autosave
+  const initialSettingsRef = useRef<typeof settings | null>(null);
+  const hasLoadedOnceRef = useRef(false);
+
+  // Check if form has unsaved changes
+  const isDirty = initialSettingsRef.current 
+    ? JSON.stringify(settings) !== JSON.stringify(initialSettingsRef.current)
+    : false;
+
+  // Autosave form drafts to localStorage
+  const { loadSavedData, clearSavedData } = useFormAutosave({
+    key: `twilio-settings-draft-${currentBusinessId}`,
+    values: settings,
+    enabled: true,
+    debounceMs: 800
+  });
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (!currentBusinessId) return;
+    
+    const savedDraft = loadSavedData();
+    if (savedDraft && Object.keys(savedDraft).length > 0) {
+      setSettings(prev => ({ ...prev, ...savedDraft }));
+      toast.success('Draft restored from last session');
+    }
+  }, [currentBusinessId]);
+
   useEffect(() => {
     if (user) {
       checkAccess();
@@ -57,6 +87,8 @@ export const TwilioVoiceManagement = () => {
   };
 
   const loadSettings = async () => {
+    if (!currentBusinessId) return;
+    
     try {
       const { data, error } = await supabase
         .from('call_settings')
@@ -69,7 +101,12 @@ export const TwilioVoiceManagement = () => {
       }
 
       if (data) {
-        setSettings(data);
+        // Only apply loaded settings if this is the first load or form is not dirty
+        if (!hasLoadedOnceRef.current || !isDirty) {
+          setSettings(data);
+          initialSettingsRef.current = data;
+          hasLoadedOnceRef.current = true;
+        }
       }
     } catch (error) {
       console.error('Error loading call settings:', error);
@@ -90,6 +127,9 @@ export const TwilioVoiceManagement = () => {
 
       if (error) throw error;
 
+      // Clear draft and update baseline after successful save
+      clearSavedData();
+      initialSettingsRef.current = settings;
       toast.success('Twilio Voice settings saved');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -111,7 +151,13 @@ export const TwilioVoiceManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <UnsavedChangesGuard 
+        hasUnsavedChanges={isDirty}
+        message="You have unsaved Twilio settings. Are you sure you want to leave?"
+      />
+      
+      <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <Alert className="flex-1">
           <Phone className="h-4 w-4" />
@@ -405,5 +451,6 @@ export const TwilioVoiceManagement = () => {
         {loading ? 'Saving...' : 'Save Voice Settings'}
       </Button>
     </div>
+    </>
   );
 };
