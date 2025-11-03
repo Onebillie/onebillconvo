@@ -38,7 +38,7 @@ export default function Settings() {
   
   // URL is the single source of truth for active tab
   const activeTab = searchParams.get('tab') ?? 'subscription';
-
+  const onTabChange = (v: string) => setSearchParams({ tab: v }, { replace: true });
 
   const tabOptionsByGroup = [
     {
@@ -144,12 +144,12 @@ export default function Settings() {
           </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="space-y-4 sm:space-y-6">
+        <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4 sm:space-y-6">
           <div className="grid gap-6 md:grid-cols-[280px_1fr]">
             <div className="self-start md:sticky md:top-6">
               {isMobile ? (
                 <>
-                  <Select value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}>
+                  <Select value={activeTab} onValueChange={onTabChange}>
                     <SelectTrigger className="w-full h-12">
                       <SelectValue>
                         <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export default function Settings() {
               ) : (
                 <GroupedSettingsNav
                   activeTab={activeTab}
-                  onTabChange={(v) => setSearchParams({ tab: v }, { replace: true })}
+                  onTabChange={onTabChange}
                   isSuperAdmin={isSuperAdmin}
                 />
               )}
