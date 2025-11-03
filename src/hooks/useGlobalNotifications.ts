@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const useGlobalNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const toastTimeoutRef = useRef<NodeJS.Timeout>();
   const lastNotificationRef = useRef<number>(0);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchUnreadCount = useCallback(async () => {
     const { count, error } = await supabase
@@ -131,8 +134,8 @@ export const useGlobalNotifications = () => {
                 action: {
                   label: 'View',
                   onClick: () => {
-                    // Navigate to dashboard and select conversation
-                    window.location.href = `/app/dashboard?conversation=${newMessage.conversation_id}`;
+                    // Navigate to dashboard and select conversation (SPA, no full reload)
+                    navigate(`/app/dashboard?conversation=${newMessage.conversation_id}`);
                   },
                 },
               });
@@ -155,8 +158,8 @@ export const useGlobalNotifications = () => {
 
                   notification.onclick = () => {
                     window.focus();
-                    // Navigate to conversation
-                    window.location.href = `/app/dashboard?conversation=${newMessage.conversation_id}`;
+                    // Navigate to conversation (SPA)
+                    navigate(`/app/dashboard?conversation=${newMessage.conversation_id}`);
                     notification.close();
                   };
                 } catch (error) {

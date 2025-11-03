@@ -111,8 +111,9 @@ export const ProfileEditDialog = ({ open, onOpenChange }: ProfileEditDialogProps
         description: "Your profile has been updated successfully",
       });
 
-      // Refresh the page to update the profile everywhere
-      window.location.reload();
+      // Close dialog without forcing full page reload
+      onOpenChange(false);
+
     } catch (error: any) {
       toast({
         title: "Error updating profile",

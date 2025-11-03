@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const CookieConsent = () => {
   const [show, setShow] = useState(false);
@@ -41,9 +42,9 @@ export const CookieConsent = () => {
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           We use cookies to enhance your experience, analyze site traffic, and serve personalized content. By clicking "Accept", you consent to our use of cookies.{" "}
-          <a href="/privacy" className="text-primary hover:underline">
+          <Link to="/privacy" className="text-primary hover:underline">
             Learn more
-          </a>
+          </Link>
         </p>
         <div className="flex gap-2">
           <Button onClick={handleAccept} size="sm" className="flex-1">
