@@ -200,7 +200,7 @@ export const PersistentHeader = () => {
               variant="ghost"
               size="icon"
               className="relative h-9 w-9 sm:h-10 sm:w-10 hidden xs:flex"
-              onClick={() => navigate("/settings?tab=tasks")}
+              onClick={() => navigate("/app/settings?tab=tasks")}
               title="My Tasks"
             >
               <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -259,7 +259,7 @@ export const PersistentHeader = () => {
                 <User className="mr-2 h-4 w-4" />
                 Edit Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings?tab=business")}>
+              <DropdownMenuItem onClick={() => navigate("/app/settings?tab=business")}>
                 <User className="mr-2 h-4 w-4" />
                 Profile Settings
               </DropdownMenuItem>
@@ -272,7 +272,7 @@ export const PersistentHeader = () => {
                   </Badge>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings?tab=tasks")}>
+              <DropdownMenuItem onClick={() => navigate("/app/settings?tab=tasks")}>
                 <CheckSquare className="mr-2 h-4 w-4" />
                 My Tasks
                 {tasksCount > 0 && (

@@ -64,7 +64,7 @@ export const PublicHeader = () => {
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/settings")}>
+                    <DropdownMenuItem onClick={() => navigate("/app/settings")}>
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
                     </DropdownMenuItem>
@@ -133,7 +133,7 @@ export const PublicHeader = () => {
                   Dashboard
                 </button>
                 <button onClick={() => {
-            navigate('/settings');
+            navigate('/app/settings');
             setMobileMenuOpen(false);
           }} className="text-left text-foreground hover:text-primary transition-colors py-2 font-medium">
                   Settings

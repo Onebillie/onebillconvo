@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("subscription");
+  const [searchParams, setSearchParams] = useSearchParams();
+
 
   const tabOptionsByGroup = [
     {
@@ -99,6 +101,22 @@ export default function Settings() {
   ];
 
   const allTabOptions = tabOptionsByGroup.flatMap((group) => group.options);
+
+  // Sync active tab with URL query param (?tab=...)
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams, activeTab]);
+
+  // Update URL when active tab changes (SPA, no full reload)
+  useEffect(() => {
+    const current = searchParams.get('tab');
+    if (activeTab && current !== activeTab) {
+      setSearchParams({ tab: activeTab });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   if (loading) {
     return (

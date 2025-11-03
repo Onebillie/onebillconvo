@@ -168,7 +168,7 @@ export default function AdminDashboard() {
               System Health
             </button>
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/app/settings")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-muted transition-colors"
             >
               Platform Settings
