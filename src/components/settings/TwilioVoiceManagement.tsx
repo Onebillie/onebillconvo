@@ -46,6 +46,7 @@ export const TwilioVoiceManagement = () => {
   // Track initial settings and load state for autosave
   const initialSettingsRef = useRef<typeof settings | null>(null);
   const hasLoadedOnceRef = useRef(false);
+  const hasDraftRef = useRef(false);
 
   // Check if form has unsaved changes
   const isDirty = initialSettingsRef.current 
