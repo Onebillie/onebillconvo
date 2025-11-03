@@ -158,7 +158,7 @@ export const UserProfileHeader = () => {
           variant="ghost"
           size="icon"
           className="relative"
-          onClick={() => navigate("/settings?tab=tasks")}
+          onClick={() => navigate("/app/settings?tab=tasks")}
           title="My Tasks"
         >
           <CheckSquare className="w-5 h-5" />
@@ -178,7 +178,7 @@ export const UserProfileHeader = () => {
             variant="ghost"
             size="icon"
             className="relative"
-            onClick={() => navigate("/settings?tab=tasks")}
+            onClick={() => navigate("/app/settings?tab=tasks")}
             title="Team Tasks"
           >
             <CheckSquare className="w-5 h-5 text-primary" />
@@ -230,7 +230,7 @@ export const UserProfileHeader = () => {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate("/settings?tab=business")}>
+          <DropdownMenuItem onClick={() => navigate("/app/settings?tab=business")}>
             <User className="mr-2 h-4 w-4" />
             Profile Settings
           </DropdownMenuItem>
@@ -243,7 +243,7 @@ export const UserProfileHeader = () => {
               </Badge>
             )}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate("/settings?tab=tasks")}>
+          <DropdownMenuItem onClick={() => navigate("/app/settings?tab=tasks")}>
             <CheckSquare className="mr-2 h-4 w-4" />
             My Tasks
             {tasksCount > 0 && (

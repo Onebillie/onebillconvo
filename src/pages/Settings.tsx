@@ -102,21 +102,21 @@ export default function Settings() {
 
   const allTabOptions = tabOptionsByGroup.flatMap((group) => group.options);
 
-  // Sync active tab with URL query param (?tab=...)
+  // Sync active tab with URL query param (?tab=...) - AVOID INFINITE LOOP
   useEffect(() => {
     const urlTab = searchParams.get('tab');
     if (urlTab && urlTab !== activeTab) {
       setActiveTab(urlTab);
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams]); // Remove activeTab dependency to avoid infinite loop
 
   // Update URL when active tab changes (SPA, no full reload)
   useEffect(() => {
     const current = searchParams.get('tab');
     if (activeTab && current !== activeTab) {
-      setSearchParams({ tab: activeTab });
+      setSearchParams({ tab: activeTab }, { replace: true }); // Use replace instead of push
     }
-  }, [activeTab, searchParams, setSearchParams]);
+  }, [activeTab]); // Remove searchParams dependency to avoid infinite loop
 
   if (loading) {
     return (

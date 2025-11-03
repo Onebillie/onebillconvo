@@ -157,7 +157,7 @@ export default function Onboarding() {
               <p className="text-muted-foreground">
                 Connect your WhatsApp Business account to start messaging customers.
               </p>
-              <Button onClick={() => navigate("/settings?tab=whatsapp-accounts")}>
+              <Button onClick={() => navigate("/app/settings?tab=channels")}>
                 Connect WhatsApp
               </Button>
             </div>
@@ -169,7 +169,7 @@ export default function Onboarding() {
               <p className="text-muted-foreground">
                 Set up email integration to manage customer communications.
               </p>
-              <Button onClick={() => navigate("/settings?tab=email")}>
+              <Button onClick={() => navigate("/app/settings?tab=channels")}>
                 Connect Email
               </Button>
             </div>

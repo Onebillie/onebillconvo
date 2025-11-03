@@ -121,7 +121,7 @@ export default function UsersManagement() {
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground mt-2">Manage platform users and permissions</p>
         </div>
-        <Button onClick={() => navigate("/settings?tab=staff")}>
+        <Button onClick={() => navigate("/app/settings?tab=staff")}>
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
         </Button>
