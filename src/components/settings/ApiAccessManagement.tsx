@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, Plus, Trash2, Key, FileText, Shield } from "lucide-react";
+import { Copy, Eye, EyeOff, Plus, Trash2, Key, FileText, Shield, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiSetupWizard } from "./ApiSetupWizard";
 
 interface ApiKey {
   id: string;
@@ -29,6 +30,7 @@ export function ApiAccessManagement() {
   const [newKeyName, setNewKeyName] = useState("");
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showNewKey, setShowNewKey] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
     fetchApiKeys();
@@ -404,6 +406,40 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
 
   return (
     <div className="space-y-8">
+      {/* Setup Wizard CTA */}
+      {!showWizard && apiKeys.length === 0 && (
+        <Alert className="border-primary/50 bg-primary/5">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <AlertTitle className="text-lg">First time setting up the API?</AlertTitle>
+          <AlertDescription className="mt-2 space-y-3">
+            <p>Our step-by-step wizard will guide you through the entire setup process - no technical knowledge required!</p>
+            <Button onClick={() => setShowWizard(true)} size="lg" className="mt-2">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Start Setup Wizard
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Wizard Modal */}
+      <Dialog open={showWizard} onOpenChange={setShowWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>API Setup Wizard</DialogTitle>
+            <DialogDescription>
+              We'll guide you through setting up your API integration step-by-step
+            </DialogDescription>
+          </DialogHeader>
+          <ApiSetupWizard 
+            onComplete={(features, key) => {
+              setShowWizard(false);
+              fetchApiKeys();
+              toast.success('Setup complete! You can now start using the API.');
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Complete API Documentation Notice */}
       <Alert>
         <FileText className="h-4 w-4" />
@@ -422,7 +458,15 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
 
       <Card>
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>API Keys</span>
+            {apiKeys.length > 0 && (
+              <Button onClick={() => setShowWizard(true)} variant="outline" size="sm">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Setup Wizard
+              </Button>
+            )}
+          </CardTitle>
           <CardDescription>
             Generate and manage API keys for external integrations. All API endpoints require x-api-key header.
           </CardDescription>
