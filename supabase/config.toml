@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.onebill-submit]
 verify_jwt = false
 
+[functions.onebill-parse-with-openai]
+verify_jwt = false
+
 [functions.imap-test]
 verify_jwt = true
 
