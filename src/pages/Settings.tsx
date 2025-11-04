@@ -31,7 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 
 export default function Settings() {
-  const { profile, loading, isAdmin, isSuperAdmin, currentBusinessId } = useAuth();
+  const { profile, loading, isAdmin, isSuperAdmin, isBusinessOwner, currentBusinessId } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -39,6 +39,10 @@ export default function Settings() {
   // URL is the single source of truth for active tab
   const activeTab = searchParams.get('tab') ?? 'subscription';
   const onTabChange = (v: string) => setSearchParams({ tab: v }, { replace: true });
+
+  // Business owners and admins have full access
+  const canManageStaff = isSuperAdmin || isAdmin || isBusinessOwner;
+  const canAccessAdvanced = isSuperAdmin || isAdmin || isBusinessOwner;
 
   const tabOptionsByGroup = [
     {
@@ -82,7 +86,7 @@ export default function Settings() {
       group: "Business",
       options: [
         { value: "business", label: "Business Info", icon: Building2 },
-        ...(isSuperAdmin ? [{ value: "staff", label: "Staff & Teams", icon: Users }] : []),
+        ...(canManageStaff ? [{ value: "staff", label: "Staff & Teams", icon: Users }] : []),
       ],
     },
     {
@@ -96,7 +100,7 @@ export default function Settings() {
       group: "Advanced",
       options: [
         { value: "backup", label: "Data Backup", icon: Database },
-        ...(isSuperAdmin ? [{ value: "api", label: "API Access", icon: Key }] : []),
+        ...(canAccessAdvanced ? [{ value: "api", label: "API Access", icon: Key }] : []),
       ],
     },
   ];
@@ -115,7 +119,7 @@ export default function Settings() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isBusinessOwner) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-md">
@@ -202,7 +206,7 @@ export default function Settings() {
 
             {/* Single Tab Contents (shared for mobile and desktop) */}
             <div className="min-w-0">
-              {isSuperAdmin && (
+              {canManageStaff && (
                 <TabsContent value="staff" forceMount>
                   <UnifiedStaffManagement />
                 </TabsContent>
@@ -276,7 +280,7 @@ export default function Settings() {
                 {currentBusinessId && <DataBackupManagement businessId={currentBusinessId} />}
               </TabsContent>
 
-              {isSuperAdmin && (
+              {canAccessAdvanced && (
                 <TabsContent value="api" forceMount>
                   <ApiAccessAccordion />
                 </TabsContent>

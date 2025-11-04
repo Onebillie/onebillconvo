@@ -36,6 +36,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
   isAdmin: boolean;
+  isBusinessOwner: boolean;
   currentBusinessId: string | null;
   userRole: 'superadmin' | 'admin' | 'agent' | null;
   subscriptionState: SubscriptionState;
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'superadmin' | 'admin' | 'agent' | null>(null);
+  const [isBusinessOwner, setIsBusinessOwner] = useState(false);
   const [isAdminSession, setIsAdminSession] = useState(false);
   const [subscriptionState, setSubscriptionState] = useState<SubscriptionState>({
     subscribed: false,
@@ -133,16 +135,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole('agent');
     }
 
-    // Fetch user's business (first business they're a member of)
+    // Fetch user's business and check ownership
     const { data: businessData } = await supabase
       .from("business_users")
-      .select("business_id")
-      .eq("user_id", userId)
-      .limit(1)
-      .single();
+      .select("business_id, role")
+      .eq("user_id", userId);
 
-    if (businessData) {
-      setCurrentBusinessId(businessData.business_id);
+    if (businessData && businessData.length > 0) {
+      setCurrentBusinessId(businessData[0].business_id);
+      
+      // Check if user is owner of any business
+      const ownerCheck = businessData.find(bu => bu.role === 'owner');
+      setIsBusinessOwner(!!ownerCheck);
     }
 
     // Check subscription after fetching profile
@@ -305,6 +309,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signOut,
         isSuperAdmin,
         isAdmin,
+        isBusinessOwner,
         currentBusinessId,
         userRole,
         subscriptionState,
