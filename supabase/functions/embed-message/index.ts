@@ -96,6 +96,50 @@ serve(async (req) => {
         .update({ last_contact_method: 'embed' })
         .eq('id', session.customer_id);
 
+      // Push to CRM webhook if configured
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('business_id')
+        .eq('id', session.conversation_id)
+        .single();
+
+      if (conversation) {
+        const { data: settings } = await supabase
+          .from('business_settings')
+          .select('message_webhook_url, message_webhook_enabled, message_webhook_secret')
+          .eq('business_id', conversation.business_id)
+          .single();
+
+        if (settings?.message_webhook_enabled && settings.message_webhook_url) {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', session.customer_id)
+            .single();
+
+          const webhookPayload = {
+            event: 'customer.created_via_chatbot',
+            timestamp: new Date().toISOString(),
+            business_id: conversation.business_id,
+            data: {
+              customer,
+              message: {
+                id: newMessage.id,
+                content: messageContent,
+                created_at: newMessage.created_at,
+                platform: 'website'
+              }
+            }
+          };
+
+          fetch(settings.message_webhook_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(webhookPayload),
+          }).catch(err => console.error('CRM webhook failed:', err));
+        }
+      }
+
       // Send notifications asynchronously (fire-and-forget) to avoid blocking response
       Promise.resolve().then(async () => {
         try {

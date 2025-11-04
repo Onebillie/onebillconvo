@@ -380,3 +380,21 @@ verify_jwt = true
 
 [functions.admin-merge-customers]
 verify_jwt = true
+
+[functions.api-customer-fetch]
+verify_jwt = false
+
+[functions.api-customer-create]
+verify_jwt = false
+
+[functions.api-conversation-history]
+verify_jwt = false
+
+[functions.api-parse-attachment]
+verify_jwt = false
+
+[functions.api-customers-sync]
+verify_jwt = false
+
+[functions.webhook-send-message]
+verify_jwt = false

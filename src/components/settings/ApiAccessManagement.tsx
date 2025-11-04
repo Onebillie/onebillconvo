@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, Plus, Trash2, Key } from "lucide-react";
+import { Copy, Eye, EyeOff, Plus, Trash2, Key, FileText, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ApiKey {
   id: string;
@@ -401,12 +403,28 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
   -H 'Content-Type: application/json'`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Complete API Documentation Notice */}
+      <Alert>
+        <FileText className="h-4 w-4" />
+        <AlertTitle>Complete API Documentation</AlertTitle>
+        <AlertDescription>
+          View the comprehensive API documentation including all endpoints, webhooks, examples, and integration guides in the{' '}
+          <a 
+            href="/API_DOCUMENTATION.md" 
+            target="_blank"
+            className="font-medium underline underline-offset-4 hover:text-primary"
+          >
+            API Documentation
+          </a>
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
-          <CardTitle>API Access Management</CardTitle>
+          <CardTitle>API Keys</CardTitle>
           <CardDescription>
-            Manage API keys for external integrations and CRM access
+            Generate and manage API keys for external integrations. All API endpoints require x-api-key header.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
