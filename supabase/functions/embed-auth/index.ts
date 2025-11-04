@@ -284,34 +284,68 @@ serve(async (req) => {
     customerId = newCustomer.id;
     console.log('[embed-auth] New session customer created:', customerId);
 
-    // PRIVACY-FIRST: Always create a new conversation for each widget session
-    // This ensures no previous messages are visible to the customer
-    const { data: newConversation, error: conversationError } = await supabase
+    // WIDGET SESSION ISOLATION: Reuse existing conversation but track session start
+    // This allows admin to see full history while customer only sees current session
+    const { data: existingConversations } = await supabase
       .from('conversations')
-      .insert({
-        customer_id: customerId,
-        business_id: businessId,
-        status: 'active',
-        priority: 5,
-        metadata: { 
-          source: 'embed', 
-          channel: 'website_widget',
-          privacy_scoped: true,
-          session_start: new Date().toISOString()
-        }
-      })
-      .select('id')
-      .single();
+      .select('id, metadata')
+      .eq('customer_id', customerId)
+      .eq('business_id', businessId)
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (conversationError || !newConversation) {
-      console.error('[embed-auth] Error creating conversation:', conversationError);
-      return new Response(JSON.stringify({ error: 'Failed to create conversation' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    let conversationId: string;
+    let isNewConversation = false;
+    const sessionStart = new Date().toISOString();
+
+    if (existingConversations && existingConversations.length > 0) {
+      // Reuse existing conversation
+      conversationId = existingConversations[0].id;
+      
+      // Update metadata to track this new widget session
+      const existingMetadata = existingConversations[0].metadata as Record<string, any> || {};
+      await supabase
+        .from('conversations')
+        .update({
+          metadata: {
+            ...existingMetadata,
+            latest_widget_session: sessionStart,
+            channel: 'website_widget'
+          },
+          status: 'active' // Reactivate if it was closed
+        })
+        .eq('id', conversationId);
+      
+      console.log('[embed-auth] Reusing existing conversation:', conversationId);
+    } else {
+      // Create new conversation for first-time widget users
+      const { data: newConversation, error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          customer_id: customerId,
+          business_id: businessId,
+          status: 'active',
+          priority: 5,
+          metadata: { 
+            source: 'embed', 
+            channel: 'website_widget',
+            privacy_scoped: true,
+            session_start: sessionStart
+          }
+        })
+        .select('id')
+        .single();
+
+      if (conversationError || !newConversation) {
+        console.error('[embed-auth] Error creating conversation:', conversationError);
+        return new Response(JSON.stringify({ error: 'Failed to create conversation' }), 
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      conversationId = newConversation.id;
+      isNewConversation = true;
+      console.log('[embed-auth] New conversation created:', conversationId);
     }
-    
-    let conversationId = newConversation.id;
-    let isNewConversation = true;
-    console.log('[embed-auth] New privacy-scoped conversation created:', conversationId);
 
     const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);

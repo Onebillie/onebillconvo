@@ -45,6 +45,7 @@ export default function EmbedConversation() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [customization, setCustomization] = useState<EmbedCustomization>({});
+  const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -140,7 +141,10 @@ export default function EmbedConversation() {
             .single();
 
           if (data) {
-            setMessages((prev) => [...prev, data as Message]);
+            // Only show messages created during this session
+            if (sessionStartTime && new Date(data.created_at) >= new Date(sessionStartTime)) {
+              setMessages((prev) => [...prev, data as Message]);
+            }
           }
         }
       )
@@ -172,9 +176,12 @@ export default function EmbedConversation() {
             .single();
 
           if (data) {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === data.id ? (data as Message) : msg))
-            );
+            // Only update messages from this session
+            if (sessionStartTime && new Date(data.created_at) >= new Date(sessionStartTime)) {
+              setMessages((prev) =>
+                prev.map((msg) => (msg.id === data.id ? (data as Message) : msg))
+              );
+            }
           }
         }
       )
@@ -225,24 +232,49 @@ export default function EmbedConversation() {
         setCustomization(customizationData);
       }
 
-      // Get or create conversation
+      // WIDGET SESSION ISOLATION: Reuse existing conversation but only show current session messages to customer
+      // Admin can see full history and continue via other channels
       const { data: conversations } = await supabase
         .from('conversations')
-        .select('id')
+        .select('id, metadata')
         .eq('customer_id', validation.customer_id)
         .eq('business_id', validation.business_id)
         .order('created_at', { ascending: false })
         .limit(1);
 
-      let convId = conversations?.[0]?.id;
+      let convId: string;
+      const sessionStart = new Date().toISOString();
+      setSessionStartTime(sessionStart);
 
-      if (!convId) {
+      if (conversations && conversations.length > 0) {
+        // Reuse existing conversation
+        convId = conversations[0].id;
+        
+        // Update metadata to track this new widget session
+        const existingMetadata = conversations[0].metadata as Record<string, any> || {};
+        await supabase
+          .from('conversations')
+          .update({
+            metadata: {
+              ...existingMetadata,
+              latest_widget_session: sessionStart
+            }
+          })
+          .eq('id', convId);
+      } else {
+        // Create new conversation for first-time widget users
         const { data: newConv, error: convError } = await supabase
           .from('conversations')
           .insert({
             customer_id: validation.customer_id,
             business_id: validation.business_id,
             status: 'active',
+            metadata: {
+              source: 'embed',
+              channel: 'website_widget',
+              privacy_scoped: true,
+              session_start: sessionStart
+            }
           })
           .select()
           .single();
@@ -252,7 +284,8 @@ export default function EmbedConversation() {
       }
 
       setConversationId(convId);
-      await loadMessages(convId);
+      // Only load messages from THIS session (privacy-first for widget)
+      await loadMessages(convId, sessionStart);
       setLoading(false);
     } catch (err: any) {
       console.error('Error validating token:', err);
@@ -261,7 +294,11 @@ export default function EmbedConversation() {
     }
   };
 
-  const loadMessages = async (convId: string) => {
+  const loadMessages = async (convId: string, sessionStart?: string) => {
+    // PRIVACY-FIRST: Only load messages created during this widget session
+    // This prevents any historical messages or messages from other channels from being visible
+    const startTime = sessionStart || sessionStartTime || new Date().toISOString();
+    
     const { data, error } = await supabase
       .from('messages')
       .select(`
@@ -276,6 +313,7 @@ export default function EmbedConversation() {
         )
       `)
       .eq('conversation_id', convId)
+      .gte('created_at', startTime) // Only messages from THIS session
       .order('created_at', { ascending: true });
 
     if (error) {
