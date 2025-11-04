@@ -615,12 +615,11 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                          />
                                        )}
                                      </div>
-                                     {message.direction === 'inbound' && (
-                                       <ManualParseButton
-                                         attachmentUrl={attachment.url}
-                                         fileName={attachment.filename || 'attachment'}
-                                       />
-                                     )}
+                                      {/* Manual parse temporarily disabled while fixing runtime error */}
+                                      {/* <ManualParseButton
+                                        attachmentUrl={attachment.url}
+                                        fileName={attachment.filename || 'attachment'}
+                                      /> */}
                                    </div>
                                  ))}
                                </>
