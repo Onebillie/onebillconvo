@@ -6,9 +6,6 @@ verify_jwt = false
 [functions.onebill-submit]
 verify_jwt = false
 
-[functions.onebill-parse-with-openai]
-verify_jwt = false
-
 [functions.imap-test]
 verify_jwt = true
 
@@ -400,9 +397,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.api-parse-attachment]
-verify_jwt = false
-
-[functions.auto-parse-attachment]
 verify_jwt = false
 
 [functions.api-customers-sync]

@@ -12,8 +12,6 @@ import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
 import { AttachmentParseStatus } from "./AttachmentParseStatus";
-import { AutoParseAttachment } from "@/components/onebill/AutoParseAttachment";
-import { ManualParseButton } from "@/components/onebill/ManualParseButton";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -298,6 +296,53 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     });
   };
 
+  const handleReparse = async (message: Message) => {
+    if (!message.message_attachments || message.message_attachments.length === 0) {
+      toast({
+        title: "No attachments",
+        description: "This message has no attachments to parse",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Parsing document...",
+      description: "AI is analyzing the attachment",
+    });
+
+    try {
+      // Parse first attachment (most common use case)
+      const attachment = message.message_attachments[0];
+      
+      const { data, error } = await supabase.functions.invoke('onebill-classify-document', {
+        body: {
+          fileUrl: attachment.url,
+          fileName: attachment.filename,
+          businessId: (message as any).business_id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.classification) {
+        toast({
+          title: "Parse complete",
+          description: `Classified as: ${data.classification.document_type}`,
+        });
+      } else {
+        throw new Error('Invalid response from parsing service');
+      }
+    } catch (error: any) {
+      console.error('Parse error:', error);
+      toast({
+        title: "Parse failed",
+        description: error.message || "Failed to parse attachment",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Memoized attachment renderer to prevent re-renders
   const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
     const isVoiceNote = attachment.type?.startsWith("audio/");
@@ -455,6 +500,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                     onEdit={(msg) => setEditingMessage(msg)}
                     onInfo={(msg) => setInfoMessage(msg)}
                     onDelete={(msg) => setDeleteConfirmMessage(msg)}
+                    onReparse={handleReparse}
                     onSelectMessages={() => {}}
                   >
                     <div
@@ -599,30 +645,13 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   }}
                                 />
                               )}
-                               {/* Attachments for non-email */}
-                               {message.message_attachments &&
-                                 message.message_attachments.map((attachment) => (
-                                   <div key={attachment.id} className="flex items-start gap-2">
-                                     <div className="flex-1">
-                                       {renderAttachment(attachment)}
-                                       {message.direction === 'inbound' && (
-                                         <AutoParseAttachment
-                                           attachmentId={attachment.id}
-                                           attachmentUrl={attachment.url}
-                                           fileName={attachment.filename || 'attachment'}
-                                           messageId={message.id}
-                                           isInbound={true}
-                                         />
-                                       )}
-                                     </div>
-                                     {message.direction === 'inbound' && (
-                                       <ManualParseButton
-                                         attachmentUrl={attachment.url}
-                                         fileName={attachment.filename || 'attachment'}
-                                       />
-                                     )}
-                                   </div>
-                                 ))}
+                                {/* Attachments for non-email */}
+                                {message.message_attachments &&
+                                  message.message_attachments.map((attachment) => (
+                                    <div key={attachment.id} className="inline-block">
+                                      {renderAttachment(attachment)}
+                                    </div>
+                                  ))}
                                </>
                            )}
                            </>

@@ -9,8 +9,9 @@ export const useRealtimeMessages = (
 ) => {
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const pendingUpdatesRef = useRef<Set<string>>(new Set());
+  const lastFetchedAttachments = useRef<Map<string, string>>(new Map());
 
-  // Debounced batch update function
+  // Debounced batch update function - prevents excessive re-renders
   const debouncedUpdate = useCallback(async (messageId: string) => {
     pendingUpdatesRef.current.add(messageId);
     
@@ -23,6 +24,8 @@ export const useRealtimeMessages = (
       pendingUpdatesRef.current.clear();
       
       if (messageIds.length === 0) return;
+      
+      console.log('[useRealtimeMessages] Processing batched attachment updates:', messageIds);
       
       try {
         // Batch fetch all pending messages with attachments
@@ -43,18 +46,34 @@ export const useRealtimeMessages = (
           .eq('conversation_id', conversationId);
         
         messages?.forEach(msg => {
-          const mappedMessage = {
-            ...msg,
-            message_attachments: msg.message_attachments?.map((att: any) => ({
-              id: att.id,
-              filename: att.filename,
-              url: att.url,
-              type: att.type,
-              size: att.size,
-              duration_seconds: att.duration_seconds
-            }))
-          };
-          onMessageUpdate(mappedMessage as unknown as Message);
+          // Create a stable key from attachment IDs and filenames
+          const attachmentKey = msg.message_attachments
+            ?.map((a: any) => `${a.id}-${a.filename}`)
+            .sort()
+            .join('|') || '';
+          
+          const lastKey = lastFetchedAttachments.current.get(msg.id);
+          
+          // Only trigger update if attachments actually changed
+          if (attachmentKey !== lastKey) {
+            lastFetchedAttachments.current.set(msg.id, attachmentKey);
+            
+            const mappedMessage = {
+              ...msg,
+              message_attachments: msg.message_attachments?.map((att: any) => ({
+                id: att.id,
+                filename: att.filename,
+                url: att.url,
+                type: att.type,
+                size: att.size,
+                duration_seconds: att.duration_seconds
+              }))
+            };
+            onMessageUpdate(mappedMessage as unknown as Message);
+            console.log('[useRealtimeMessages] Attachment changed, updating message:', msg.id);
+          } else {
+            console.log('[useRealtimeMessages] No attachment change, skipping update:', msg.id);
+          }
         });
       } catch (e) {
         console.error('Batch message update failed', e);

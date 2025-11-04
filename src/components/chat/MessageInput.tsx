@@ -13,6 +13,7 @@ import { Customer } from "@/types/chat";
 import { populateTemplateWithContactData } from "@/lib/templateUtils";
 import { STRIPE_PRODUCTS, type SubscriptionTier } from "@/lib/stripeConfig";
 import { LimitReachedModal } from "@/components/modals/LimitReachedModal";
+import { isFileSupported, getSupportedFormatsText, type ChannelType } from "@/lib/channelMediaSupport";
 
 interface MessageInputProps {
   conversationId: string;
@@ -127,7 +128,40 @@ export const MessageInput = ({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setAttachments((prev) => [...prev, ...files]);
+    
+    // Validate each file against current channel
+    const invalidFiles: string[] = [];
+    const validFiles: File[] = [];
+    
+    files.forEach(file => {
+      const validation = isFileSupported(file, sendVia as ChannelType);
+      if (validation.supported) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(`${file.name}: ${validation.reason}`);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Unsupported files",
+        description: (
+          <div className="space-y-1">
+            {invalidFiles.map((msg, i) => (
+              <div key={i} className="text-sm">{msg}</div>
+            ))}
+          </div>
+        ),
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setAttachments((prev) => [...prev, ...validFiles]);
+    }
+
+    // Clear input so same file can be selected again
+    e.target.value = '';
   };
 
   const removeAttachment = (index: number) => {
