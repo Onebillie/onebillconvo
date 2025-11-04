@@ -1,5 +1,11 @@
 project_id = "jrtlrnfdqfkjlkpfirzr"
 
+[functions.parse-attachment]
+verify_jwt = false
+
+[functions.auto-trigger-parse]
+verify_jwt = false
+
 [functions.onebill-classify-document]
 verify_jwt = false
 

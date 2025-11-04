@@ -14,6 +14,7 @@ import { EmailDetailModal } from "./EmailDetailModal";
 import { AttachmentParseStatus } from "./AttachmentParseStatus";
 import { AutoParseAttachment } from "@/components/onebill/AutoParseAttachment";
 import { ManualParseButton } from "@/components/onebill/ManualParseButton";
+import { AttachmentParser } from "@/components/attachments/AttachmentParser";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -240,6 +241,32 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     }
   };
 
+  const handleReparseAttachments = async (message: Message) => {
+    try {
+      const attachments = message.message_attachments || [];
+      for (const attachment of attachments) {
+        await supabase.functions.invoke('parse-attachment', {
+          body: {
+            attachmentId: attachment.id,
+            messageId: message.id,
+            forceReparse: true
+          }
+        });
+      }
+      toast({
+        title: "Re-parsing attachments",
+        description: "AI is analyzing the attachments again...",
+      });
+    } catch (error) {
+      console.error('Error re-parsing attachments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to re-parse attachments",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCopy = async (message: Message) => {
     try {
       await navigator.clipboard.writeText(message.content);
@@ -453,6 +480,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                     onForward={handleForward}
                     onCopy={handleCopy}
                     onEdit={(msg) => setEditingMessage(msg)}
+                    onReparseAttachments={handleReparseAttachments}
                     onInfo={(msg) => setInfoMessage(msg)}
                     onDelete={(msg) => setDeleteConfirmMessage(msg)}
                     onSelectMessages={() => {}}
@@ -603,23 +631,15 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                {message.message_attachments &&
                                  message.message_attachments.map((attachment) => (
                                    <div key={attachment.id} className="flex items-start gap-2">
-                                     <div className="flex-1">
-                                       {renderAttachment(attachment)}
-                                       {message.direction === 'inbound' && (
-                                         <AutoParseAttachment
-                                           attachmentId={attachment.id}
-                                           attachmentUrl={attachment.url}
-                                           fileName={attachment.filename || 'attachment'}
-                                           messageId={message.id}
-                                           isInbound={true}
-                                         />
-                                       )}
-                                     </div>
-                                      {/* Manual parse temporarily disabled while fixing runtime error */}
-                                      {/* <ManualParseButton
-                                        attachmentUrl={attachment.url}
-                                        fileName={attachment.filename || 'attachment'}
-                                      /> */}
+                                      <div className="flex-1 flex items-center gap-2">
+                                        {renderAttachment(attachment)}
+                                        {message.direction === 'inbound' && (
+                                          <AttachmentParser
+                                            attachmentId={attachment.id}
+                                            messageId={message.id}
+                                          />
+                                        )}
+                                      </div>
                                    </div>
                                  ))}
                                </>
