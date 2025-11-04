@@ -57,29 +57,50 @@ serve(async (req) => {
     
     console.log(`Processing file: ${fileName}, size: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
     
-    // Use native Deno base64 encoding (handles large files efficiently)
+    // Determine mime type and whether it's a PDF
     const mimeType = fileResponse.headers.get('content-type') || 
       (fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-    
+    const isPdf = mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+
     console.log(`[AI-PARSE] MIME type: ${mimeType}, File: ${fileName}, Size: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
-    
-    // Gemini vision API only supports images via data URLs, not PDFs
-    if (mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
-      console.error(`[AI-PARSE] PDF files cannot be processed via vision API: ${fileName}`);
-      return new Response(
-        JSON.stringify({ 
-          error: 'PDF files are not supported. Please upload an image (JPG, PNG, or WebP) of your bill or meter reading.',
-          classification: 'unknown',
-          confidence: 0,
-          fields: {},
-          field_confidence: {},
-          low_confidence_fields: []
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+
+    let pdfText = '';
+    let base64File = '';
+
+    if (isPdf) {
+      try {
+        // Extract text from PDF (first 3 pages) using pdfjs in Deno
+        const pdfModule = await import('https://esm.sh/pdfjs-dist@4.5.136/legacy/build/pdf.mjs');
+        // Some environments require explicit workerSrc; legacy build works without a worker in Node-like runtimes
+        const loadingTask = pdfModule.getDocument({ data: new Uint8Array(fileBuffer) });
+        const pdf = await loadingTask.promise;
+        const maxPages = Math.min(pdf.numPages, 3);
+        for (let p = 1; p <= maxPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          const pageText = (content.items || []).map((it: any) => (it.str || '')).join(' ');
+          pdfText += pageText + '\n';
+        }
+        pdfText = pdfText.replace(/\s+/g, ' ').trim().slice(0, 15000);
+        console.log(`[AI-PARSE] Extracted PDF text length: ${pdfText.length}`);
+      } catch (e) {
+        console.error('[AI-PARSE] PDF text extraction failed:', e);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to read PDF. Please upload a clear image (JPG/PNG/WebP) instead.',
+            classification: 'unknown',
+            confidence: 0,
+            fields: {},
+            field_confidence: {},
+            low_confidence_fields: []
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Use native Deno base64 encoding for images
+      base64File = encodeBase64(new Uint8Array(fileBuffer));
     }
-    
-    const base64File = encodeBase64(new Uint8Array(fileBuffer));
 
     // Classification and extraction prompt
     const systemPrompt = `You are an expert document classifier for utility bills and meter readings. 
@@ -124,16 +145,23 @@ Return ONLY valid JSON in this exact format:
   "low_confidence_fields": ["mcc_type", "dg_type"]
 }`;
 
-    // Call Lovable AI Gateway (Gemini)
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
+    // Build messages based on input type
+    const messages = isPdf
+      ? [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text:
+                  'Analyze the following text extracted from a utility document and provide classification and field extraction in the required JSON format.\n\n' +
+                  pdfText,
+              },
+            ],
+          },
+        ]
+      : [
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
@@ -150,7 +178,18 @@ Return ONLY valid JSON in this exact format:
               },
             ],
           },
-        ],
+        ];
+
+    // Call Lovable AI Gateway (Gemini)
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages,
         max_tokens: 1000,
         temperature: 0.3,
       }),

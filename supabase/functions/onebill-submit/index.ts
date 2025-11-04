@@ -27,13 +27,19 @@ async function submitWithRetry(endpoint: string, formData: FormData, apiKey: str
     try {
       console.log(`Attempt ${attempt + 1} to ${endpoint}`);
       
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const responseText = await response.text();
       let responseData;
@@ -68,13 +74,14 @@ async function submitWithRetry(endpoint: string, formData: FormData, apiKey: str
         error: responseData.message || responseData.error || responseText 
       };
 
-    } catch (error) {
-      console.error(`Attempt ${attempt + 1} failed:`, error);
+    } catch (error: any) {
+      const isAbort = error?.name === 'AbortError';
+      console.error(`Attempt ${attempt + 1} failed${isAbort ? ' (timeout)' : ''}:`, error);
       if (attempt === maxRetries - 1) {
         return { 
           success: false, 
           status: 0,
-          error: error.message 
+          error: isAbort ? 'Upstream OneBill API timed out' : (error?.message || 'Network error')
         };
       }
       await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
