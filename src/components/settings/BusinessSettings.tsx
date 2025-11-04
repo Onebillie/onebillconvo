@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Download, Bell } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDraft } from "@/hooks/useDraft";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BusinessInfo {
   id: string;
@@ -27,6 +28,7 @@ export const BusinessSettings = () => {
   const [loading, setLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { permission, subscribeToPush, unsubscribeFromPush } = usePushNotifications();
+  const { currentBusinessId } = useAuth();
   const initialFormData: BusinessInfo = {
     id: "",
     company_name: "",
@@ -67,18 +69,51 @@ export const BusinessSettings = () => {
   }, []);
 
   const fetchBusinessSettings = async () => {
-    const { data, error } = await supabase
-      .from("business_settings")
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Error fetching business settings:", error);
+    if (!currentBusinessId) {
+      console.warn("No business ID available");
       return;
     }
 
-    if (data) {
-      setFormData((prev) => ({ ...prev, ...data }));
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("business_settings")
+        .select("*")
+        .eq("business_id", currentBusinessId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching business settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load business settings",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data) {
+        setFormData((prev) => ({ ...prev, ...data }));
+      } else {
+        // No settings exist for this business yet - create default record
+        const { data: insertData, error: insertError } = await supabase
+          .from("business_settings")
+          .insert({
+            business_id: currentBusinessId,
+            company_name: "",
+            whatsapp_status: "Available 24/7",
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Error creating default settings:", insertError);
+        } else if (insertData) {
+          setFormData((prev) => ({ ...prev, ...insertData }));
+        }
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,12 +146,23 @@ export const BusinessSettings = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!currentBusinessId) {
+      toast({
+        title: "Error",
+        description: "No business selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from("business_settings")
-        .update({
+        .upsert({
+          business_id: currentBusinessId,
           company_name: formData.company_name,
           company_logo: formData.company_logo,
           whatsapp_status: formData.whatsapp_status,
@@ -126,8 +172,9 @@ export const BusinessSettings = () => {
           reply_to_email: formData.reply_to_email,
           email_subject_template: formData.email_subject_template,
           email_signature: formData.email_signature,
-        })
-        .eq("id", formData.id);
+        }, {
+          onConflict: "business_id"
+        });
 
       if (error) throw error;
 

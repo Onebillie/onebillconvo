@@ -40,6 +40,7 @@ serve(async (req) => {
       const { data: settings, error: settingsError } = await supabase
         .from('business_settings')
         .select('*')
+        .eq('business_id', keyData.business_id)
         .limit(1)
         .maybeSingle();
 
@@ -57,6 +58,7 @@ serve(async (req) => {
       const { data: settings, error: updateError } = await supabase
         .from('business_settings')
         .update(updates)
+        .eq('business_id', keyData.business_id)
         .select()
         .limit(1)
         .maybeSingle();

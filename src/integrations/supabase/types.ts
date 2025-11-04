@@ -973,6 +973,7 @@ export type Database = {
       }
       business_settings: {
         Row: {
+          business_id: string
           company_logo: string | null
           company_name: string | null
           email_bundle_window_minutes: number | null
@@ -989,6 +990,7 @@ export type Database = {
           whatsapp_status: string | null
         }
         Insert: {
+          business_id: string
           company_logo?: string | null
           company_name?: string | null
           email_bundle_window_minutes?: number | null
@@ -1005,6 +1007,7 @@ export type Database = {
           whatsapp_status?: string | null
         }
         Update: {
+          business_id?: string
           company_logo?: string | null
           company_name?: string | null
           email_bundle_window_minutes?: number | null
@@ -1021,6 +1024,13 @@ export type Database = {
           whatsapp_status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "business_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "business_settings_updated_by_fkey"
             columns: ["updated_by"]
