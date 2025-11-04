@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone, GraduationCap } from "lucide-react";
+import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone, GraduationCap, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -19,7 +19,7 @@ import { InMailSheet } from "@/components/inmail/InMailSheet";
 import { ProfileEditDialog } from "@/components/ProfileEditDialog";
 
 export const PersistentHeader = () => {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isAdmin, isSuperAdmin, isBusinessOwner } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const navigate = useNavigate();
   const location = useLocation();
@@ -156,6 +156,20 @@ export const PersistentHeader = () => {
             <GraduationCap className="w-4 h-4" />
             <span className="hidden sm:inline">Training</span>
           </Button>
+
+          {/* Settings button - visible to admins and business owners */}
+          {(isAdmin || isSuperAdmin || isBusinessOwner) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/app/settings')}
+              className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </Button>
+          )}
           
           {businessName && (
             <div className="flex items-center gap-2 min-w-0">
