@@ -807,6 +807,50 @@ export type Database = {
         }
         Relationships: []
       }
+      attachment_parse_results: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          document_type: string | null
+          error_message: string | null
+          id: string
+          message_id: string
+          parse_status: string
+          parsed_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          document_type?: string | null
+          error_message?: string | null
+          id?: string
+          message_id: string
+          parse_status: string
+          parsed_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          document_type?: string | null
+          error_message?: string | null
+          id?: string
+          message_id?: string
+          parse_status?: string
+          parsed_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachment_parse_results_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audience_segments: {
         Row: {
           business_id: string

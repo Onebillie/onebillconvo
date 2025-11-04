@@ -338,7 +338,14 @@ for message in data['messages']:
 
 **Endpoint:** `POST /api-upload-attachment`
 
-Upload files and attach them to messages.
+Upload files and attach them to messages. **PDF and image files are automatically parsed by AI** to extract structured data.
+
+**Automatic AI Parsing:**
+When you upload a PDF or image file, our AI automatically:
+- Identifies the document type (electricity bill, gas bill, meter reading, etc.)
+- Extracts structured data (customer details, readings, dates, charges)
+- Sends results via webhook (`attachment.parsed` event)
+- Displays parse status in the UI with a visual indicator
 
 **Request (multipart/form-data):**
 ```bash
@@ -645,6 +652,104 @@ Sent when any inbound message is received across all channels.
       }
     ]
   }
+}
+```
+
+#### 3. Attachment Parsed
+
+Sent when an attachment (PDF or image) has been automatically parsed by AI.
+
+**Event:** `attachment.parsed`
+
+**Payload:**
+```json
+{
+  "event": "attachment.parsed",
+  "timestamp": "2025-01-15T10:31:00Z",
+  "data": {
+    "message_id": "uuid",
+    "attachment_id": "uuid",
+    "attachment_url": "https://storage-url/document.pdf",
+    "document_type": "electricity_bill",
+    "confidence": 0.95,
+    "parsed_data": {
+      "document_type": "electricity_bill",
+      "confidence": 0.95,
+      "bills": {
+        "cus_details": [
+          {
+            "account_number": "ACC123456",
+            "customer_name": "John Doe",
+            "address": "123 Main St, Dublin"
+          }
+        ],
+        "electricity": [
+          {
+            "billing_period": "2025-01-01 to 2025-01-31",
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-31",
+            "usage_kwh": 450.5,
+            "total_charge": 125.50,
+            "currency": "EUR",
+            "meter_number": "MTR789456"
+          }
+        ]
+      },
+      "meter_reading": null
+    },
+    "customer": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+353871234567"
+    }
+  }
+}
+```
+
+**Document Types:**
+- `electricity_bill` - Electricity utility bill
+- `gas_bill` - Gas utility bill
+- `broadband_bill` - Internet/broadband bill
+- `phone_bill` - Phone service bill
+- `electricity_meter` - Electricity meter reading photo
+- `gas_meter` - Gas meter reading photo
+- `water_meter` - Water meter reading photo
+- `invoice` - General invoice
+- `receipt` - General receipt
+- `statement` - Account statement
+- `other` - Unidentified document
+
+**Parse Status:**
+Monitor the parse status via UI indicators:
+- 🤖 **Green check**: Successfully parsed
+- 🤖 **Red X**: Parse failed
+- 🤖 **Spinning**: Parsing in progress
+
+**Handling Parsed Data:**
+```php
+// Example PHP webhook handler
+if ($payload['event'] === 'attachment.parsed') {
+    $documentType = $payload['data']['document_type'];
+    $parsedData = $payload['data']['parsed_data'];
+    $confidence = $payload['data']['confidence'];
+    
+    if ($confidence > 0.8) {
+        // High confidence - auto-process
+        if ($documentType === 'electricity_bill') {
+            $billData = $parsedData['bills']['electricity'][0];
+            // Create bill record in your CRM
+            createBillInCRM([
+                'customer_id' => $payload['data']['customer']['id'],
+                'usage' => $billData['usage_kwh'],
+                'amount' => $billData['total_charge'],
+                'period' => $billData['billing_period']
+            ]);
+        }
+    } else {
+        // Low confidence - flag for manual review
+        flagForReview($payload['data']['message_id']);
+    }
 }
 ```
 

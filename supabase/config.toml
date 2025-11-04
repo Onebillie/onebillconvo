@@ -393,6 +393,9 @@ verify_jwt = false
 [functions.api-parse-attachment]
 verify_jwt = false
 
+[functions.auto-parse-attachment]
+verify_jwt = false
+
 [functions.api-customers-sync]
 verify_jwt = false
 

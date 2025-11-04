@@ -102,12 +102,21 @@ const API_FEATURES: ApiFeature[] = [
   },
   {
     id: 'webhook-notifications',
-    name: 'Real-time Notifications',
+    name: 'New Message Alerts',
     description: 'Get instant alerts when customers message you',
     icon: Bell,
     category: 'webhooks',
     useCase: 'Automatically update your CRM when new messages arrive',
     endpoints: ['webhook-send-message']
+  },
+  {
+    id: 'webhook-parsed-attachments',
+    name: 'Smart Document Alerts (AI)',
+    description: 'Get notified when documents are automatically read',
+    icon: FileText,
+    category: 'webhooks',
+    useCase: 'When a customer sends a bill, get the extracted data sent to your system',
+    endpoints: ['auto-parse-attachment']
   }
 ];
 

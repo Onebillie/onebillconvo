@@ -91,6 +91,7 @@ serve(async (req) => {
       .getPublicUrl(fileName);
 
     const attachmentData = {
+      id: crypto.randomUUID(),
       file_name: file.name,
       file_type: file.type,
       file_size: file.size,
@@ -109,6 +110,18 @@ serve(async (req) => {
 
       if (attachError) {
         console.error('Error linking attachment:', attachError);
+      }
+
+      // Trigger auto-parsing for PDF and image files
+      const isParseable = file.type.includes('pdf') || file.type.includes('image');
+      if (isParseable) {
+        supabase.functions.invoke('auto-parse-attachment', {
+          body: {
+            messageId: message_id,
+            attachmentId: attachmentData.id,
+            attachmentUrl: urlData.publicUrl
+          }
+        }).catch(err => console.error('Failed to trigger auto-parse:', err));
       }
     }
 

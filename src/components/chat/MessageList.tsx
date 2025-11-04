@@ -11,6 +11,7 @@ import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
+import { AttachmentParseStatus } from "./AttachmentParseStatus";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -461,6 +462,8 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                       } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
                     >
                       <div className="flex items-start gap-2 relative group">
+                        <AttachmentParseStatus messageId={message.id} />
+                        
                         {/* Star indicator */}
                         {message.is_starred && (
                           <Star className="absolute -top-2 -left-2 h-4 w-4 fill-yellow-500 text-yellow-500 z-10" />
