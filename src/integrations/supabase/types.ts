@@ -982,6 +982,9 @@ export type Database = {
           email_subject_template: string | null
           from_email: string | null
           id: string
+          message_webhook_enabled: boolean | null
+          message_webhook_secret: string | null
+          message_webhook_url: string | null
           reply_to_email: string | null
           support_email: string | null
           updated_at: string
@@ -999,6 +1002,9 @@ export type Database = {
           email_subject_template?: string | null
           from_email?: string | null
           id?: string
+          message_webhook_enabled?: boolean | null
+          message_webhook_secret?: string | null
+          message_webhook_url?: string | null
           reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
@@ -1016,6 +1022,9 @@ export type Database = {
           email_subject_template?: string | null
           from_email?: string | null
           id?: string
+          message_webhook_enabled?: boolean | null
+          message_webhook_secret?: string | null
+          message_webhook_url?: string | null
           reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
@@ -2659,6 +2668,7 @@ export type Database = {
           avatar: string | null
           business_id: string
           created_at: string | null
+          custom_fields: Json | null
           email: string | null
           external_id: string | null
           external_system: string | null
@@ -2690,6 +2700,7 @@ export type Database = {
           avatar?: string | null
           business_id: string
           created_at?: string | null
+          custom_fields?: Json | null
           email?: string | null
           external_id?: string | null
           external_system?: string | null
@@ -2721,6 +2732,7 @@ export type Database = {
           avatar?: string | null
           business_id?: string
           created_at?: string | null
+          custom_fields?: Json | null
           email?: string | null
           external_id?: string | null
           external_system?: string | null

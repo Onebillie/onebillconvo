@@ -150,6 +150,282 @@ CREATE TABLE alacarte_customer_mapping (
 
 ---
 
+## Real-time Customer Sync API
+
+### NEW: Smart Upsert Endpoint
+
+The `api-customers-sync` endpoint provides intelligent create-or-update functionality for real-time CRM synchronization.
+
+**Endpoint:** `POST /api-customers-sync`
+
+**Features:**
+- Automatically creates new customers or updates existing ones
+- Matches by external_id, email, or phone (in that order)
+- Supports batch operations (up to 1000 customers)
+- Returns detailed results showing which customers were created vs updated
+- Supports custom fields via JSON for flexible CRM data mapping
+
+**Request Format:**
+
+```bash
+curl -X POST "${BASE_URL}/api-customers-sync" \
+  -H "x-api-key: ${API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customers": [
+      {
+        "external_id": "CRM-12345",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+353871234567",
+        "first_name": "John",
+        "last_name": "Doe",
+        "address": "123 Main St, Dublin",
+        "notes": "VIP customer - handle with priority",
+        "custom_fields": {
+          "crm_segment": "enterprise",
+          "account_manager": "Sarah Johnson",
+          "contract_value": 50000,
+          "renewal_date": "2025-12-31"
+        }
+      }
+    ]
+  }'
+```
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "results": {
+    "total": 1,
+    "created": 0,
+    "updated": 1,
+    "failed": 0,
+    "details": [
+      {
+        "external_id": "CRM-12345",
+        "customer_id": "uuid-here",
+        "action": "updated",
+        "matched_by": "email"
+      }
+    ]
+  }
+}
+```
+
+**Matching Logic:**
+1. First tries to match by `external_id` (if provided)
+2. Then tries to match by `email` (if provided)
+3. Finally tries to match by `phone` (if provided and normalized)
+4. If no match found, creates a new customer
+
+**Use Cases:**
+- Real-time sync when customer data changes in CRM
+- Webhook-triggered updates from CRM system
+- Background sync jobs to keep data in sync
+- Initial bulk import with automatic deduplication
+
+**Example: Real-time Sync on CRM Update**
+
+```javascript
+// Trigger this when a contact is updated in your CRM
+async function syncCustomerToChatPlatform(crmContact) {
+  const response = await fetch(`${BASE_URL}/api-customers-sync`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      customers: [{
+        external_id: crmContact.id,
+        name: `${crmContact.firstName} ${crmContact.lastName}`,
+        email: crmContact.email,
+        phone: crmContact.phone,
+        custom_fields: {
+          crm_status: crmContact.status,
+          last_purchase: crmContact.lastPurchaseDate,
+          lifetime_value: crmContact.ltv
+        }
+      }]
+    })
+  });
+  
+  const result = await response.json();
+  console.log('Sync result:', result.results.details[0]);
+}
+```
+
+---
+
+## Incoming Message Webhooks
+
+### Configure Real-time Message Forwarding
+
+Forward all incoming messages (with attachments and media) to your CRM system in real-time.
+
+**Configuration:**
+Navigate to **Settings → Business Settings → CRM Integration**
+
+1. Enter your webhook endpoint URL
+2. Enable "Real-time Message Forwarding"
+3. Generate and save a webhook secret
+4. Click "Test Webhook" to verify connectivity
+
+**Webhook Payload Structure:**
+
+```json
+{
+  "event": "message.received",
+  "timestamp": "2025-11-04T09:00:00Z",
+  "business_id": "uuid",
+  "data": {
+    "message": {
+      "id": "uuid",
+      "conversation_id": "uuid",
+      "customer_id": "uuid",
+      "content": "Hello, I need help with my order",
+      "platform": "whatsapp",
+      "channel": "whatsapp",
+      "direction": "inbound",
+      "created_at": "2025-11-04T09:00:00Z",
+      "status": "received"
+    },
+    "customer": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+353871234567",
+      "external_id": "CRM-12345",
+      "custom_fields": {
+        "crm_segment": "enterprise"
+      }
+    },
+    "attachments": [
+      {
+        "id": "uuid",
+        "filename": "receipt.pdf",
+        "type": "application/pdf",
+        "size": 52468,
+        "url": "https://storage.url/path/to/file",
+        "download_url": "https://your-app.com/api/download-media?id=uuid"
+      }
+    ]
+  }
+}
+```
+
+**Security: Signature Verification**
+
+All webhooks include an `X-Webhook-Signature` header for verification:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(req) {
+  const signature = req.headers['x-webhook-signature'];
+  const timestamp = req.headers['x-webhook-timestamp'];
+  const payload = JSON.stringify(req.body);
+  const secret = process.env.WEBHOOK_SECRET; // From Business Settings
+  
+  // Verify timestamp (prevent replay attacks)
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(timestamp)) > 300) {
+    throw new Error('Webhook timestamp too old');
+  }
+  
+  // Verify signature
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
+    
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+```
+
+**Example: Express.js Webhook Handler**
+
+```javascript
+const express = require('express');
+const app = express();
+
+app.post('/webhooks/messages', express.json(), async (req, res) => {
+  try {
+    // Verify webhook signature
+    if (!verifyWebhook(req)) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+    
+    const { event, data } = req.body;
+    
+    if (event === 'message.received') {
+      const { message, customer, attachments } = data;
+      
+      // Find CRM contact by external_id
+      const crmContact = await crm.findContact(customer.external_id);
+      
+      // Create activity in CRM
+      await crm.createActivity({
+        contactId: crmContact.id,
+        type: 'message_received',
+        channel: message.platform,
+        content: message.content,
+        timestamp: message.created_at
+      });
+      
+      // Download and attach files to CRM
+      for (const attachment of attachments) {
+        const fileBuffer = await fetch(attachment.download_url)
+          .then(r => r.buffer());
+        
+        await crm.uploadAttachment({
+          contactId: crmContact.id,
+          filename: attachment.filename,
+          data: fileBuffer,
+          contentType: attachment.type
+        });
+      }
+      
+      console.log(`Processed message ${message.id} for ${customer.name}`);
+    }
+    
+    // Always respond with 200 to acknowledge receipt
+    res.json({ success: true });
+    
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+**Retry Behavior:**
+- Failed deliveries are retried 3 times
+- Exponential backoff: 2s, 4s, 8s
+- 4xx errors (except 429) are not retried
+- 5xx errors trigger retries
+- All delivery attempts are logged
+
+**Testing Locally:**
+
+Use ngrok to test webhooks on your local machine:
+
+```bash
+# Start ngrok
+ngrok http 3000
+
+# Use the ngrok URL in Business Settings
+# Example: https://abc123.ngrok.io/webhooks/messages
+```
+
+---
+
 ## Viewing Customer Conversations in CRM
 
 ### Scenario: User Opens "Joe Bloggs" in CRM

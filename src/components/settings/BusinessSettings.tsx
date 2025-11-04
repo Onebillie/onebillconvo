@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Bell } from "lucide-react";
+import { Download, Bell, Webhook, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,11 +23,15 @@ interface BusinessInfo {
   reply_to_email?: string;
   email_subject_template?: string;
   email_signature?: string;
+  message_webhook_url?: string;
+  message_webhook_enabled?: boolean;
+  message_webhook_secret?: string;
 }
 
 export const BusinessSettings = () => {
   const [loading, setLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showSecret, setShowSecret] = useState(false);
   const { permission, subscribeToPush, unsubscribeFromPush } = usePushNotifications();
   const { currentBusinessId } = useAuth();
   const initialFormData: BusinessInfo = {
@@ -40,6 +45,9 @@ export const BusinessSettings = () => {
     reply_to_email: "",
     email_subject_template: "",
     email_signature: "",
+    message_webhook_url: "",
+    message_webhook_enabled: false,
+    message_webhook_secret: "",
   };
   const [formData, setFormData, clearDraft] = useDraft<BusinessInfo>(
     "settings:business",
@@ -144,6 +152,73 @@ export const BusinessSettings = () => {
     }
   };
 
+  const generateSecret = () => {
+    const secret = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+    setFormData({ ...formData, message_webhook_secret: secret });
+    toast({ title: "Secret generated", description: "Remember to save settings" });
+  };
+
+  const testWebhook = async () => {
+    if (!formData.message_webhook_url) {
+      toast({
+        title: "Error",
+        description: "Please enter a webhook URL first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const testPayload = {
+        event: 'message.received',
+        timestamp: new Date().toISOString(),
+        business_id: currentBusinessId,
+        data: {
+          message: {
+            id: 'test-message-id',
+            content: 'This is a test message',
+            platform: 'test',
+            direction: 'inbound',
+            created_at: new Date().toISOString()
+          },
+          customer: {
+            id: 'test-customer-id',
+            name: 'Test Customer',
+            email: 'test@example.com'
+          },
+          attachments: []
+        }
+      };
+
+      const response = await fetch(formData.message_webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testPayload),
+      });
+
+      if (response.ok) {
+        toast({ title: "Success", description: "Test webhook sent successfully" });
+      } else {
+        toast({
+          title: "Warning",
+          description: `Webhook returned ${response.status}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -172,6 +247,9 @@ export const BusinessSettings = () => {
           reply_to_email: formData.reply_to_email,
           email_subject_template: formData.email_subject_template,
           email_signature: formData.email_signature,
+          message_webhook_url: formData.message_webhook_url,
+          message_webhook_enabled: formData.message_webhook_enabled,
+          message_webhook_secret: formData.message_webhook_secret,
         }, {
           onConflict: "business_id"
         });
@@ -326,6 +404,96 @@ export const BusinessSettings = () => {
         </form>
       </CardContent>
     </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Webhook className="h-5 w-5" />
+            CRM Integration
+          </CardTitle>
+          <CardDescription>
+            Forward all incoming messages and attachments to your CRM system in real-time
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="webhook-url">Webhook Endpoint URL</Label>
+            <Input
+              id="webhook-url"
+              type="url"
+              placeholder="https://your-crm.com/webhooks/messages"
+              value={formData.message_webhook_url || ""}
+              onChange={(e) => setFormData({ ...formData, message_webhook_url: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              All inbound messages will be sent to this endpoint with attachments and customer data
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="webhook-enabled">Enable Real-time Message Forwarding</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically send new messages to your webhook endpoint
+              </p>
+            </div>
+            <Switch
+              id="webhook-enabled"
+              checked={formData.message_webhook_enabled || false}
+              onCheckedChange={(checked) => setFormData({ ...formData, message_webhook_enabled: checked })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhook-secret">Webhook Secret (for signature verification)</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="webhook-secret"
+                  type={showSecret ? "text" : "password"}
+                  value={formData.message_webhook_secret || ""}
+                  readOnly
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowSecret(!showSecret)}
+                >
+                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button type="button" onClick={generateSecret} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Generate
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Used to sign webhook payloads with HMAC-SHA256 for verification
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="button" onClick={testWebhook} variant="outline" disabled={loading || !formData.message_webhook_url}>
+              Test Webhook
+            </Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? "Saving..." : "Save Webhook Settings"}
+            </Button>
+          </div>
+
+          <div className="rounded-lg bg-muted p-4 space-y-2">
+            <p className="text-sm font-medium">Integration Endpoints:</p>
+            <code className="text-xs block">POST /api-customers-sync - Create/update customers</code>
+            <code className="text-xs block">Webhook: message.received - New messages with attachments</code>
+            <p className="text-xs text-muted-foreground mt-2">
+              See CRM_INTEGRATION_GUIDE.md for complete documentation
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
