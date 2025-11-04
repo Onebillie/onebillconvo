@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Message } from '@/types/chat';
 
@@ -7,6 +7,61 @@ export const useRealtimeMessages = (
   onNewMessage: (message: Message) => void,
   onMessageUpdate: (message: Message) => void
 ) => {
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const pendingUpdatesRef = useRef<Set<string>>(new Set());
+
+  // Debounced batch update function
+  const debouncedUpdate = useCallback(async (messageId: string) => {
+    pendingUpdatesRef.current.add(messageId);
+    
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    
+    updateTimeoutRef.current = setTimeout(async () => {
+      const messageIds = Array.from(pendingUpdatesRef.current);
+      pendingUpdatesRef.current.clear();
+      
+      if (messageIds.length === 0) return;
+      
+      try {
+        // Batch fetch all pending messages with attachments
+        const { data: messages } = await supabase
+          .from('messages')
+          .select(`
+            *,
+            message_attachments (
+              id,
+              filename,
+              url,
+              type,
+              size,
+              duration_seconds
+            )
+          `)
+          .in('id', messageIds)
+          .eq('conversation_id', conversationId);
+        
+        messages?.forEach(msg => {
+          const mappedMessage = {
+            ...msg,
+            message_attachments: msg.message_attachments?.map((att: any) => ({
+              id: att.id,
+              filename: att.filename,
+              url: att.url,
+              type: att.type,
+              size: att.size,
+              duration_seconds: att.duration_seconds
+            }))
+          };
+          onMessageUpdate(mappedMessage as unknown as Message);
+        });
+      } catch (e) {
+        console.error('Batch message update failed', e);
+      }
+    }, 300); // 300ms debounce for smooth batching
+  }, [conversationId, onMessageUpdate]);
+
   useEffect(() => {
     if (!conversationId) return;
 
@@ -50,40 +105,9 @@ export const useRealtimeMessages = (
           table: 'message_attachments',
         },
         async (payload) => {
-          try {
-            const { data: fullMessage } = await supabase
-              .from('messages')
-              .select(`
-                *,
-                message_attachments (
-                  id,
-                  filename,
-                  url,
-                  type,
-                  size,
-                  duration_seconds
-                )
-              `)
-              .eq('id', (payload.new as any).message_id)
-              .maybeSingle();
-
-            if (fullMessage && fullMessage.conversation_id === conversationId && isSubscribed) {
-              // Map database fields to expected structure
-              const mappedMessage = {
-                ...fullMessage,
-                message_attachments: fullMessage.message_attachments?.map((att: any) => ({
-                  id: att.id,
-                  filename: att.filename,
-                  url: att.url,
-                  type: att.type,
-                  size: att.size,
-                  duration_seconds: att.duration_seconds
-                }))
-              };
-              onMessageUpdate(mappedMessage as unknown as Message);
-            }
-          } catch (e) {
-            console.error('Realtime attachment fetch failed', e);
+          if (isSubscribed) {
+            const messageId = (payload.new as any).message_id;
+            debouncedUpdate(messageId);
           }
         }
       )
@@ -95,40 +119,9 @@ export const useRealtimeMessages = (
           table: 'message_attachments',
         },
         async (payload) => {
-          try {
-            const { data: fullMessage } = await supabase
-              .from('messages')
-              .select(`
-                *,
-                message_attachments (
-                  id,
-                  filename,
-                  url,
-                  type,
-                  size,
-                  duration_seconds
-                )
-              `)
-              .eq('id', (payload.new as any).message_id)
-              .maybeSingle();
-
-            if (fullMessage && fullMessage.conversation_id === conversationId && isSubscribed) {
-              // Map database fields to expected structure
-              const mappedMessage = {
-                ...fullMessage,
-                message_attachments: fullMessage.message_attachments?.map((att: any) => ({
-                  id: att.id,
-                  filename: att.filename,
-                  url: att.url,
-                  type: att.type,
-                  size: att.size,
-                  duration_seconds: att.duration_seconds
-                }))
-              };
-              onMessageUpdate(mappedMessage as unknown as Message);
-            }
-          } catch (e) {
-            console.error('Realtime attachment fetch failed (update)', e);
+          if (isSubscribed) {
+            const messageId = (payload.new as any).message_id;
+            debouncedUpdate(messageId);
           }
         }
       )
@@ -136,7 +129,10 @@ export const useRealtimeMessages = (
 
     return () => {
       isSubscribed = false;
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [conversationId, onNewMessage, onMessageUpdate]);
+  }, [conversationId, onNewMessage, onMessageUpdate, debouncedUpdate]);
 };

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
@@ -37,16 +38,27 @@ serve(async (req) => {
 
     const fileBuffer = await fileResponse.arrayBuffer();
     
-    // Convert to base64 in chunks to avoid stack overflow on large files
-    const uint8Array = new Uint8Array(fileBuffer);
-    let binary = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, i + chunkSize);
-      binary += String.fromCharCode.apply(null, Array.from(chunk));
-    }
-    const base64File = btoa(binary);
+    // Check file size (Lovable AI has ~20MB limit for images)
+    const contentLength = fileResponse.headers.get('content-length');
+    const fileSizeBytes = contentLength ? parseInt(contentLength) : fileBuffer.byteLength;
     
+    if (fileSizeBytes > 20 * 1024 * 1024) {
+      console.error(`File too large: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'File too large for AI analysis (max 20MB)',
+          classification: 'unknown',
+          confidence: 0,
+          fields: {}
+        }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`Processing file: ${fileName}, size: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
+    
+    // Use native Deno base64 encoding (handles large files efficiently)
+    const base64File = encodeBase64(new Uint8Array(fileBuffer));
     const mimeType = fileResponse.headers.get('content-type') || 'image/jpeg';
 
     // Classification and extraction prompt

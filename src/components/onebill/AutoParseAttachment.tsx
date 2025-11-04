@@ -43,11 +43,40 @@ export const AutoParseAttachment = ({
           }
         );
 
-        if (classifyError) throw classifyError;
+        if (classifyError) {
+          console.error('Classification error:', classifyError);
+          setStatus('error');
+          setError('Document classification failed');
+          return;
+        }
+
+        // Validate classification response
+        if (classification.error || !classification.fields) {
+          setStatus('error');
+          setError('AI could not extract required fields');
+          return;
+        }
 
         // Only process if it's a utility document
         if (!['meter', 'electricity', 'gas'].includes(classification.classification)) {
           setStatus('idle');
+          return;
+        }
+
+        // Validate required fields based on document type
+        const requiredFields: Record<string, string[]> = {
+          meter: ['phone'],
+          electricity: ['phone', 'mprn', 'mcc_type', 'dg_type'],
+          gas: ['phone', 'gprn']
+        };
+
+        const missing = requiredFields[classification.classification]?.filter(
+          field => !classification.fields[field]
+        );
+
+        if (missing && missing.length > 0) {
+          setStatus('error');
+          setError(`Missing required fields: ${missing.join(', ')}`);
           return;
         }
 
