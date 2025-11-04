@@ -28,6 +28,18 @@ export const AutoParseAttachment = ({
     if (!isInbound || !currentBusinessId || !user) return;
 
     const processAttachment = async () => {
+      // Check if already processed to prevent duplicate submissions
+      const { data: existingSubmission } = await supabase
+        .from('onebill_submissions')
+        .select('id')
+        .eq('file_url', attachmentUrl)
+        .eq('business_id', currentBusinessId)
+        .maybeSingle();
+
+      if (existingSubmission) {
+        console.log('[AUTO-PARSE] Attachment already processed, skipping:', fileName);
+        return;
+      }
       try {
         setStatus('classifying');
 
