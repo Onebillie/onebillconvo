@@ -171,3 +171,5 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
     </div>
   );
 });
+
+FilePreview.displayName = 'FilePreview';

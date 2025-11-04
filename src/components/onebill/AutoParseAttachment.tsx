@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, CheckCircle, XCircle, FileCheck } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AutoParseAttachmentProps {
@@ -12,7 +12,7 @@ interface AutoParseAttachmentProps {
   isInbound: boolean;
 }
 
-export const AutoParseAttachment = ({ 
+export const AutoParseAttachment = memo(({ 
   attachmentId, 
   attachmentUrl, 
   fileName, 
@@ -22,12 +22,16 @@ export const AutoParseAttachment = ({
   const { currentBusinessId, user } = useAuth();
   const [status, setStatus] = useState<'idle' | 'classifying' | 'submitting' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string>('');
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
     // Only auto-process inbound attachments
-    if (!isInbound || !currentBusinessId || !user) return;
+    if (!isInbound || !currentBusinessId || !user?.id || hasProcessed.current) return;
 
     const processAttachment = async () => {
+      // Mark as processing immediately to prevent duplicate runs
+      hasProcessed.current = true;
+
       // Check if already processed to prevent duplicate submissions
       const { data: existingSubmission } = await supabase
         .from('onebill_submissions')
@@ -38,6 +42,7 @@ export const AutoParseAttachment = ({
 
       if (existingSubmission) {
         console.log('[AUTO-PARSE] Attachment already processed, skipping:', fileName);
+        setStatus('idle');
         return;
       }
       try {
@@ -151,7 +156,7 @@ export const AutoParseAttachment = ({
     };
 
     processAttachment();
-  }, [attachmentId, attachmentUrl, fileName, messageId, isInbound, currentBusinessId, user]);
+  }, [attachmentId, currentBusinessId, user?.id]); // Only depend on user.id, not entire user object
 
   if (status === 'idle') return null;
 
@@ -197,4 +202,6 @@ export const AutoParseAttachment = ({
       </Tooltip>
     </TooltipProvider>
   );
-};
+});
+
+AutoParseAttachment.displayName = 'AutoParseAttachment';

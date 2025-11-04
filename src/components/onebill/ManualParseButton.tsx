@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileSearch, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,7 @@ interface ManualParseButtonProps {
   onParseComplete?: (result: any) => void;
 }
 
-export const ManualParseButton = ({ 
+export const ManualParseButton = memo(({ 
   attachmentUrl, 
   fileName,
   onParseComplete 
@@ -196,4 +196,6 @@ export const ManualParseButton = ({
       </Tooltip>
     </TooltipProvider>
   );
-};
+});
+
+ManualParseButton.displayName = 'ManualParseButton';
