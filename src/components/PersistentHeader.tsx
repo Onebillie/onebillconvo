@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone, GraduationCap, Settings } from "lucide-react";
+import { Bell, Building2, CheckSquare, Mail, User, LogOut, Home, Megaphone, GraduationCap, Settings, FileUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -155,6 +155,16 @@ export const PersistentHeader = () => {
           >
             <GraduationCap className="w-4 h-4" />
             <span className="hidden sm:inline">Training</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/app/onebill/upload')}
+            className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
+          >
+            <FileUp className="w-4 h-4" />
+            <span className="hidden sm:inline">OneBill</span>
           </Button>
 
           {/* Settings button - visible to admins and business owners */}

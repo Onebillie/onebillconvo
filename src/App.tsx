@@ -24,6 +24,8 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Training from "./pages/Training";
+import OneBillUpload from "./pages/OneBillUpload";
+import OneBillActivity from "./pages/OneBillActivity";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -127,7 +129,9 @@ function AppContent() {
           <Route path="/app" element={<Index />} />
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/settings" element={<Settings />} />
-            <Route path="/app/marketing" element={<MarketingNew />} />
+          <Route path="/app/marketing" element={<MarketingNew />} />
+          <Route path="/app/onebill/upload" element={<OneBillUpload />} />
+          <Route path="/app/onebill/activity" element={<OneBillActivity />} />
           <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
           <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
           

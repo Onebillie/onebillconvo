@@ -4691,6 +4691,155 @@ export type Database = {
         }
         Relationships: []
       }
+      onebill_submissions: {
+        Row: {
+          business_id: string
+          classification_confidence: number | null
+          created_at: string
+          customer_id: string | null
+          dg_type: string | null
+          document_type: string
+          error_message: string | null
+          extracted_fields: Json
+          file_name: string
+          file_size: number
+          file_url: string
+          gprn: string | null
+          http_status: number | null
+          id: string
+          mcc_type: string | null
+          mprn: string | null
+          onebill_endpoint: string
+          onebill_response: Json | null
+          phone: string
+          retry_count: number
+          submission_status: string
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          business_id: string
+          classification_confidence?: number | null
+          created_at?: string
+          customer_id?: string | null
+          dg_type?: string | null
+          document_type: string
+          error_message?: string | null
+          extracted_fields?: Json
+          file_name: string
+          file_size: number
+          file_url: string
+          gprn?: string | null
+          http_status?: number | null
+          id?: string
+          mcc_type?: string | null
+          mprn?: string | null
+          onebill_endpoint: string
+          onebill_response?: Json | null
+          phone: string
+          retry_count?: number
+          submission_status?: string
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          business_id?: string
+          classification_confidence?: number | null
+          created_at?: string
+          customer_id?: string | null
+          dg_type?: string | null
+          document_type?: string
+          error_message?: string | null
+          extracted_fields?: Json
+          file_name?: string
+          file_size?: number
+          file_url?: string
+          gprn?: string | null
+          http_status?: number | null
+          id?: string
+          mcc_type?: string | null
+          mprn?: string | null
+          onebill_endpoint?: string
+          onebill_response?: Json | null
+          phone?: string
+          retry_count?: number
+          submission_status?: string
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onebill_submissions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onebill_submissions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onebill_tenant_config: {
+        Row: {
+          auto_classify: boolean
+          business_id: string
+          created_at: string
+          default_country_code: string
+          id: string
+          ocr_confidence_threshold: number
+          require_user_confirmation: boolean
+          updated_at: string
+          webhook_enabled: boolean
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          auto_classify?: boolean
+          business_id: string
+          created_at?: string
+          default_country_code?: string
+          id?: string
+          ocr_confidence_threshold?: number
+          require_user_confirmation?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          auto_classify?: boolean
+          business_id?: string
+          created_at?: string
+          default_country_code?: string
+          id?: string
+          ocr_confidence_threshold?: number
+          require_user_confirmation?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onebill_tenant_config_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_subscriptions: {
         Row: {
           completed: boolean | null
