@@ -17,7 +17,7 @@ interface ManualParseButtonProps {
   onParseComplete?: (result: any) => void;
 }
 
-export const ManualParseButton = memo(({ 
+const ManualParseButtonComponent = ({ 
   attachmentUrl, 
   fileName,
   onParseComplete 
@@ -196,6 +196,7 @@ export const ManualParseButton = memo(({
       </Tooltip>
     </TooltipProvider>
   );
-});
+};
 
+export const ManualParseButton = memo(ManualParseButtonComponent);
 ManualParseButton.displayName = 'ManualParseButton';

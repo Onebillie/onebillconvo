@@ -12,7 +12,7 @@ interface AutoParseAttachmentProps {
   isInbound: boolean;
 }
 
-export const AutoParseAttachment = memo(({ 
+const AutoParseAttachmentComponent = ({ 
   attachmentId, 
   attachmentUrl, 
   fileName, 
@@ -202,6 +202,7 @@ export const AutoParseAttachment = memo(({
       </Tooltip>
     </TooltipProvider>
   );
-});
+};
 
+export const AutoParseAttachment = memo(AutoParseAttachmentComponent);
 AutoParseAttachment.displayName = 'AutoParseAttachment';

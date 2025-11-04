@@ -14,7 +14,7 @@ interface FilePreviewProps {
   onClick?: () => void;
 }
 
-export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
+const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -170,6 +170,7 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
       </div>
     </div>
   );
-});
+};
 
+export const FilePreview = memo(FilePreviewComponent);
 FilePreview.displayName = 'FilePreview';
