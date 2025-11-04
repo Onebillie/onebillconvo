@@ -71,6 +71,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [messageCategories, setMessageCategories] = useState<Record<string, any>>({});
   const { toast } = useToast();
+  const [attachmentsMap, setAttachmentsMap] = useState<Record<string, any[]>>({});
 
   // Fetch message categories
   useEffect(() => {
@@ -165,6 +166,37 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [messages]);
+
+  // Fetch attachments for messages so they render on initial load
+  useEffect(() => {
+    const fetchAttachments = async () => {
+      if (messages.length === 0) return;
+      const ids = messages.map(m => m.id);
+      const { data, error } = await supabase
+        .from('message_attachments')
+        .select('*')
+        .in('message_id', ids);
+      if (!error && data) {
+        const map = data.reduce((acc: Record<string, any[]>, att: any) => {
+          if (!acc[att.message_id]) acc[att.message_id] = [];
+          acc[att.message_id].push(att);
+          return acc;
+        }, {} as Record<string, any[]>);
+        setAttachmentsMap(map);
+      }
+    };
+    fetchAttachments();
+
+    const channel = supabase
+      .channel('message-attachments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'message_attachments' },
+        () => fetchAttachments()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [messages]);
 
   // Preserve scroll position when loading older messages
@@ -650,12 +682,13 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                 />
                               )}
                                 {/* Attachments for non-email */}
-                                {message.message_attachments &&
-                                  message.message_attachments.map((attachment) => (
-                                    <div key={attachment.id} className="inline-block">
-                                      {renderAttachment(attachment)}
-                                    </div>
-                                  ))}
+                                {(
+                                  (message.message_attachments?.length ? message.message_attachments : attachmentsMap[message.id])
+                                )?.map((attachment: any) => (
+                                  <div key={attachment.id} className="inline-block">
+                                    {renderAttachment(attachment)}
+                                  </div>
+                                ))}
                                </>
                            )}
                            </>
