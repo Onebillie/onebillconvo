@@ -34,6 +34,30 @@ interface MessageListProps {
   isLoadingMore?: boolean;
 }
 
+// Stabilized AttachmentItem component to prevent re-renders
+const AttachmentItem = memo(
+  ({ attachment }: { attachment: any }) => {
+    const isVoiceNote = attachment.type?.startsWith("audio/");
+
+    if (isVoiceNote) {
+      return (
+        <div className="mt-2">
+          <VoicePlayer 
+            audioUrl={attachment.url} 
+            duration={attachment.duration_seconds}
+          />
+        </div>
+      );
+    }
+
+    return <FilePreview attachment={attachment} />;
+  },
+  (prev, next) =>
+    prev.attachment?.id === next.attachment?.id &&
+    prev.attachment?.url === next.attachment?.url &&
+    prev.attachment?.type === next.attachment?.type
+);
+
 export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
@@ -323,26 +347,8 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     });
   };
 
-  // Memoized attachment renderer to prevent re-renders
-  const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
-    const isVoiceNote = attachment.type?.startsWith("audio/");
-
-    if (isVoiceNote) {
-      return (
-        <div className="mt-2">
-          <VoicePlayer 
-            audioUrl={attachment.url} 
-            duration={attachment.duration_seconds}
-          />
-        </div>
-      );
-    }
-
-    return <FilePreview attachment={attachment} />;
-  });
-
   const renderAttachment = (attachment: any) => {
-    return <AttachmentItem key={attachment.id} attachment={attachment} />;
+    return <AttachmentItem attachment={attachment} />;
   };
 
   const formatDateSeparator = (date: Date) => {
