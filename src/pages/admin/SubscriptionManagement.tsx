@@ -30,6 +30,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Search, Edit, TrendingUp, Users, DollarSign, Trash2, Clock } from "lucide-react";
 import RevenueBreakdownDialog from "@/components/admin/RevenueBreakdownDialog";
 
@@ -50,8 +52,10 @@ interface Business {
   custom_price_monthly: number | null;
   is_enterprise: boolean;
   profiles?: {
+    id: string;
     full_name: string;
     email: string;
+    role?: string;
   };
 }
 
@@ -82,6 +86,11 @@ export default function SubscriptionManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
+  const [editingOwner, setEditingOwner] = useState(false);
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerRole, setOwnerRole] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
   const [history, setHistory] = useState<SubscriptionHistory[]>([]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
@@ -129,12 +138,25 @@ export default function SubscriptionManagement() {
         .select("id, full_name, email")
         .in("id", ownerIds);
 
+      // Get user roles
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", ownerIds);
+
       const profilesById = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const rolesById = new Map((rolesData || []).map((r: any) => [r.user_id, r.role]));
       
-      const businessesWithProfiles = businessList.map((b: any) => ({
-        ...b,
-        profiles: profilesById.get(b.owner_id) || null
-      }));
+      const businessesWithProfiles = businessList.map((b: any) => {
+        const profile = profilesById.get(b.owner_id);
+        return {
+          ...b,
+          profiles: profile ? {
+            ...profile,
+            role: rolesById.get(b.owner_id) || 'agent'
+          } : null
+        };
+      });
 
       setBusinesses(businessesWithProfiles);
       setFilteredBusinesses(businessesWithProfiles);
@@ -278,6 +300,48 @@ export default function SubscriptionManagement() {
       toast({
         title: "Error",
         description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateOwner = async () => {
+    if (!editingBusiness?.profiles?.id) return;
+
+    try {
+      // Call edge function to update user
+      const { data, error } = await supabase.functions.invoke('admin-manage-enterprise-user', {
+        body: {
+          userId: editingBusiness.profiles.id,
+          full_name: ownerName,
+          email: ownerEmail,
+          role: ownerRole,
+          newPassword: ownerPassword || undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Owner updated successfully",
+      });
+      
+      await logAuditAction(editingBusiness.id, "OWNER_UPDATED", {
+        owner_id: editingBusiness.profiles.id,
+        name: ownerName,
+        email: ownerEmail,
+        role: ownerRole,
+      });
+      
+      fetchBusinesses();
+      setEditingOwner(false);
+      setOwnerPassword("");
+    } catch (error: any) {
+      console.error("Error updating owner:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update owner",
         variant: "destructive",
       });
     }
@@ -591,105 +655,226 @@ export default function SubscriptionManagement() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingBusiness} onOpenChange={() => setEditingBusiness(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={!!editingBusiness} onOpenChange={(open) => {
+        if (!open) {
+          setEditingBusiness(null);
+          setEditingOwner(false);
+          setOwnerPassword("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Subscription</DialogTitle>
+            <DialogTitle>Edit Business & Owner</DialogTitle>
             <DialogDescription>
-              Update subscription details for {editingBusiness?.name}
+              Manage all details for {editingBusiness?.name}
             </DialogDescription>
           </DialogHeader>
 
           {editingBusiness && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Subscription Tier</Label>
-                <Select
-                  value={editingBusiness.subscription_tier}
-                  onValueChange={(value) =>
-                    setEditingBusiness({ ...editingBusiness, subscription_tier: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIERS.map((tier) => (
-                      <SelectItem key={tier} value={tier}>
-                        {tier.charAt(0).toUpperCase() + tier.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-6 py-4">
+              {/* Business Details */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Business Details</h3>
+                
+                <div className="space-y-2">
+                  <Label>Business Name</Label>
+                  <Input
+                    value={editingBusiness.name}
+                    onChange={(e) =>
+                      setEditingBusiness({ ...editingBusiness, name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Slug</Label>
+                  <Input
+                    value={editingBusiness.slug}
+                    onChange={(e) =>
+                      setEditingBusiness({ ...editingBusiness, slug: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Subscription Tier</Label>
+                  <Select
+                    value={editingBusiness.subscription_tier}
+                    onValueChange={(value) =>
+                      setEditingBusiness({ ...editingBusiness, subscription_tier: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIERS.map((tier) => (
+                        <SelectItem key={tier} value={tier}>
+                          {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={editingBusiness.subscription_status}
+                    onValueChange={(value) =>
+                      setEditingBusiness({ ...editingBusiness, subscription_status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Stripe Customer ID</Label>
+                  <Input
+                    value={editingBusiness.stripe_customer_id || ""}
+                    onChange={(e) =>
+                      setEditingBusiness({ ...editingBusiness, stripe_customer_id: e.target.value })
+                    }
+                    placeholder="cus_..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Stripe Subscription ID</Label>
+                  <Input
+                    value={editingBusiness.stripe_subscription_id || ""}
+                    onChange={(e) =>
+                      setEditingBusiness({ ...editingBusiness, stripe_subscription_id: e.target.value })
+                    }
+                    placeholder="sub_..."
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={editingBusiness.subscription_status}
-                  onValueChange={(value) =>
-                    setEditingBusiness({ ...editingBusiness, subscription_status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Separator />
 
-              <div className="space-y-2">
-                <Label>Stripe Customer ID</Label>
-                <Input
-                  value={editingBusiness.stripe_customer_id || ""}
-                  onChange={(e) =>
-                    setEditingBusiness({
-                      ...editingBusiness,
-                      stripe_customer_id: e.target.value,
-                    })
-                  }
-                  placeholder="cus_..."
-                />
-              </div>
+              {/* Owner Details */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">Owner Details</h3>
+                  {!editingOwner && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingOwner(true);
+                        setOwnerName(editingBusiness.profiles?.full_name || "");
+                        setOwnerEmail(editingBusiness.profiles?.email || "");
+                        setOwnerRole(editingBusiness.profiles?.role || "admin");
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Owner
+                    </Button>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label>Stripe Subscription ID</Label>
-                <Input
-                  value={editingBusiness.stripe_subscription_id || ""}
-                  onChange={(e) =>
-                    setEditingBusiness({
-                      ...editingBusiness,
-                      stripe_subscription_id: e.target.value,
-                    })
-                  }
-                  placeholder="sub_..."
-                />
+                {editingOwner ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Owner Name</Label>
+                      <Input
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Owner Email</Label>
+                      <Input
+                        type="email"
+                        value={ownerEmail}
+                        onChange={(e) => setOwnerEmail(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Owner Role</Label>
+                      <Select value={ownerRole} onValueChange={setOwnerRole}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="superadmin">Superadmin</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="agent">Agent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>New Password (optional)</Label>
+                      <Input
+                        type="password"
+                        value={ownerPassword}
+                        onChange={(e) => setOwnerPassword(e.target.value)}
+                        placeholder="Leave blank to keep current password"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingOwner(false);
+                          setOwnerPassword("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={updateOwner}>
+                        Save Owner Changes
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Name:</span> {editingBusiness.profiles?.full_name}
+                    </div>
+                    <div>
+                      <span className="font-medium">Email:</span> {editingBusiness.profiles?.email}
+                    </div>
+                    <div>
+                      <span className="font-medium">Role:</span>{" "}
+                      <Badge variant={editingBusiness.profiles?.role === "superadmin" ? "destructive" : "default"}>
+                        {editingBusiness.profiles?.role}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingBusiness(null)}>
-              Cancel
+              Close
             </Button>
-            <Button
-              onClick={() =>
-                editingBusiness &&
-                updateSubscription(editingBusiness.id, {
-                  subscription_tier: editingBusiness.subscription_tier,
-                  subscription_status: editingBusiness.subscription_status,
-                  stripe_customer_id: editingBusiness.stripe_customer_id,
-                  stripe_subscription_id: editingBusiness.stripe_subscription_id,
-                })
-              }
-            >
-              Save Changes
+            <Button onClick={() => editingBusiness && updateSubscription(editingBusiness.id, {
+              name: editingBusiness.name,
+              slug: editingBusiness.slug,
+              subscription_tier: editingBusiness.subscription_tier,
+              subscription_status: editingBusiness.subscription_status,
+              stripe_customer_id: editingBusiness.stripe_customer_id,
+              stripe_subscription_id: editingBusiness.stripe_subscription_id,
+            })}>
+              Save Business Changes
             </Button>
           </DialogFooter>
         </DialogContent>
