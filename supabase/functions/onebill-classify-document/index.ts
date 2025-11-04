@@ -22,9 +22,9 @@ serve(async (req) => {
       );
     }
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     console.log(`Classifying document: ${fileName} for business: ${businessId}`);
@@ -82,15 +82,15 @@ Return ONLY valid JSON in this exact format:
   "low_confidence_fields": ["mcc_type", "dg_type"]
 }`;
 
-    // Call OpenAI API
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Lovable AI Gateway (Gemini)
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -114,16 +114,16 @@ Return ONLY valid JSON in this exact format:
       }),
     });
 
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${openAIResponse.statusText}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', errorText);
+      throw new Error(`AI classification failed: ${aiResponse.statusText}`);
     }
 
-    const openAIData = await openAIResponse.json();
-    const resultText = openAIData.choices[0].message.content;
+    const aiData = await aiResponse.json();
+    const resultText = aiData.choices[0].message.content;
 
-    console.log('OpenAI raw response:', resultText);
+    console.log('AI classification response:', resultText);
 
     // Parse the JSON response
     let classificationResult;
@@ -134,7 +134,7 @@ Return ONLY valid JSON in this exact format:
       const jsonText = jsonMatch ? jsonMatch[1] : resultText;
       classificationResult = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
+      console.error('Failed to parse AI response:', parseError);
       throw new Error('Invalid response format from classification service');
     }
 
