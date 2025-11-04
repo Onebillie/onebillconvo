@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
@@ -59,7 +59,15 @@ serve(async (req) => {
     
     // Use native Deno base64 encoding (handles large files efficiently)
     const base64File = encodeBase64(new Uint8Array(fileBuffer));
-    const mimeType = fileResponse.headers.get('content-type') || 'image/jpeg';
+    const mimeType = fileResponse.headers.get('content-type') || 
+      (fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+    
+    console.log(`[AI-PARSE] MIME type: ${mimeType}, Base64 length: ${base64File.length}, File: ${fileName}`);
+    
+    // Gemini 2.5 Flash supports PDFs natively, but log for monitoring
+    if (mimeType === 'application/pdf') {
+      console.log(`[AI-PARSE] Processing PDF document: ${fileName}`);
+    }
 
     // Classification and extraction prompt
     const systemPrompt = `You are an expert document classifier for utility bills and meter readings. 
@@ -138,7 +146,21 @@ Return ONLY valid JSON in this exact format:
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Lovable AI error:', errorText);
+      console.error(`[AI-PARSE] Lovable AI error (${aiResponse.status}):`, errorText);
+      
+      // Handle rate limiting specifically
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'AI service rate limit reached. Please try again in a moment.',
+            classification: 'unknown',
+            confidence: 0,
+            fields: {}
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`AI classification failed: ${aiResponse.statusText}`);
     }
 
