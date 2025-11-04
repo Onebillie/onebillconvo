@@ -4,12 +4,6 @@ import { FileSearch, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 interface ManualParseButtonProps {
   attachmentUrl: string;
@@ -173,28 +167,21 @@ const ManualParseButtonComponent = ({
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleParse}
-            disabled={isParsing}
-            className="h-7 px-2"
-          >
-            {isParsing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <FileSearch className="h-3 w-3" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">Parse with OpenAI Vision</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleParse}
+      disabled={isParsing}
+      className="h-7 px-2"
+      title="Parse with OpenAI Vision"
+      aria-label="Parse with OpenAI Vision"
+    >
+      {isParsing ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <FileSearch className="h-3 w-3" />
+      )}
+    </Button>
   );
 };
 
