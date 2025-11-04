@@ -1,5 +1,6 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ApiAccessManagement } from "./ApiAccessManagement";
+import { EmbedCodeDisplay } from "./EmbedCodeDisplay";
 import { Key } from "lucide-react";
 
 export const ApiAccessAccordion = () => {
@@ -17,6 +18,18 @@ export const ApiAccessAccordion = () => {
             Manage API keys for external integrations and programmatic access.
           </div>
           <ApiAccessManagement />
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="embed" className="border rounded-lg px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Key className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Embed Code</h3>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-4">
+          <EmbedCodeDisplay />
         </AccordionContent>
       </AccordionItem>
     </Accordion>
