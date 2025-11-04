@@ -36,7 +36,17 @@ serve(async (req) => {
     }
 
     const fileBuffer = await fileResponse.arrayBuffer();
-    const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    
+    // Convert to base64 in chunks to avoid stack overflow on large files
+    const uint8Array = new Uint8Array(fileBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64File = btoa(binary);
+    
     const mimeType = fileResponse.headers.get('content-type') || 'image/jpeg';
 
     // Classification and extraction prompt
