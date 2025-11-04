@@ -1,0 +1,159 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2, CheckCircle, XCircle, FileCheck } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface AutoParseAttachmentProps {
+  attachmentId: string;
+  attachmentUrl: string;
+  fileName: string;
+  messageId: string;
+  isInbound: boolean;
+}
+
+export const AutoParseAttachment = ({ 
+  attachmentId, 
+  attachmentUrl, 
+  fileName, 
+  messageId,
+  isInbound 
+}: AutoParseAttachmentProps) => {
+  const { currentBusinessId, user } = useAuth();
+  const [status, setStatus] = useState<'idle' | 'classifying' | 'submitting' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    // Only auto-process inbound attachments
+    if (!isInbound || !currentBusinessId || !user) return;
+
+    const processAttachment = async () => {
+      try {
+        setStatus('classifying');
+
+        // Step 1: Classify document
+        const { data: classification, error: classifyError } = await supabase.functions.invoke(
+          'onebill-classify-document',
+          {
+            body: {
+              fileUrl: attachmentUrl,
+              fileName,
+              businessId: currentBusinessId,
+            },
+          }
+        );
+
+        if (classifyError) throw classifyError;
+
+        // Only process if it's a utility document
+        if (!['meter', 'electricity', 'gas'].includes(classification.classification)) {
+          setStatus('idle');
+          return;
+        }
+
+        setStatus('submitting');
+
+        // Step 2: Create submission record
+        const { data: submission, error: insertError } = await supabase
+          .from('onebill_submissions')
+          .insert({
+            business_id: currentBusinessId,
+            file_url: attachmentUrl,
+            file_name: fileName,
+            file_size: 0,
+            document_type: classification.classification,
+            classification_confidence: classification.confidence,
+            extracted_fields: classification.fields,
+            phone: classification.fields.phone,
+            mprn: classification.fields.mprn,
+            gprn: classification.fields.gprn,
+            mcc_type: classification.fields.mcc_type,
+            dg_type: classification.fields.dg_type,
+            url: attachmentUrl,
+            onebill_endpoint: `https://api.onebill.ie/api/${classification.classification}-file`,
+            submission_status: 'pending',
+            submitted_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        // Step 3: Submit to OneBill
+        const { data: submitData, error: submitError } = await supabase.functions.invoke(
+          'onebill-submit',
+          {
+            body: {
+              submissionId: submission.id,
+              businessId: currentBusinessId,
+              documentType: classification.classification,
+              fields: classification.fields,
+              fileUrl: attachmentUrl,
+              fileName,
+            },
+          }
+        );
+
+        if (submitError) throw submitError;
+
+        if (submitData.success) {
+          setStatus('success');
+        } else {
+          setStatus('error');
+          setError(submitData.message || 'Submission failed');
+        }
+      } catch (err: any) {
+        console.error('Auto-parse error:', err);
+        setStatus('error');
+        setError(err.message || 'Processing failed');
+      }
+    };
+
+    processAttachment();
+  }, [attachmentId, attachmentUrl, fileName, messageId, isInbound, currentBusinessId, user]);
+
+  if (status === 'idle') return null;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="inline-flex items-center gap-1 text-xs">
+            {status === 'classifying' && (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                <span className="text-blue-500">Analyzing...</span>
+              </>
+            )}
+            {status === 'submitting' && (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin text-orange-500" />
+                <span className="text-orange-500">Submitting to OneBill...</span>
+              </>
+            )}
+            {status === 'success' && (
+              <>
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span className="text-green-500">Submitted</span>
+              </>
+            )}
+            {status === 'error' && (
+              <>
+                <XCircle className="h-3 w-3 text-red-500" />
+                <span className="text-red-500">Failed</span>
+              </>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs max-w-xs">
+            {status === 'classifying' && 'Analyzing document type...'}
+            {status === 'submitting' && 'Submitting to OneBill API...'}
+            {status === 'success' && 'Successfully submitted to OneBill'}
+            {status === 'error' && `Error: ${error}`}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};

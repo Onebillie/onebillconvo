@@ -12,6 +12,7 @@ import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
 import { AttachmentParseStatus } from "./AttachmentParseStatus";
+import { AutoParseAttachment } from "@/components/onebill/AutoParseAttachment";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -599,9 +600,20 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                               )}
                                {/* Attachments for non-email */}
                                {message.message_attachments &&
-                                 message.message_attachments.map((attachment) =>
-                                   renderAttachment(attachment)
-                                 )}
+                                 message.message_attachments.map((attachment) => (
+                                   <div key={attachment.id} className="flex flex-col gap-1">
+                                     {renderAttachment(attachment)}
+                                     {message.direction === 'inbound' && (
+                                       <AutoParseAttachment
+                                         attachmentId={attachment.id}
+                                         attachmentUrl={attachment.url}
+                                         fileName={attachment.filename || 'attachment'}
+                                         messageId={message.id}
+                                         isInbound={true}
+                                       />
+                                     )}
+                                   </div>
+                                 ))}
                                </>
                            )}
                            </>
