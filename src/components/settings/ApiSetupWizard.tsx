@@ -550,7 +550,7 @@ fetch('https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-customer-fetch'
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => window.open('/API_DOCUMENTATION.md#webhooks', '_blank')}
+                    onClick={() => window.open('/api-docs', '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     View Webhook Documentation
@@ -631,7 +631,7 @@ fetch('https://jrtlrnfdqfkjlkpfirzr.supabase.co/functions/v1/api-customer-fetch'
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => window.open('/API_DOCUMENTATION.md', '_blank')}
+                      onClick={() => window.open('/api-docs', '_blank')}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open Complete API Documentation

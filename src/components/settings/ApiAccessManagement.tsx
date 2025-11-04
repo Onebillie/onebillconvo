@@ -447,7 +447,7 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
         <AlertDescription>
           View the comprehensive API documentation including all endpoints, webhooks, examples, and integration guides in the{' '}
           <a 
-            href="/API_DOCUMENTATION.md" 
+            href="/api-docs" 
             target="_blank"
             className="font-medium underline underline-offset-4 hover:text-primary"
           >
