@@ -1,7 +1,10 @@
 import { useState, memo } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 // Cache for loaded images to prevent flickering
@@ -32,6 +35,10 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
   const [imageLoading, setImageLoading] = useState(!loadedImages.has(imageUrl));
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [fullSizeOpen, setFullSizeOpen] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseResult, setParseResult] = useState<any>(null);
+  const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
   const isPDF = attachment.type === 'application/pdf';
@@ -57,6 +64,43 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
     window.open(attachment.url, '_blank');
   };
 
+  const handleParseWithAI = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-attachment-onebill', {
+        body: { attachmentUrl: attachment.url }
+      });
+
+      if (error) throw error;
+
+      setParseResult(data);
+      toast({
+        title: "Parsing Complete",
+        description: "Bill has been successfully parsed. Click to view results.",
+      });
+    } catch (error) {
+      console.error('Parse error:', error);
+      toast({
+        title: "Parsing Failed",
+        description: error instanceof Error ? error.message : "Failed to parse attachment",
+        variant: "destructive",
+      });
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const downloadJSON = () => {
+    const blob = new Blob([JSON.stringify(parseResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `parsed-${attachment.filename}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleRetry = () => {
     setImageError(false);
     setImageLoading(true);
@@ -76,105 +120,192 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
 
   if (isImage) {
     return (
-      <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group" onClick={onClick}>
-        {imageError ? (
-          <div className="w-full h-48 bg-muted flex flex-col items-center justify-center rounded-lg p-4 text-center">
-            <AlertCircle className="w-8 h-8 text-destructive mb-2" />
-            <p className="text-xs text-muted-foreground mb-2">Failed to load image</p>
-            <p className="text-xs text-muted-foreground mb-3">{attachment.filename}</p>
-            {retryCount < 3 && (
+      <>
+        <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group">
+          {imageError ? (
+            <div className="w-full h-48 bg-muted flex flex-col items-center justify-center rounded-lg p-4 text-center">
+              <AlertCircle className="w-8 h-8 text-destructive mb-2" />
+              <p className="text-xs text-muted-foreground mb-2">Failed to load image</p>
+              <p className="text-xs text-muted-foreground mb-3">{attachment.filename}</p>
+              {retryCount < 3 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRetry();
+                  }}
+                  className="mb-2"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Retry
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleRetry();
+                  window.open(attachment.url, '_blank');
                 }}
-                className="mb-2"
               >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Retry
+                <Download className="w-3 h-3 mr-1" />
+                Download anyway
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(attachment.url, '_blank');
-              }}
-            >
-              <Download className="w-3 h-3 mr-1" />
-              Download anyway
-            </Button>
-          </div>
-        ) : (
-          <>
-            {imageLoading && (
-              <Skeleton className="absolute inset-0 w-full h-full" />
-            )}
-            <img
-              key={`${attachment.url}-${retryCount}`}
-              src={imageUrl}
-              alt={attachment.filename || 'Attachment'}
-              className={cn(
-                "w-full h-auto object-cover rounded-lg transition-opacity duration-300",
-                imageLoading ? "opacity-0" : "opacity-100"
+            </div>
+          ) : (
+            <>
+              {imageLoading && (
+                <Skeleton className="absolute inset-0 w-full h-full" />
               )}
-              loading="eager"
-              decoding="async"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
+              <img
+                key={`${attachment.url}-${retryCount}`}
+                src={imageUrl}
+                alt={attachment.filename || 'Attachment'}
+                className={cn(
+                  "w-full h-auto object-cover rounded-lg transition-opacity duration-300 cursor-pointer",
+                  imageLoading ? "opacity-0" : "opacity-100"
+                )}
+                loading="eager"
+                decoding="async"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                onClick={() => setFullSizeOpen(true)}
+              />
+            </>
+          )}
+          {!imageLoading && !imageError && (
+            <>
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFullSizeOpen(true);
+                  }}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                <Button
+                  onClick={handleParseWithAI}
+                  size="sm"
+                  variant="default"
+                  disabled={parsing}
+                >
+                  {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload();
+                  }}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <Dialog open={fullSizeOpen} onOpenChange={setFullSizeOpen}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>{attachment.filename}</DialogTitle>
+            </DialogHeader>
+            <img
+              src={attachment.url}
+              alt={attachment.filename}
+              className="w-full h-auto"
             />
-          </>
+          </DialogContent>
+        </Dialog>
+
+        {parseResult && (
+          <Dialog open={!!parseResult} onOpenChange={() => setParseResult(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+              <DialogHeader>
+                <DialogTitle>Parsed Bill Data</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
+                  {JSON.stringify(parseResult, null, 2)}
+                </pre>
+                <Button onClick={downloadJSON} className="w-full">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download JSON
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
-        {!imageLoading && !imageError && (
-          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDownload();
-              }}
-              size="sm"
-              variant="secondary"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="mt-2">
-      <div className="p-3 bg-background/10 rounded-lg flex items-center justify-between gap-3 max-w-xs cursor-pointer hover:bg-background/20 transition-colors"
-        onClick={handleDownload}
-      >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {getFileIcon()}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{attachment.filename}</p>
-            {attachment.size ? (
-              <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
-            ) : (
-              <p className="text-xs opacity-70">Click to download</p>
-            )}
+    <>
+      <div className="mt-2">
+        <div className="p-3 bg-background/10 rounded-lg flex items-center justify-between gap-3 max-w-xs group hover:bg-background/20 transition-colors">
+          <div className="flex items-center gap-2 flex-1 min-w-0" onClick={handleDownload}>
+            {getFileIcon()}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{attachment.filename}</p>
+              {attachment.size ? (
+                <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
+              ) : (
+                <p className="text-xs opacity-70">Click to download</p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="default"
+              className="h-8 w-8 shrink-0"
+              onClick={handleParseWithAI}
+              disabled={parsing}
+            >
+              {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload();
+              }}
+            >
+              <Download className="w-4 h-4" />
+            </Button>
           </div>
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-8 w-8 shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDownload();
-          }}
-        >
-          <Download className="w-4 h-4" />
-        </Button>
       </div>
-    </div>
+
+      {parseResult && (
+        <Dialog open={!!parseResult} onOpenChange={() => setParseResult(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Parsed Bill Data</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
+                {JSON.stringify(parseResult, null, 2)}
+              </pre>
+              <Button onClick={downloadJSON} className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Download JSON
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }, (prevProps, nextProps) => {
   // Only re-render if attachment id or type changes

@@ -404,3 +404,6 @@ verify_jwt = false
 
 [functions.webhook-send-message]
 verify_jwt = false
+
+[functions.parse-attachment-onebill]
+verify_jwt = true
