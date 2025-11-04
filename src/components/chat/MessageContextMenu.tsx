@@ -6,7 +6,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Reply, Heart, Star, Pin, Forward, Copy, Pencil, Info, Trash2, CheckSquare, Activity, RotateCcw, RefreshCw } from "lucide-react";
+import { Reply, Heart, Star, Pin, Forward, Copy, Pencil, Info, Trash2, CheckSquare, Activity, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { ReactNode } from "react";
 
@@ -23,7 +23,6 @@ interface MessageContextMenuProps {
   onInfo?: (message: Message) => void;
   onDelete?: (message: Message) => void;
   onSelectMessages?: () => void;
-  onReparseAttachments?: (message: Message) => void;
 }
 
 export const MessageContextMenu = ({
@@ -39,11 +38,9 @@ export const MessageContextMenu = ({
   onInfo,
   onDelete,
   onSelectMessages,
-  onReparseAttachments,
 }: MessageContextMenuProps) => {
   const canEdit = message.direction === "outbound" && message.platform !== "email";
   const canDelete = message.direction === "outbound";
-  const hasAttachments = message.message_attachments && message.message_attachments.length > 0;
 
   return (
     <ContextMenu>
@@ -97,13 +94,6 @@ export const MessageContextMenu = ({
           <Activity className="mr-2 h-4 w-4" />
           View Logs
         </ContextMenuItem>
-
-        {hasAttachments && message.direction === 'inbound' && (
-          <ContextMenuItem onClick={() => onReparseAttachments?.(message)} className="cursor-pointer">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Re-parse with AI
-          </ContextMenuItem>
-        )}
 
         {(message as any).delivery_status === 'failed' && (
           <ContextMenuItem onClick={() => toast.info('Retry functionality coming soon')} className="cursor-pointer">

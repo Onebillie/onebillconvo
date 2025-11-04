@@ -3,9 +3,6 @@ import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loa
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Cache for loaded images to prevent skeleton flashing on re-renders
-const loadedImages = new Set<string>();
-
 interface FilePreviewProps {
   attachment: {
     id: string;
@@ -17,7 +14,8 @@ interface FilePreviewProps {
   onClick?: () => void;
 }
 
-const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
+export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
+  const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   
@@ -61,9 +59,6 @@ const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
     return url;
   };
 
-  const imageUrl = getOptimizedImageUrl(attachment.url);
-  const [imageLoading, setImageLoading] = useState(!loadedImages.has(imageUrl));
-
   const handleImageError = () => {
     console.error('Failed to load image:', attachment.url, 'Type:', attachment.type);
     setImageError(true);
@@ -71,11 +66,11 @@ const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
   };
 
   const handleImageLoad = () => {
-    loadedImages.add(imageUrl);
     setImageLoading(false);
   };
 
   if (isImage) {
+    const imageUrl = getOptimizedImageUrl(attachment.url);
     
     return (
       <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group" onClick={onClick}>
@@ -119,7 +114,8 @@ const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
             className="max-w-full h-auto cursor-pointer transition-transform hover:scale-105"
             loading="lazy"
             decoding="async"
-            onLoad={handleImageLoad}
+            fetchPriority="high"
+            onLoad={() => setImageLoading(false)}
             onError={() => {
               setImageLoading(false);
               setImageError(true);
@@ -174,13 +170,4 @@ const FilePreviewComponent = ({ attachment, onClick }: FilePreviewProps) => {
       </div>
     </div>
   );
-};
-
-export const FilePreview = memo(
-  FilePreviewComponent,
-  (prev, next) =>
-    prev.attachment.id === next.attachment.id &&
-    
-    prev.attachment.type === next.attachment.type
-);
-FilePreview.displayName = 'FilePreview';
+});

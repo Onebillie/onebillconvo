@@ -11,6 +11,9 @@ import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
+import { AttachmentParseStatus } from "./AttachmentParseStatus";
+import { AutoParseAttachment } from "@/components/onebill/AutoParseAttachment";
+import { ManualParseButton } from "@/components/onebill/ManualParseButton";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -33,29 +36,6 @@ interface MessageListProps {
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
 }
-
-// Stabilized AttachmentItem component to prevent re-renders
-const AttachmentItem = memo(
-  ({ attachment }: { attachment: any }) => {
-    const isVoiceNote = attachment.type?.startsWith("audio/");
-
-    if (isVoiceNote) {
-      return (
-        <div className="mt-2">
-          <VoicePlayer 
-            audioUrl={attachment.url} 
-            duration={attachment.duration_seconds}
-          />
-        </div>
-      );
-    }
-
-    return <FilePreview attachment={attachment} />;
-  },
-  (prev, next) =>
-    prev.attachment?.id === next.attachment?.id &&
-    prev.attachment?.type === next.attachment?.type
-);
 
 export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -260,34 +240,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     }
   };
 
-  const handleReparseAttachments = async (message: Message) => {
-    try {
-      const attachments = message.message_attachments || [];
-      
-      toast({
-        title: "Parsing attachments",
-        description: "AI is analyzing the attachments...",
-      });
-
-      for (const attachment of attachments) {
-        await supabase.functions.invoke('parse-and-sync-attachment', {
-          body: {
-            attachmentId: attachment.id,
-            messageId: message.id,
-            forceReparse: true
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error re-parsing attachments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to parse attachments",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleCopy = async (message: Message) => {
     try {
       await navigator.clipboard.writeText(message.content);
@@ -346,8 +298,26 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     });
   };
 
+  // Memoized attachment renderer to prevent re-renders
+  const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
+    const isVoiceNote = attachment.type?.startsWith("audio/");
+
+    if (isVoiceNote) {
+      return (
+        <div className="mt-2">
+          <VoicePlayer 
+            audioUrl={attachment.url} 
+            duration={attachment.duration_seconds}
+          />
+        </div>
+      );
+    }
+
+    return <FilePreview attachment={attachment} />;
+  });
+
   const renderAttachment = (attachment: any) => {
-    return <AttachmentItem attachment={attachment} />;
+    return <AttachmentItem key={attachment.id} attachment={attachment} />;
   };
 
   const formatDateSeparator = (date: Date) => {
@@ -483,7 +453,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                     onForward={handleForward}
                     onCopy={handleCopy}
                     onEdit={(msg) => setEditingMessage(msg)}
-                    onReparseAttachments={handleReparseAttachments}
                     onInfo={(msg) => setInfoMessage(msg)}
                     onDelete={(msg) => setDeleteConfirmMessage(msg)}
                     onSelectMessages={() => {}}
@@ -495,6 +464,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                       } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
                     >
                       <div className="flex items-start gap-2 relative group">
+                        <AttachmentParseStatus messageId={message.id} />
                         
                         {/* Star indicator */}
                         {message.is_starred && (
@@ -629,13 +599,28 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   }}
                                 />
                               )}
-                               {/* Attachments for non-email - simplified without auto-parsing */}
+                               {/* Attachments for non-email */}
                                {message.message_attachments &&
                                  message.message_attachments.map((attachment) => (
                                    <div key={attachment.id} className="flex items-start gap-2">
                                      <div className="flex-1">
                                        {renderAttachment(attachment)}
+                                       {message.direction === 'inbound' && (
+                                         <AutoParseAttachment
+                                           attachmentId={attachment.id}
+                                           attachmentUrl={attachment.url}
+                                           fileName={attachment.filename || 'attachment'}
+                                           messageId={message.id}
+                                           isInbound={true}
+                                         />
+                                       )}
                                      </div>
+                                     {message.direction === 'inbound' && (
+                                       <ManualParseButton
+                                         attachmentUrl={attachment.url}
+                                         fileName={attachment.filename || 'attachment'}
+                                       />
+                                     )}
                                    </div>
                                  ))}
                                </>
