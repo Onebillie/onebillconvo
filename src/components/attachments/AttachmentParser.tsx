@@ -36,46 +36,58 @@ export const AttachmentParser = ({
   const [reparsing, setReparsing] = useState(false);
 
   useEffect(() => {
+    let debounceTimer: NodeJS.Timeout;
+    
+    const fetchParseResult = async () => {
+      const { data, error } = await supabase
+        .from('attachment_parse_results')
+        .select('*')
+        .eq('attachment_id', attachmentId)
+        .maybeSingle();
+
+      if (!error && data) {
+        setParseResult(data);
+      }
+      setLoading(false);
+    };
+
     fetchParseResult();
-    subscribeToUpdates();
-  }, [attachmentId]);
 
-  const fetchParseResult = async () => {
-    const { data, error } = await supabase
-      .from('attachment_parse_results')
-      .select('*')
-      .eq('attachment_id', attachmentId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setParseResult(data);
-    }
-    setLoading(false);
-  };
-
-  const subscribeToUpdates = () => {
+    // Subscribe only to UPDATE events (not INSERT, not *)
     const channel = supabase
       .channel(`parse-result-${attachmentId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'attachment_parse_results',
           filter: `attachment_id=eq.${attachmentId}`
         },
         (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            setParseResult(payload.new as ParseResult);
-          }
+          const newData = payload.new as ParseResult;
+          
+          // Debounce state updates by 300ms to prevent rapid re-renders
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            setParseResult((prev) => {
+              // Only update if parse_status actually changed
+              if (prev?.parse_status !== newData.parse_status) {
+                return newData;
+              }
+              return prev;
+            });
+          }, 300);
         }
       )
       .subscribe();
 
+    // Proper cleanup
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  };
+  }, [attachmentId]);
 
   const handleReparse = async () => {
     setReparsing(true);

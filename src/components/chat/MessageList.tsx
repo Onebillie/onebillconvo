@@ -11,9 +11,6 @@ import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
-import { AttachmentParseStatus } from "./AttachmentParseStatus";
-import { AutoParseAttachment } from "@/components/onebill/AutoParseAttachment";
-import { ManualParseButton } from "@/components/onebill/ManualParseButton";
 import { AttachmentParser } from "@/components/attachments/AttachmentParser";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
@@ -37,6 +34,34 @@ interface MessageListProps {
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
 }
+
+// Memoized attachment row to prevent flickering
+const AttachmentRow = memo(({ 
+  attachment, 
+  messageDirection, 
+  messageId,
+  renderAttachment
+}: { 
+  attachment: any; 
+  messageDirection: string; 
+  messageId: string;
+  renderAttachment: (attachment: any) => JSX.Element;
+}) => {
+  return (
+    <div className="flex items-start gap-2">
+      <div className="flex-1 flex items-center gap-2">
+        {renderAttachment(attachment)}
+        {messageDirection === 'inbound' && (
+          <AttachmentParser
+            attachmentId={attachment.id}
+            messageId={messageId}
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+AttachmentRow.displayName = 'AttachmentRow';
 
 export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -492,7 +517,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                       } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
                     >
                       <div className="flex items-start gap-2 relative group">
-                        <AttachmentParseStatus messageId={message.id} />
                         
                         {/* Star indicator */}
                         {message.is_starred && (
@@ -627,20 +651,16 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   }}
                                 />
                               )}
-                               {/* Attachments for non-email */}
+                               {/* Attachments for non-email - Memoized to prevent flicker */}
                                {message.message_attachments &&
                                  message.message_attachments.map((attachment) => (
-                                   <div key={attachment.id} className="flex items-start gap-2">
-                                      <div className="flex-1 flex items-center gap-2">
-                                        {renderAttachment(attachment)}
-                                        {message.direction === 'inbound' && (
-                                          <AttachmentParser
-                                            attachmentId={attachment.id}
-                                            messageId={message.id}
-                                          />
-                                        )}
-                                      </div>
-                                   </div>
+                                   <AttachmentRow
+                                     key={attachment.id}
+                                     attachment={attachment}
+                                     messageDirection={message.direction}
+                                     messageId={message.id}
+                                     renderAttachment={renderAttachment}
+                                   />
                                  ))}
                                </>
                            )}
