@@ -99,18 +99,79 @@ export function AIAssistantSettings() {
       setBusinessId(businessUser.business_id);
       const name = (businessUser.businesses as any)?.name?.toLowerCase();
       setBusinessName(name || '');
-      setIsOnebill(name === 'onebill');
+      setIsOnebill(name.includes('onebill'));
     }
 
-    const [{ data: cfg }, { data: training }, { data: docs }] = await Promise.all([
+    const [{ data: cfg }, { data: training }, { data: docs }, { data: providers }] = await Promise.all([
       supabase.from('ai_assistant_config').select('*').single(),
       supabase.from('ai_training_data').select('*').order('created_at', { ascending: false }),
       supabase.from('ai_knowledge_documents').select('*').eq('business_id', businessUser?.business_id).order('created_at', { ascending: false }),
+      supabase.from('ai_providers').select('*').eq('business_id', businessUser?.business_id),
     ]);
+    
     setConfig(cfg);
     setTrainingData(training || []);
     setKnowledgeDocs(docs || []);
+    
+    // Load existing provider config
+    if (providers && providers.length > 0) {
+      const activeProvider = providers.find(p => p.is_active);
+      if (activeProvider) {
+        setProvider(activeProvider.provider_name);
+        setCustomModel(activeProvider.model || '');
+        setCustomApiKey('••••••••'); // Mask existing key
+        const config = activeProvider.configuration as { endpoint?: string } | null;
+        if (config?.endpoint) {
+          setCustomEndpoint(config.endpoint);
+        }
+      }
+    }
+    
     setLoading(false);
+  };
+
+  const saveProviderConfig = async () => {
+    if (!provider || provider === 'lovable' || !customApiKey || customApiKey === '••••••••') {
+      toast.error('Please enter a valid API key');
+      return;
+    }
+
+    if (!customModel) {
+      toast.error('Please select a model');
+      return;
+    }
+
+    try {
+      // Deactivate all other providers for this business
+      await supabase
+        .from('ai_providers')
+        .update({ is_active: false })
+        .eq('business_id', businessId);
+
+      // Insert or update the current provider
+      const { error } = await supabase
+        .from('ai_providers')
+        .upsert({
+          business_id: businessId,
+          provider_name: provider,
+          display_name: AI_PROVIDERS.find(p => p.id === provider)?.name,
+          api_key: customApiKey,
+          model: customModel,
+          is_active: true,
+          is_default: true,
+          configuration: customEndpoint ? { endpoint: customEndpoint } : null,
+        }, {
+          onConflict: 'business_id,provider_name'
+        });
+
+      if (error) throw error;
+
+      toast.success('OpenAI configuration saved securely');
+      fetchData();
+    } catch (error: any) {
+      console.error('Error saving provider config:', error);
+      toast.error(error.message || 'Failed to save configuration');
+    }
   };
 
   const updateConfig = async (updates: any) => {
@@ -321,8 +382,9 @@ export function AIAssistantSettings() {
                   )}
 
                   <Button 
-                    onClick={() => toast.success("Configuration saved securely")}
+                    onClick={saveProviderConfig}
                     className="w-full"
+                    disabled={!customApiKey || customApiKey === '••••••••' || !customModel}
                   >
                     Save Configuration
                   </Button>
