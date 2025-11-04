@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +12,7 @@ serve(async (req) => {
 
   try {
     const { attachmentUrl } = await req.json();
+    console.log('Received request to parse:', attachmentUrl);
 
     if (!attachmentUrl) {
       throw new Error('attachmentUrl is required');
@@ -20,14 +20,14 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log('Fetching attachment:', attachmentUrl);
-
-    // Fetch the attachment
+    console.log('Fetching attachment...');
     const fileResponse = await fetch(attachmentUrl);
     if (!fileResponse.ok) {
+      console.error('Failed to fetch attachment:', fileResponse.status);
       throw new Error(`Failed to fetch attachment: ${fileResponse.status}`);
     }
 
@@ -35,30 +35,53 @@ serve(async (req) => {
     const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     const contentType = fileResponse.headers.get('content-type') || 'image/jpeg';
 
-    console.log('File fetched, size:', fileBuffer.byteLength, 'type:', contentType);
+    console.log('File fetched successfully:', {
+      size: fileBuffer.byteLength,
+      type: contentType
+    });
 
-    const systemPrompt = `You are a utility bill parsing expert. 
+    const systemPrompt = `You are a utility bill parsing expert for Irish utilities.
 
-Task
-- Parse the attached customer bill (PDF or image) for Irish utilities.
-- Some bills are bundles (e.g., electricity + gas). Disaggregate each utility and extract fields separately.
-- Detect whether each service is present using strong signals (e.g., MPRN/MCC/DG ⇒ electricity; GPRN/carbon tax ⇒ gas; UAN/phone/broadband cues ⇒ broadband).
+Extract data from the attached bill and return it in this exact JSON structure:
 
-Output rules
-- Return ONE JSON object only. No notes, no prose, no explanations.
-- Use the exact keys and nesting shown below. Do not add or rename keys.
-- Dates: "YYYY-MM-DD"; if unknown use "0000-00-00".
-- Numeric rates/amounts/readings: numbers (double); if unknown use 0.
-- Booleans: true/false (not strings).
-- Currencies: "cent" or "euro".
-- Standing charge period: "daily" or "annual".
-- For supplier names, use the name as printed (e.g., Bord Gáis Energy, Community Power, Electric Ireland, Energia, Flogas, SSE Airtricity, Waterpower, Ecopower, Yuno energy).
-- If a section does not exist for this bill, still return the section with sensible defaults (e.g., empty arrays, zero/placeholder values), keeping the schema intact.`;
+{
+  "bills": {
+    "cus_details": [
+      {
+        "details": {
+          "customer_name": "",
+          "address": {
+            "line_1": "",
+            "line_2": "",
+            "city": "",
+            "county": "",
+            "eircode": ""
+          }
+        },
+        "services": {
+          "gas": false,
+          "broadband": false,
+          "electricity": false
+        }
+      }
+    ],
+    "electricity": [...],
+    "gas": [...],
+    "broadband": [...]
+  }
+}
+
+Rules:
+- Detect services: MPRN/MCC/DG = electricity, GPRN/carbon tax = gas, UAN/phone = broadband
+- Dates: YYYY-MM-DD or 0000-00-00
+- Numbers: use 0 for unknown
+- Currency: "cent" or "euro"
+- Return ONLY valid JSON, no markdown, no explanation`;
 
     const userContent = [
       {
         type: "text",
-        text: "Parse this utility bill and return the data in the specified JSON format."
+        text: "Parse this Irish utility bill and extract all data into the JSON format specified in the system prompt."
       },
       {
         type: "image_url",
@@ -82,68 +105,16 @@ Output rules
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_parsed_bill",
-              description: "Return the parsed utility bill data",
-              parameters: {
-                type: "object",
-                properties: {
-                  bills: {
-                    type: "object",
-                    properties: {
-                      cus_details: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            details: {
-                              type: "object",
-                              properties: {
-                                customer_name: { type: "string" },
-                                address: {
-                                  type: "object",
-                                  properties: {
-                                    line_1: { type: "string" },
-                                    line_2: { type: "string" },
-                                    city: { type: "string" },
-                                    county: { type: "string" },
-                                    eircode: { type: "string" }
-                                  }
-                                }
-                              }
-                            },
-                            services: {
-                              type: "object",
-                              properties: {
-                                gas: { type: "boolean" },
-                                broadband: { type: "boolean" },
-                                electricity: { type: "boolean" }
-                              }
-                            }
-                          }
-                        }
-                      },
-                      electricity: { type: "array" },
-                      gas: { type: "array" },
-                      broadband: { type: "array" }
-                    }
-                  }
-                },
-                required: ["bills"]
-              }
-            }
-          }
-        ],
-        tool_choice: { type: "function", function: { name: "return_parsed_bill" } }
+        temperature: 0.1,
+        response_format: { type: "json_object" }
       }),
     });
 
+    console.log('AI Gateway response status:', aiResponse.status);
+
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
+      console.error('AI Gateway error response:', errorText);
       
       if (aiResponse.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
@@ -152,19 +123,32 @@ Output rules
         throw new Error('Payment required. Please add credits to your workspace.');
       }
       
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+      throw new Error(`AI Gateway error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response received');
+    console.log('AI response received, parsing...');
 
-    // Extract the parsed data from tool call
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      throw new Error('No tool call in AI response');
+    const content = aiData.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error('No content in AI response:', JSON.stringify(aiData));
+      throw new Error('No content in AI response');
     }
 
-    const parsedData = JSON.parse(toolCall.function.arguments);
+    console.log('Raw AI content:', content.substring(0, 200));
+
+    // Try to parse the JSON, handling potential markdown wrapping
+    let parsedData;
+    try {
+      // Remove markdown code blocks if present
+      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsedData = JSON.parse(cleanContent);
+      console.log('Successfully parsed JSON data');
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', parseError);
+      console.error('Content that failed to parse:', content);
+      throw new Error(`Failed to parse JSON response: ${parseError.message}`);
+    }
 
     return new Response(
       JSON.stringify(parsedData),
@@ -178,9 +162,11 @@ Output rules
 
   } catch (error) {
     console.error('Error in parse-attachment-onebill:', error);
+    console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        details: error instanceof Error ? error.stack : undefined
       }),
       { 
         status: 500,
