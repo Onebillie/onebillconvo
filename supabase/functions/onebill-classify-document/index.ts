@@ -58,16 +58,28 @@ serve(async (req) => {
     console.log(`Processing file: ${fileName}, size: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
     
     // Use native Deno base64 encoding (handles large files efficiently)
-    const base64File = encodeBase64(new Uint8Array(fileBuffer));
     const mimeType = fileResponse.headers.get('content-type') || 
       (fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
     
-    console.log(`[AI-PARSE] MIME type: ${mimeType}, Base64 length: ${base64File.length}, File: ${fileName}`);
+    console.log(`[AI-PARSE] MIME type: ${mimeType}, File: ${fileName}, Size: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB`);
     
-    // Gemini 2.5 Flash supports PDFs natively, but log for monitoring
-    if (mimeType === 'application/pdf') {
-      console.log(`[AI-PARSE] Processing PDF document: ${fileName}`);
+    // Gemini vision API only supports images via data URLs, not PDFs
+    if (mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+      console.error(`[AI-PARSE] PDF files cannot be processed via vision API: ${fileName}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'PDF files are not supported. Please upload an image (JPG, PNG, or WebP) of your bill or meter reading.',
+          classification: 'unknown',
+          confidence: 0,
+          fields: {},
+          field_confidence: {},
+          low_confidence_fields: []
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    
+    const base64File = encodeBase64(new Uint8Array(fileBuffer));
 
     // Classification and extraction prompt
     const systemPrompt = `You are an expert document classifier for utility bills and meter readings. 
