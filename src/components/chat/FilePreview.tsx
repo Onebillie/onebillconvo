@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -76,50 +77,56 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
   if (isImage) {
     return (
       <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group" onClick={onClick}>
-        {imageLoading && (
-          <Skeleton className="w-full h-48" />
-        )}
         {imageError ? (
-          <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-lg min-h-[200px]">
-            <AlertCircle className="h-12 w-12 text-destructive mb-2" />
-            <p className="text-sm text-muted-foreground mb-3">Failed to load image</p>
-            <div className="flex gap-2">
+          <div className="w-full h-48 bg-muted flex flex-col items-center justify-center rounded-lg p-4 text-center">
+            <AlertCircle className="w-8 h-8 text-destructive mb-2" />
+            <p className="text-xs text-muted-foreground mb-2">Failed to load image</p>
+            <p className="text-xs text-muted-foreground mb-3">{attachment.filename}</p>
+            {retryCount < 3 && (
               <Button
+                variant="outline"
+                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRetry();
                 }}
-                size="sm"
-                variant="outline"
+                className="mb-2"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="w-3 h-3 mr-1" />
                 Retry
               </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload();
-                }}
-                size="sm"
-                variant="outline"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(attachment.url, '_blank');
+              }}
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Download anyway
+            </Button>
           </div>
         ) : (
-          <img
-            key={`${attachment.id}-${retryCount}`}
-            src={imageUrl}
-            alt={attachment.filename}
-            className="max-w-full h-auto cursor-pointer transition-transform hover:scale-105"
-            loading="lazy"
-            decoding="async"
-            fetchPriority="high"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
+          <>
+            {imageLoading && (
+              <Skeleton className="absolute inset-0 w-full h-full" />
+            )}
+            <img
+              key={`${attachment.url}-${retryCount}`}
+              src={imageUrl}
+              alt={attachment.filename || 'Attachment'}
+              className={cn(
+                "w-full h-auto object-cover rounded-lg transition-opacity duration-300",
+                imageLoading ? "opacity-0" : "opacity-100"
+              )}
+              loading="eager"
+              decoding="async"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          </>
         )}
         {!imageLoading && !imageError && (
           <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
