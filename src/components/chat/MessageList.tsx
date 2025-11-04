@@ -11,7 +11,6 @@ import { ChannelIndicator } from "./ChannelIndicator";
 import { EditMessageDialog } from "./EditMessageDialog";
 import { EmailMessageRenderer } from "./EmailMessageRenderer";
 import { EmailDetailModal } from "./EmailDetailModal";
-import { AttachmentParser } from "@/components/attachments/AttachmentParser";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -34,34 +33,6 @@ interface MessageListProps {
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
 }
-
-// Memoized attachment row to prevent flickering
-const AttachmentRow = memo(({ 
-  attachment, 
-  messageDirection, 
-  messageId,
-  renderAttachment
-}: { 
-  attachment: any; 
-  messageDirection: string; 
-  messageId: string;
-  renderAttachment: (attachment: any) => JSX.Element;
-}) => {
-  return (
-    <div className="flex items-start gap-2">
-      <div className="flex-1 flex items-center gap-2">
-        {renderAttachment(attachment)}
-        {messageDirection === 'inbound' && (
-          <AttachmentParser
-            attachmentId={attachment.id}
-            messageId={messageId}
-          />
-        )}
-      </div>
-    </div>
-  );
-});
-AttachmentRow.displayName = 'AttachmentRow';
 
 export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -269,8 +240,14 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
   const handleReparseAttachments = async (message: Message) => {
     try {
       const attachments = message.message_attachments || [];
+      
+      toast({
+        title: "Parsing attachments",
+        description: "AI is analyzing the attachments...",
+      });
+
       for (const attachment of attachments) {
-        await supabase.functions.invoke('parse-attachment', {
+        await supabase.functions.invoke('parse-and-sync-attachment', {
           body: {
             attachmentId: attachment.id,
             messageId: message.id,
@@ -278,15 +255,11 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
           }
         });
       }
-      toast({
-        title: "Re-parsing attachments",
-        description: "AI is analyzing the attachments again...",
-      });
     } catch (error) {
       console.error('Error re-parsing attachments:', error);
       toast({
         title: "Error",
-        description: "Failed to re-parse attachments",
+        description: "Failed to parse attachments",
         variant: "destructive",
       });
     }
@@ -651,16 +624,14 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   }}
                                 />
                               )}
-                               {/* Attachments for non-email - Memoized to prevent flicker */}
+                               {/* Attachments for non-email - simplified without auto-parsing */}
                                {message.message_attachments &&
                                  message.message_attachments.map((attachment) => (
-                                   <AttachmentRow
-                                     key={attachment.id}
-                                     attachment={attachment}
-                                     messageDirection={message.direction}
-                                     messageId={message.id}
-                                     renderAttachment={renderAttachment}
-                                   />
+                                   <div key={attachment.id} className="flex items-start gap-2">
+                                     <div className="flex-1">
+                                       {renderAttachment(attachment)}
+                                     </div>
+                                   </div>
                                  ))}
                                </>
                            )}

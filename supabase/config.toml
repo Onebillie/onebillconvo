@@ -1,5 +1,8 @@
 project_id = "jrtlrnfdqfkjlkpfirzr"
 
+[functions.parse-and-sync-attachment]
+verify_jwt = false
+
 [functions.parse-attachment]
 verify_jwt = false
 
