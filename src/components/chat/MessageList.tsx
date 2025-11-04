@@ -54,7 +54,6 @@ const AttachmentItem = memo(
   },
   (prev, next) =>
     prev.attachment?.id === next.attachment?.id &&
-    prev.attachment?.url === next.attachment?.url &&
     prev.attachment?.type === next.attachment?.type
 );
 
