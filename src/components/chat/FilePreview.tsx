@@ -3,6 +3,18 @@ import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loa
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Cache for loaded images to prevent flickering
+const loadedImages = new Set<string>();
+
+// Generate optimized image URL for Supabase Storage
+const getOptimizedImageUrl = (url: string) => {
+  if (url.includes('/storage/v1/object/public/')) {
+    const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
+    return `${optimizedUrl}?width=800&quality=75`;
+  }
+  return url;
+};
+
 interface FilePreviewProps {
   attachment: {
     id: string;
@@ -15,7 +27,8 @@ interface FilePreviewProps {
 }
 
 export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
-  const [imageLoading, setImageLoading] = useState(true);
+  const imageUrl = getOptimizedImageUrl(attachment.url);
+  const [imageLoading, setImageLoading] = useState(!loadedImages.has(imageUrl));
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   
@@ -49,16 +62,6 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
     setRetryCount(prev => prev + 1);
   };
 
-  // Generate optimized image URL for Supabase Storage
-  const getOptimizedImageUrl = (url: string) => {
-    if (url.includes('/storage/v1/object/public/')) {
-      // Replace with render endpoint for transformation
-      const optimizedUrl = url.replace('/object/public/', '/render/image/public/');
-      return `${optimizedUrl}?width=800&quality=75`;
-    }
-    return url;
-  };
-
   const handleImageError = () => {
     console.error('Failed to load image:', attachment.url, 'Type:', attachment.type);
     setImageError(true);
@@ -66,12 +69,11 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
   };
 
   const handleImageLoad = () => {
+    loadedImages.add(imageUrl);
     setImageLoading(false);
   };
 
   if (isImage) {
-    const imageUrl = getOptimizedImageUrl(attachment.url);
-    
     return (
       <div className="relative mt-2 rounded-lg overflow-hidden max-w-sm group" onClick={onClick}>
         {imageLoading && (
@@ -115,11 +117,8 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
             loading="lazy"
             decoding="async"
             fetchPriority="high"
-            onLoad={() => setImageLoading(false)}
-            onError={() => {
-              setImageLoading(false);
-              setImageError(true);
-            }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
           />
         )}
         {!imageLoading && !imageError && (
@@ -170,4 +169,8 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
       </div>
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Only re-render if attachment id or type changes
+  return prevProps.attachment.id === nextProps.attachment.id && 
+         prevProps.attachment.type === nextProps.attachment.type;
 });

@@ -25,6 +25,28 @@ import DOMPurify from 'dompurify';
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
+// Memoized attachment renderer to prevent flickering
+const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
+  const isVoiceNote = attachment.type?.startsWith("audio/");
+
+  if (isVoiceNote) {
+    return (
+      <div className="mt-2">
+        <VoicePlayer 
+          audioUrl={attachment.url} 
+          duration={attachment.duration_seconds}
+        />
+      </div>
+    );
+  }
+
+  return <FilePreview attachment={attachment} />;
+}, (prevProps, nextProps) => {
+  // Only re-render if attachment id or type changes
+  return prevProps.attachment.id === nextProps.attachment.id && 
+         prevProps.attachment.type === nextProps.attachment.type;
+});
+
 interface MessageListProps {
   messages: Message[];
   onCreateTask?: (message: Message) => void;
@@ -342,24 +364,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
       });
     }
   };
-
-  // Memoized attachment renderer to prevent re-renders
-  const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
-    const isVoiceNote = attachment.type?.startsWith("audio/");
-
-    if (isVoiceNote) {
-      return (
-        <div className="mt-2">
-          <VoicePlayer 
-            audioUrl={attachment.url} 
-            duration={attachment.duration_seconds}
-          />
-        </div>
-      );
-    }
-
-    return <FilePreview attachment={attachment} />;
-  });
 
   const renderAttachment = (attachment: any) => {
     return <AttachmentItem key={attachment.id} attachment={attachment} />;
