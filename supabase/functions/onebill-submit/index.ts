@@ -82,7 +82,7 @@ serve(async (req) => {
 
     switch (documentType) {
       case 'electricity':
-        apiEndpoint = 'https://api.onebill.ie/v1/bill_forms/electricity';
+        apiEndpoint = 'https://api.onebill.ie/api/electricity-file';
         payload = {
           phone: fields.phone,
           mprn: fields.mprn,
