@@ -102,12 +102,12 @@ serve(async (req) => {
 
     console.log('OpenAI Files Parser: Starting parse for', contentType, 'size:', fileSize);
 
-    // Get Lovable API key for PDF parsing (Lovable AI supports PDFs better than OpenAI vision)
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    // Get OpenAI API key for PDF parsing (OpenAI natively supports PDFs)
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    if (!lovableApiKey) {
+    if (!openaiApiKey) {
       return new Response(
-        JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
+        JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -148,16 +148,16 @@ serve(async (req) => {
     
     console.log('File converted to base64 using std/encoding');
 
-    // Call Lovable AI (supports PDFs and images)
-    console.log('Calling Lovable AI Gateway...');
-    const chatResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call OpenAI API (natively supports PDFs and images)
+    console.log('Calling OpenAI API with', contentType, '...');
+    const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash', // Gemini handles PDFs well
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -179,12 +179,13 @@ serve(async (req) => {
             ]
           }
         ],
+        max_tokens: 2000,
       }),
     });
 
     if (!chatResponse.ok) {
       const errorText = await chatResponse.text();
-      console.error('Lovable AI error:', chatResponse.status, errorText);
+      console.error('OpenAI error:', chatResponse.status, errorText);
       
       let errorDetails = errorText;
       try {
@@ -195,30 +196,30 @@ serve(async (req) => {
       if (chatResponse.status === 429) {
         return new Response(
           JSON.stringify({ 
-            error: 'AI rate limit exceeded',
+            error: 'OpenAI rate limit exceeded',
             details: 'Too many requests. Please try again in a few moments.',
-            parse_source: 'lovable_ai_error'
+            parse_source: 'openai_error'
           }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (chatResponse.status === 402) {
+      if (chatResponse.status === 401) {
         return new Response(
           JSON.stringify({ 
-            error: 'AI payment required',
-            details: 'Please check your Lovable AI credits.',
-            parse_source: 'lovable_ai_error'
+            error: 'OpenAI authentication failed',
+            details: 'Please check your OpenAI API key configuration.',
+            parse_source: 'openai_error'
           }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       return new Response(
         JSON.stringify({ 
-          error: 'AI could not parse this file',
+          error: 'OpenAI could not parse this file',
           details: errorDetails,
-          parse_source: 'lovable_ai_error',
+          parse_source: 'openai_error',
           status_code: chatResponse.status
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // Return 200 so router doesn't fail
@@ -232,9 +233,9 @@ serve(async (req) => {
     if (!content) {
       return new Response(
         JSON.stringify({ 
-          error: 'AI returned empty response',
+          error: 'OpenAI returned empty response',
           details: 'No content was extracted from the document',
-          parse_source: 'lovable_ai_error'
+          parse_source: 'openai_error'
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // Return 200 so router doesn't fail
       );
@@ -256,10 +257,10 @@ serve(async (req) => {
       console.error('Failed to parse AI response as JSON:', parseError);
       return new Response(
         JSON.stringify({ 
-          error: 'AI response was not valid JSON',
+          error: 'OpenAI response was not valid JSON',
           details: parseError instanceof Error ? parseError.message : 'JSON parsing failed',
           raw_content: content.substring(0, 500),
-          parse_source: 'lovable_ai_error'
+          parse_source: 'openai_error'
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // Return 200 so router doesn't fail
       );
@@ -271,14 +272,14 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Lovable AI Files Parser uncaught error:', error);
+    console.error('OpenAI Files Parser uncaught error:', error);
     
     // Graceful error response - never crash the runtime
     return new Response(
       JSON.stringify({
-        error: 'AI processing failed',
+        error: 'OpenAI processing failed',
         details: error instanceof Error ? error.message : 'Unknown error occurred',
-        parse_source: 'lovable_ai_error',
+        parse_source: 'openai_error',
         stack: error instanceof Error ? error.stack : undefined
       }),
       {

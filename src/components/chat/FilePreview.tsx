@@ -7,8 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
-import { convertPDFToImages } from '@/utils/pdfToImages';
-import { getPDFFromCache, setPDFToCache } from '@/stores/pdfConversionCache';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -90,47 +88,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     try {
       updateStep('Initializing', 'processing', 'Starting parsing process...');
       
-      let urlToProcess = attachment.url;
-      let convertedImages: string[] = [];
-      
-      // If it's a PDF, check cache first or convert
-      if (attachment.type === 'application/pdf') {
-        const cachedImages = getPDFFromCache(attachment.url);
-        
-        if (cachedImages) {
-          updateStep('Converting PDF', 'complete', 'Using cached PDF images');
-          convertedImages = cachedImages;
-          urlToProcess = cachedImages[0];
-        } else {
-          updateStep('Converting PDF', 'processing', 'Converting PDF to high-quality images...');
-          
-          try {
-            const images = await convertPDFToImages(
-              attachment.url,
-              { scale: 2.0, format: 'png', quality: 0.95 },
-              (current, total) => {
-                updateStep('Converting PDF', 'processing', `Converting page ${current} of ${total}...`);
-              }
-            );
-            
-            // Cache the converted images
-            setPDFToCache(attachment.url, images);
-            convertedImages = images;
-            
-            updateStep('Converting PDF', 'complete', `Converted ${images.length} page(s) to images`);
-            
-            // Use the first image for processing
-            urlToProcess = images[0];
-          } catch (pdfError) {
-            updateStep('Converting PDF', 'error', 'Failed to convert PDF to images');
-            throw pdfError;
-          }
-        }
-      }
-      
       updateStep('AI Processing', 'processing', 'Extracting data with AI...');
       const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
-        body: { attachmentUrl: urlToProcess }
+        body: { attachmentUrl: attachment.url }
       });
 
       if (error) {
