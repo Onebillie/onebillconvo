@@ -71,7 +71,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     e.stopPropagation();
     setParsing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('parse-attachment-onebill', {
+      const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
         body: { attachmentUrl: attachment.url }
       });
 
