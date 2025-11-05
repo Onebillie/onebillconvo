@@ -111,18 +111,14 @@ serve(async (req) => {
           .insert({
             business_id: businessId,
             customer_id: customerId,
-            message_id: message_id,
-            attachment_id: attachment_id,
             document_type: 'electricity',
             file_url: attachment_url,
             file_name: `attachment_${attachment_id}.jpg`,
             submission_status: 'pending',
-            fields: {
-              phone: phone,
-              mprn: meterDetails.mprn,
-              mcc_type: meterDetails.mcc,
-              dg_type: meterDetails.dg,
-            }
+            phone: phone,
+            mprn: meterDetails.mprn,
+            mcc_type: meterDetails.mcc,
+            dg_type: meterDetails.dg
           })
           .select()
           .single();
@@ -130,7 +126,7 @@ serve(async (req) => {
         if (error) {
           console.error('Error creating electricity submission:', error);
         } else {
-          submissions.push({ type: 'electricity', id: submission.id, fields: submission.fields });
+          submissions.push({ type: 'electricity', id: submission.id });
         }
       }
     }
@@ -147,16 +143,12 @@ serve(async (req) => {
           .insert({
             business_id: businessId,
             customer_id: customerId,
-            message_id: message_id,
-            attachment_id: attachment_id,
             document_type: 'gas',
             file_url: attachment_url,
             file_name: `attachment_${attachment_id}.jpg`,
             submission_status: 'pending',
-            fields: {
-              phone: phone,
-              gprn: meterDetails.gprn,
-            }
+            phone: phone,
+            gprn: meterDetails.gprn
           })
           .select()
           .single();
@@ -164,7 +156,7 @@ serve(async (req) => {
         if (error) {
           console.error('Error creating gas submission:', error);
         } else {
-          submissions.push({ type: 'gas', id: submission.id, fields: submission.fields });
+          submissions.push({ type: 'gas', id: submission.id });
         }
       }
     }
@@ -179,22 +171,17 @@ serve(async (req) => {
         .insert({
           business_id: businessId,
           customer_id: customerId,
-          message_id: message_id,
-          attachment_id: attachment_id,
           document_type: 'meter',
           file_url: attachment_url,
           file_name: `attachment_${attachment_id}.jpg`,
           submission_status: 'pending',
-          fields: {
-            phone: phone,
-            utility: meterData.utility || 'gas',
-            read_value: meterData.read_value,
-            unit: meterData.unit || 'm3',
-            meter_make: meterData.meter_make,
-            meter_model: meterData.meter_model,
-            raw_text: meterData.raw_text,
-            confidence: 0.9,
-          }
+          phone: phone,
+          utility: meterData.utility || 'gas',
+          read_value: meterData.read_value,
+          unit: meterData.unit || 'm3',
+          meter_make: meterData.meter_make,
+          meter_model: meterData.meter_model,
+          raw_text: meterData.raw_text
         })
         .select()
         .single();
@@ -202,7 +189,7 @@ serve(async (req) => {
       if (error) {
         console.error('Error creating meter submission:', error);
       } else {
-        submissions.push({ type: 'meter', id: submission.id, fields: submission.fields });
+        submissions.push({ type: 'meter', id: submission.id });
       }
     } else if (hasMeterReading) {
       console.log('Meter reading found but skipped (part of bill)', { hasElectricityBill, hasGasBill });
@@ -248,7 +235,6 @@ serve(async (req) => {
             businessId: businessId,
             customerId: customerId,
             documentType: submission.type,
-            fields: submission.fields,
             fileUrl: attachment_url,
             fileName: `attachment_${attachment_id}.jpg`,
           }
