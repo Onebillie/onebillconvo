@@ -66,13 +66,21 @@ serve(async (req) => {
     const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY') ?? '';
 
     if (!ONEBILL_API_KEY) {
-      console.warn('ONEBILL_API_KEY not configured');
+      console.error('ONEBILL_API_KEY not configured');
+      await supabaseClient
+        .from('onebill_submissions')
+        .update({ 
+          submission_status: 'failed',
+          error_message: 'OneBill API key not configured'
+        })
+        .eq('id', submissionId);
+      
       return new Response(
         JSON.stringify({ 
           success: false,
-          message: 'OneBill API not configured'
+          error: 'OneBill API not configured'
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -123,13 +131,82 @@ serve(async (req) => {
       console.warn('File not reachable before OneBill submit', { fileUrl });
     }
 
-    // Build multipart/form-data body expected by OneBill
-    const form = new FormData();
-    try {
-      const fileResp = await fetch(fileUrl, { redirect: 'follow' });
-      if (!fileResp.ok) {
-        const errorMsg = `Failed to fetch file: HTTP ${fileResp.status}`;
-        console.error(errorMsg, { fileUrl, status: fileResp.status });
+    // Build request based on document type
+    let response: Response;
+
+    if (documentType === 'electricity' || documentType === 'gas') {
+      // For electricity and gas: send JSON payload (matching working project)
+      console.log('Sending JSON payload to OneBill for', documentType);
+      
+      const jsonPayload: any = {
+        phone: fields.phone || '',
+      };
+
+      if (documentType === 'electricity') {
+        jsonPayload.mprn = fields.mprn || '';
+        // Handle both mcc/dg and mcc_type/dg_type
+        jsonPayload.mcc = (fields as any).mcc ?? (fields as any).mcc_type ?? '';
+        jsonPayload.dg = (fields as any).dg ?? (fields as any).dg_type ?? '';
+      } else if (documentType === 'gas') {
+        jsonPayload.gprn = fields.gprn || '';
+      }
+
+      // Include any additional fields that were extracted
+      Object.keys(fields).forEach(key => {
+        if (!['phone', 'mprn', 'gprn', 'mcc', 'dg', 'mcc_type', 'dg_type'].includes(key)) {
+          const value = (fields as any)[key];
+          if (value != null) {
+            jsonPayload[key] = value;
+          }
+        }
+      });
+
+      console.log('JSON payload:', JSON.stringify(jsonPayload, null, 2));
+
+      response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${ONEBILL_API_KEY}`,
+        },
+        body: JSON.stringify(jsonPayload),
+      });
+    } else {
+      // For meter: use multipart/form-data with file upload
+      console.log('Sending multipart/form-data to OneBill for meter reading');
+      
+      const form = new FormData();
+      
+      try {
+        const fileResp = await fetch(fileUrl, { redirect: 'follow' });
+        if (!fileResp.ok) {
+          const errorMsg = `Failed to fetch file: HTTP ${fileResp.status}`;
+          console.error(errorMsg, { fileUrl, status: fileResp.status });
+          await supabaseClient
+            .from('onebill_submissions')
+            .update({ 
+              submission_status: 'failed',
+              error_message: errorMsg
+            })
+            .eq('id', submissionId);
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: errorMsg
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
+        const buf = new Uint8Array(await fileResp.arrayBuffer());
+        const blob = new Blob([buf], { type: contentType });
+        form.append('file', blob, fileName || 'upload');
+      } catch (e) {
+        const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        console.error(errorMsg, { fileUrl, error: e });
         await supabaseClient
           .from('onebill_submissions')
           .update({ 
@@ -147,51 +224,23 @@ serve(async (req) => {
         );
       }
 
-      const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
-      const buf = new Uint8Array(await fileResp.arrayBuffer());
-      const blob = new Blob([buf], { type: contentType });
-      form.append('file', blob, fileName || 'upload');
-    } catch (e) {
-      const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      console.error(errorMsg, { fileUrl, error: e });
-      await supabaseClient
-        .from('onebill_submissions')
-        .update({ 
-          submission_status: 'failed',
-          error_message: errorMsg
-        })
-        .eq('id', submissionId);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: errorMsg
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      // Append fields for meter reading
+      if (fields.phone) form.append('phone', String(fields.phone));
+      if (fields.utility) form.append('utility', String(fields.utility));
+      if (fields.read_value) form.append('read_value', String(fields.read_value));
+      if (fields.unit) form.append('unit', String(fields.unit));
+      if (fields.meter_make) form.append('meter_make', String(fields.meter_make));
+      if (fields.meter_model) form.append('meter_model', String(fields.meter_model));
 
-    // Append fields using OneBill expected names
-    if (fields.phone) form.append('phone', String(fields.phone));
-    if (documentType === 'electricity') {
-      if (fields.mprn) form.append('mprn', String(fields.mprn));
-      const mccVal = (fields as any).mcc ?? (fields as any).mcc_type;
-      const dgVal = (fields as any).dg ?? (fields as any).dg_type;
-      if (mccVal) form.append('mcc', String(mccVal));
-      if (dgVal) form.append('dg', String(dgVal));
-    } else if (documentType === 'gas') {
-      if (fields.gprn) form.append('gprn', String(fields.gprn));
+      response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${ONEBILL_API_KEY}`,
+        },
+        body: form,
+      });
     }
-
-    // Send to OneBill API
-    const response = await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${ONEBILL_API_KEY}`,
-      },
-      body: form,
-    });
 
     const responseData = await response.json().catch(() => ({}));
     console.log('OneBill response:', { status: response.status, data: responseData });
