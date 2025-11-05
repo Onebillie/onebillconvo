@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertCircle, Copy } from 'lucide-react';
 
 interface OneBillDebuggerProps {
   attachmentId: string;
@@ -24,10 +25,15 @@ interface Step {
 export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneBillDebuggerProps) => {
   const { toast } = useToast();
   const [steps, setSteps] = useState<Record<string, Step>>({
-    parse: { name: 'Parse Document', status: 'idle' },
-    extract: { name: 'Extract Data', status: 'idle' },
-    submit: { name: 'Submit to OneBill', status: 'idle' },
+    parse: { name: 'Parse Document (Router)', status: 'idle' },
+    validate: { name: 'Validate & Map Fields', status: 'idle' },
+    submitMeter: { name: 'Submit Meter', status: 'idle' },
+    submitGas: { name: 'Submit Gas', status: 'idle' },
+    submitElectricity: { name: 'Submit Electricity', status: 'idle' },
   });
+
+  const [parsedData, setParsedData] = useState<any>(null);
+  const [validationData, setValidationData] = useState<any>(null);
 
   const updateStep = (stepKey: string, updates: Partial<Step>) => {
     setSteps(prev => ({
@@ -40,20 +46,22 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     updateStep('parse', { status: 'loading' });
     
     try {
-      const { data, error } = await supabase.functions.invoke('parse-attachment-onebill', {
+      const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
         body: { attachmentUrl }
       });
 
       if (error) throw error;
 
+      setParsedData(data);
       updateStep('parse', { 
         status: 'success', 
         result: data 
       });
       
+      const routerDecision = data._router?.decision || 'unknown';
       toast({
-        title: "Step 1 Complete",
-        description: "Document parsed successfully",
+        title: "Parse Complete",
+        description: `Parsed via ${routerDecision} engine`,
       });
 
       return data;
@@ -65,7 +73,7 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
       });
       
       toast({
-        title: "Step 1 Failed",
+        title: "Parse Failed",
         description: errorMsg,
         variant: "destructive",
       });
@@ -74,12 +82,11 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     }
   };
 
-  const step2ExtractData = async (parsedData: any) => {
-    updateStep('extract', { status: 'loading' });
+  const step2ValidateAndMap = async (data: any) => {
+    updateStep('validate', { status: 'loading' });
     
     try {
-      // Simulate data extraction and validation
-      const bills = parsedData?.bills;
+      const bills = data?.bills;
       if (!bills) {
         throw new Error('No bills data in parsed result');
       }
@@ -91,34 +98,61 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
         throw new Error('No phone number found in parsed data');
       }
 
-      const extractedData = {
+      // Extract all utility types
+      const meterReading = bills.meter_reading;
+      const electricity = bills.electricity?.[0];
+      const gas = bills.gas?.[0];
+
+      const validation = {
         phone,
-        hasMeterReading: !!bills.meter_reading,
-        hasElectricity: !!bills.electricity?.length,
-        hasGas: !!bills.gas?.length,
-        customerDetails
+        meter: meterReading?.read_value ? {
+          utility: meterReading.utility || 'gas',
+          read_value: meterReading.read_value,
+          unit: meterReading.unit || 'm3',
+          meter_make: meterReading.meter_make,
+          meter_model: meterReading.meter_model,
+          meter_serial: meterReading.meter_serial,
+          read_date: meterReading.read_date,
+          raw_text: meterReading.raw_text,
+          confidence: 0.9,
+        } : null,
+        electricity: electricity?.electricity_details?.meter_details?.mprn ? {
+          mprn: electricity.electricity_details.meter_details.mprn,
+          mcc_type: electricity.electricity_details.meter_details.mcc,
+          dg_type: electricity.electricity_details.meter_details.dg,
+        } : null,
+        gas: gas?.gas_details?.meter_details?.gprn ? {
+          gprn: gas.gas_details.meter_details.gprn,
+        } : null,
       };
 
-      updateStep('extract', { 
+      setValidationData(validation);
+      updateStep('validate', { 
         status: 'success', 
-        result: extractedData 
+        result: validation 
       });
       
+      const types = [
+        validation.meter && 'meter',
+        validation.electricity && 'electricity',
+        validation.gas && 'gas'
+      ].filter(Boolean).join(', ');
+
       toast({
-        title: "Step 2 Complete",
-        description: `Found phone: ${phone}`,
+        title: "Validation Complete",
+        description: types ? `Ready to submit: ${types}` : 'No utility data found',
       });
 
-      return extractedData;
+      return validation;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      updateStep('extract', { 
+      updateStep('validate', { 
         status: 'error', 
         error: errorMsg 
       });
       
       toast({
-        title: "Step 2 Failed",
+        title: "Validation Failed",
         description: errorMsg,
         variant: "destructive",
       });
@@ -127,145 +161,196 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     }
   };
 
-  const step3SubmitToOneBill = async (extractedData: any, parsedData: any) => {
-    updateStep('submit', { status: 'loading' });
+  const submitToDatabase = async (type: 'meter' | 'gas' | 'electricity', fields: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: businessUsers } = await supabase
+      .from('business_users')
+      .select('business_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!businessUsers) throw new Error('No business found for user');
+
+    const { data, error } = await supabase
+      .from('onebill_submissions')
+      .insert({
+        business_id: businessUsers.business_id,
+        submitted_by: user.id,
+        document_type: type,
+        phone: validationData.phone,
+        file_url: attachmentUrl,
+        file_name: attachmentUrl.split('/').pop() || 'unknown',
+        file_size: 0,
+        onebill_endpoint: `${type}-file`,
+        submission_status: 'pending',
+        extracted_fields: fields,
+        ...fields
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const step3SubmitMeter = async () => {
+    if (!validationData?.meter) {
+      toast({
+        variant: "destructive",
+        title: "No Meter Data",
+        description: "No meter reading found to submit",
+      });
+      return;
+    }
+
+    updateStep('submitMeter', { status: 'loading' });
     
     try {
-      const bills = parsedData.bills;
-      const submissions = [];
-
-      // Get business and user IDs
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: businessUsers } = await supabase
-        .from('business_users')
-        .select('business_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!businessUsers) throw new Error('No business found for user');
-
-      // Create submission for meter reading
-      if (bills.meter_reading) {
-        const { data: submission, error } = await supabase
-          .from('onebill_submissions')
-          .insert({
-            business_id: businessUsers.business_id,
-            submitted_by: user.id,
-            document_type: 'meter',
-            phone: extractedData.phone,
-            utility: bills.meter_reading.utility,
-            read_value: bills.meter_reading.read_value,
-            unit: bills.meter_reading.unit,
-            meter_make: bills.meter_reading.meter_make,
-            meter_model: bills.meter_reading.meter_model,
-            raw_text: bills.meter_reading.raw_text,
-            file_url: attachmentUrl,
-            file_name: attachmentUrl.split('/').pop() || 'unknown',
-            file_size: 0,
-            onebill_endpoint: 'meter-file',
-            submission_status: 'pending',
-            extracted_fields: bills.meter_reading
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        submissions.push(submission);
-      }
-
-      // Create submission for electricity
-      if (bills.electricity?.length > 0) {
-        const elec = bills.electricity[0];
-        const { data: submission, error } = await supabase
-          .from('onebill_submissions')
-          .insert({
-            business_id: businessUsers.business_id,
-            submitted_by: user.id,
-            document_type: 'electricity',
-            phone: extractedData.phone,
-            mprn: elec.electricity_details?.meter_details?.mprn,
-            file_url: attachmentUrl,
-            file_name: attachmentUrl.split('/').pop() || 'unknown',
-            file_size: 0,
-            onebill_endpoint: 'electricity-bill',
-            submission_status: 'pending',
-            extracted_fields: elec
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        submissions.push(submission);
-      }
-
-      // Create submission for gas
-      if (bills.gas?.length > 0) {
-        const gas = bills.gas[0];
-        const { data: submission, error } = await supabase
-          .from('onebill_submissions')
-          .insert({
-            business_id: businessUsers.business_id,
-            submitted_by: user.id,
-            document_type: 'gas',
-            phone: extractedData.phone,
-            gprn: gas.gas_details?.meter_details?.gprn,
-            file_url: attachmentUrl,
-            file_name: attachmentUrl.split('/').pop() || 'unknown',
-            file_size: 0,
-            onebill_endpoint: 'gas-bill',
-            submission_status: 'pending',
-            extracted_fields: gas
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        submissions.push(submission);
-      }
-
-      updateStep('submit', { 
+      const result = await submitToDatabase('meter', validationData.meter);
+      
+      updateStep('submitMeter', { 
         status: 'success', 
-        result: { submissions: submissions.length } 
+        result 
       });
       
       toast({
-        title: "Step 3 Complete",
-        description: `Created ${submissions.length} submission(s)`,
+        title: "Meter Submitted",
+        description: "Meter reading submitted successfully",
       });
-
-      return submissions;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      updateStep('submit', { 
+      updateStep('submitMeter', { 
         status: 'error', 
         error: errorMsg 
       });
       
       toast({
-        title: "Step 3 Failed",
+        title: "Meter Submission Failed",
         description: errorMsg,
         variant: "destructive",
       });
-      
-      throw error;
     }
   };
 
-  const runAllSteps = async () => {
+  const step4SubmitGas = async () => {
+    if (!validationData?.gas) {
+      toast({
+        variant: "destructive",
+        title: "No Gas Data",
+        description: "No gas bill found to submit",
+      });
+      return;
+    }
+
+    updateStep('submitGas', { status: 'loading' });
+    
     try {
-      const parsedData = await step1ParseDocument();
-      const extractedData = await step2ExtractData(parsedData);
-      await step3SubmitToOneBill(extractedData, parsedData);
+      const result = await submitToDatabase('gas', validationData.gas);
+      
+      updateStep('submitGas', { 
+        status: 'success', 
+        result 
+      });
       
       toast({
-        title: "All Steps Complete!",
-        description: "Document processed successfully",
+        title: "Gas Submitted",
+        description: "Gas bill submitted successfully",
       });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      updateStep('submitGas', { 
+        status: 'error', 
+        error: errorMsg 
+      });
+      
+      toast({
+        title: "Gas Submission Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const step5SubmitElectricity = async () => {
+    if (!validationData?.electricity) {
+      toast({
+        variant: "destructive",
+        title: "No Electricity Data",
+        description: "No electricity bill found to submit",
+      });
+      return;
+    }
+
+    updateStep('submitElectricity', { status: 'loading' });
+    
+    try {
+      const result = await submitToDatabase('electricity', validationData.electricity);
+      
+      updateStep('submitElectricity', { 
+        status: 'success', 
+        result 
+      });
+      
+      toast({
+        title: "Electricity Submitted",
+        description: "Electricity bill submitted successfully",
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      updateStep('submitElectricity', { 
+        status: 'error', 
+        error: errorMsg 
+      });
+      
+      toast({
+        title: "Electricity Submission Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const runParseAndValidate = async () => {
+    try {
+      const parsed = await step1ParseDocument();
+      await step2ValidateAndMap(parsed);
     } catch (error) {
       // Error already handled in individual steps
     }
+  };
+
+  const copyCurlCommand = (type: 'meter' | 'gas' | 'electricity') => {
+    if (!validationData) return;
+
+    let curl = '';
+    if (type === 'meter' && validationData.meter) {
+      const fields = validationData.meter;
+      curl = `curl -X POST "https://api.onebill.ie/api/meter-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "utility=${fields.utility}" \\
+  -F "read_value=${fields.read_value}" \\
+  -F "unit=${fields.unit}" \\
+  ${fields.meter_make ? `-F "meter_make=${fields.meter_make}" \\\n  ` : ''}${fields.meter_model ? `-F "meter_model=${fields.meter_model}" \\\n  ` : ''}${fields.confidence ? `-F "confidence=${fields.confidence}" \\\n  ` : ''}-F "file=@/path/to/photo.jpg"`;
+    } else if (type === 'gas' && validationData.gas) {
+      curl = `curl -X POST "https://api.onebill.ie/api/gas-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "gprn=${validationData.gas.gprn}" \\
+  -F "file=@/path/to/bill.pdf"`;
+    } else if (type === 'electricity' && validationData.electricity) {
+      const fields = validationData.electricity;
+      curl = `curl -X POST "https://api.onebill.ie/api/electricity-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "mprn=${fields.mprn}" \\
+  ${fields.mcc_type ? `-F "mcc_type=${fields.mcc_type}" \\\n  ` : ''}${fields.dg_type ? `-F "dg_type=${fields.dg_type}" \\\n  ` : ''}-F "file=@/path/to/bill.pdf"`;
+    }
+
+    navigator.clipboard.writeText(curl);
+    toast({
+      title: "Copied",
+      description: "cURL command copied to clipboard",
+    });
   };
 
   const getStatusIcon = (status: StepStatus) => {
@@ -301,76 +386,148 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
       <CardHeader>
         <CardTitle>OneBill Processing Debugger</CardTitle>
         <CardDescription>
-          Test each step of the document processing pipeline
+          Step-by-step document processing with OpenAI support for PDFs
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {Object.entries(steps).map(([key, step]) => (
-          <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(step.status)}
-              <div>
-                <div className="flex items-center">
-                  <span className="font-medium">{step.name}</span>
-                  {getStatusBadge(step.status)}
-                </div>
-                {step.error && (
-                  <p className="text-xs text-destructive mt-1">{step.error}</p>
-                )}
-                {step.result && step.status === 'success' && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {JSON.stringify(step.result).substring(0, 100)}...
-                  </p>
-                )}
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                if (key === 'parse') step1ParseDocument();
-                else if (key === 'extract') {
-                  if (steps.parse.result) step2ExtractData(steps.parse.result);
-                  else toast({ title: "Run Step 1 first", variant: "destructive" });
-                }
-                else if (key === 'submit') {
-                  if (steps.parse.result && steps.extract.result) {
-                    step3SubmitToOneBill(steps.extract.result, steps.parse.result);
-                  } else {
-                    toast({ title: "Run Steps 1 & 2 first", variant: "destructive" });
-                  }
-                }
-              }}
-              disabled={step.status === 'loading'}
+      <CardContent>
+        <Tabs defaultValue="steps" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="steps">Step-by-Step</TabsTrigger>
+            <TabsTrigger value="curl">cURL Preview</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="steps" className="space-y-4">
+            <Button 
+              onClick={runParseAndValidate} 
+              className="w-full mb-4"
+              disabled={Object.values(steps).some(s => s.status === 'loading')}
             >
-              {step.status === 'loading' ? (
+              {steps.parse.status === 'loading' || steps.validate.status === 'loading' ? (
                 <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Running
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
                 </>
               ) : (
-                'Run Step'
+                'Parse & Validate'
               )}
             </Button>
-          </div>
-        ))}
 
-        <div className="pt-4 border-t">
-          <Button 
-            onClick={runAllSteps} 
-            className="w-full"
-            disabled={Object.values(steps).some(s => s.status === 'loading')}
-          >
-            {Object.values(steps).some(s => s.status === 'loading') ? (
+            {Object.entries(steps).map(([key, step]) => (
+              <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3 flex-1">
+                  {getStatusIcon(step.status)}
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <span className="font-medium">{step.name}</span>
+                      {getStatusBadge(step.status)}
+                    </div>
+                    {step.error && (
+                      <p className="text-xs text-destructive mt-1">{step.error}</p>
+                    )}
+                    {step.result && step.status === 'success' && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {JSON.stringify(step.result).substring(0, 100)}...
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (key === 'parse') step1ParseDocument();
+                    else if (key === 'validate' && parsedData) step2ValidateAndMap(parsedData);
+                    else if (key === 'submitMeter') step3SubmitMeter();
+                    else if (key === 'submitGas') step4SubmitGas();
+                    else if (key === 'submitElectricity') step5SubmitElectricity();
+                  }}
+                  disabled={
+                    step.status === 'loading' ||
+                    (key === 'validate' && !parsedData) ||
+                    (key === 'submitMeter' && !validationData?.meter) ||
+                    (key === 'submitGas' && !validationData?.gas) ||
+                    (key === 'submitElectricity' && !validationData?.electricity)
+                  }
+                >
+                  {step.status === 'loading' ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Running
+                    </>
+                  ) : (
+                    'Run'
+                  )}
+                </Button>
+              </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="curl" className="space-y-4">
+            {validationData ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
+                {validationData.meter && (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Meter Reading API Call</h3>
+                      <Button size="sm" variant="outline" onClick={() => copyCurlCommand('meter')}>
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                    <pre className="text-xs bg-muted p-3 rounded overflow-auto">
+{`curl -X POST "https://api.onebill.ie/api/meter-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "utility=${validationData.meter.utility}" \\
+  -F "read_value=${validationData.meter.read_value}" \\
+  -F "unit=${validationData.meter.unit}" \\
+  ${validationData.meter.meter_make ? `-F "meter_make=${validationData.meter.meter_make}" \\\n  ` : ''}${validationData.meter.meter_model ? `-F "meter_model=${validationData.meter.meter_model}" \\\n  ` : ''}-F "file=@/path/to/photo.jpg"`}
+                    </pre>
+                  </div>
+                )}
+
+                {validationData.gas && (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Gas Bill API Call</h3>
+                      <Button size="sm" variant="outline" onClick={() => copyCurlCommand('gas')}>
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                    <pre className="text-xs bg-muted p-3 rounded overflow-auto">
+{`curl -X POST "https://api.onebill.ie/api/gas-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "gprn=${validationData.gas.gprn}" \\
+  -F "file=@/path/to/bill.pdf"`}
+                    </pre>
+                  </div>
+                )}
+
+                {validationData.electricity && (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Electricity Bill API Call</h3>
+                      <Button size="sm" variant="outline" onClick={() => copyCurlCommand('electricity')}>
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                    <pre className="text-xs bg-muted p-3 rounded overflow-auto">
+{`curl -X POST "https://api.onebill.ie/api/electricity-file" \\
+  -F "phone=${validationData.phone}" \\
+  -F "mprn=${validationData.electricity.mprn}" \\
+  ${validationData.electricity.mcc_type ? `-F "mcc_type=${validationData.electricity.mcc_type}" \\\n  ` : ''}${validationData.electricity.dg_type ? `-F "dg_type=${validationData.electricity.dg_type}" \\\n  ` : ''}-F "file=@/path/to/bill.pdf"`}
+                    </pre>
+                  </div>
+                )}
               </>
             ) : (
-              'Run All Steps'
+              <div className="text-center text-muted-foreground py-8">
+                Run "Parse & Validate" first to see cURL commands
+              </div>
             )}
-          </Button>
-        </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

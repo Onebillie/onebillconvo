@@ -54,9 +54,9 @@ serve(async (req) => {
 
     console.log('Processing for business:', businessId);
 
-    // Call parse-attachment-onebill to parse with the specific OneBill prompt
-    console.log('Calling parse-attachment-onebill...');
-    const parseResponse = await supabase.functions.invoke('parse-attachment-onebill', {
+    // Call onebill-parse-router to parse (routes to Gemini or OpenAI based on file type)
+    console.log('Calling onebill-parse-router...');
+    const parseResponse = await supabase.functions.invoke('onebill-parse-router', {
       body: { attachmentUrl: attachment_url }
     });
 
