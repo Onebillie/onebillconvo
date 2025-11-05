@@ -407,3 +407,6 @@ verify_jwt = false
 
 [functions.parse-attachment-onebill]
 verify_jwt = true
+
+[functions.auto-process-onebill]
+verify_jwt = false

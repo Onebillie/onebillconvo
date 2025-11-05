@@ -4708,16 +4708,22 @@ export type Database = {
           http_status: number | null
           id: string
           mcc_type: string | null
+          meter_make: string | null
+          meter_model: string | null
           mprn: string | null
           onebill_endpoint: string
           onebill_response: Json | null
           phone: string
+          raw_text: string | null
+          read_value: number | null
           retry_count: number
           submission_status: string
           submitted_at: string
           submitted_by: string
+          unit: string | null
           updated_at: string
           url: string | null
+          utility: string | null
         }
         Insert: {
           business_id: string
@@ -4735,16 +4741,22 @@ export type Database = {
           http_status?: number | null
           id?: string
           mcc_type?: string | null
+          meter_make?: string | null
+          meter_model?: string | null
           mprn?: string | null
           onebill_endpoint: string
           onebill_response?: Json | null
           phone: string
+          raw_text?: string | null
+          read_value?: number | null
           retry_count?: number
           submission_status?: string
           submitted_at?: string
           submitted_by: string
+          unit?: string | null
           updated_at?: string
           url?: string | null
+          utility?: string | null
         }
         Update: {
           business_id?: string
@@ -4762,16 +4774,22 @@ export type Database = {
           http_status?: number | null
           id?: string
           mcc_type?: string | null
+          meter_make?: string | null
+          meter_model?: string | null
           mprn?: string | null
           onebill_endpoint?: string
           onebill_response?: Json | null
           phone?: string
+          raw_text?: string | null
+          read_value?: number | null
           retry_count?: number
           submission_status?: string
           submitted_at?: string
           submitted_by?: string
+          unit?: string | null
           updated_at?: string
           url?: string | null
+          utility?: string | null
         }
         Relationships: [
           {

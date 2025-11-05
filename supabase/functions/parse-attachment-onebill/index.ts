@@ -50,6 +50,7 @@ Extract data from the attached bill and return it in this exact JSON structure:
       {
         "details": {
           "customer_name": "",
+          "phone": "",
           "address": {
             "line_1": "",
             "line_2": "",
@@ -61,18 +62,32 @@ Extract data from the attached bill and return it in this exact JSON structure:
         "services": {
           "gas": false,
           "broadband": false,
-          "electricity": false
+          "electricity": false,
+          "meter_reading": false
         }
       }
     ],
     "electricity": [...],
     "gas": [...],
-    "broadband": [...]
+    "broadband": [...],
+    "meter_reading": {
+      "utility": "gas" | "electricity",
+      "read_value": 0,
+      "unit": "m3" | "kWh",
+      "meter_make": "",
+      "meter_model": "",
+      "meter_serial": "",
+      "read_date": "YYYY-MM-DD",
+      "raw_text": ""
+    }
   }
 }
 
 Rules:
 - Detect services: MPRN/MCC/DG = electricity, GPRN/carbon tax = gas, UAN/phone = broadband
+- For meter readings: Extract meter make (e.g., "Landis+Gyr"), model (e.g., "L210"), reading value, unit (m3 for gas, kWh for electricity)
+- Include raw_text from the meter reading area for audit purposes
+- Extract phone number from customer details or bill contact info
 - Dates: YYYY-MM-DD or 0000-00-00
 - Numbers: use 0 for unknown
 - Currency: "cent" or "euro"

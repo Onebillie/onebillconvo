@@ -10,7 +10,7 @@ const corsHeaders = {
 const ONEBILL_ENDPOINTS = {
   meter: {
     url: 'https://api.onebill.ie/api/meter-file',
-    required: ['file', 'phone', 'url'],
+    required: ['file', 'phone'],
   },
   gas: {
     url: 'https://api.onebill.ie/api/gas-file',
@@ -173,7 +173,13 @@ serve(async (req) => {
 
     // Add document-specific fields
     if (documentType === 'meter') {
-      formData.append('url', fields.url || fileUrl);
+      if (fields.utility) formData.append('utility', fields.utility);
+      if (fields.read_value) formData.append('read_value', fields.read_value.toString());
+      if (fields.unit) formData.append('unit', fields.unit);
+      if (fields.meter_make) formData.append('meter_make', fields.meter_make);
+      if (fields.meter_model) formData.append('meter_model', fields.meter_model);
+      if (fields.confidence) formData.append('confidence', fields.confidence.toString());
+      if (fields.raw_text) formData.append('raw_text', fields.raw_text);
     } else if (documentType === 'gas') {
       formData.append('gprn', fields.gprn);
     } else if (documentType === 'electricity') {
