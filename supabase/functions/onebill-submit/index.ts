@@ -63,7 +63,7 @@ serve(async (req) => {
     };
 
     // Get OneBill API configuration
-    const ONEBILL_API_KEY = '2|9TuPterPak3MpuF7EYWWicw5u3SZ46PXxnmp3tVN1994555e';
+    const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY') ?? '';
 
     if (!ONEBILL_API_KEY) {
       console.warn('ONEBILL_API_KEY not configured');
@@ -121,11 +121,31 @@ serve(async (req) => {
       .update({ submission_status: 'submitting' })
       .eq('id', submissionId);
 
+    // Best-effort: ensure the file URL is publicly reachable before posting to OneBill
+    const waitForUrl = async (url: string, attempts = 6, delayMs = 700) => {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+          if (head.ok) return true;
+        } catch (e) {
+          // ignore and retry
+        }
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+      return false;
+    };
+
+    const fileReady = await waitForUrl(fileUrl);
+    if (!fileReady) {
+      console.warn('File not reachable before OneBill submit', { fileUrl });
+    }
+
     // Send to OneBill API
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${ONEBILL_API_KEY}`,
       },
       body: JSON.stringify(payload),
