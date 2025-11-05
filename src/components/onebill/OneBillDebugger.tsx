@@ -25,6 +25,7 @@ interface Step {
 export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneBillDebuggerProps) => {
   const { toast } = useToast();
   const [steps, setSteps] = useState<Record<string, Step>>({
+    autoProcess: { name: 'Auto Process (Server)', status: 'idle' },
     parse: { name: 'Parse Document (Router)', status: 'idle' },
     validate: { name: 'Validate & Map Fields', status: 'idle' },
     submitMeter: { name: 'Submit Meter', status: 'idle' },
