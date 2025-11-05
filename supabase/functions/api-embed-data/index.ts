@@ -82,10 +82,14 @@ serve(async (req) => {
           priority,
           metadata,
           customer:customers(id, name, email, phone, whatsapp_phone, avatar, last_contact_method),
+          assigned_user:profiles!fk_conversations_assigned_to(id, full_name, department),
+          conversation_statuses:conversation_statuses(status_tag_id, conversation_status_tags(id, name, color)),
           last_message:messages!conversation_id(content, subject, platform, direction, created_at)
         `) 
         .eq("business_id", keyRow.business_id)
-        .order("last_message_at", { ascending: false, nullsFirst: false });
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { foreignTable: "messages", ascending: false })
+        .limit(1, { foreignTable: "messages" });
 
       if (error) {
         console.error("api-embed-data conversations error", error);
@@ -95,8 +99,20 @@ serve(async (req) => {
         });
       }
 
-      return new Response(JSON.stringify({ conversations: data || [] }), { status: 200, headers: corsHeaders });
+      // Normalize shape: last_message -> single object, status_tags array
+      const normalized = (data || []).map((c: any) => ({
+        ...c,
+        last_message: Array.isArray(c.last_message) ? c.last_message[0] || null : c.last_message || null,
+        status_tags: (c.conversation_statuses || []).map((s: any) => ({
+          id: s.conversation_status_tags?.id,
+          name: s.conversation_status_tags?.name,
+          color: s.conversation_status_tags?.color,
+        })),
+      }));
+
+      return new Response(JSON.stringify({ conversations: normalized }), { status: 200, headers: corsHeaders });
     }
+
 
     if (resource === "messages") {
       const conversationId = body.conversation_id || url.searchParams.get("conversation_id");

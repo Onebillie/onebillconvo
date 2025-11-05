@@ -105,87 +105,15 @@ export default function EmbedInbox() {
     };
   }, [selectedConversation]);
 
-  // Set up real-time subscription for messages
+  // Fallback polling to ensure updates when RLS blocks realtime
   useEffect(() => {
     if (!selectedConversation) return;
-
-    console.log('[EmbedInbox] Setting up real-time subscription for conversation:', selectedConversation);
-
-    const channel = supabase
-      .channel(`embed-inbox-messages-${selectedConversation}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedConversation}`,
-        },
-        async (payload) => {
-          console.log('[EmbedInbox] New message received:', payload.new);
-          // Fetch the full message with attachments
-          const { data } = await supabase
-            .from('messages')
-            .select(`
-              *,
-              message_attachments (
-                id,
-                filename,
-                url,
-                type,
-                size,
-                duration_seconds
-              )
-            `)
-            .eq('id', payload.new.id)
-            .single();
-
-          if (data) {
-            setMessages((prev) => [...prev, data as Message]);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedConversation}`,
-        },
-        async (payload) => {
-          console.log('[EmbedInbox] Message updated:', payload.new);
-          // Fetch the full message with attachments
-          const { data } = await supabase
-            .from('messages')
-            .select(`
-              *,
-              message_attachments (
-                id,
-                filename,
-                url,
-                type,
-                size,
-                duration_seconds
-              )
-            `)
-            .eq('id', payload.new.id)
-            .single();
-
-          if (data) {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === data.id ? (data as Message) : msg))
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('[EmbedInbox] Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(() => {
+      loadMessages(selectedConversation);
+    }, 10000);
+    return () => clearInterval(interval);
   }, [selectedConversation]);
+
 
   const validateAndLoadData = async () => {
     try {
@@ -236,6 +164,15 @@ export default function EmbedInbox() {
       console.error('Error loading conversations (catch):', err);
     }
   };
+
+  // Periodic refresh of conversations to ensure parity with backend updates
+  useEffect(() => {
+    if (!businessId) return;
+    const interval = setInterval(() => {
+      loadConversations(businessId);
+    }, 30000); // 30s refresh
+    return () => clearInterval(interval);
+  }, [businessId]);
 
   const loadMessages = async (conversationId: string) => {
     try {
@@ -304,7 +241,7 @@ export default function EmbedInbox() {
 
   const layoutClasses = {
     floating: 'fixed bottom-4 right-4 rounded-lg shadow-2xl',
-    embedded: 'w-full h-screen',
+    embedded: 'fixed inset-0 w-screen h-screen',
     fullscreen: 'fixed inset-0 w-screen h-screen',
     sidebar: 'fixed inset-y-0 right-0 h-screen shadow-2xl'
   };
