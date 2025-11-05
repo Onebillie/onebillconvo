@@ -118,7 +118,8 @@ serve(async (req) => {
             phone: phone,
             mprn: meterDetails.mprn,
             mcc_type: meterDetails.mcc,
-            dg_type: meterDetails.dg
+            dg_type: meterDetails.dg,
+            extracted_fields: parsedData
           })
           .select()
           .single();
@@ -153,7 +154,8 @@ serve(async (req) => {
             file_name: `attachment_${attachment_id}.jpg`,
             submission_status: 'pending',
             phone: phone,
-            gprn: meterDetails.gprn
+            gprn: meterDetails.gprn,
+            extracted_fields: parsedData
           })
           .select()
           .single();
@@ -191,7 +193,8 @@ serve(async (req) => {
           unit: meterData.unit || 'm3',
           meter_make: meterData.meter_make,
           meter_model: meterData.meter_model,
-          raw_text: meterData.raw_text
+          raw_text: meterData.raw_text,
+          extracted_fields: parsedData
         })
         .select()
         .single();

@@ -31,7 +31,7 @@ serve(async (req) => {
     // Load submission from DB to build payload if fields were not provided
     const { data: submission, error: submissionError } = await supabaseClient
       .from('onebill_submissions')
-      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name')
+      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name, extracted_fields')
       .eq('id', submissionId)
       .single();
 
@@ -135,33 +135,32 @@ serve(async (req) => {
     let response: Response;
 
     if (documentType === 'electricity' || documentType === 'gas') {
-      // For electricity and gas: send JSON payload (matching working project)
-      console.log('Sending JSON payload to OneBill for', documentType);
+      // For electricity and gas: send entire extracted_fields JSON (matching working project)
+      console.log('Sending complete parsed JSON to OneBill for', documentType);
       
-      const jsonPayload: any = {
-        phone: fields.phone || '',
-      };
-
-      if (documentType === 'electricity') {
-        jsonPayload.mprn = fields.mprn || '';
-        // Handle both mcc/dg and mcc_type/dg_type
-        jsonPayload.mcc = (fields as any).mcc ?? (fields as any).mcc_type ?? '';
-        jsonPayload.dg = (fields as any).dg ?? (fields as any).dg_type ?? '';
-      } else if (documentType === 'gas') {
-        jsonPayload.gprn = fields.gprn || '';
+      const extractedFields = submission.extracted_fields;
+      
+      if (!extractedFields || Object.keys(extractedFields).length === 0) {
+        const errorMsg = 'No extracted_fields found in submission';
+        console.error(errorMsg);
+        await supabaseClient
+          .from('onebill_submissions')
+          .update({ 
+            submission_status: 'failed',
+            error_message: errorMsg
+          })
+          .eq('id', submissionId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: errorMsg
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
-      // Include any additional fields that were extracted
-      Object.keys(fields).forEach(key => {
-        if (!['phone', 'mprn', 'gprn', 'mcc', 'dg', 'mcc_type', 'dg_type'].includes(key)) {
-          const value = (fields as any)[key];
-          if (value != null) {
-            jsonPayload[key] = value;
-          }
-        }
-      });
-
-      console.log('JSON payload:', JSON.stringify(jsonPayload, null, 2));
+      console.log('Sending extracted_fields:', JSON.stringify(extractedFields).substring(0, 500));
 
       response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -170,7 +169,7 @@ serve(async (req) => {
           'Accept': 'application/json',
           'Authorization': `Bearer ${ONEBILL_API_KEY}`,
         },
-        body: JSON.stringify(jsonPayload),
+        body: JSON.stringify(extractedFields),
       });
     } else {
       // For meter: use multipart/form-data with file upload
