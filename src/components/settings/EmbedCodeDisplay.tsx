@@ -31,7 +31,7 @@ export const EmbedCodeDisplay = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'YOUR_API_KEY' // Replace with your API key
+        'x-api-key': 'YOUR_API_KEY' // Replace with your API key
       },
       body: JSON.stringify({
         scope: 'inbox' // Full inbox access
@@ -72,7 +72,7 @@ export const EmbedCodeDisplay = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'YOUR_API_KEY' // Replace with your API key
+        'x-api-key': 'YOUR_API_KEY' // Replace with your API key
       },
       body: JSON.stringify({
         customer_id: customerId,
