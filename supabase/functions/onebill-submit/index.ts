@@ -63,7 +63,7 @@ serve(async (req) => {
     };
 
     // Get OneBill API configuration
-    const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY');
+    const ONEBILL_API_KEY = '2|9TuPterPak3MpuF7EYWWicw5u3SZ46PXxnmp3tVN1994555e';
 
     if (!ONEBILL_API_KEY) {
       console.warn('ONEBILL_API_KEY not configured');
@@ -84,38 +84,28 @@ serve(async (req) => {
       case 'electricity':
         apiEndpoint = 'https://api.onebill.ie/api/electricity-file';
         payload = {
+          file: fileUrl,
           phone: fields.phone,
           mprn: fields.mprn,
           mcc_type: fields.mcc_type,
           dg_type: fields.dg_type,
-          file_url: fileUrl,
-          file_name: fileName,
         };
         break;
 
       case 'gas':
-        apiEndpoint = 'https://api.onebill.ie/v1/bill_forms/gas';
+        apiEndpoint = 'https://api.onebill.ie/api/gas-file';
         payload = {
+          file: fileUrl,
           phone: fields.phone,
           gprn: fields.gprn,
-          file_url: fileUrl,
-          file_name: fileName,
         };
         break;
 
       case 'meter':
-        apiEndpoint = 'https://api.onebill.ie/v1/meter_reads';
+        apiEndpoint = 'https://api.onebill.ie/api/meter-file';
         payload = {
+          file: fileUrl,
           phone: fields.phone,
-          utility: fields.utility || 'gas',
-          read_value: fields.read_value,
-          unit: fields.unit || 'm3',
-          meter_make: fields.meter_make,
-          meter_model: fields.meter_model,
-          raw_text: fields.raw_text,
-          confidence: fields.confidence || 0.9,
-          file_url: fileUrl,
-          file_name: fileName,
         };
         break;
 
