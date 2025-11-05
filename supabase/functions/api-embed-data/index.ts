@@ -70,9 +70,22 @@ serve(async (req) => {
     if (resource === "conversations") {
       const { data, error } = await admin
         .from("conversations")
-        .select(`id, customer_id, last_message_at, customer:customers(id, name, email, phone)`) 
+        .select(`
+          id, 
+          customer_id, 
+          last_message_at,
+          status,
+          status_tag_id,
+          assigned_to,
+          created_at,
+          updated_at,
+          priority,
+          metadata,
+          customer:customers(id, name, email, phone, whatsapp_phone, avatar, last_contact_method),
+          last_message:messages!conversation_id(content, subject, platform, direction, created_at)
+        `) 
         .eq("business_id", keyRow.business_id)
-        .order("last_message_at", { ascending: false });
+        .order("last_message_at", { ascending: false, nullsFirst: false });
 
       if (error) {
         console.error("api-embed-data conversations error", error);
