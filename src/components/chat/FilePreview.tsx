@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
+import { convertPDFToImages } from '@/utils/pdfToImages';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -88,9 +89,34 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     try {
       updateStep('Initializing', 'processing', 'Starting parsing process...');
       
+      let urlToProcess = attachment.url;
+      
+      // If it's a PDF, convert to images first
+      if (attachment.type === 'application/pdf') {
+        updateStep('Converting PDF', 'processing', 'Converting PDF to high-quality images...');
+        
+        try {
+          const images = await convertPDFToImages(
+            attachment.url,
+            { scale: 2.0, format: 'png', quality: 0.95 },
+            (current, total) => {
+              updateStep('Converting PDF', 'processing', `Converting page ${current} of ${total}...`);
+            }
+          );
+          
+          updateStep('Converting PDF', 'complete', `Converted ${images.length} page(s) to images`);
+          
+          // Use the first image for processing
+          urlToProcess = images[0];
+        } catch (pdfError) {
+          updateStep('Converting PDF', 'error', 'Failed to convert PDF to images');
+          throw pdfError;
+        }
+      }
+      
       updateStep('Routing', 'processing', 'Determining document type...');
       const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
-        body: { attachmentUrl: attachment.url }
+        body: { attachmentUrl: urlToProcess }
       });
 
       if (error) {
