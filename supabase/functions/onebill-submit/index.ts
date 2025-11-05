@@ -83,37 +83,21 @@ serve(async (req) => {
     switch (documentType) {
       case 'electricity':
         apiEndpoint = 'https://api.onebill.ie/api/electricity-file';
-        payload = {
-          file: fileUrl,
-          phone: fields.phone,
-          mprn: fields.mprn,
-          mcc_type: fields.mcc_type,
-          dg_type: fields.dg_type,
-        };
         break;
 
       case 'gas':
         apiEndpoint = 'https://api.onebill.ie/api/gas-file';
-        payload = {
-          file: fileUrl,
-          phone: fields.phone,
-          gprn: fields.gprn,
-        };
         break;
 
       case 'meter':
         apiEndpoint = 'https://api.onebill.ie/api/meter-file';
-        payload = {
-          file: fileUrl,
-          phone: fields.phone,
-        };
         break;
 
       default:
         throw new Error(`Unknown document type: ${documentType}`);
     }
 
-    console.log('Submitting to OneBill:', { apiEndpoint, payload });
+    console.log('Submitting to OneBill:', { apiEndpoint, documentType, fileUrl });
 
     // Update submission status to submitting
     await supabaseClient
@@ -140,15 +124,42 @@ serve(async (req) => {
       console.warn('File not reachable before OneBill submit', { fileUrl });
     }
 
+    // Build multipart/form-data body expected by OneBill
+    const form = new FormData();
+    try {
+      const fileResp = await fetch(fileUrl, { redirect: 'follow' });
+      if (fileResp.ok) {
+        const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
+        const buf = new Uint8Array(await fileResp.arrayBuffer());
+        const blob = new Blob([buf], { type: contentType });
+        form.append('file', blob, fileName || 'upload');
+      } else {
+        console.warn('Failed to fetch file for OneBill forwarding', { status: fileResp.status });
+      }
+    } catch (e) {
+      console.error('Error fetching file for OneBill forwarding', e);
+    }
+
+    // Append fields using OneBill expected names
+    if (fields.phone) form.append('phone', String(fields.phone));
+    if (documentType === 'electricity') {
+      if (fields.mprn) form.append('mprn', String(fields.mprn));
+      const mccVal = (fields as any).mcc ?? (fields as any).mcc_type;
+      const dgVal = (fields as any).dg ?? (fields as any).dg_type;
+      if (mccVal) form.append('mcc', String(mccVal));
+      if (dgVal) form.append('dg', String(dgVal));
+    } else if (documentType === 'gas') {
+      if (fields.gprn) form.append('gprn', String(fields.gprn));
+    }
+
     // Send to OneBill API
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${ONEBILL_API_KEY}`,
       },
-      body: JSON.stringify(payload),
+      body: form,
     });
 
     const responseData = await response.json().catch(() => ({}));
