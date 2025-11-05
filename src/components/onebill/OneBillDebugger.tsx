@@ -142,14 +142,34 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
         throw new Error('No phone number found in parsed data');
       }
 
-      // Extract all utility types
-      const meterReading = bills.meter_reading;
-      const electricity = bills.electricity?.[0];
-      const gas = bills.gas?.[0];
+      // Check what type of document this is
+      const hasElectricityBill = bills.electricity && bills.electricity.length > 0;
+      const hasGasBill = bills.gas && bills.gas.length > 0;
+      const hasMeterReading = bills.meter_reading?.read_value;
 
-      const validation = {
-        phone,
-        meter: meterReading?.read_value ? {
+      // Determine validation based on document type
+      let validation: any = { phone };
+
+      // LOGIC: If it's a bill (electricity or gas), use the bill API
+      if (hasElectricityBill) {
+        const electricity = bills.electricity[0];
+        validation.electricity = {
+          mprn: electricity.electricity_details.meter_details.mprn,
+          mcc_type: electricity.electricity_details.meter_details.mcc,
+          dg_type: electricity.electricity_details.meter_details.dg,
+        };
+        validation.documentType = 'electricity_bill';
+      } else if (hasGasBill) {
+        const gas = bills.gas[0];
+        validation.gas = {
+          gprn: gas.gas_details.meter_details.gprn,
+        };
+        validation.documentType = 'gas_bill';
+      } 
+      // LOGIC: If NO bill but has meter reading, it's a meter photo
+      else if (hasMeterReading) {
+        const meterReading = bills.meter_reading;
+        validation.meter = {
           utility: meterReading.utility || 'gas',
           read_value: meterReading.read_value,
           unit: meterReading.unit || 'm3',
@@ -159,16 +179,11 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
           read_date: meterReading.read_date,
           raw_text: meterReading.raw_text,
           confidence: 0.9,
-        } : null,
-        electricity: electricity?.electricity_details?.meter_details?.mprn ? {
-          mprn: electricity.electricity_details.meter_details.mprn,
-          mcc_type: electricity.electricity_details.meter_details.mcc,
-          dg_type: electricity.electricity_details.meter_details.dg,
-        } : null,
-        gas: gas?.gas_details?.meter_details?.gprn ? {
-          gprn: gas.gas_details.meter_details.gprn,
-        } : null,
-      };
+        };
+        validation.documentType = 'meter_photo';
+      } else {
+        throw new Error('No valid utility data found - not a bill and no meter reading');
+      }
 
       setValidationData(validation);
       updateStep('validate', { 
@@ -176,15 +191,14 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
         result: validation 
       });
       
-      const types = [
-        validation.meter && 'meter',
-        validation.electricity && 'electricity',
-        validation.gas && 'gas'
-      ].filter(Boolean).join(', ');
+      const types = [];
+      if (validation.electricity) types.push('electricity bill');
+      if (validation.gas) types.push('gas bill');
+      if (validation.meter) types.push('meter photo');
 
       toast({
         title: "Validation Complete",
-        description: types ? `Ready to submit: ${types}` : 'No utility data found',
+        description: `Detected: ${types.join(', ') || 'Unknown'}`,
       });
 
       return validation;
