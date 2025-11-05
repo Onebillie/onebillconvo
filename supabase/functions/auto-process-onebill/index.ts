@@ -125,7 +125,12 @@ serve(async (req) => {
 
         if (error) {
           console.error('Error creating electricity submission:', error);
+          throw new Error(`Failed to create electricity submission: ${error.message}`);
+        } else if (!submission?.id) {
+          console.error('Electricity submission created but no ID returned:', submission);
+          throw new Error('Electricity submission created but no ID returned');
         } else {
+          console.log('Created electricity submission:', submission.id);
           submissions.push({ type: 'electricity', id: submission.id });
         }
       }
@@ -155,7 +160,12 @@ serve(async (req) => {
 
         if (error) {
           console.error('Error creating gas submission:', error);
+          throw new Error(`Failed to create gas submission: ${error.message}`);
+        } else if (!submission?.id) {
+          console.error('Gas submission created but no ID returned:', submission);
+          throw new Error('Gas submission created but no ID returned');
         } else {
+          console.log('Created gas submission:', submission.id);
           submissions.push({ type: 'gas', id: submission.id });
         }
       }
@@ -188,7 +198,12 @@ serve(async (req) => {
 
       if (error) {
         console.error('Error creating meter submission:', error);
+        throw new Error(`Failed to create meter submission: ${error.message}`);
+      } else if (!submission?.id) {
+        console.error('Meter submission created but no ID returned:', submission);
+        throw new Error('Meter submission created but no ID returned');
       } else {
+        console.log('Created meter submission:', submission.id);
         submissions.push({ type: 'meter', id: submission.id });
       }
     } else if (hasMeterReading) {
@@ -226,7 +241,18 @@ serve(async (req) => {
     // Submit to OneBill for each detected utility type
     const submissionResults = [];
     for (const submission of submissions) {
-      console.log(`Submitting ${submission.type} to OneBill...`);
+      // Validate submission ID before invoking
+      if (!submission.id) {
+        console.error(`Skipping ${submission.type} - missing submission ID`);
+        submissionResults.push({ 
+          type: submission.type, 
+          success: false, 
+          error: 'Missing submission ID' 
+        });
+        continue;
+      }
+
+      console.log(`Submitting ${submission.type} (ID: ${submission.id}) to OneBill...`);
       
       try {
         const submitResponse = await supabase.functions.invoke('onebill-submit', {
