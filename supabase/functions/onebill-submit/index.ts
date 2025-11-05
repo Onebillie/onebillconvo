@@ -76,9 +76,8 @@ serve(async (req) => {
       );
     }
 
-    // Build OneBill API URL and payload based on document type
+    // Build OneBill API URL based on document type
     let apiEndpoint = '';
-    let payload: any = {};
 
     switch (documentType) {
       case 'electricity':
@@ -128,16 +127,48 @@ serve(async (req) => {
     const form = new FormData();
     try {
       const fileResp = await fetch(fileUrl, { redirect: 'follow' });
-      if (fileResp.ok) {
-        const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
-        const buf = new Uint8Array(await fileResp.arrayBuffer());
-        const blob = new Blob([buf], { type: contentType });
-        form.append('file', blob, fileName || 'upload');
-      } else {
-        console.warn('Failed to fetch file for OneBill forwarding', { status: fileResp.status });
+      if (!fileResp.ok) {
+        const errorMsg = `Failed to fetch file: HTTP ${fileResp.status}`;
+        console.error(errorMsg, { fileUrl, status: fileResp.status });
+        await supabaseClient
+          .from('onebill_submissions')
+          .update({ 
+            submission_status: 'failed',
+            error_message: errorMsg
+          })
+          .eq('id', submissionId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: errorMsg
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+
+      const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
+      const buf = new Uint8Array(await fileResp.arrayBuffer());
+      const blob = new Blob([buf], { type: contentType });
+      form.append('file', blob, fileName || 'upload');
     } catch (e) {
-      console.error('Error fetching file for OneBill forwarding', e);
+      const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      console.error(errorMsg, { fileUrl, error: e });
+      await supabaseClient
+        .from('onebill_submissions')
+        .update({ 
+          submission_status: 'failed',
+          error_message: errorMsg
+        })
+        .eq('id', submissionId);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: errorMsg
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Append fields using OneBill expected names
