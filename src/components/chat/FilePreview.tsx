@@ -41,6 +41,8 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [parsing, setParsing] = useState(false);
   const [parseResult, setParseResult] = useState<any>(null);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [showParsingStatus, setShowParsingStatus] = useState(false);
+  const [parsingSteps, setParsingSteps] = useState<Array<{ step: string; status: 'pending' | 'processing' | 'complete' | 'error'; message?: string }>>([]);
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
@@ -67,15 +69,38 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     window.open(attachment.url, '_blank');
   };
 
+  const updateStep = (step: string, status: 'pending' | 'processing' | 'complete' | 'error', message?: string) => {
+    setParsingSteps(prev => {
+      const existing = prev.find(s => s.step === step);
+      if (existing) {
+        return prev.map(s => s.step === step ? { ...s, status, message } : s);
+      }
+      return [...prev, { step, status, message }];
+    });
+  };
+
   const handleParseWithAI = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setParsing(true);
+    setShowParsingStatus(true);
+    setParsingSteps([]);
+    
     try {
+      updateStep('Initializing', 'processing', 'Starting parsing process...');
+      
+      updateStep('Routing', 'processing', 'Determining document type...');
       const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
         body: { attachmentUrl: attachment.url }
       });
 
-      if (error) throw error;
+      if (error) {
+        updateStep('Routing', 'error', error.message);
+        throw error;
+      }
+      
+      updateStep('Routing', 'complete', 'Document type determined');
+      updateStep('AI Processing', 'complete', 'AI extraction complete');
+      updateStep('Finalizing', 'complete', 'Parsing successful');
 
       setParseResult(data);
       toast({
@@ -84,6 +109,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       });
     } catch (error) {
       console.error('Parse error:', error);
+      updateStep('Error', 'error', error instanceof Error ? error.message : "Failed to parse attachment");
       toast({
         title: "Parsing Failed",
         description: error instanceof Error ? error.message : "Failed to parse attachment",
@@ -270,6 +296,42 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
             </DialogContent>
           </Dialog>
         )}
+
+        <Dialog open={showParsingStatus} onOpenChange={setShowParsingStatus}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Parsing Status</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {parsingSteps.map((step, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <div className="mt-0.5">
+                    {step.status === 'processing' && (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    )}
+                    {step.status === 'complete' && (
+                      <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      </div>
+                    )}
+                    {step.status === 'error' && (
+                      <AlertCircle className="w-4 h-4 text-destructive" />
+                    )}
+                    {step.status === 'pending' && (
+                      <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{step.step}</p>
+                    {step.message && (
+                      <p className="text-xs text-muted-foreground mt-1">{step.message}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -332,6 +394,42 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={showParsingStatus} onOpenChange={setShowParsingStatus}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Parsing Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {parsingSteps.map((step, idx) => (
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="mt-0.5">
+                  {step.status === 'processing' && (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  )}
+                  {step.status === 'complete' && (
+                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                  )}
+                  {step.status === 'error' && (
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                  )}
+                  {step.status === 'pending' && (
+                    <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">{step.step}</p>
+                  {step.message && (
+                    <p className="text-xs text-muted-foreground mt-1">{step.message}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }, (prevProps, nextProps) => {
