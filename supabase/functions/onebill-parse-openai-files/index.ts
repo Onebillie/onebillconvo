@@ -106,9 +106,13 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!openaiApiKey) {
+      console.error('OPENAI_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'OpenAI API key not configured',
+          parse_source: 'openai_error'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -116,13 +120,14 @@ serve(async (req) => {
     console.log('Downloading file from:', attachmentUrl);
     const fileResponse = await fetch(attachmentUrl);
     if (!fileResponse.ok) {
+      console.error('Failed to download file:', fileResponse.status, fileResponse.statusText);
       return new Response(
         JSON.stringify({ 
           error: 'Failed to download file from URL',
           details: `HTTP ${fileResponse.status}: ${fileResponse.statusText}`,
           parse_source: 'openai_files_error'
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -131,13 +136,14 @@ serve(async (req) => {
     console.log(`File downloaded, size: ${fileBlob.size} bytes (${fileSizeMB} MB)`);
     
     if (fileBlob.size > 20 * 1024 * 1024) {
+      console.error('File too large for processing:', fileSizeMB, 'MB');
       return new Response(
         JSON.stringify({ 
           error: 'File too large for processing',
           details: `File size: ${fileSizeMB}MB. Maximum supported: 20MB`,
           parse_source: 'openai_files_error'
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
