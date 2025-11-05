@@ -35,6 +35,7 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
 
   const [parsedData, setParsedData] = useState<any>(null);
   const [validationData, setValidationData] = useState<any>(null);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
 
   const updateStep = (stepKey: string, updates: Partial<Step>) => {
     setSteps(prev => ({
@@ -126,22 +127,43 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     }
   };
 
-  const step2ValidateAndMap = async (data: any) => {
+  const step2ValidateAndMap = async () => {
+    if (!parsedData) {
+      toast({
+        variant: "destructive",
+        title: "No Data",
+        description: "Please parse the document first",
+      });
+      return;
+    }
+
     updateStep('validate', { status: 'loading' });
     
     try {
-      const bills = data?.bills;
-      if (!bills) {
-        throw new Error('No bills data in parsed result');
-      }
+      // CRITICAL: Fetch the customer's phone from the conversation
+      const { data: messageData } = await supabase
+        .from('messages')
+        .select(`
+          conversation_id,
+          conversations!inner(
+            customer_id,
+            customers!inner(phone, name)
+          )
+        `)
+        .eq('id', messageId)
+        .single();
 
-      const customerDetails = bills.cus_details?.[0];
-      const phone = customerDetails?.details?.phone;
+      const phone = messageData?.conversations?.customers?.phone;
+      console.log('[VALIDATE] Customer phone from conversation:', phone);
       
       if (!phone) {
-        throw new Error('No phone number found in parsed data');
+        throw new Error('Customer phone number not found in conversation');
       }
-
+      
+      setCustomerPhone(phone);
+      
+      const bills = parsedData.bills || {};
+      
       // Check what type of document this is
       const hasElectricityBill = bills.electricity && bills.electricity.length > 0;
       const hasGasBill = bills.gas && bills.gas.length > 0;
@@ -231,13 +253,18 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
 
     if (!businessUsers) throw new Error('No business found for user');
 
+    // Use customer phone from conversation, not from parsed bill
+    if (!customerPhone) {
+      throw new Error('Customer phone not available - run validation first');
+    }
+
     const { data, error } = await supabase
       .from('onebill_submissions')
       .insert({
         business_id: businessUsers.business_id,
         submitted_by: user.id,
         document_type: type,
-        phone: validationData.phone,
+        phone: customerPhone,
         file_url: attachmentUrl,
         file_name: attachmentUrl.split('/').pop() || 'unknown',
         file_size: 0,
@@ -275,7 +302,10 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
           submissionId: dbResult.id,
           businessId: dbResult.business_id,
           documentType: 'meter',
-          fields: validationData.meter,
+          fields: {
+            ...validationData.meter,
+            phone: customerPhone  // Use customer's phone from conversation
+          },
           fileUrl: attachmentUrl,
           fileName: `meter_${Date.now()}.jpg`
         }
@@ -334,7 +364,10 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
           submissionId: dbResult.id,
           businessId: dbResult.business_id,
           documentType: 'gas',
-          fields: validationData.gas,
+          fields: {
+            ...validationData.gas,
+            phone: customerPhone  // Use customer's phone from conversation
+          },
           fileUrl: attachmentUrl,
           fileName: `gas_${Date.now()}.jpg`
         }
@@ -393,7 +426,10 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
           submissionId: dbResult.id,
           businessId: dbResult.business_id,
           documentType: 'electricity',
-          fields: validationData.electricity,
+          fields: {
+            ...validationData.electricity,
+            phone: customerPhone  // Use customer's phone from conversation
+          },
           fileUrl: attachmentUrl,
           fileName: `electricity_${Date.now()}.jpg`
         }
@@ -432,8 +468,8 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
 
   const runParseAndValidate = async () => {
     try {
-      const parsed = await step1ParseDocument();
-      await step2ValidateAndMap(parsed);
+      await step1ParseDocument();
+      await step2ValidateAndMap();
     } catch (error) {
       // Error already handled in individual steps
     }
@@ -570,7 +606,7 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
                   onClick={() => {
                     if (key === 'autoProcess') stepAutoProcess();
                     else if (key === 'parse') step1ParseDocument();
-                    else if (key === 'validate' && parsedData) step2ValidateAndMap(parsedData);
+                    else if (key === 'validate') step2ValidateAndMap();
                     else if (key === 'submitMeter') step3SubmitMeter();
                     else if (key === 'submitGas') step4SubmitGas();
                     else if (key === 'submitElectricity') step5SubmitElectricity();
