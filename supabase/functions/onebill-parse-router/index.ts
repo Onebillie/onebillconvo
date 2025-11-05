@@ -21,19 +21,35 @@ serve(async (req) => {
       );
     }
 
-    console.log('Router: Fetching attachment to detect MIME type:', attachmentUrl);
+    console.log('Router: Processing attachment:', attachmentUrl);
 
-    // Fetch the file to determine MIME type
-    const fileResponse = await fetch(attachmentUrl);
-    if (!fileResponse.ok) {
-      throw new Error(`Failed to fetch attachment: ${fileResponse.statusText}`);
+    let contentType = '';
+    let fileSize = 0;
+
+    // Handle data: URLs (from client-side conversion)
+    if (attachmentUrl.startsWith('data:')) {
+      const match = attachmentUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        contentType = match[1];
+        const base64Data = match[2];
+        fileSize = Math.ceil(base64Data.length * 0.75); // Approximate size from base64
+        console.log('Router: Data URL detected, type:', contentType, 'approx size:', fileSize);
+      } else {
+        throw new Error('Invalid data URL format');
+      }
+    } else {
+      // Fetch the file to determine MIME type
+      console.log('Router: Fetching attachment to detect MIME type:', attachmentUrl);
+      const fileResponse = await fetch(attachmentUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch attachment: ${fileResponse.statusText}`);
+      }
+
+      contentType = fileResponse.headers.get('content-type') || '';
+      const blob = await fileResponse.blob();
+      fileSize = blob.size;
+      console.log('Router: Detected content-type:', contentType, 'size:', fileSize);
     }
-
-    const contentType = fileResponse.headers.get('content-type') || '';
-    const blob = await fileResponse.blob();
-    const fileSize = blob.size;
-
-    console.log('Router: Detected content-type:', contentType, 'size:', fileSize);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -53,10 +69,15 @@ serve(async (req) => {
       });
 
       if (response.error) {
-        throw new Error(`Gemini parse failed: ${response.error.message}`);
+        console.error('Router: Gemini parse returned error:', response.error);
+        parseResult = {
+          error: response.error.message || 'Gemini parse failed',
+          details: response.error,
+          parse_source: 'router_forwarded_gemini'
+        };
+      } else {
+        parseResult = response.data;
       }
-
-      parseResult = response.data;
 
     } else {
       // PDFs, Office docs, CSV, HEIC -> use OpenAI Files API
@@ -72,10 +93,15 @@ serve(async (req) => {
       });
 
       if (response.error) {
-        throw new Error(`OpenAI parse failed: ${response.error.message}`);
+        console.error('Router: OpenAI parse returned error:', response.error);
+        parseResult = {
+          error: response.error.message || 'OpenAI parse failed',
+          details: response.error,
+          parse_source: 'router_forwarded_openai'
+        };
+      } else {
+        parseResult = response.data;
       }
-
-      parseResult = response.data;
     }
 
     // Add router metadata to result

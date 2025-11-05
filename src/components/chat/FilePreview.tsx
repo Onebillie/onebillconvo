@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
+import * as pdfjsLib from 'pdfjs-dist';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -79,6 +80,48 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     });
   };
 
+  const convertPDFFirstPageToJPEG = async (url: string, options = { scale: 2, quality: 0.85 }): Promise<Blob> => {
+    // Set up worker inline for Vite compatibility
+    const worker = new Worker(
+      new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url),
+      { type: 'module' }
+    );
+    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+
+    const loadingTask = pdfjsLib.getDocument(url);
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(1);
+
+    const viewport = page.getViewport({ scale: options.scale });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    const renderContext: any = {
+      canvasContext: context,
+      viewport: viewport,
+    };
+
+    await page.render(renderContext).promise;
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        worker.terminate();
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to convert canvas to blob'));
+        }
+      }, 'image/jpeg', options.quality);
+    });
+  };
+
   const handleParseWithAI = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setParsing(true);
@@ -88,10 +131,54 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     try {
       updateStep('Initializing', 'processing', 'Starting parsing process...');
       
+      let attachmentUrlToProcess = attachment.url;
+
+      // Convert PDF to JPEG on client side
+      if (isPDF) {
+        updateStep('Converting PDF', 'processing', 'Rendering first page to image...');
+        try {
+          const jpegBlob = await convertPDFFirstPageToJPEG(attachment.url, { scale: 2, quality: 0.85 });
+          
+          // Upload to storage
+          const fileName = `${attachment.id}-p1.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from('customer_media')
+            .upload(`derived/${fileName}`, jpegBlob, { 
+              contentType: 'image/jpeg', 
+              upsert: true 
+            });
+
+          if (uploadError) {
+            throw new Error(`Upload failed: ${uploadError.message}`);
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('customer_media')
+            .getPublicUrl(`derived/${fileName}`);
+
+          attachmentUrlToProcess = publicUrl;
+          updateStep('Converting PDF', 'complete', 'PDF converted to JPEG');
+        } catch (conversionError) {
+          updateStep('Converting PDF', 'error', conversionError instanceof Error ? conversionError.message : 'Conversion failed');
+          throw conversionError;
+        }
+      }
+      
       updateStep('AI Processing', 'processing', 'Extracting data with AI...');
       const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
-        body: { attachmentUrl: attachment.url }
+        body: { attachmentUrl: attachmentUrlToProcess }
       });
+
+      // Handle errors returned in data (router now returns 200 with error metadata)
+      if (data?.error) {
+        updateStep('AI Processing', 'error', data.error);
+        toast({
+          title: "Parsing Failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (error) {
         updateStep('AI Processing', 'error', error.message);

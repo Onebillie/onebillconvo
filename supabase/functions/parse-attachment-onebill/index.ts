@@ -24,36 +24,52 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log('Fetching attachment...');
-    const fileResponse = await fetch(attachmentUrl);
-    if (!fileResponse.ok) {
-      console.error('Failed to fetch attachment:', fileResponse.status);
-      throw new Error(`Failed to fetch attachment: ${fileResponse.status}`);
-    }
+    let contentType = 'image/jpeg';
+    let base64File = '';
 
-    const fileBuffer = await fileResponse.arrayBuffer();
-    const contentType = fileResponse.headers.get('content-type') || 'image/jpeg';
-    
-    // For PDFs, we need to use a different approach - convert to images first
-    // For now, we'll use the URL directly for images only
-    if (contentType === 'application/pdf') {
-      throw new Error('PDF processing requires document parsing API. Please use image files (JPG, PNG) for now.');
-    }
-    
-    // Convert to base64 in chunks to avoid stack overflow on large files
-    const uint8Array = new Uint8Array(fileBuffer);
-    let binaryString = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, i + chunkSize);
-      binaryString += String.fromCharCode(...chunk);
-    }
-    const base64File = btoa(binaryString);
+    // Handle data: URLs (from client-side conversion)
+    if (attachmentUrl.startsWith('data:')) {
+      console.log('Processing data URL...');
+      const match = attachmentUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        throw new Error('Invalid data URL format');
+      }
+      contentType = match[1];
+      base64File = match[2];
+      console.log('Data URL processed:', { type: contentType, size: base64File.length });
+    } else {
+      // Fetch from URL
+      console.log('Fetching attachment...');
+      const fileResponse = await fetch(attachmentUrl);
+      if (!fileResponse.ok) {
+        console.error('Failed to fetch attachment:', fileResponse.status);
+        throw new Error(`Failed to fetch attachment: ${fileResponse.status}`);
+      }
 
-    console.log('File fetched successfully:', {
-      size: fileBuffer.byteLength,
-      type: contentType
-    });
+      const fileBuffer = await fileResponse.arrayBuffer();
+      contentType = fileResponse.headers.get('content-type') || 'image/jpeg';
+      
+      // For PDFs, we need to use a different approach - convert to images first
+      // For now, we'll use the URL directly for images only
+      if (contentType === 'application/pdf') {
+        throw new Error('PDF processing requires document parsing API. Please use image files (JPG, PNG) for now.');
+      }
+      
+      // Convert to base64 in chunks to avoid stack overflow on large files
+      const uint8Array = new Uint8Array(fileBuffer);
+      let binaryString = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, i + chunkSize);
+        binaryString += String.fromCharCode(...chunk);
+      }
+      base64File = btoa(binaryString);
+
+      console.log('File fetched successfully:', {
+        size: fileBuffer.byteLength,
+        type: contentType
+      });
+    }
 
     const systemPrompt = `You are a utility bill parsing expert for Irish utilities.
 

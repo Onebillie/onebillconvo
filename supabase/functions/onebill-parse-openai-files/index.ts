@@ -280,7 +280,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('OpenAI Files Parser uncaught error:', error);
     
-    // Graceful error response - never crash the runtime
+    // Graceful error response - always return 200 so router doesn't fail
     return new Response(
       JSON.stringify({
         error: 'OpenAI processing failed',
@@ -289,7 +289,7 @@ serve(async (req) => {
         stack: error instanceof Error ? error.stack : undefined
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
