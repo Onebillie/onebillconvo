@@ -219,31 +219,10 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
         console.error('Failed to save parse result:', updateError);
         updateStep('Saving Results', 'error', 'Failed to save to database');
       } else {
-        updateStep('Saving Results', 'complete', 'Results saved to database');
+        updateStep('Saving Results', 'complete', 'Parse complete - auto-processing will handle submission');
       }
       
-      // Send to OneBill API
-      updateStep('OneBill API', 'processing', 'Sending to OneBill...');
-      try {
-        const { data: onebillData, error: onebillError } = await supabase.functions.invoke('onebill-submit', {
-          body: { 
-            attachmentId: attachment.id,
-            parsedData: data 
-          }
-        });
-        
-        if (onebillError) {
-          updateStep('OneBill API', 'error', 'Failed to send to OneBill');
-          console.error('OneBill API error:', onebillError);
-        } else {
-          updateStep('OneBill API', 'complete', 'Successfully sent to OneBill');
-        }
-      } catch (onebillError) {
-        updateStep('OneBill API', 'error', 'Failed to send to OneBill');
-        console.error('OneBill API error:', onebillError);
-      }
-      
-      updateStep('Complete', 'complete', 'All steps finished');
+      updateStep('Complete', 'complete', 'Parsing finished');
 
       setParseResult(data);
       toast({
