@@ -79,29 +79,36 @@ serve(async (req) => {
         parseResult = response.data;
       }
 
-    } else {
-      // PDFs, Office docs, CSV, HEIC -> use OpenAI Files API
-      console.log('Router: Routing to onebill-parse-openai-files (OpenAI for documents)');
-      routerDecision = 'openai-files';
-
-      const response = await supabase.functions.invoke('onebill-parse-openai-files', {
-        body: { 
-          attachmentUrl,
+    } else if (contentType.includes('pdf')) {
+      // PDFs require client-side conversion to image first
+      console.log('Router: PDF detected, returning conversion required message');
+      routerDecision = 'requires_client_pdf_conversion';
+      
+      parseResult = {
+        error: 'unsupported_input',
+        details: 'PDF must be converted to JPEG on client before parsing. Open the attachment and click Parse to convert and parse.',
+        parse_source: 'router',
+        _router: {
+          decision: 'requires_client_pdf_to_jpeg',
           contentType,
-          fileSize 
+          fileSize
         }
-      });
-
-      if (response.error) {
-        console.error('Router: OpenAI parse returned error:', response.error);
-        parseResult = {
-          error: response.error.message || 'OpenAI parse failed',
-          details: response.error,
-          parse_source: 'router_forwarded_openai'
-        };
-      } else {
-        parseResult = response.data;
-      }
+      };
+    } else {
+      // Other document types (Office, CSV, HEIC) are not supported
+      console.log('Router: Unsupported document type:', contentType);
+      routerDecision = 'unsupported_type';
+      
+      parseResult = {
+        error: 'unsupported_input',
+        details: `Document type ${contentType} is not supported. Please convert to JPG/PNG or upload the original PDF.`,
+        parse_source: 'router',
+        _router: {
+          decision: 'unsupported_type',
+          contentType,
+          fileSize
+        }
+      };
     }
 
     // Add router metadata to result

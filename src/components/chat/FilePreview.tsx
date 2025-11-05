@@ -81,18 +81,24 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   };
 
   const convertPDFFirstPageToJPEG = async (url: string, options = { scale: 2, quality: 0.85 }): Promise<Blob> => {
-    // Set up worker inline for Vite compatibility
-    const worker = new Worker(
-      new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url),
-      { type: 'module' }
-    );
-    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+    // Configure worker from CDN to match vision-bill-parser (version 5.4.394)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://unpkg.com/pdfjs-dist@5.4.394/build/pdf.worker.min.mjs';
 
-    const loadingTask = pdfjsLib.getDocument(url);
+    // Fetch PDF as ArrayBuffer for better reliability
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
 
-    const viewport = page.getViewport({ scale: options.scale });
+    // Calculate scale to achieve ~1800px width like vision-bill-parser
+    const viewport = page.getViewport({ scale: 1.0 });
+    const targetWidth = 1800;
+    const scale = Math.min(2.0, targetWidth / viewport.width);
+    const scaledViewport = page.getViewport({ scale });
+    
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     
@@ -100,25 +106,34 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       throw new Error('Failed to get canvas context');
     }
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+    canvas.width = Math.ceil(scaledViewport.width);
+    canvas.height = Math.ceil(scaledViewport.height);
 
     const renderContext: any = {
       canvasContext: context,
-      viewport: viewport,
+      viewport: scaledViewport,
     };
 
     await page.render(renderContext).promise;
 
     return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        worker.terminate();
-        if (blob) {
-          resolve(blob);
+      // Try PNG first for better text quality
+      canvas.toBlob((pngBlob) => {
+        if (pngBlob && pngBlob.size <= 8 * 1024 * 1024) {
+          // PNG is good size, use it
+          resolve(pngBlob);
         } else {
-          reject(new Error('Failed to convert canvas to blob'));
+          // PNG too large, use JPEG
+          console.log('PNG too large, converting to JPEG');
+          canvas.toBlob((jpegBlob) => {
+            if (jpegBlob) {
+              resolve(jpegBlob);
+            } else {
+              reject(new Error('Failed to convert canvas to blob'));
+            }
+          }, 'image/jpeg', 0.85);
         }
-      }, 'image/jpeg', options.quality);
+      }, 'image/png');
     });
   };
 
@@ -133,18 +148,21 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       
       let attachmentUrlToProcess = attachment.url;
 
-      // Convert PDF to JPEG on client side
+      // Convert PDF to image on client side
       if (isPDF) {
         updateStep('Converting PDF', 'processing', 'Rendering first page to image...');
         try {
-          const jpegBlob = await convertPDFFirstPageToJPEG(attachment.url, { scale: 2, quality: 0.85 });
+          const imageBlob = await convertPDFFirstPageToJPEG(attachment.url, { scale: 2, quality: 0.85 });
+          
+          // Determine file extension based on blob type
+          const fileExt = imageBlob.type === 'image/png' ? 'png' : 'jpg';
+          const fileName = `${attachment.id}-p1.${fileExt}`;
           
           // Upload to storage
-          const fileName = `${attachment.id}-p1.jpg`;
           const { error: uploadError } = await supabase.storage
             .from('customer_media')
-            .upload(`derived/${fileName}`, jpegBlob, { 
-              contentType: 'image/jpeg', 
+            .upload(`derived/${fileName}`, imageBlob, { 
+              contentType: imageBlob.type, 
               upsert: true 
             });
 
@@ -157,7 +175,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
             .getPublicUrl(`derived/${fileName}`);
 
           attachmentUrlToProcess = publicUrl;
-          updateStep('Converting PDF', 'complete', 'PDF converted to JPEG');
+          updateStep('Converting PDF', 'complete', 'PDF converted to image and uploaded');
         } catch (conversionError) {
           updateStep('Converting PDF', 'error', conversionError instanceof Error ? conversionError.message : 'Conversion failed');
           throw conversionError;

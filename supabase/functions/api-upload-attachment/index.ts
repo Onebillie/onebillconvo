@@ -56,11 +56,11 @@ serve(async (req) => {
       );
     }
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
+    // Validate file size (max 20MB)
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
       return new Response(
-        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        JSON.stringify({ error: 'File size exceeds 20MB limit' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -112,16 +112,28 @@ serve(async (req) => {
         console.error('Error linking attachment:', attachError);
       }
 
-      // Trigger auto-parsing for PDF and image files
-      const isParseable = file.type.includes('pdf') || file.type.includes('image');
-      if (isParseable) {
-        supabase.functions.invoke('auto-parse-attachment', {
-          body: {
-            messageId: message_id,
-            attachmentId: attachmentData.id,
-            attachmentUrl: urlData.publicUrl
-          }
-        }).catch(err => console.error('Failed to trigger auto-parse:', err));
+      // Only trigger auto-parse for images (PDFs need client-side conversion first)
+      if (file.type.startsWith('image/')) {
+        console.log(`Triggering router for image: ${file.type}`);
+        
+        supabase.functions.invoke('onebill-parse-router', {
+          body: { attachmentUrl: urlData.publicUrl }
+        }).catch(err => console.error('Failed to trigger parse router:', err));
+      } else if (file.type === 'application/pdf') {
+        // Insert pending_conversion status for PDFs - client must convert first
+        console.log('PDF uploaded, awaiting client-side conversion');
+        
+        supabase
+          .from('attachment_parse_results')
+          .insert({
+            attachment_id: attachmentData.id,
+            parse_status: 'pending',
+            parse_source: 'awaiting_client_conversion',
+            parsed_data: { message: 'PDF requires conversion to image. Open attachment and click Parse.' }
+          })
+          .then(({ error }) => {
+            if (error) console.error('Error inserting parse status:', error);
+          });
       }
     }
 
