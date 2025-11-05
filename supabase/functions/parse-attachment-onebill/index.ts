@@ -64,14 +64,14 @@ Extract data from the attached bill and return it in this exact JSON structure:
     "cus_details": [
       {
         "details": {
-          "customer_name": "",
-          "phone": "",
+          "customer_name": "string or null",
+          "phone": "string (customer service or account phone)",
           "address": {
-            "line_1": "",
-            "line_2": "",
-            "city": "",
-            "county": "",
-            "eircode": ""
+            "line_1": "string",
+            "line_2": "string or null",
+            "city": "string",
+            "county": "string or null",
+            "eircode": "string or null"
           }
         },
         "services": {
@@ -82,31 +82,93 @@ Extract data from the attached bill and return it in this exact JSON structure:
         }
       }
     ],
-    "electricity": [...],
-    "gas": [...],
-    "broadband": [...],
-    "meter_reading": {
-      "utility": "gas" | "electricity",
-      "read_value": 0,
-      "unit": "m3" | "kWh",
-      "meter_make": "",
-      "meter_model": "",
-      "meter_serial": "",
-      "read_date": "YYYY-MM-DD",
-      "raw_text": ""
-    }
+    "electricity": [
+      {
+        "electricity_details": {
+          "meter_details": {
+            "mprn": "string (11-digit MPRN number)",
+            "mcc": "string or null (Meter Configuration Code)",
+            "dg": "string or null (Day/Night or DG code)"
+          },
+          "bill_period": {
+            "start_date": "YYYY-MM-DD or null",
+            "end_date": "YYYY-MM-DD or null",
+            "days": 0
+          },
+          "usage": {
+            "day_units": 0,
+            "night_units": 0,
+            "total_units": 0,
+            "unit": "kWh"
+          },
+          "charges": {
+            "day_rate": 0.0,
+            "night_rate": 0.0,
+            "standing_charge": 0.0,
+            "pso_levy": 0.0,
+            "total_amount": 0.0,
+            "currency": "euro"
+          }
+        }
+      }
+    ],
+    "gas": [
+      {
+        "gas_details": {
+          "meter_details": {
+            "gprn": "string (7-digit GPRN number)"
+          },
+          "bill_period": {
+            "start_date": "YYYY-MM-DD or null",
+            "end_date": "YYYY-MM-DD or null",
+            "days": 0
+          },
+          "usage": {
+            "current_reading": 0,
+            "previous_reading": 0,
+            "units": 0,
+            "unit": "m3 or kWh"
+          },
+          "charges": {
+            "unit_rate": 0.0,
+            "standing_charge": 0.0,
+            "carbon_tax": 0.0,
+            "total_amount": 0.0,
+            "currency": "euro"
+          }
+        }
+      }
+    ],
+    "broadband": [],
+    "meter_reading": null
   }
 }
 
-Rules:
-- Detect services: MPRN/MCC/DG = electricity, GPRN/carbon tax = gas, UAN/phone = broadband
-- For meter readings: Extract meter make (e.g., "Landis+Gyr"), model (e.g., "L210"), reading value, unit (m3 for gas, kWh for electricity)
-- Include raw_text from the meter reading area for audit purposes
-- Extract phone number from customer details or bill contact info
-- Dates: YYYY-MM-DD or 0000-00-00
-- Numbers: use 0 for unknown
-- Currency: "cent" or "euro"
-- Return ONLY valid JSON, no markdown, no explanation`;
+CRITICAL RULES:
+1. If you find an MPRN (11-digit number), this is an ELECTRICITY bill - populate the electricity array
+2. If you find a GPRN (7-digit number), this is a GAS bill - populate the gas array
+3. If this is just a photo of a physical meter (no bill), set meter_reading to null and leave electricity/gas empty
+4. For bills: DO NOT populate meter_reading - use electricity or gas arrays instead
+5. Phone number: Extract from customer details or customer service contact
+6. Dates: Use YYYY-MM-DD format or null if not found
+7. Numbers: Use 0 for unknown numeric values, null for unknown strings
+8. Return ONLY valid JSON, no markdown, no explanation
+
+ELECTRICITY BILL MARKERS:
+- MPRN number (11 digits)
+- MCC (Meter Configuration Code)
+- DG code (Day/General)
+- Day/Night rates
+- PSO Levy
+- kWh units
+
+GAS BILL MARKERS:
+- GPRN number (7 digits)
+- Carbon tax
+- m3 or kWh units for gas
+- Standing charge
+
+Extract ALL available data accurately.`;
 
     const userContent = [
       {
