@@ -1,24 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Check, Code2, User, Inbox } from 'lucide-react';
+import { Copy, Check, Code2, User, Inbox, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const EmbedCodeDisplay = () => {
   const [copiedInbox, setCopiedInbox] = useState(false);
   const [copiedCustomer, setCopiedCustomer] = useState(false);
   const [customerId, setCustomerId] = useState('CUSTOMER_ID');
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [selectedApiKey, setSelectedApiKey] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const projectUrl = window.location.origin;
 
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
+
+  const fetchApiKeys = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("api_keys")
+        .select("*")
+        .eq('is_active', true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setApiKeys(data || []);
+      if (data && data.length > 0) {
+        setSelectedApiKey(data[0].key_hash);
+      }
+    } catch (error: any) {
+      toast.error("Failed to load API keys");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getInboxEmbedCode = () => {
-    return `<!-- Full Inbox Embed -->
+    const apiKey = selectedApiKey || 'YOUR_API_KEY';
+    return `<!-- Full Inbox Embed for CRM Integration -->
 <iframe 
   id="alacarte-inbox-embed"
-  src="${projectUrl}/embed/inbox?apiKey=YOUR_API_KEY"
+  src="${projectUrl}/embed/inbox?apiKey=${apiKey}"
   width="100%" 
   height="600"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
@@ -26,10 +57,11 @@ export const EmbedCodeDisplay = () => {
   };
 
   const getCustomerEmbedCode = () => {
+    const apiKey = selectedApiKey || 'YOUR_API_KEY';
     return `<!-- Customer-Specific Conversation Embed -->
 <iframe 
   id="alacarte-customer-embed"
-  src="${projectUrl}/embed/conversation?apiKey=YOUR_API_KEY&customerId=${customerId}"
+  src="${projectUrl}/embed/conversation?apiKey=${apiKey}&customerId=${customerId}"
   width="100%" 
   height="600"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
@@ -52,18 +84,64 @@ export const EmbedCodeDisplay = () => {
     }
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (apiKeys.length === 0) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>No API Keys Found</AlertTitle>
+        <AlertDescription>
+          You need to create an API key first before you can generate embed code. 
+          Please create an API key in the "API Access" section above.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <Code2 className="h-5 w-5 text-primary" />
-          <CardTitle>Embed Code Snippets</CardTitle>
+          <CardTitle>Embed Code for CRM Integration</CardTitle>
         </div>
         <CardDescription>
-          Embed AlacarteChat conversations into your own applications
+          Embed your entire inbox or customer conversations into third-party CRMs and platforms
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="apiKeySelect">Select API Key</Label>
+          <Select value={selectedApiKey} onValueChange={setSelectedApiKey}>
+            <SelectTrigger id="apiKeySelect">
+              <SelectValue placeholder="Select an API key" />
+            </SelectTrigger>
+            <SelectContent>
+              {apiKeys.map((key) => (
+                <SelectItem key={key.id} value={key.key_hash}>
+                  {key.name} ({key.key_prefix}...)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground">
+            This API key will be included in the embed code for authentication
+          </p>
+        </div>
+
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Security Note</AlertTitle>
+          <AlertDescription>
+            The API key is visible in the iframe URL. Only embed this in secure, internal systems 
+            (like CRMs, admin panels, or enterprise platforms). For public-facing embeds, use the 
+            website widget instead (Settings → Embed Widget).
+          </AlertDescription>
+        </Alert>
+
         <Tabs defaultValue="inbox" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="inbox" className="flex items-center gap-2">
@@ -80,8 +158,7 @@ export const EmbedCodeDisplay = () => {
             <div className="space-y-2">
               <Label>Full Inbox Embed</Label>
               <p className="text-sm text-muted-foreground">
-                This embed shows all conversations in your inbox with a contact list on the left side.
-                Perfect for internal dashboards or agent interfaces.
+                Embed the full conversation inbox to allow staff to manage all conversations from within your CRM or platform.
               </p>
             </div>
 
@@ -116,6 +193,17 @@ export const EmbedCodeDisplay = () => {
                 <li>Contact list with search and filtering</li>
                 <li>Real-time message updates</li>
                 <li>Full conversation history</li>
+                <li>Secure API key authentication</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-sm text-gray-900 mb-2">Common Use Cases:</h4>
+              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                <li>Internal CRM systems (Salesforce, HubSpot, Zendesk)</li>
+                <li>Custom admin dashboards</li>
+                <li>Support team portals</li>
+                <li>Enterprise help desk integrations</li>
               </ul>
             </div>
           </TabsContent>
@@ -124,10 +212,18 @@ export const EmbedCodeDisplay = () => {
             <div className="space-y-2">
               <Label>Customer-Specific Conversation</Label>
               <p className="text-sm text-muted-foreground">
-                This embed shows conversations for a specific customer. All messages from all
-                conversations with this customer will aggregate in one view.
+                This embed shows conversations for a specific customer. Perfect for embedding in customer profile pages.
               </p>
             </div>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Recommended: Use SSO Token API</AlertTitle>
+              <AlertDescription>
+                For customer-specific embeds, we recommend using the SSO Token API instead for better security. 
+                See the "API Access → Integration Examples" section for implementation details.
+              </AlertDescription>
+            </Alert>
 
             <div className="space-y-2">
               <Label htmlFor="customer-id">Customer ID (for preview)</Label>
@@ -174,44 +270,19 @@ export const EmbedCodeDisplay = () => {
                 <li>Aggregates all messages across conversations</li>
                 <li>Real-time message updates</li>
                 <li>Perfect for embedding in customer profiles</li>
-                <li>Secure token-based authentication</li>
               </ul>
             </div>
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="font-semibold text-sm text-amber-900 mb-2">⚠️ Important Notes:</h4>
-            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-              <li>Replace <code className="bg-amber-100 px-1 rounded">YOUR_API_KEY</code> with your actual API key from Settings → API Access</li>
-              <li>For customer embeds, replace <code className="bg-amber-100 px-1 rounded">CUSTOMER_ID</code> with the actual customer's ID</li>
-              <li>The iframe loads directly - no additional JavaScript required</li>
-              <li>All embeds are secured with API key authentication</li>
-            </ul>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-sm text-gray-900 mb-2">📖 Use Cases:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              <div>
-                <p className="font-medium mb-1">Full Inbox:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Internal agent dashboards</li>
-                  <li>CRM integrations</li>
-                  <li>Admin panels</li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium mb-1">Customer Conversation:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Customer profile pages</li>
-                  <li>Support ticket views</li>
-                  <li>Order management systems</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <h4 className="font-semibold text-sm text-amber-900 mb-2">⚠️ Important Notes:</h4>
+          <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+            <li>The selected API key is automatically included in the embed code</li>
+            <li>For customer embeds, replace <code className="bg-amber-100 px-1 rounded">CUSTOMER_ID</code> with the actual customer's ID</li>
+            <li>The iframe loads directly - no additional JavaScript required</li>
+            <li>API key provides full access - use only in trusted, internal environments</li>
+          </ul>
         </div>
       </CardContent>
     </Card>
