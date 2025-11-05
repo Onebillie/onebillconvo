@@ -43,6 +43,49 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     }));
   };
 
+  const stepAutoProcess = async () => {
+    updateStep('autoProcess', { status: 'loading' });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-process-onebill', {
+        body: { 
+          attachment_id: attachmentId,
+          message_id: messageId,
+          attachment_url: attachmentUrl,
+          attachment_type: attachmentUrl.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+        }
+      });
+
+      if (error) throw error;
+
+      updateStep('autoProcess', { 
+        status: 'success', 
+        result: data 
+      });
+      
+      toast({
+        title: "Auto Process Complete",
+        description: "Document processed and submitted to OneBill API",
+      });
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      updateStep('autoProcess', { 
+        status: 'error', 
+        error: errorMsg 
+      });
+      
+      toast({
+        title: "Auto Process Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
+  };
+
   const step1ParseDocument = async () => {
     updateStep('parse', { status: 'loading' });
     
@@ -398,20 +441,35 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
           </TabsList>
 
           <TabsContent value="steps" className="space-y-4">
-            <Button 
-              onClick={runParseAndValidate} 
-              className="w-full mb-4"
-              disabled={Object.values(steps).some(s => s.status === 'loading')}
-            >
-              {steps.parse.status === 'loading' || steps.validate.status === 'loading' ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Parse & Validate'
-              )}
-            </Button>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <Button 
+                onClick={stepAutoProcess} 
+                disabled={Object.values(steps).some(s => s.status === 'loading')}
+              >
+                {steps.autoProcess.status === 'loading' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Auto Process (End-to-End)'
+                )}
+              </Button>
+              <Button 
+                onClick={runParseAndValidate} 
+                variant="outline"
+                disabled={Object.values(steps).some(s => s.status === 'loading')}
+              >
+                {steps.parse.status === 'loading' || steps.validate.status === 'loading' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Parse & Validate Only'
+                )}
+              </Button>
+            </div>
 
             {Object.entries(steps).map(([key, step]) => (
               <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
@@ -436,7 +494,8 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    if (key === 'parse') step1ParseDocument();
+                    if (key === 'autoProcess') stepAutoProcess();
+                    else if (key === 'parse') step1ParseDocument();
                     else if (key === 'validate' && parsedData) step2ValidateAndMap(parsedData);
                     else if (key === 'submitMeter') step3SubmitMeter();
                     else if (key === 'submitGas') step4SubmitGas();

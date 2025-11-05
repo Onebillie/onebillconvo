@@ -94,45 +94,13 @@ serve(async (req) => {
     const submissions = [];
     const bills = parsedData.bills || {};
 
-    // Check for meter reading
-    if (bills.meter_reading && bills.meter_reading.read_value) {
-      console.log('Detected meter reading');
-      const meterData = bills.meter_reading;
-      
-      const { data: submission, error } = await supabase
-        .from('onebill_submissions')
-        .insert({
-          business_id: businessId,
-          customer_id: customerId,
-          message_id: message_id,
-          attachment_id: attachment_id,
-          document_type: 'meter',
-          file_url: attachment_url,
-          file_name: `attachment_${attachment_id}.jpg`,
-          submission_status: 'pending',
-          fields: {
-            phone: phone,
-            utility: meterData.utility || 'gas',
-            read_value: meterData.read_value,
-            unit: meterData.unit || 'm3',
-            meter_make: meterData.meter_make,
-            meter_model: meterData.meter_model,
-            raw_text: meterData.raw_text,
-            confidence: 0.9, // Default confidence for parsed data
-          }
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating meter submission:', error);
-      } else {
-        submissions.push({ type: 'meter', id: submission.id, fields: submission.fields });
-      }
-    }
+    // Check for electricity bill FIRST (priority over meter reading)
+    const hasElectricityBill = bills.electricity && bills.electricity.length > 0;
+    const hasGasBill = bills.gas && bills.gas.length > 0;
+    const hasMeterReading = bills.meter_reading && bills.meter_reading.read_value;
 
     // Check for electricity bill
-    if (bills.electricity && bills.electricity.length > 0) {
+    if (hasElectricityBill) {
       console.log('Detected electricity bill');
       const elecData = bills.electricity[0];
       const meterDetails = elecData.electricity_details?.meter_details;
@@ -168,7 +136,7 @@ serve(async (req) => {
     }
 
     // Check for gas bill
-    if (bills.gas && bills.gas.length > 0) {
+    if (hasGasBill) {
       console.log('Detected gas bill');
       const gasData = bills.gas[0];
       const meterDetails = gasData.gas_details?.meter_details;
@@ -199,6 +167,45 @@ serve(async (req) => {
           submissions.push({ type: 'gas', id: submission.id, fields: submission.fields });
         }
       }
+    }
+
+    // Only submit meter reading if NO bills were detected (meter photo scenario)
+    if (hasMeterReading && !hasElectricityBill && !hasGasBill) {
+      console.log('Detected standalone meter reading (no bill present)');
+      const meterData = bills.meter_reading;
+      
+      const { data: submission, error } = await supabase
+        .from('onebill_submissions')
+        .insert({
+          business_id: businessId,
+          customer_id: customerId,
+          message_id: message_id,
+          attachment_id: attachment_id,
+          document_type: 'meter',
+          file_url: attachment_url,
+          file_name: `attachment_${attachment_id}.jpg`,
+          submission_status: 'pending',
+          fields: {
+            phone: phone,
+            utility: meterData.utility || 'gas',
+            read_value: meterData.read_value,
+            unit: meterData.unit || 'm3',
+            meter_make: meterData.meter_make,
+            meter_model: meterData.meter_model,
+            raw_text: meterData.raw_text,
+            confidence: 0.9,
+          }
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating meter submission:', error);
+      } else {
+        submissions.push({ type: 'meter', id: submission.id, fields: submission.fields });
+      }
+    } else if (hasMeterReading) {
+      console.log('Meter reading found but skipped (part of bill)', { hasElectricityBill, hasGasBill });
     }
 
     if (submissions.length === 0) {
