@@ -18,80 +18,22 @@ export const EmbedCodeDisplay = () => {
     return `<!-- Full Inbox Embed -->
 <iframe 
   id="alacarte-inbox-embed"
+  src="${projectUrl}/embed/inbox?apiKey=YOUR_API_KEY"
   width="100%" 
   height="600"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
-></iframe>
-
-<script>
-(async function() {
-  try {
-    // Generate SSO token for inbox access
-    const response = await fetch('${projectUrl}/functions/v1/api-sso-generate-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': 'YOUR_API_KEY' // Replace with your API key
-      },
-      body: JSON.stringify({
-        scope: 'inbox' // Full inbox access
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.embed_url) {
-      document.getElementById('alacarte-inbox-embed').src = data.embed_url;
-    } else {
-      console.error('Failed to generate embed URL:', data.error);
-    }
-  } catch (error) {
-    console.error('Error loading inbox embed:', error);
-  }
-})();
-</script>`;
+></iframe>`;
   };
 
   const getCustomerEmbedCode = () => {
     return `<!-- Customer-Specific Conversation Embed -->
 <iframe 
   id="alacarte-customer-embed"
+  src="${projectUrl}/embed/conversation?apiKey=YOUR_API_KEY&customerId=${customerId}"
   width="100%" 
   height="600"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
-></iframe>
-
-<script>
-(async function() {
-  try {
-    // Replace with your customer's ID
-    const customerId = '${customerId}';
-    
-    // Generate SSO token for customer-specific conversation
-    const response = await fetch('${projectUrl}/functions/v1/api-sso-generate-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': 'YOUR_API_KEY' // Replace with your API key
-      },
-      body: JSON.stringify({
-        customer_id: customerId,
-        scope: 'conversation' // Customer-specific conversation
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.embed_url) {
-      document.getElementById('alacarte-customer-embed').src = data.embed_url;
-    } else {
-      console.error('Failed to generate embed URL:', data.error);
-    }
-  } catch (error) {
-    console.error('Error loading customer embed:', error);
-  }
-})();
-</script>`;
+></iframe>`;
   };
 
   const handleCopy = async (code: string, type: 'inbox' | 'customer') => {
@@ -244,8 +186,8 @@ export const EmbedCodeDisplay = () => {
             <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
               <li>Replace <code className="bg-amber-100 px-1 rounded">YOUR_API_KEY</code> with your actual API key from Settings → API Access</li>
               <li>For customer embeds, replace <code className="bg-amber-100 px-1 rounded">CUSTOMER_ID</code> with the actual customer's ID</li>
-              <li>Tokens are valid for 1 hour and automatically refresh</li>
-              <li>All embeds are secured with SSO token authentication</li>
+              <li>The iframe loads directly - no additional JavaScript required</li>
+              <li>All embeds are secured with API key authentication</li>
             </ul>
           </div>
 

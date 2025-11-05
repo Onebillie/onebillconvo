@@ -36,7 +36,8 @@ interface EmbedCustomization {
 
 export default function EmbedConversation() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const apiKey = searchParams.get('apiKey');
+  const customerId = searchParams.get('customerId');
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +49,14 @@ export default function EmbedConversation() {
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      setError('Missing authentication token');
+    if (!apiKey || !customerId) {
+      setError('Missing API key or customer ID');
       setLoading(false);
       return;
     }
 
-    validateTokenAndLoadData();
-  }, [token]);
+    validateAndLoadData();
+  }, [apiKey, customerId]);
 
   // Broadcast presence when widget is active - ENHANCED TRACKING
   useEffect(() => {
@@ -193,52 +194,64 @@ export default function EmbedConversation() {
     };
   }, [conversationId]);
 
-  const validateTokenAndLoadData = async () => {
+  const validateAndLoadData = async () => {
     try {
-      const supabaseUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
-      const url = `${supabaseUrl}/functions/v1/api-sso-validate-token?token=${encodeURIComponent(token || '')}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Validate API key and get business info
+      const { data: keyData, error: keyError } = await supabase
+        .from('api_keys')
+        .select('business_id')
+        .eq('key_hash', apiKey)
+        .eq('is_active', true)
+        .single();
 
-      if (!response.ok) {
-        setError('Invalid or expired token');
+      if (keyError || !keyData) {
+        setError('Invalid API key');
         setLoading(false);
         return;
       }
 
-      const validation = await response.json();
+      // Update last_used_at
+      await supabase
+        .from('api_keys')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('key_hash', apiKey);
 
-      if (validation.scope !== 'conversation') {
-        setError('Invalid token scope');
+      const bizId = keyData.business_id;
+      setBusinessId(bizId);
+
+      // Get customer
+      const { data: customerData, error: custError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('business_id', bizId)
+        .single();
+
+      if (custError || !customerData) {
+        setError('Customer not found');
         setLoading(false);
         return;
       }
 
-      setBusinessId(validation.business_id);
-      setCustomer(validation.customer);
+      setCustomer(customerData as Customer);
 
       // Load customization
       const { data: customizationData } = await supabase
         .from('embed_customizations')
         .select('*')
-        .eq('business_id', validation.business_id)
+        .eq('business_id', bizId)
         .maybeSingle();
 
       if (customizationData) {
         setCustomization(customizationData);
       }
 
-      // WIDGET SESSION ISOLATION: Reuse existing conversation but only show current session messages to customer
-      // Admin can see full history and continue via other channels
+      // Get or create conversation
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id, metadata')
-        .eq('customer_id', validation.customer_id)
-        .eq('business_id', validation.business_id)
+        .eq('customer_id', customerId)
+        .eq('business_id', bizId)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -247,10 +260,8 @@ export default function EmbedConversation() {
       setSessionStartTime(sessionStart);
 
       if (conversations && conversations.length > 0) {
-        // Reuse existing conversation
         convId = conversations[0].id;
         
-        // Update metadata to track this new widget session
         const existingMetadata = conversations[0].metadata as Record<string, any> || {};
         await supabase
           .from('conversations')
@@ -262,12 +273,11 @@ export default function EmbedConversation() {
           })
           .eq('id', convId);
       } else {
-        // Create new conversation for first-time widget users
         const { data: newConv, error: convError } = await supabase
           .from('conversations')
           .insert({
-            customer_id: validation.customer_id,
-            business_id: validation.business_id,
+            customer_id: customerId,
+            business_id: bizId,
             status: 'active',
             metadata: {
               source: 'embed',
@@ -284,12 +294,11 @@ export default function EmbedConversation() {
       }
 
       setConversationId(convId);
-      // Only load messages from THIS session (privacy-first for widget)
       await loadMessages(convId, sessionStart);
       setLoading(false);
     } catch (err: any) {
-      console.error('Error validating token:', err);
-      setError(err.message || 'Failed to validate token');
+      console.error('Error loading embed:', err);
+      setError(err.message || 'Failed to load embed');
       setLoading(false);
     }
   };

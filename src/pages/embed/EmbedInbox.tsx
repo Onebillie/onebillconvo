@@ -37,7 +37,7 @@ interface EmbedCustomization {
 
 export default function EmbedInbox() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const apiKey = searchParams.get('apiKey');
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +48,14 @@ export default function EmbedInbox() {
   const [customization, setCustomization] = useState<EmbedCustomization>({});
 
   useEffect(() => {
-    if (!token) {
-      setError('Missing authentication token');
+    if (!apiKey) {
+      setError('Missing API key');
       setLoading(false);
       return;
     }
 
-    validateTokenAndLoadData();
-  }, [token]);
+    validateAndLoadData();
+  }, [apiKey]);
 
   // Broadcast presence when widget is active - ENHANCED TRACKING
   useEffect(() => {
@@ -187,49 +187,47 @@ export default function EmbedInbox() {
     };
   }, [selectedConversation]);
 
-  const validateTokenAndLoadData = async () => {
+  const validateAndLoadData = async () => {
     try {
-      const supabaseUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
-      const url = `${supabaseUrl}/functions/v1/api-sso-validate-token?token=${encodeURIComponent(token || '')}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Validate API key and get business info
+      const { data: keyData, error: keyError } = await supabase
+        .from('api_keys')
+        .select('business_id')
+        .eq('key_hash', apiKey)
+        .eq('is_active', true)
+        .single();
 
-      if (!response.ok) {
-        setError('Invalid or expired token');
+      if (keyError || !keyData) {
+        setError('Invalid API key');
         setLoading(false);
         return;
       }
 
-      const validation = await response.json();
+      // Update last_used_at
+      await supabase
+        .from('api_keys')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('key_hash', apiKey);
 
-      if (validation.scope !== 'inbox') {
-        setError('Invalid token scope');
-        setLoading(false);
-        return;
-      }
-
-      setBusinessId(validation.business_id);
+      const bizId = keyData.business_id;
+      setBusinessId(bizId);
 
       // Load customization
       const { data: customizationData } = await supabase
         .from('embed_customizations')
         .select('*')
-        .eq('business_id', validation.business_id)
+        .eq('business_id', bizId)
         .maybeSingle();
 
       if (customizationData) {
         setCustomization(customizationData);
       }
 
-      await loadConversations(validation.business_id);
+      await loadConversations(bizId);
       setLoading(false);
     } catch (err: any) {
-      console.error('Error validating token:', err);
-      setError(err.message || 'Failed to validate token');
+      console.error('Error loading embed:', err);
+      setError(err.message || 'Failed to load embed');
       setLoading(false);
     }
   };
