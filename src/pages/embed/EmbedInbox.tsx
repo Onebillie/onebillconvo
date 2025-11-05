@@ -189,38 +189,25 @@ export default function EmbedInbox() {
 
   const validateAndLoadData = async () => {
     try {
-      // Validate API key and get business info
-      const { data: keyData, error: keyError } = await supabase
-        .from('api_keys')
-        .select('business_id')
-        .eq('key_hash', apiKey)
-        .eq('is_active', true)
-        .single();
+      // Validate API key via Edge Function (bypasses RLS safely)
+      const { data: result, error: fnError } = await supabase.functions.invoke('api-validate-api-key', {
+        headers: {
+          'x-api-key': apiKey || '',
+        },
+      });
 
-      if (keyError || !keyData) {
+      if (fnError || !result?.valid) {
+        console.error('API key validation failed:', fnError || result);
         setError('Invalid API key');
         setLoading(false);
         return;
       }
 
-      // Update last_used_at
-      await supabase
-        .from('api_keys')
-        .update({ last_used_at: new Date().toISOString() })
-        .eq('key_hash', apiKey);
-
-      const bizId = keyData.business_id;
+      const bizId: string = result.business_id;
       setBusinessId(bizId);
 
-      // Load customization
-      const { data: customizationData } = await supabase
-        .from('embed_customizations')
-        .select('*')
-        .eq('business_id', bizId)
-        .maybeSingle();
-
-      if (customizationData) {
-        setCustomization(customizationData);
+      if (result.customization) {
+        setCustomization(result.customization as EmbedCustomization);
       }
 
       await loadConversations(bizId);
