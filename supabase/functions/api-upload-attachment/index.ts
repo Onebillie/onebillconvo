@@ -112,7 +112,7 @@ serve(async (req) => {
         console.error('Error linking attachment:', attachError);
       }
 
-      // Only trigger auto-parse for images (PDFs need client-side conversion first)
+      // Trigger auto-parse for images, convert PDFs to PNG first
       if (file.type.startsWith('image/')) {
         console.log(`Triggering router for image: ${file.type}`);
         
@@ -120,20 +120,34 @@ serve(async (req) => {
           body: { attachmentUrl: urlData.publicUrl }
         }).catch(err => console.error('Failed to trigger parse router:', err));
       } else if (file.type === 'application/pdf') {
-        // Insert pending_conversion status for PDFs - client must convert first
-        console.log('PDF uploaded, awaiting client-side conversion');
+        // Trigger server-side PDF to PNG conversion
+        console.log('PDF uploaded, triggering automatic conversion');
         
-        supabase
-          .from('attachment_parse_results')
-          .insert({
-            attachment_id: attachmentData.id,
-            parse_status: 'pending',
-            parse_source: 'awaiting_client_conversion',
-            parsed_data: { message: 'PDF requires conversion to image. Open attachment and click Parse.' }
-          })
-          .then(({ error }) => {
-            if (error) console.error('Error inserting parse status:', error);
-          });
+        supabase.functions.invoke('convert-pdf-to-png', {
+          body: { 
+            attachmentId: attachmentData.id,
+            pdfUrl: urlData.publicUrl,
+            storagePath: fileName,
+            messageId: message_id
+          }
+        }).catch(err => {
+          console.error('Failed to trigger PDF conversion:', err);
+          // Fallback: insert pending status
+          supabase
+            .from('attachment_parse_results')
+            .insert({
+              attachment_id: attachmentData.id,
+              parse_status: 'pending',
+              parse_source: 'conversion_failed',
+              parsed_data: { 
+                message: 'Automatic conversion failed. Please use manual parse button.',
+                error: err.message 
+              }
+            })
+            .then(({ error }) => {
+              if (error) console.error('Error inserting fallback status:', error);
+            });
+        });
       }
     }
 

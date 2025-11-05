@@ -422,3 +422,6 @@ verify_jwt = false
 
 [functions.api-embed-data]
 verify_jwt = false
+
+[functions.convert-pdf-to-png]
+verify_jwt = false
