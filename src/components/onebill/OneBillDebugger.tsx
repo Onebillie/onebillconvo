@@ -266,19 +266,39 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     updateStep('submitMeter', { status: 'loading' });
     
     try {
-      const result = await submitToDatabase('meter', validationData.meter);
+      const dbResult = await submitToDatabase('meter', validationData.meter);
+      console.log(`[METER] Created DB record: ${dbResult.id}`);
+      
+      // Now invoke the edge function to actually submit to OneBill API
+      const { data: submitResponse, error: submitError } = await supabase.functions.invoke('onebill-submit', {
+        body: {
+          submissionId: dbResult.id,
+          businessId: dbResult.business_id,
+          documentType: 'meter',
+          fields: validationData.meter,
+          fileUrl: attachmentUrl,
+          fileName: `meter_${Date.now()}.jpg`
+        }
+      });
+
+      if (submitError) {
+        throw new Error(`Edge function error: ${submitError.message}`);
+      }
+
+      console.log('[METER] OneBill API Response:', submitResponse);
       
       updateStep('submitMeter', { 
         status: 'success', 
-        result 
+        result: { dbRecord: dbResult, apiResponse: submitResponse }
       });
       
       toast({
         title: "Meter Submitted",
-        description: "Meter reading submitted successfully",
+        description: `Submitted to OneBill API successfully (ID: ${dbResult.id})`,
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[METER] Submission error:', errorMsg);
       updateStep('submitMeter', { 
         status: 'error', 
         error: errorMsg 
@@ -305,19 +325,39 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     updateStep('submitGas', { status: 'loading' });
     
     try {
-      const result = await submitToDatabase('gas', validationData.gas);
+      const dbResult = await submitToDatabase('gas', validationData.gas);
+      console.log(`[GAS] Created DB record: ${dbResult.id}`);
+      
+      // Now invoke the edge function to actually submit to OneBill API
+      const { data: submitResponse, error: submitError } = await supabase.functions.invoke('onebill-submit', {
+        body: {
+          submissionId: dbResult.id,
+          businessId: dbResult.business_id,
+          documentType: 'gas',
+          fields: validationData.gas,
+          fileUrl: attachmentUrl,
+          fileName: `gas_${Date.now()}.jpg`
+        }
+      });
+
+      if (submitError) {
+        throw new Error(`Edge function error: ${submitError.message}`);
+      }
+
+      console.log('[GAS] OneBill API Response:', submitResponse);
       
       updateStep('submitGas', { 
         status: 'success', 
-        result 
+        result: { dbRecord: dbResult, apiResponse: submitResponse }
       });
       
       toast({
         title: "Gas Submitted",
-        description: "Gas bill submitted successfully",
+        description: `Submitted to OneBill API successfully (ID: ${dbResult.id})`,
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[GAS] Submission error:', errorMsg);
       updateStep('submitGas', { 
         status: 'error', 
         error: errorMsg 
@@ -344,19 +384,39 @@ export const OneBillDebugger = ({ attachmentId, attachmentUrl, messageId }: OneB
     updateStep('submitElectricity', { status: 'loading' });
     
     try {
-      const result = await submitToDatabase('electricity', validationData.electricity);
+      const dbResult = await submitToDatabase('electricity', validationData.electricity);
+      console.log(`[ELECTRICITY] Created DB record: ${dbResult.id}`);
+      
+      // Now invoke the edge function to actually submit to OneBill API
+      const { data: submitResponse, error: submitError } = await supabase.functions.invoke('onebill-submit', {
+        body: {
+          submissionId: dbResult.id,
+          businessId: dbResult.business_id,
+          documentType: 'electricity',
+          fields: validationData.electricity,
+          fileUrl: attachmentUrl,
+          fileName: `electricity_${Date.now()}.jpg`
+        }
+      });
+
+      if (submitError) {
+        throw new Error(`Edge function error: ${submitError.message}`);
+      }
+
+      console.log('[ELECTRICITY] OneBill API Response:', submitResponse);
       
       updateStep('submitElectricity', { 
         status: 'success', 
-        result 
+        result: { dbRecord: dbResult, apiResponse: submitResponse }
       });
       
       toast({
         title: "Electricity Submitted",
-        description: "Electricity bill submitted successfully",
+        description: `Submitted to OneBill API successfully (ID: ${dbResult.id})`,
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[ELECTRICITY] Submission error:', errorMsg);
       updateStep('submitElectricity', { 
         status: 'error', 
         error: errorMsg 
