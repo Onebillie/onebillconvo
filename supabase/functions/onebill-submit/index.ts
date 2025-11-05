@@ -12,11 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { attachmentId, parsedData } = await req.json();
+    const { submissionId, businessId, customerId, documentType, fields, fileUrl, fileName } = await req.json();
 
-    if (!attachmentId || !parsedData) {
+    console.log('OneBill submit called:', { submissionId, documentType, fields });
+
+    if (!submissionId || !fields) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: attachmentId and parsedData' }),
+        JSON.stringify({ error: 'Missing required fields: submissionId and fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -26,45 +28,101 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the OneBill API configuration from environment or database
-    const ONEBILL_API_URL = Deno.env.get('ONEBILL_API_URL');
+    // Get OneBill API configuration
     const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY');
 
-    if (!ONEBILL_API_URL) {
-      console.warn('OneBill API URL not configured');
+    if (!ONEBILL_API_KEY) {
+      console.warn('ONEBILL_API_KEY not configured');
       return new Response(
         JSON.stringify({ 
           success: false,
-          message: 'OneBill API not configured',
-          parsedData 
+          message: 'OneBill API not configured'
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Prepare the payload for OneBill
-    const payload = {
-      attachmentId,
-      timestamp: new Date().toISOString(),
-      data: parsedData,
-    };
+    // Build OneBill API URL and payload based on document type
+    let apiEndpoint = '';
+    let payload: any = {};
 
-    console.log('Sending to OneBill API:', ONEBILL_API_URL);
+    switch (documentType) {
+      case 'electricity':
+        apiEndpoint = 'https://api.onebill.ie/v1/bill_forms/electricity';
+        payload = {
+          phone: fields.phone,
+          mprn: fields.mprn,
+          mcc_type: fields.mcc_type,
+          dg_type: fields.dg_type,
+          file_url: fileUrl,
+          file_name: fileName,
+        };
+        break;
+
+      case 'gas':
+        apiEndpoint = 'https://api.onebill.ie/v1/bill_forms/gas';
+        payload = {
+          phone: fields.phone,
+          gprn: fields.gprn,
+          file_url: fileUrl,
+          file_name: fileName,
+        };
+        break;
+
+      case 'meter':
+        apiEndpoint = 'https://api.onebill.ie/v1/meter_reads';
+        payload = {
+          phone: fields.phone,
+          utility: fields.utility || 'gas',
+          read_value: fields.read_value,
+          unit: fields.unit || 'm3',
+          meter_make: fields.meter_make,
+          meter_model: fields.meter_model,
+          raw_text: fields.raw_text,
+          confidence: fields.confidence || 0.9,
+          file_url: fileUrl,
+          file_name: fileName,
+        };
+        break;
+
+      default:
+        throw new Error(`Unknown document type: ${documentType}`);
+    }
+
+    console.log('Submitting to OneBill:', { apiEndpoint, payload });
+
+    // Update submission status to submitting
+    await supabaseClient
+      .from('onebill_submissions')
+      .update({ submission_status: 'submitting' })
+      .eq('id', submissionId);
 
     // Send to OneBill API
-    const response = await fetch(ONEBILL_API_URL, {
+    const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(ONEBILL_API_KEY ? { 'Authorization': `Bearer ${ONEBILL_API_KEY}` } : {}),
+        'Authorization': `Bearer ${ONEBILL_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });
 
     const responseData = await response.json().catch(() => ({}));
+    console.log('OneBill response:', { status: response.status, data: responseData });
 
     if (!response.ok) {
       console.error('OneBill API error:', response.status, responseData);
+      
+      // Update submission with error
+      await supabaseClient
+        .from('onebill_submissions')
+        .update({ 
+          submission_status: 'failed',
+          api_response: responseData,
+          error_message: `API returned ${response.status}: ${JSON.stringify(responseData)}`
+        })
+        .eq('id', submissionId);
+
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -76,17 +134,17 @@ serve(async (req) => {
       );
     }
 
-    // Update attachment with OneBill response
+    // Update submission with success
     await supabaseClient
-      .from('message_attachments')
+      .from('onebill_submissions')
       .update({ 
-        onebill_submitted: true,
-        onebill_response: responseData,
-        onebill_submitted_at: new Date().toISOString()
+        submission_status: 'completed',
+        api_response: responseData,
+        submitted_at: new Date().toISOString()
       })
-      .eq('id', attachmentId);
+      .eq('id', submissionId);
 
-    console.log('Successfully sent to OneBill');
+    console.log('Successfully submitted to OneBill');
 
     return new Response(
       JSON.stringify({ 
