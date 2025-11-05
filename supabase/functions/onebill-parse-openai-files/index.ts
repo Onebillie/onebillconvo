@@ -133,11 +133,31 @@ serve(async (req) => {
     console.log('Downloading file from:', attachmentUrl);
     const fileResponse = await fetch(attachmentUrl);
     if (!fileResponse.ok) {
-      throw new Error(`Failed to download file: ${fileResponse.statusText}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to download file from URL',
+          details: `HTTP ${fileResponse.status}: ${fileResponse.statusText}`,
+          parse_source: 'openai_files_error'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const fileBlob = await fileResponse.blob();
-    console.log('File downloaded, size:', fileBlob.size);
+    const fileSizeMB = (fileBlob.size / (1024 * 1024)).toFixed(2);
+    console.log(`File downloaded, size: ${fileBlob.size} bytes (${fileSizeMB} MB)`);
+    
+    // OpenAI has a 512MB limit for files API, but practical limit is much lower
+    if (fileBlob.size > 20 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'File too large for OpenAI processing',
+          details: `File size: ${fileSizeMB}MB. Maximum supported: 20MB`,
+          parse_source: 'openai_files_error'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Determine file extension from content type
     const extensionMap: Record<string, string> = {
@@ -170,7 +190,22 @@ serve(async (req) => {
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('OpenAI file upload error:', uploadResponse.status, errorText);
-      throw new Error(`OpenAI file upload failed: ${errorText}`);
+      
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.error?.message || errorText;
+      } catch {}
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'OpenAI could not process this file',
+          details: errorDetails,
+          parse_source: 'openai_files_error',
+          status_code: uploadResponse.status
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const uploadResult = await uploadResponse.json();
@@ -217,14 +252,43 @@ serve(async (req) => {
       const errorText = await chatResponse.text();
       console.error('OpenAI chat error:', chatResponse.status, errorText);
       
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.error?.message || errorText;
+      } catch {}
+      
       if (chatResponse.status === 429) {
-        throw new Error('OpenAI rate limit exceeded. Please try again later.');
-      }
-      if (chatResponse.status === 402) {
-        throw new Error('OpenAI payment required. Please check your OpenAI account.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'OpenAI rate limit exceeded',
+            details: 'Too many requests. Please try again in a few moments.',
+            parse_source: 'openai_files_error'
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
-      throw new Error(`OpenAI API error: ${errorText}`);
+      if (chatResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'OpenAI payment required',
+            details: 'Please check your OpenAI account billing.',
+            parse_source: 'openai_files_error'
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'OpenAI could not parse this file',
+          details: errorDetails,
+          parse_source: 'openai_files_error',
+          status_code: chatResponse.status
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const chatResult = await chatResponse.json();
@@ -232,7 +296,14 @@ serve(async (req) => {
 
     const content = chatResult.choices?.[0]?.message?.content;
     if (!content) {
-      throw new Error('No content in OpenAI response');
+      return new Response(
+        JSON.stringify({ 
+          error: 'OpenAI returned empty response',
+          details: 'No content was extracted from the document',
+          parse_source: 'openai_files_error'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Parse JSON from response (handle markdown code blocks)
@@ -243,8 +314,22 @@ serve(async (req) => {
       cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    const parsedData = JSON.parse(cleanedContent);
-    console.log('Successfully parsed JSON from OpenAI');
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanedContent);
+      console.log('Successfully parsed JSON from OpenAI');
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response as JSON:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'OpenAI response was not valid JSON',
+          details: parseError instanceof Error ? parseError.message : 'JSON parsing failed',
+          raw_content: content.substring(0, 500),
+          parse_source: 'openai_files_error'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Clean up the uploaded file (optional, files auto-delete after 7 days)
     try {
@@ -265,12 +350,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('OpenAI Files Parser error:', error);
+    console.error('OpenAI Files Parser uncaught error:', error);
+    
+    // Graceful error response - never crash the runtime
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'OpenAI processing failed',
+        details: error instanceof Error ? error.message : 'Unknown error occurred',
         parse_source: 'openai_files_error',
-        details: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined
       }),
       {
         status: 500,
