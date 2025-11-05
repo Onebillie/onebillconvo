@@ -32,6 +32,13 @@ serve(async (req) => {
     }
 
     const fileBuffer = await fileResponse.arrayBuffer();
+    const contentType = fileResponse.headers.get('content-type') || 'image/jpeg';
+    
+    // For PDFs, we need to use a different approach - convert to images first
+    // For now, we'll use the URL directly for images only
+    if (contentType === 'application/pdf') {
+      throw new Error('PDF processing requires document parsing API. Please use image files (JPG, PNG) for now.');
+    }
     
     // Convert to base64 in chunks to avoid stack overflow on large files
     const uint8Array = new Uint8Array(fileBuffer);
@@ -42,7 +49,6 @@ serve(async (req) => {
       binaryString += String.fromCharCode(...chunk);
     }
     const base64File = btoa(binaryString);
-    const contentType = fileResponse.headers.get('content-type') || 'image/jpeg';
 
     console.log('File fetched successfully:', {
       size: fileBuffer.byteLength,

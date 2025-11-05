@@ -1,11 +1,12 @@
 import { useState, memo } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2 } from 'lucide-react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -27,10 +28,11 @@ interface FilePreviewProps {
     type: string;
     size?: number;
   };
+  messageId?: string;
   onClick?: () => void;
 }
 
-export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
+export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreviewProps) => {
   const imageUrl = getOptimizedImageUrl(attachment.url);
   const [imageLoading, setImageLoading] = useState(!loadedImages.has(imageUrl));
   const [imageError, setImageError] = useState(false);
@@ -38,6 +40,7 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
   const [fullSizeOpen, setFullSizeOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parseResult, setParseResult] = useState<any>(null);
+  const [showDebugger, setShowDebugger] = useState(false);
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
@@ -197,6 +200,18 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
                 >
                   {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                 </Button>
+                {messageId && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDebugger(true);
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Bug className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -240,6 +255,18 @@ export const FilePreview = memo(({ attachment, onClick }: FilePreviewProps) => {
                   Download JSON
                 </Button>
               </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {showDebugger && messageId && (
+          <Dialog open={showDebugger} onOpenChange={setShowDebugger}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+              <OneBillDebugger
+                attachmentId={attachment.id}
+                attachmentUrl={attachment.url}
+                messageId={messageId}
+              />
             </DialogContent>
           </Dialog>
         )}

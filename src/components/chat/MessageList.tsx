@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
 // Memoized attachment renderer to prevent flickering
-const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
+const AttachmentItem = memo(({ attachment, messageId }: { attachment: any; messageId?: string }) => {
   const isVoiceNote = attachment.type?.startsWith("audio/");
 
   if (isVoiceNote) {
@@ -40,11 +40,12 @@ const AttachmentItem = memo(({ attachment }: { attachment: any }) => {
     );
   }
 
-  return <FilePreview attachment={attachment} />;
+  return <FilePreview attachment={attachment} messageId={messageId} />;
 }, (prevProps, nextProps) => {
   // Only re-render if attachment id or type changes
   return prevProps.attachment.id === nextProps.attachment.id && 
-         prevProps.attachment.type === nextProps.attachment.type;
+         prevProps.attachment.type === nextProps.attachment.type &&
+         prevProps.messageId === nextProps.messageId;
 });
 
 interface MessageListProps {
@@ -397,8 +398,8 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     }
   };
 
-  const renderAttachment = (attachment: any) => {
-    return <AttachmentItem key={attachment.id} attachment={attachment} />;
+  const renderAttachment = (attachment: any, messageId?: string) => {
+    return <AttachmentItem key={attachment.id} attachment={attachment} messageId={messageId} />;
   };
 
   const formatDateSeparator = (date: Date) => {
@@ -686,7 +687,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   (message.message_attachments?.length ? message.message_attachments : attachmentsMap[message.id])
                                 )?.map((attachment: any) => (
                                   <div key={attachment.id} className="inline-block">
-                                    {renderAttachment(attachment)}
+                                    {renderAttachment(attachment, message.id)}
                                   </div>
                                 ))}
                                </>
