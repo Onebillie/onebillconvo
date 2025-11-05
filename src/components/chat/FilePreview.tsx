@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
 import { convertPDFToImages } from '@/utils/pdfToImages';
+import { getPDFFromCache, setPDFToCache } from '@/stores/pdfConversionCache';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -90,48 +91,99 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       updateStep('Initializing', 'processing', 'Starting parsing process...');
       
       let urlToProcess = attachment.url;
+      let convertedImages: string[] = [];
       
-      // If it's a PDF, convert to images first
+      // If it's a PDF, check cache first or convert
       if (attachment.type === 'application/pdf') {
-        updateStep('Converting PDF', 'processing', 'Converting PDF to high-quality images...');
+        const cachedImages = getPDFFromCache(attachment.url);
         
-        try {
-          const images = await convertPDFToImages(
-            attachment.url,
-            { scale: 2.0, format: 'png', quality: 0.95 },
-            (current, total) => {
-              updateStep('Converting PDF', 'processing', `Converting page ${current} of ${total}...`);
-            }
-          );
+        if (cachedImages) {
+          updateStep('Converting PDF', 'complete', 'Using cached PDF images');
+          convertedImages = cachedImages;
+          urlToProcess = cachedImages[0];
+        } else {
+          updateStep('Converting PDF', 'processing', 'Converting PDF to high-quality images...');
           
-          updateStep('Converting PDF', 'complete', `Converted ${images.length} page(s) to images`);
-          
-          // Use the first image for processing
-          urlToProcess = images[0];
-        } catch (pdfError) {
-          updateStep('Converting PDF', 'error', 'Failed to convert PDF to images');
-          throw pdfError;
+          try {
+            const images = await convertPDFToImages(
+              attachment.url,
+              { scale: 2.0, format: 'png', quality: 0.95 },
+              (current, total) => {
+                updateStep('Converting PDF', 'processing', `Converting page ${current} of ${total}...`);
+              }
+            );
+            
+            // Cache the converted images
+            setPDFToCache(attachment.url, images);
+            convertedImages = images;
+            
+            updateStep('Converting PDF', 'complete', `Converted ${images.length} page(s) to images`);
+            
+            // Use the first image for processing
+            urlToProcess = images[0];
+          } catch (pdfError) {
+            updateStep('Converting PDF', 'error', 'Failed to convert PDF to images');
+            throw pdfError;
+          }
         }
       }
       
-      updateStep('Routing', 'processing', 'Determining document type...');
+      updateStep('AI Processing', 'processing', 'Extracting data with AI...');
       const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
         body: { attachmentUrl: urlToProcess }
       });
 
       if (error) {
-        updateStep('Routing', 'error', error.message);
+        updateStep('AI Processing', 'error', error.message);
         throw error;
       }
       
-      updateStep('Routing', 'complete', 'Document type determined');
       updateStep('AI Processing', 'complete', 'AI extraction complete');
-      updateStep('Finalizing', 'complete', 'Parsing successful');
+      
+      // Save parse result to database
+      updateStep('Saving Results', 'processing', 'Saving parsed data...');
+      const { error: updateError } = await supabase
+        .from('message_attachments')
+        .update({ 
+          parsed_data: data,
+          parsed_at: new Date().toISOString()
+        })
+        .eq('id', attachment.id);
+      
+      if (updateError) {
+        console.error('Failed to save parse result:', updateError);
+        updateStep('Saving Results', 'error', 'Failed to save to database');
+      } else {
+        updateStep('Saving Results', 'complete', 'Results saved to database');
+      }
+      
+      // Send to OneBill API
+      updateStep('OneBill API', 'processing', 'Sending to OneBill...');
+      try {
+        const { data: onebillData, error: onebillError } = await supabase.functions.invoke('onebill-submit', {
+          body: { 
+            attachmentId: attachment.id,
+            parsedData: data 
+          }
+        });
+        
+        if (onebillError) {
+          updateStep('OneBill API', 'error', 'Failed to send to OneBill');
+          console.error('OneBill API error:', onebillError);
+        } else {
+          updateStep('OneBill API', 'complete', 'Successfully sent to OneBill');
+        }
+      } catch (onebillError) {
+        updateStep('OneBill API', 'error', 'Failed to send to OneBill');
+        console.error('OneBill API error:', onebillError);
+      }
+      
+      updateStep('Complete', 'complete', 'All steps finished');
 
       setParseResult(data);
       toast({
         title: "Parsing Complete",
-        description: "Bill has been successfully parsed. Click to view results.",
+        description: "Bill has been successfully parsed and sent to OneBill.",
       });
     } catch (error) {
       console.error('Parse error:', error);

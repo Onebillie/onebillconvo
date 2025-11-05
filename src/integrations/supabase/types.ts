@@ -4037,6 +4037,11 @@ export type Database = {
           filename: string
           id: string
           message_id: string | null
+          onebill_response: Json | null
+          onebill_submitted: boolean | null
+          onebill_submitted_at: string | null
+          parsed_at: string | null
+          parsed_data: Json | null
           size: number | null
           transcription: string | null
           type: string
@@ -4049,6 +4054,11 @@ export type Database = {
           filename: string
           id?: string
           message_id?: string | null
+          onebill_response?: Json | null
+          onebill_submitted?: boolean | null
+          onebill_submitted_at?: string | null
+          parsed_at?: string | null
+          parsed_data?: Json | null
           size?: number | null
           transcription?: string | null
           type: string
@@ -4061,6 +4071,11 @@ export type Database = {
           filename?: string
           id?: string
           message_id?: string | null
+          onebill_response?: Json | null
+          onebill_submitted?: boolean | null
+          onebill_submitted_at?: string | null
+          parsed_at?: string | null
+          parsed_data?: Json | null
           size?: number | null
           transcription?: string | null
           type?: string
