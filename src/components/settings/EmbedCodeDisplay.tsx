@@ -12,7 +12,7 @@ export const EmbedCodeDisplay = () => {
   const [copiedCustomer, setCopiedCustomer] = useState(false);
   const [customerId, setCustomerId] = useState('CUSTOMER_ID');
 
-  const projectUrl = 'https://jrtlrnfdqfkjlkpfirzr.supabase.co';
+  const projectUrl = window.location.origin;
 
   const getInboxEmbedCode = () => {
     return `<!-- Full Inbox Embed -->
