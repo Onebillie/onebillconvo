@@ -220,58 +220,51 @@ export default function EmbedInbox() {
   };
 
   const loadConversations = async (bizId: string) => {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select(`
-        *,
-        customer:customers(*)
-      `)
-      .eq('business_id', bizId)
-      .order('last_message_at', { ascending: false });
+    try {
+      const { data, error } = await supabase.functions.invoke('api-embed-data', {
+        headers: { 'x-api-key': apiKey || '' },
+        body: { resource: 'conversations', business_id: bizId },
+      });
 
-    if (error) {
-      console.error('Error loading conversations:', error);
-      return;
+      if (error) {
+        console.error('Error loading conversations (fn):', error);
+        return;
+      }
+
+      setConversations((data?.conversations || []) as any);
+    } catch (err) {
+      console.error('Error loading conversations (catch):', err);
     }
-
-    setConversations((data || []) as any);
   };
 
   const loadMessages = async (conversationId: string) => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        message_attachments (
-          id,
-          filename,
-          url,
-          type,
-          size,
-          duration_seconds
-        )
-      `)
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase.functions.invoke('api-embed-data', {
+        headers: { 'x-api-key': apiKey || '' },
+        body: { resource: 'messages', conversation_id: conversationId },
+      });
 
-    if (error) {
-      console.error('Error loading messages:', error);
-      return;
+      if (error) {
+        console.error('Error loading messages (fn):', error);
+        return;
+      }
+
+      const mapped = (data?.messages || []).map((msg: any) => ({
+        ...msg,
+        message_attachments: msg.message_attachments?.map((att: any) => ({
+          id: att.id,
+          filename: att.filename,
+          url: att.url,
+          type: att.type,
+          size: att.size,
+          duration_seconds: att.duration_seconds,
+        })),
+      }));
+
+      setMessages(mapped as Message[]);
+    } catch (err) {
+      console.error('Error loading messages (catch):', err);
     }
-
-    const mapped = (data || []).map((msg: any) => ({
-      ...msg,
-      message_attachments: msg.message_attachments?.map((att: any) => ({
-        id: att.id,
-        filename: att.filename,
-        url: att.url,
-        type: att.type,
-        size: att.size,
-        duration_seconds: att.duration_seconds,
-      })),
-    }));
-
-    setMessages(mapped as Message[]);
   };
   const handleConversationSelect = (conversation: Conversation) => {
     setSelectedConversation(conversation.id);
@@ -383,7 +376,7 @@ export default function EmbedInbox() {
         <div className="contact-list-container w-80 border-r overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--background-color)' }}>
           <div className="p-4 border-b flex items-center gap-3">
             {customization.logo_url && (
-              <img src={customization.logo_url} alt="Logo" className="h-8 w-auto" />
+              <img src={customization.logo_url} alt="Embedded inbox logo" className="h-8 w-auto" />
             )}
             <h2 className="font-semibold" style={{ color: 'var(--text-color)' }}>Conversations</h2>
           </div>

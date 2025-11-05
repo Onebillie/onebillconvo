@@ -416,3 +416,9 @@ verify_jwt = false
 
 [functions.onebill-parse-openai-files]
 verify_jwt = false
+
+[functions.api-validate-api-key]
+verify_jwt = false
+
+[functions.api-embed-data]
+verify_jwt = false
