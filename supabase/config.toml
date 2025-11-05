@@ -406,13 +406,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.parse-attachment-onebill]
-verify_jwt = true
+verify_jwt = false
 
 [functions.auto-process-onebill]
 verify_jwt = false
 
 [functions.onebill-parse-router]
-verify_jwt = true
+verify_jwt = false
 
 [functions.onebill-parse-openai-files]
-verify_jwt = true
+verify_jwt = false
