@@ -304,16 +304,14 @@ export default function EmbedInbox() {
 
   const layoutClasses = {
     floating: 'fixed bottom-4 right-4 rounded-lg shadow-2xl',
-    embedded: 'w-full h-full',
+    embedded: 'w-full h-screen',
     fullscreen: 'fixed inset-0 w-screen h-screen',
     sidebar: 'fixed inset-y-0 right-0 h-screen shadow-2xl'
   };
 
-  const sizeClasses = customization.sizing_mode === 'responsive' 
-    ? 'w-full h-full max-w-[var(--embed-max-width)] max-h-[var(--embed-max-height)] min-w-[var(--embed-min-width)] min-h-[var(--embed-min-height)]'
-    : customization.sizing_mode === 'fullscreen'
+  const sizeClasses = customization.sizing_mode === 'fullscreen'
     ? 'w-screen h-screen'
-    : 'w-[var(--embed-width)] h-[var(--embed-height)]';
+    : '';
 
   if (loading) {
     return (
@@ -342,38 +340,20 @@ export default function EmbedInbox() {
         <style dangerouslySetInnerHTML={{ __html: customization.custom_css }} />
       )}
       <style>{`
-        /* Responsive breakpoints */
+        /* Mobile responsive */
         @media (max-width: 768px) {
-          .embed-container {
-            width: var(--mobile-width) !important;
-            height: var(--mobile-height) !important;
-            ${customization.enable_mobile_fullscreen ? 'position: fixed !important; inset: 0 !important; max-width: 100vw !important; max-height: 100vh !important;' : ''}
-          }
+          ${customization.enable_mobile_fullscreen ? '.embed-container { position: fixed !important; inset: 0 !important; }' : ''}
           .contact-list-container {
-            ${customization.hide_header_on_mobile ? 'display: none !important;' : 'width: 100% !important; max-width: 100% !important;'}
+            ${customization.hide_header_on_mobile ? 'display: none !important;' : ''}
           }
           ${customization.hide_header_on_mobile ? '.embed-header { display: none !important; }' : ''}
         }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .embed-container {
-            width: var(--tablet-width) !important;
-            height: var(--tablet-height) !important;
-          }
-        }
-
-        @media (min-width: 1025px) {
-          .embed-container {
-            width: var(--desktop-width) !important;
-            height: var(--desktop-height) !important;
-          }
-        }
       `}</style>
       <div 
-        className={`embed-container flex ${layoutClasses[customization.layout_mode as keyof typeof layoutClasses] || layoutClasses.floating} ${sizeClasses}`}
+        className={`embed-container flex ${layoutClasses[customization.layout_mode as keyof typeof layoutClasses] || layoutClasses.embedded} ${sizeClasses}`}
         style={customStyle}
       >
-        <div className="contact-list-container w-80 border-r overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--background-color)' }}>
+        <div className="contact-list-container w-full md:w-80 lg:w-96 border-r overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--background-color)' }}>
           <div className="p-4 border-b flex items-center gap-3">
             {customization.logo_url && (
               <img src={customization.logo_url} alt="Embedded inbox logo" className="h-8 w-auto" />
