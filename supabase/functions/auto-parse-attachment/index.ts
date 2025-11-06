@@ -11,8 +11,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let attachmentId: string | undefined;
+  let messageId: string | undefined;
+  
   try {
-    const { attachmentId, messageId, attachmentUrl, attachmentType, businessId, forceReparse } = await req.json();
+    const body = await req.json();
+    attachmentId = body.attachmentId;
+    messageId = body.messageId;
+    const attachmentUrl = body.attachmentUrl;
+    const attachmentType = body.attachmentType;
+    const businessId = body.businessId;
+    const forceReparse = body.forceReparse;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -133,8 +142,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Auto-parse error:', error);
-
-    const { attachmentId, messageId } = await req.json().catch(() => ({}));
     
     if (attachmentId) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
