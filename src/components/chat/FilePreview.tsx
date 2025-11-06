@@ -265,14 +265,26 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   };
 
   const renderApiRequestSample = (data: any) => {
-    const classification = data?.bills?.bill_classification?.[0];
-    const cusDetails = data?.bills?.cus_details?.[0]?.details;
-    const phone = cusDetails?.phone?.replace(/^\+|^00/, '') || '353XXXXXXXXX';
+    // Detect classification from services object
+    const services = data?.bills?.services;
+    let classification = null;
     
-    if (classification?.classification === 'electricity') {
-      const mprn = data?.bills?.bill_details?.[0]?.mprn || 'MPRN_NUMBER';
-      const mcc = data?.bills?.bill_details?.[0]?.mcc_type || 'MCC_TYPE';
-      const dg = data?.bills?.bill_details?.[0]?.dg_type || 'DG_TYPE';
+    if (services?.electricity === true) {
+      classification = 'electricity';
+    } else if (services?.gas === true) {
+      classification = 'gas';
+    } else if (services?.meter_reading === true) {
+      classification = 'meter';
+    }
+    
+    const cusDetails = data?.bills?.cus_details?.[0]?.details;
+    const phone = cusDetails?.phone?.replace(/\s+/g, '').replace(/^\+|^00/, '') || '353XXXXXXXXX';
+    
+    if (classification === 'electricity') {
+      const elecDetails = data?.bills?.electricity?.[0]?.elec_details?.meter_details;
+      const mprn = elecDetails?.mprn || 'MPRN_NUMBER';
+      const mcc = elecDetails?.mcc_type || 'MCC_TYPE';
+      const dg = elecDetails?.dg_type || 'DG_TYPE';
       
       return (
         <div className="space-y-4">
@@ -316,8 +328,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
           </div>
         </div>
       );
-    } else if (classification?.classification === 'gas') {
-      const gprn = data?.bills?.bill_details?.[0]?.gprn || 'GPRN_NUMBER';
+    } else if (classification === 'gas') {
+      const gasDetails = data?.bills?.gas?.[0]?.gas_details?.meter_details;
+      const gprn = gasDetails?.gprn || 'GPRN_NUMBER';
       
       return (
         <div className="space-y-4">
@@ -357,7 +370,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
           </div>
         </div>
       );
-    } else if (classification?.classification === 'meter') {
+    } else if (classification === 'meter') {
       return (
         <div className="space-y-4">
           <div>
