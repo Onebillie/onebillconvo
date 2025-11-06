@@ -4040,6 +4040,7 @@ export type Database = {
           onebill_response: Json | null
           onebill_submitted: boolean | null
           onebill_submitted_at: string | null
+          parse_status: string | null
           parsed_at: string | null
           parsed_data: Json | null
           size: number | null
@@ -4057,6 +4058,7 @@ export type Database = {
           onebill_response?: Json | null
           onebill_submitted?: boolean | null
           onebill_submitted_at?: string | null
+          parse_status?: string | null
           parsed_at?: string | null
           parsed_data?: Json | null
           size?: number | null
@@ -4074,6 +4076,7 @@ export type Database = {
           onebill_response?: Json | null
           onebill_submitted?: boolean | null
           onebill_submitted_at?: string | null
+          parse_status?: string | null
           parsed_at?: string | null
           parsed_data?: Json | null
           size?: number | null

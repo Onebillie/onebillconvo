@@ -22,21 +22,34 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if already parsed - if so, use existing parsed data
-    const { data: existingParse } = await supabase
-      .from('attachment_parse_results')
-      .select('id, parse_status, parsed_data')
-      .eq('attachment_id', attachment_id)
-      .eq('parse_status', 'success')
+    // Check if already parsed - prioritize message_attachments.parsed_data
+    const { data: attachmentData } = await supabase
+      .from('message_attachments')
+      .select('parsed_data, parse_status')
+      .eq('id', attachment_id)
       .single();
 
     let parsedData;
     let skipParsing = false;
 
-    if (existingParse) {
-      console.log('Using existing parse result, proceeding with submission');
-      parsedData = existingParse.parsed_data;
+    if (attachmentData?.parsed_data && attachmentData.parse_status === 'success') {
+      console.log('Using existing parse result from message_attachments');
+      parsedData = attachmentData.parsed_data;
       skipParsing = true;
+    } else {
+      // Fallback to attachment_parse_results for backward compatibility
+      const { data: existingParse } = await supabase
+        .from('attachment_parse_results')
+        .select('id, parse_status, parsed_data')
+        .eq('attachment_id', attachment_id)
+        .eq('parse_status', 'success')
+        .single();
+
+      if (existingParse) {
+        console.log('Using existing parse result from attachment_parse_results');
+        parsedData = existingParse.parsed_data;
+        skipParsing = true;
+      }
     }
 
     // Get message and conversation details

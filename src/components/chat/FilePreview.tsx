@@ -184,11 +184,28 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       }
       
       updateStep('AI Processing', 'processing', 'Extracting data with AI...');
-      const { data, error } = await supabase.functions.invoke('onebill-parse-router', {
-        body: { attachmentUrl: attachmentUrlToProcess }
+      
+      // Get business_id from conversation
+      const { data: messageData } = await supabase
+        .from('messages')
+        .select('conversation_id, conversations(business_id)')
+        .eq('id', messageId)
+        .single();
+      
+      const businessId = messageData?.conversations?.business_id;
+      
+      const { data, error } = await supabase.functions.invoke('auto-parse-attachment', {
+        body: { 
+          attachmentId: attachment.id,
+          messageId,
+          attachmentUrl: attachmentUrlToProcess,
+          attachmentType: attachment.type,
+          businessId,
+          forceReparse: true
+        }
       });
 
-      // Handle errors returned in data (router now returns 200 with error metadata)
+      // Handle errors returned in data
       if (data?.error) {
         updateStep('AI Processing', 'error', data.error);
         toast({
@@ -204,49 +221,15 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
         throw error;
       }
       
-      updateStep('AI Processing', 'complete', 'AI extraction complete');
-      
-      // Save parse result to database
-      updateStep('Saving Results', 'processing', 'Saving parsed data...');
-      const { error: updateError } = await supabase
-        .from('message_attachments')
-        .update({ 
-          parsed_data: data,
-          parsed_at: new Date().toISOString()
-        })
-        .eq('id', attachment.id);
-      
-      if (updateError) {
-        console.error('Failed to save parse result:', updateError);
-        updateStep('Saving Results', 'error', 'Failed to save to database');
+      if (data?.skipped) {
+        updateStep('AI Processing', 'complete', 'Already parsed (using cached data)');
       } else {
-        updateStep('Saving Results', 'complete', 'Parse complete - auto-processing will handle submission');
+        updateStep('AI Processing', 'complete', 'AI extraction complete');
       }
       
-      // Trigger auto-processing to create submissions and submit to OneBill
-      updateStep('Submitting to OneBill', 'processing', 'Creating submission...');
-      const { data: autoProcessData, error: autoProcessError } = await supabase.functions.invoke('auto-process-onebill', {
-        body: {
-          attachment_id: attachment.id,
-          message_id: messageId,
-          attachment_url: attachmentUrlToProcess,
-          attachment_type: attachment.type
-        }
-      });
-      
-      if (autoProcessError) {
-        console.error('Auto-process error:', autoProcessError);
-        updateStep('Submitting to OneBill', 'error', autoProcessError.message);
-      } else if (autoProcessData?.error) {
-        console.error('Auto-process returned error:', autoProcessData.error);
-        updateStep('Submitting to OneBill', 'error', autoProcessData.error);
-      } else {
-        updateStep('Submitting to OneBill', 'complete', 'Successfully submitted to OneBill');
-      }
-      
-      updateStep('Complete', 'complete', 'Parsing finished');
+      updateStep('Complete', 'complete', 'Parsing finished - data saved and processing triggered automatically');
 
-      setParseResult(data);
+      setParseResult(data.parsed_data || data);
       toast({
         title: "Parsing Complete",
         description: "Bill has been successfully parsed and sent to OneBill.",
