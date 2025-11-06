@@ -62,13 +62,13 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       
       setLoadingSubmission(true);
       try {
-        const { data, error } = await supabase
-          .from('onebill_submissions')
-          .select('*')
-          .eq('file_url', attachment.url)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from('onebill_submissions')
+        .select('*')
+        .eq('attachment_id', attachment.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
         if (error) throw error;
         setSubmissionStatus(data);

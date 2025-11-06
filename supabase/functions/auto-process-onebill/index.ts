@@ -136,6 +136,7 @@ serve(async (req) => {
           .insert({
             business_id: businessId,
             customer_id: customerId,
+            attachment_id: attachment_id,
             document_type: 'electricity',
             file_url: attachment_url,
             file_name: `attachment_${attachment_id}.jpg`,
@@ -176,6 +177,7 @@ serve(async (req) => {
           .insert({
             business_id: businessId,
             customer_id: customerId,
+            attachment_id: attachment_id,
             document_type: 'gas',
             file_url: attachment_url,
             file_name: `attachment_${attachment_id}.jpg`,
@@ -212,6 +214,7 @@ serve(async (req) => {
         .insert({
           business_id: businessId,
           customer_id: customerId,
+          attachment_id: attachment_id,
           document_type: 'meter',
           file_url: attachment_url,
           file_name: `attachment_${attachment_id}.jpg`,

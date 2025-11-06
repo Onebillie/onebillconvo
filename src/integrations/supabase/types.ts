@@ -4711,6 +4711,7 @@ export type Database = {
       }
       onebill_submissions: {
         Row: {
+          attachment_id: string | null
           business_id: string
           classification_confidence: number | null
           created_at: string
@@ -4744,6 +4745,7 @@ export type Database = {
           utility: string | null
         }
         Insert: {
+          attachment_id?: string | null
           business_id: string
           classification_confidence?: number | null
           created_at?: string
@@ -4777,6 +4779,7 @@ export type Database = {
           utility?: string | null
         }
         Update: {
+          attachment_id?: string | null
           business_id?: string
           classification_confidence?: number | null
           created_at?: string
@@ -4810,6 +4813,13 @@ export type Database = {
           utility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "onebill_submissions_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "message_attachments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "onebill_submissions_business_id_fkey"
             columns: ["business_id"]
