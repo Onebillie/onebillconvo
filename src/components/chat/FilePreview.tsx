@@ -222,6 +222,27 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
         updateStep('Saving Results', 'complete', 'Parse complete - auto-processing will handle submission');
       }
       
+      // Trigger auto-processing to create submissions and submit to OneBill
+      updateStep('Submitting to OneBill', 'processing', 'Creating submission...');
+      const { data: autoProcessData, error: autoProcessError } = await supabase.functions.invoke('auto-process-onebill', {
+        body: {
+          attachment_id: attachment.id,
+          message_id: messageId,
+          attachment_url: attachmentUrlToProcess,
+          attachment_type: attachment.type
+        }
+      });
+      
+      if (autoProcessError) {
+        console.error('Auto-process error:', autoProcessError);
+        updateStep('Submitting to OneBill', 'error', autoProcessError.message);
+      } else if (autoProcessData?.error) {
+        console.error('Auto-process returned error:', autoProcessData.error);
+        updateStep('Submitting to OneBill', 'error', autoProcessData.error);
+      } else {
+        updateStep('Submitting to OneBill', 'complete', 'Successfully submitted to OneBill');
+      }
+      
       updateStep('Complete', 'complete', 'Parsing finished');
 
       setParseResult(data);

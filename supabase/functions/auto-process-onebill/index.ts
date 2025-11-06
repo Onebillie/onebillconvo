@@ -22,20 +22,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check idempotency - has this attachment already been processed?
+    // Check if already parsed - if so, use existing parsed data
     const { data: existingParse } = await supabase
       .from('attachment_parse_results')
-      .select('id, parse_status')
+      .select('id, parse_status, parsed_data')
       .eq('attachment_id', attachment_id)
       .eq('parse_status', 'success')
       .single();
 
+    let parsedData;
+    let skipParsing = false;
+
     if (existingParse) {
-      console.log('Attachment already processed successfully, skipping');
-      return new Response(
-        JSON.stringify({ message: 'Already processed', parse_id: existingParse.id }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log('Using existing parse result, proceeding with submission');
+      parsedData = existingParse.parsed_data;
+      skipParsing = true;
     }
 
     // Get message and conversation details
@@ -54,19 +55,24 @@ serve(async (req) => {
 
     console.log('Processing for business:', businessId);
 
-    // Call onebill-parse-router to parse (routes to Gemini or OpenAI based on file type)
-    console.log('Calling onebill-parse-router...');
-    const parseResponse = await supabase.functions.invoke('onebill-parse-router', {
-      body: { attachmentUrl: attachment_url }
-    });
+    // Parse document if not already done
+    if (!skipParsing) {
+      // Call onebill-parse-router to parse (routes to Gemini or OpenAI based on file type)
+      console.log('Calling onebill-parse-router...');
+      const parseResponse = await supabase.functions.invoke('onebill-parse-router', {
+        body: { attachmentUrl: attachment_url }
+      });
 
-    if (parseResponse.error) {
-      console.error('Parse error:', parseResponse.error);
-      throw new Error(`Parsing failed: ${parseResponse.error.message}`);
+      if (parseResponse.error) {
+        console.error('Parse error:', parseResponse.error);
+        throw new Error(`Parsing failed: ${parseResponse.error.message}`);
+      }
+
+      parsedData = parseResponse.data;
+      console.log('Parse successful, extracted data:', JSON.stringify(parsedData).substring(0, 500));
+    } else {
+      console.log('Skipping parse, using existing data');
     }
-
-    const parsedData = parseResponse.data;
-    console.log('Parse successful, extracted data:', JSON.stringify(parsedData).substring(0, 500));
 
     // Extract phone number from parsed data or customer record
     let phone = parsedData.bills?.cus_details?.[0]?.details?.phone;
@@ -235,14 +241,16 @@ serve(async (req) => {
 
     console.log(`Created ${submissions.length} submission(s), calling onebill-submit...`);
 
-    // Store parse result
-    await supabase
-      .from('attachment_parse_results')
-      .insert({
-        attachment_id: attachment_id,
-        parse_status: 'success',
-        parsed_data: parsedData,
-      });
+    // Store parse result if this was a new parse
+    if (!skipParsing) {
+      await supabase
+        .from('attachment_parse_results')
+        .insert({
+          attachment_id: attachment_id,
+          parse_status: 'success',
+          parsed_data: parsedData,
+        });
+    }
 
     // Submit to OneBill for each detected utility type
     const submissionResults = [];
