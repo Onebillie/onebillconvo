@@ -4726,7 +4726,7 @@ export type Database = {
           meter_make: string | null
           meter_model: string | null
           mprn: string | null
-          onebill_endpoint: string
+          onebill_endpoint: string | null
           onebill_response: Json | null
           phone: string
           raw_text: string | null
@@ -4734,7 +4734,7 @@ export type Database = {
           retry_count: number
           submission_status: string
           submitted_at: string
-          submitted_by: string
+          submitted_by: string | null
           unit: string | null
           updated_at: string
           url: string | null
@@ -4759,7 +4759,7 @@ export type Database = {
           meter_make?: string | null
           meter_model?: string | null
           mprn?: string | null
-          onebill_endpoint: string
+          onebill_endpoint?: string | null
           onebill_response?: Json | null
           phone: string
           raw_text?: string | null
@@ -4767,7 +4767,7 @@ export type Database = {
           retry_count?: number
           submission_status?: string
           submitted_at?: string
-          submitted_by: string
+          submitted_by?: string | null
           unit?: string | null
           updated_at?: string
           url?: string | null
@@ -4792,7 +4792,7 @@ export type Database = {
           meter_make?: string | null
           meter_model?: string | null
           mprn?: string | null
-          onebill_endpoint?: string
+          onebill_endpoint?: string | null
           onebill_response?: Json | null
           phone?: string
           raw_text?: string | null
@@ -4800,7 +4800,7 @@ export type Database = {
           retry_count?: number
           submission_status?: string
           submitted_at?: string
-          submitted_by?: string
+          submitted_by?: string | null
           unit?: string | null
           updated_at?: string
           url?: string | null
