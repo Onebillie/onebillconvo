@@ -44,9 +44,9 @@ const AI_PROVIDERS = [
   },
   {
     id: "google",
-    name: "Google AI",
+    name: "Google Gemini",
     logo: "🔷",
-    description: "Gemini Pro, Flash",
+    description: "Gemini Pro, Flash, Flash Lite",
     models: [
       { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Recommended)" },
@@ -131,7 +131,7 @@ export function AIAssistantSettings() {
   };
 
   const saveProviderConfig = async () => {
-    if (!provider || provider === 'lovable' || !customApiKey || customApiKey === '••••••••') {
+    if (!provider || !customApiKey || customApiKey === '••••••••') {
       toast.error('Please enter a valid API key');
       return;
     }
@@ -245,35 +245,6 @@ export function AIAssistantSettings() {
               </p>
             </div>
 
-            {/* Lovable AI Option (Only for onebill) */}
-            {isOnebill && (
-              <Card 
-                className={cn(
-                  "cursor-pointer transition-all border-2",
-                  provider === "lovable" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                )}
-                onClick={() => setProvider("lovable")}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">💚</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">Lovable AI (Gemini)</h3>
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Included</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Pre-configured Gemini models, no API key needed
-                      </p>
-                    </div>
-                    {provider === "lovable" && (
-                      <Check className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Provider Cards */}
             <div className="grid gap-3">
               {AI_PROVIDERS.map((prov) => (
@@ -302,7 +273,7 @@ export function AIAssistantSettings() {
             </div>
 
             {/* Provider Configuration */}
-            {provider && provider !== "lovable" && (
+            {provider && (
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle className="text-base">
