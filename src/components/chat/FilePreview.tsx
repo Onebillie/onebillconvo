@@ -1,5 +1,5 @@
-import { useState, memo } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug } from 'lucide-react';
+import { useState, memo, useEffect } from 'react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -45,12 +45,42 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [showDebugger, setShowDebugger] = useState(false);
   const [showParsingStatus, setShowParsingStatus] = useState(false);
   const [parsingSteps, setParsingSteps] = useState<Array<{ step: string; status: 'pending' | 'processing' | 'complete' | 'error'; message?: string }>>([]);
+  const [submissionStatus, setSubmissionStatus] = useState<any>(null);
+  const [loadingSubmission, setLoadingSubmission] = useState(false);
+  const [resending, setResending] = useState(false);
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
   const isPDF = attachment.type === 'application/pdf';
   const isAudio = attachment.type?.startsWith('audio/');
   const isVideo = attachment.type?.startsWith('video/');
+
+  // Fetch submission status for this attachment
+  useEffect(() => {
+    const fetchSubmissionStatus = async () => {
+      if (!attachment.id) return;
+      
+      setLoadingSubmission(true);
+      try {
+        const { data, error } = await supabase
+          .from('onebill_submissions')
+          .select('*')
+          .eq('file_url', attachment.url)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        setSubmissionStatus(data);
+      } catch (error) {
+        console.error('Error fetching submission status:', error);
+      } finally {
+        setLoadingSubmission(false);
+      }
+    };
+
+    fetchSubmissionStatus();
+  }, [attachment.id, attachment.url]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
@@ -368,6 +398,88 @@ fetch('${endpoint}', {
             Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
           </p>
         </div>
+
+        {/* OneBill API Status Indicator */}
+        {loadingSubmission ? (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Loading submission status...</span>
+          </div>
+        ) : submissionStatus ? (
+          <div className={cn(
+            "p-4 rounded-lg border-2",
+            submissionStatus.submission_status === 'success' ? "bg-green-500/10 border-green-500/50" :
+            submissionStatus.submission_status === 'failed' ? "bg-destructive/10 border-destructive/50" :
+            "bg-yellow-500/10 border-yellow-500/50"
+          )}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                {submissionStatus.submission_status === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                ) : submissionStatus.submission_status === 'failed' ? (
+                  <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                ) : (
+                  <Clock className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm mb-1">
+                    OneBill API Status: {submissionStatus.submission_status.toUpperCase()}
+                  </p>
+                  {submissionStatus.http_status && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      HTTP Status: {submissionStatus.http_status}
+                    </p>
+                  )}
+                  {submissionStatus.error_message && (
+                    <div className="mt-2 p-2 rounded bg-background/50">
+                      <p className="text-xs font-semibold mb-1">Error Details:</p>
+                      <p className="text-xs text-destructive">{submissionStatus.error_message}</p>
+                    </div>
+                  )}
+                  {submissionStatus.onebill_response && (
+                    <details className="mt-2">
+                      <summary className="text-xs font-semibold cursor-pointer hover:text-primary">
+                        View API Response
+                      </summary>
+                      <pre className="mt-2 p-2 rounded bg-background/50 overflow-x-auto text-xs">
+                        {JSON.stringify(submissionStatus.onebill_response, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Submitted: {new Date(submissionStatus.submitted_at).toLocaleString()}
+                  </p>
+                  {submissionStatus.retry_count > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Retries: {submissionStatus.retry_count}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {submissionStatus.submission_status === 'failed' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResendToOneBill}
+                  disabled={resending}
+                  className="shrink-0"
+                >
+                  {resending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Resending...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Resend
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : null}
         
         <div>
           <h4 className="text-xs font-semibold mb-2">API Payload:</h4>
@@ -409,6 +521,55 @@ fetch('${endpoint}', {
     a.download = `parsed-${attachment.filename}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleResendToOneBill = async () => {
+    if (!messageId) {
+      toast({
+        title: "Error",
+        description: "Message ID not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-process-onebill', {
+        body: {
+          attachmentId: attachment.id,
+          messageId: messageId,
+          forceReparse: false, // Use existing parsed data
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Resubmitted to OneBill API",
+      });
+
+      // Refresh submission status
+      const { data: newStatus } = await supabase
+        .from('onebill_submissions')
+        .select('*')
+        .eq('file_url', attachment.url)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setSubmissionStatus(newStatus);
+    } catch (error: any) {
+      console.error('Error resending to OneBill:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend to OneBill",
+        variant: "destructive",
+      });
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleRetry = () => {
