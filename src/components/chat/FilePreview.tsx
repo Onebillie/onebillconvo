@@ -265,126 +265,92 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   };
 
   const renderApiRequestSample = (data: any) => {
-    // Detect classification from services object
-    const services = data?.bills?.services;
-    let classification = null;
+    const bills = data?.bills;
     
-    if (services?.electricity === true) {
-      classification = 'electricity';
-    } else if (services?.gas === true) {
-      classification = 'gas';
-    } else if (services?.meter_reading === true) {
-      classification = 'meter';
+    // Extract phone from customer details
+    const cusDetails = bills?.cus_details?.[0]?.details;
+    let phone = cusDetails?.phone;
+    if (phone) {
+      phone = phone.replace(/\s+/g, '').replace(/^\+|^00/, '');
     }
     
-    const cusDetails = data?.bills?.cus_details?.[0]?.details;
-    const phone = cusDetails?.phone?.replace(/\s+/g, '').replace(/^\+|^00/, '') || '353XXXXXXXXX';
+    // Build dynamic payload - extract ALL fields we can find
+    const payload: any = {};
     
-    if (classification === 'electricity') {
-      const elecDetails = data?.bills?.electricity?.[0]?.elec_details?.meter_details;
-      const mprn = elecDetails?.mprn || 'MPRN_NUMBER';
-      const mcc = elecDetails?.mcc_type || 'MCC_TYPE';
-      const dg = elecDetails?.dg_type || 'DG_TYPE';
-      
+    // Add phone if found
+    if (phone) {
+      payload.phone = phone;
+    }
+    
+    // Check for electricity data
+    const electricityData = bills?.electricity?.[0];
+    const elecDetails = electricityData?.elec_details || electricityData?.electricity_details;
+    const meterDetails = elecDetails?.meter_details;
+    
+    if (meterDetails?.mprn) payload.MPRN = meterDetails.mprn;
+    if (meterDetails?.mcc || meterDetails?.mcc_type) payload.MCC = meterDetails.mcc || meterDetails.mcc_type;
+    if (meterDetails?.dg || meterDetails?.dg_type) payload.DG = meterDetails.dg || meterDetails.dg_type;
+    
+    // Check for gas data
+    const gasData = bills?.gas?.[0];
+    const gasDetails = gasData?.gas_details;
+    const gasMeterDetails = gasDetails?.meter_details;
+    
+    if (gasMeterDetails?.gprn) payload.gprn = gasMeterDetails.gprn;
+    
+    // Check top-level structures as fallback
+    if (bills?.electricity_bill) {
+      const topElec = bills.electricity_bill;
+      if (topElec.mprn && !payload.MPRN) payload.MPRN = topElec.mprn;
+      if (topElec.mcc && !payload.MCC) payload.MCC = topElec.mcc;
+      if (topElec.dg && !payload.DG) payload.DG = topElec.dg;
+    }
+    
+    if (bills?.gas_bill) {
+      const topGas = bills.gas_bill;
+      if (topGas.gprn && !payload.gprn) payload.gprn = topGas.gprn;
+    }
+    
+    // Determine classification based on what data we found
+    let classification = null;
+    let endpoint = '';
+    
+    if (payload.MPRN || payload.MCC || payload.DG) {
+      classification = 'electricity';
+      endpoint = 'https://api.onebill.ie/api/electricity-file';
+    } else if (payload.gprn) {
+      classification = 'gas';
+      endpoint = 'https://api.onebill.ie/api/gas-file';
+    } else if (bills?.services?.meter_reading === true) {
+      classification = 'meter';
+      endpoint = 'https://api.onebill.ie/api/meter-file';
+    }
+    
+    // If no fields found, show message
+    if (!classification || Object.keys(payload).length === 0) {
       return (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Electricity Bill Submission</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/electricity-file</code>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`curl -X POST https://api.onebill.ie/api/electricity-file \\
-  -H "Content-Type: application/json" \\
-  -d '{
-  "phone": "${phone}",
-  "MPRN": "${mprn}",
-  "MCC": "${mcc}",
-  "DG": "${dg}"
-}'`}
-            </pre>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`fetch('https://api.onebill.ie/api/electricity-file', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    phone: "${phone}",
-    MPRN: "${mprn}",
-    MCC: "${mcc}",
-    DG: "${dg}"
-  })
-})`}
-            </pre>
-          </div>
+        <div className="text-sm text-muted-foreground">
+          No bill data extracted. Unable to generate API request sample.
         </div>
       );
-    } else if (classification === 'gas') {
-      const gasDetails = data?.bills?.gas?.[0]?.gas_details?.meter_details;
-      const gprn = gasDetails?.gprn || 'GPRN_NUMBER';
-      
-      return (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Gas Bill Submission</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/gas-file</code>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`curl -X POST https://api.onebill.ie/api/gas-file \\
-  -H "Content-Type: application/json" \\
-  -d '{
-  "phone": "${phone}",
-  "gprn": "${gprn}"
-}'`}
-            </pre>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`fetch('https://api.onebill.ie/api/gas-file', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    phone: "${phone}",
-    gprn: "${gprn}"
-  })
-})`}
-            </pre>
-          </div>
-        </div>
-      );
-    } else if (classification === 'meter') {
+    }
+    
+    // For meter reading (file upload), show FormData approach
+    if (classification === 'meter') {
       return (
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-semibold mb-2">Meter Reading Submission</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/meter-file</code>
+              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
             </p>
           </div>
           
           <div>
             <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
             <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`curl -X POST https://api.onebill.ie/api/meter-file \\
-  -F "phone=${phone}" \\
+{`curl -X POST ${endpoint} \\
+  -F "phone=${phone || '353XXXXXXXXX'}" \\
   -F "file=@/path/to/meter-image.jpg"`}
             </pre>
           </div>
@@ -393,10 +359,10 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
             <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
             <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
 {`const formData = new FormData();
-formData.append('phone', '${phone}');
+formData.append('phone', '${phone || '353XXXXXXXXX'}');
 formData.append('file', fileBlob, 'meter-image.jpg');
 
-fetch('https://api.onebill.ie/api/meter-file', {
+fetch('${endpoint}', {
   method: 'POST',
   body: formData
 })`}
@@ -406,9 +372,48 @@ fetch('https://api.onebill.ie/api/meter-file', {
       );
     }
     
+    // For electricity/gas, show JSON payload
+    const payloadJson = JSON.stringify(payload, null, 2);
+    
     return (
-      <div className="text-sm text-muted-foreground">
-        No classification detected. Unable to generate API request sample.
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold mb-2">
+            {classification === 'electricity' ? 'Electricity' : 'Gas'} Bill Submission
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
+          </p>
+        </div>
+        
+        <div>
+          <h4 className="text-xs font-semibold mb-2">API Payload:</h4>
+          <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{payloadJson}
+          </pre>
+        </div>
+        
+        <div>
+          <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
+          <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`curl -X POST ${endpoint} \\
+  -H "Content-Type: application/json" \\
+  -d '${payloadJson}'`}
+          </pre>
+        </div>
+        
+        <div>
+          <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
+          <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`fetch('${endpoint}', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${payloadJson})
+})`}
+          </pre>
+        </div>
       </div>
     );
   };
