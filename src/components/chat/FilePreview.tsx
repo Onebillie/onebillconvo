@@ -671,15 +671,26 @@ fetch('https://api.onebill.ie/api/meter-file', {
             <DialogHeader>
               <DialogTitle>Parsed Bill Data</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
-                {JSON.stringify(parseResult, null, 2)}
-              </pre>
-              <Button onClick={downloadJSON} className="w-full">
-                <Download className="w-4 h-4 mr-2" />
-                Download JSON
-              </Button>
-            </div>
+            <Tabs defaultValue="parsed" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="parsed">Parsed Data</TabsTrigger>
+                <TabsTrigger value="api">API Request Sample</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="parsed" className="space-y-4 mt-4">
+                <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
+                  {JSON.stringify(parseResult, null, 2)}
+                </pre>
+                <Button onClick={downloadJSON} className="w-full">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download JSON
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="api" className="space-y-4 mt-4">
+                {renderApiRequestSample(parseResult)}
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       )}
