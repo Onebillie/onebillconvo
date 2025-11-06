@@ -126,6 +126,7 @@ serve(async (req) => {
             mprn: meterDetails.mprn,
             mcc_type: meterDetails.mcc,
             dg_type: meterDetails.dg,
+            onebill_endpoint: 'electricity',
             extracted_fields: parsedData
           })
           .select()
@@ -163,6 +164,7 @@ serve(async (req) => {
             submission_status: 'pending',
             phone: phone,
             gprn: meterDetails.gprn,
+            onebill_endpoint: 'gas',
             extracted_fields: parsedData
           })
           .select()
@@ -203,6 +205,7 @@ serve(async (req) => {
           meter_make: meterData.meter_make,
           meter_model: meterData.meter_model,
           raw_text: meterData.raw_text,
+          onebill_endpoint: 'meter',
           extracted_fields: parsedData
         })
         .select()
