@@ -1,5 +1,5 @@
 import { useState, memo, useEffect } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -51,6 +51,8 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [resending, setResending] = useState(false);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [phoneOverride, setPhoneOverride] = useState<string>('');
+  const [showStatusPanel, setShowStatusPanel] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
@@ -105,7 +107,37 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     };
 
     fetchSubmissionAndCustomer();
-  }, [attachment.id, messageId]);
+
+    // Set up realtime subscription for submission status updates
+    if (!attachment.id) return;
+
+    const channel = supabase
+      .channel(`onebill-submissions-${attachment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'onebill_submissions',
+          filter: `attachment_id=eq.${attachment.id}`
+        },
+        (payload) => {
+          console.log('Submission status update:', payload);
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            setSubmissionStatus(payload.new);
+            toast({
+              title: "Status Updated",
+              description: `OneBill submission ${payload.new.submission_status}`,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [attachment.id, messageId, toast]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
@@ -605,14 +637,23 @@ fetch('${endpoint}', {
       return;
     }
 
+    setIsResending(true);
     setResending(true);
     try {
+      const body: any = {
+        attachmentId: attachment.id,
+        messageId: messageId,
+        forceReparse: false, // Use existing parsed data
+      };
+      
+      // Add phone override if provided
+      if (phoneOverride && phoneOverride.trim()) {
+        body.phoneOverride = phoneOverride.trim();
+        console.log('Using phone override:', phoneOverride.trim());
+      }
+      
       const { data, error } = await supabase.functions.invoke('auto-process-onebill', {
-        body: {
-          attachmentId: attachment.id,
-          messageId: messageId,
-          forceReparse: false, // Use existing parsed data
-        }
+        body
       });
 
       if (error) throw error;
@@ -640,6 +681,7 @@ fetch('${endpoint}', {
         variant: "destructive",
       });
     } finally {
+      setIsResending(false);
       setResending(false);
     }
   };
@@ -715,6 +757,23 @@ fetch('${endpoint}', {
                 onError={handleImageError}
                 onClick={() => setFullSizeOpen(true)}
               />
+              
+              {/* Status Badge Overlay */}
+              {submissionStatus && (
+                <div className="absolute top-2 left-2 z-10">
+                  <div className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium shadow-lg backdrop-blur-sm",
+                    submissionStatus.submission_status === 'completed' && "bg-green-500/90 text-white",
+                    submissionStatus.submission_status === 'failed' && "bg-red-500/90 text-white",
+                    submissionStatus.submission_status === 'pending' && "bg-yellow-500/90 text-white"
+                  )}>
+                    {submissionStatus.submission_status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    {submissionStatus.submission_status === 'failed' && <XCircle className="h-3.5 w-3.5" />}
+                    {submissionStatus.submission_status === 'pending' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span className="capitalize">{submissionStatus.submission_status}</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
           {!imageLoading && !imageError && (
@@ -766,6 +825,135 @@ fetch('${endpoint}', {
             </>
           )}
         </div>
+
+        {/* Expandable Status Panel */}
+        {submissionStatus && (
+          <div className="mt-3 border rounded-lg overflow-hidden">
+            <Button
+              variant="ghost"
+              className="w-full justify-between p-3 h-auto"
+              onClick={() => setShowStatusPanel(!showStatusPanel)}
+            >
+              <div className="flex items-center gap-2">
+                {submissionStatus.submission_status === 'completed' && (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                )}
+                {submissionStatus.submission_status === 'failed' && (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                {submissionStatus.submission_status === 'pending' && (
+                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                )}
+                <span className="font-medium text-sm">OneBill Submission Status</span>
+              </div>
+              {showStatusPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+
+            {showStatusPanel && (
+              <div className="p-4 border-t bg-muted/30 space-y-3">
+                {/* Status Overview */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className={cn(
+                      "ml-2 font-medium capitalize",
+                      submissionStatus.submission_status === 'completed' && "text-green-600",
+                      submissionStatus.submission_status === 'failed' && "text-red-600",
+                      submissionStatus.submission_status === 'pending' && "text-yellow-600"
+                    )}>
+                      {submissionStatus.submission_status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">HTTP Status:</span>
+                    <span className="ml-2 font-medium">{submissionStatus.http_status || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Retry Count:</span>
+                    <span className="ml-2 font-medium">{submissionStatus.retry_count || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Timestamp:</span>
+                    <span className="ml-2 font-medium text-xs">
+                      {new Date(submissionStatus.submitted_at || submissionStatus.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {submissionStatus.error_message && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md">
+                    <p className="text-sm font-medium text-red-900 dark:text-red-200 mb-1">Error Message:</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{submissionStatus.error_message}</p>
+                  </div>
+                )}
+
+                {/* Request Payload */}
+                {(submissionStatus.mprn || submissionStatus.gprn || submissionStatus.phone) && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Request Sent:</p>
+                    <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto border">
+                      {JSON.stringify({
+                        phone: submissionStatus.phone,
+                        ...(submissionStatus.mprn && { MPRN: submissionStatus.mprn }),
+                        ...(submissionStatus.mcc_type && { MCC: submissionStatus.mcc_type }),
+                        ...(submissionStatus.dg_type && { DG: submissionStatus.dg_type }),
+                        ...(submissionStatus.gprn && { gprn: submissionStatus.gprn }),
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* API Response */}
+                {submissionStatus.onebill_response && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">API Response:</p>
+                    <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto border">
+                      {JSON.stringify(submissionStatus.onebill_response, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Resend Section */}
+                {submissionStatus.submission_status === 'failed' && (
+                  <div className="pt-3 border-t space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone Override (Optional):</label>
+                      <input
+                        type="text"
+                        placeholder={customerPhone || "Enter phone number"}
+                        value={phoneOverride}
+                        onChange={(e) => setPhoneOverride(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border rounded-md bg-background"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Leave empty to use customer phone: {formatPhoneForDisplay(customerPhone || '')}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleResendToOneBill}
+                      disabled={isResending}
+                      className="w-full"
+                      variant="default"
+                    >
+                      {isResending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Resending...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Resend to OneBill
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <Dialog open={fullSizeOpen} onOpenChange={setFullSizeOpen}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
