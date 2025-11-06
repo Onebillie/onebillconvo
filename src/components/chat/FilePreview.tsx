@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OneBillDebugger } from '@/components/onebill/OneBillDebugger';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Cache for loaded images to prevent flickering
@@ -48,6 +49,8 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loadingSubmission, setLoadingSubmission] = useState(false);
   const [resending, setResending] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+  const [phoneOverride, setPhoneOverride] = useState<string>('');
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
@@ -55,23 +58,45 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const isAudio = attachment.type?.startsWith('audio/');
   const isVideo = attachment.type?.startsWith('video/');
 
-  // Fetch submission status for this attachment
+  // Fetch submission status and customer phone for this attachment
   useEffect(() => {
-    const fetchSubmissionStatus = async () => {
-      if (!attachment.id) return;
+    const fetchSubmissionAndCustomer = async () => {
+      if (!attachment.id || !messageId) return;
       
       setLoadingSubmission(true);
       try {
-      const { data, error } = await supabase
-        .from('onebill_submissions')
-        .select('*')
-        .eq('attachment_id', attachment.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        // Fetch submission status
+        const { data: submission, error } = await supabase
+          .from('onebill_submissions')
+          .select('*')
+          .eq('attachment_id', attachment.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
         if (error) throw error;
-        setSubmissionStatus(data);
+        setSubmissionStatus(submission);
+
+        // Fetch customer phone from the message's conversation
+        if (messageId) {
+          const { data: messageData } = await supabase
+            .from('messages')
+            .select(`
+              conversation_id,
+              conversations!inner(
+                customer_id,
+                customers!inner(phone, whatsapp_phone)
+              )
+            `)
+            .eq('id', messageId)
+            .single();
+
+          const customer = messageData?.conversations?.customers;
+          const actualPhone = customer?.whatsapp_phone || customer?.phone;
+          if (actualPhone) {
+            setCustomerPhone(actualPhone);
+          }
+        }
       } catch (error) {
         console.error('Error fetching submission status:', error);
       } finally {
@@ -79,8 +104,8 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       }
     };
 
-    fetchSubmissionStatus();
-  }, [attachment.id, attachment.url]);
+    fetchSubmissionAndCustomer();
+  }, [attachment.id, messageId]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
@@ -280,19 +305,22 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const renderApiRequestSample = (data: any) => {
     const bills = data?.bills;
     
-    // Extract phone from customer details
+    // Extract phone from bill (service provider phone - for reference only)
     const cusDetails = bills?.cus_details?.[0]?.details;
-    let phone = cusDetails?.phone;
-    if (phone) {
-      phone = phone.replace(/\s+/g, '').replace(/^\+|^00/, '');
+    let phoneFromBill = cusDetails?.phone;
+    if (phoneFromBill) {
+      phoneFromBill = phoneFromBill.replace(/\s+/g, '').replace(/^\+|^00/, '');
     }
+    
+    // The ACTUAL phone used for submission is from customer record
+    const actualPhone = customerPhone?.replace(/\s+/g, '').replace(/^\+|^00/, '') || phoneFromBill;
     
     // Build dynamic payload - extract ALL fields we can find
     const payload: any = {};
     
-    // Add phone if found
-    if (phone) {
-      payload.phone = phone;
+    // Add the ACTUAL phone that will be/was used for submission
+    if (actualPhone) {
+      payload.phone = actualPhone;
     }
     
     // Check for electricity data
@@ -363,7 +391,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
             <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
             <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
 {`curl -X POST ${endpoint} \\
-  -F "phone=${phone || '353XXXXXXXXX'}" \\
+  -F "phone=${actualPhone || '353XXXXXXXXX'}" \\
   -F "file=@/path/to/meter-image.jpg"`}
             </pre>
           </div>
@@ -372,7 +400,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
             <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
             <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
 {`const formData = new FormData();
-formData.append('phone', '${phone || '353XXXXXXXXX'}');
+formData.append('phone', '${actualPhone || '353XXXXXXXXX'}');
 formData.append('file', fileBlob, 'meter-image.jpg');
 
 fetch('${endpoint}', {
@@ -390,72 +418,107 @@ fetch('${endpoint}', {
     
     return (
       <div className="space-y-4">
-        <div>
-          <h3 className="text-sm font-semibold mb-2">
-            {classification === 'electricity' ? 'Electricity' : 'Gas'} Bill Submission
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
-          </p>
-        </div>
-
-        {/* OneBill API Status Indicator */}
-        {loadingSubmission ? (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Loading submission status...</span>
+        {/* Phone Number Clarification - SHOW THIS FIRST */}
+        {phoneFromBill && actualPhone && phoneFromBill !== actualPhone && (
+          <div className="p-3 rounded-lg bg-yellow-500/10 border-2 border-yellow-500/50">
+            <p className="text-sm font-semibold mb-2">⚠️ Phone Number Mismatch Detected</p>
+            <div className="text-xs space-y-1">
+              <p><strong>Phone on Bill (Service Provider):</strong> {formatPhoneForDisplay(phoneFromBill)}</p>
+              <p className="text-green-600 dark:text-green-400"><strong>✓ Phone Used for Submission (Customer):</strong> {formatPhoneForDisplay(actualPhone)}</p>
+              <p className="text-muted-foreground mt-2">
+                The customer's registered phone ({formatPhoneForDisplay(actualPhone)}) was used for OneBill submission, not the service provider number from the bill.
+              </p>
+            </div>
           </div>
-        ) : submissionStatus ? (
+        )}
+
+        {/* OneBill API Status Indicator - PROMINENT DISPLAY */}
+        {submissionStatus && (
           <div className={cn(
-            "p-4 rounded-lg border-2",
-            submissionStatus.submission_status === 'success' ? "bg-green-500/10 border-green-500/50" :
-            submissionStatus.submission_status === 'failed' ? "bg-destructive/10 border-destructive/50" :
-            "bg-yellow-500/10 border-yellow-500/50"
+            "p-5 rounded-lg border-2",
+            submissionStatus.submission_status === 'completed' ? "bg-green-500/10 border-green-500" :
+            submissionStatus.submission_status === 'failed' ? "bg-destructive/10 border-destructive" :
+            "bg-yellow-500/10 border-yellow-500"
           )}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1">
-                {submissionStatus.submission_status === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                {submissionStatus.submission_status === 'completed' ? (
+                  <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0 mt-0.5" />
                 ) : submissionStatus.submission_status === 'failed' ? (
-                  <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <XCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
                 ) : (
-                  <Clock className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                  <Clock className="w-6 h-6 text-yellow-500 shrink-0 mt-0.5" />
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm mb-1">
-                    OneBill API Status: {submissionStatus.submission_status.toUpperCase()}
-                  </p>
-                  {submissionStatus.http_status && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      HTTP Status: {submissionStatus.http_status}
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div>
+                    <p className="font-bold text-base mb-1">
+                      OneBill API: {submissionStatus.submission_status.toUpperCase()}
                     </p>
-                  )}
+                    {submissionStatus.http_status && (
+                      <p className="text-sm text-muted-foreground">
+                        HTTP Status: <code className="bg-background/50 px-1.5 py-0.5 rounded">{submissionStatus.http_status}</code>
+                      </p>
+                    )}
+                    {submissionStatus.submitted_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Submitted: {new Date(submissionStatus.submitted_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Error Message */}
                   {submissionStatus.error_message && (
-                    <div className="mt-2 p-2 rounded bg-background/50">
-                      <p className="text-xs font-semibold mb-1">Error Details:</p>
-                      <p className="text-xs text-destructive">{submissionStatus.error_message}</p>
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                      <p className="text-sm font-semibold text-destructive mb-1">Error Details:</p>
+                      <p className="text-sm">{submissionStatus.error_message}</p>
                     </div>
                   )}
-                  {submissionStatus.onebill_response && (
-                    <details className="mt-2">
-                      <summary className="text-xs font-semibold cursor-pointer hover:text-primary">
-                        View API Response
-                      </summary>
-                      <pre className="mt-2 p-2 rounded bg-background/50 overflow-x-auto text-xs">
-                        {JSON.stringify(submissionStatus.onebill_response, null, 2)}
+
+                  {/* Request Payload Sent */}
+                  <details className="group">
+                    <summary className="text-sm font-semibold cursor-pointer hover:text-primary flex items-center gap-2">
+                      <span>📤 Request Payload Sent to OneBill</span>
+                      <span className="text-xs text-muted-foreground">(click to expand)</span>
+                    </summary>
+                    <div className="mt-2 p-3 rounded-lg bg-background/80 border">
+                      <p className="text-xs font-semibold mb-2">Endpoint: {submissionStatus.onebill_endpoint || endpoint}</p>
+                      <pre className="text-xs overflow-x-auto">
+                        {JSON.stringify({
+                          phone: submissionStatus.phone || actualPhone,
+                          ...(submissionStatus.mprn && { MPRN: submissionStatus.mprn }),
+                          ...(submissionStatus.mcc_type && { MCC: submissionStatus.mcc_type }),
+                          ...(submissionStatus.dg_type && { DG: submissionStatus.dg_type }),
+                          ...(submissionStatus.gprn && { gprn: submissionStatus.gprn }),
+                        }, null, 2)}
                       </pre>
+                    </div>
+                  </details>
+
+                  {/* API Response */}
+                  {submissionStatus.onebill_response && (
+                    <details className="group">
+                      <summary className="text-sm font-semibold cursor-pointer hover:text-primary flex items-center gap-2">
+                        <span>📥 OneBill API Response</span>
+                        <span className="text-xs text-muted-foreground">(click to expand)</span>
+                      </summary>
+                      <div className="mt-2 p-3 rounded-lg bg-background/80 border">
+                        <pre className="text-xs overflow-x-auto">
+                          {JSON.stringify(submissionStatus.onebill_response, null, 2)}
+                        </pre>
+                      </div>
                     </details>
                   )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Submitted: {new Date(submissionStatus.submitted_at).toLocaleString()}
-                  </p>
+
+                  {/* Retry Information */}
                   {submissionStatus.retry_count > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Retries: {submissionStatus.retry_count}
+                      Retry attempts: {submissionStatus.retry_count}
                     </p>
                   )}
                 </div>
               </div>
+
+              {/* Resend Button */}
               {submissionStatus.submission_status === 'failed' && (
                 <Button
                   size="sm"
@@ -479,7 +542,16 @@ fetch('${endpoint}', {
               )}
             </div>
           </div>
-        ) : null}
+        )}
+
+        <div>
+          <h3 className="text-sm font-semibold mb-2">
+            {classification === 'electricity' ? 'Electricity' : 'Gas'} Bill Submission
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
+          </p>
+        </div>
         
         <div>
           <h4 className="text-xs font-semibold mb-2">API Payload:</h4>
@@ -550,11 +622,11 @@ fetch('${endpoint}', {
         description: "Resubmitted to OneBill API",
       });
 
-      // Refresh submission status
+      // Refresh submission status using attachment_id
       const { data: newStatus } = await supabase
         .from('onebill_submissions')
         .select('*')
-        .eq('file_url', attachment.url)
+        .eq('attachment_id', attachment.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
