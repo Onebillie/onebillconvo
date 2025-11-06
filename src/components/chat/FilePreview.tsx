@@ -3,6 +3,7 @@ import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loa
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -263,6 +264,142 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     }
   };
 
+  const renderApiRequestSample = (data: any) => {
+    const classification = data?.bills?.bill_classification?.[0];
+    const cusDetails = data?.bills?.cus_details?.[0]?.details;
+    const phone = cusDetails?.phone?.replace(/^\+|^00/, '') || '353XXXXXXXXX';
+    
+    if (classification?.classification === 'electricity') {
+      const mprn = data?.bills?.bill_details?.[0]?.mprn || 'MPRN_NUMBER';
+      const mcc = data?.bills?.bill_details?.[0]?.mcc_type || 'MCC_TYPE';
+      const dg = data?.bills?.bill_details?.[0]?.dg_type || 'DG_TYPE';
+      
+      return (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Electricity Bill Submission</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/electricity-file</code>
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`curl -X POST https://api.onebill.ie/api/electricity-file \\
+  -H "Content-Type: application/json" \\
+  -d '{
+  "phone": "${phone}",
+  "MPRN": "${mprn}",
+  "MCC": "${mcc}",
+  "DG": "${dg}"
+}'`}
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`fetch('https://api.onebill.ie/api/electricity-file', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    phone: "${phone}",
+    MPRN: "${mprn}",
+    MCC: "${mcc}",
+    DG: "${dg}"
+  })
+})`}
+            </pre>
+          </div>
+        </div>
+      );
+    } else if (classification?.classification === 'gas') {
+      const gprn = data?.bills?.bill_details?.[0]?.gprn || 'GPRN_NUMBER';
+      
+      return (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Gas Bill Submission</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/gas-file</code>
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`curl -X POST https://api.onebill.ie/api/gas-file \\
+  -H "Content-Type: application/json" \\
+  -d '{
+  "phone": "${phone}",
+  "gprn": "${gprn}"
+}'`}
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`fetch('https://api.onebill.ie/api/gas-file', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    phone: "${phone}",
+    gprn: "${gprn}"
+  })
+})`}
+            </pre>
+          </div>
+        </div>
+      );
+    } else if (classification?.classification === 'meter') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Meter Reading Submission</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST https://api.onebill.ie/api/meter-file</code>
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`curl -X POST https://api.onebill.ie/api/meter-file \\
+  -F "phone=${phone}" \\
+  -F "file=@/path/to/meter-image.jpg"`}
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
+            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+{`const formData = new FormData();
+formData.append('phone', '${phone}');
+formData.append('file', fileBlob, 'meter-image.jpg');
+
+fetch('https://api.onebill.ie/api/meter-file', {
+  method: 'POST',
+  body: formData
+})`}
+            </pre>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="text-sm text-muted-foreground">
+        No classification detected. Unable to generate API request sample.
+      </div>
+    );
+  };
+
   const downloadJSON = () => {
     const blob = new Blob([JSON.stringify(parseResult, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -413,17 +550,26 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
           <Dialog open={!!parseResult} onOpenChange={() => setParseResult(null)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
               <DialogHeader>
-                <DialogTitle>Parsed Bill Data</DialogTitle>
+                <DialogTitle>Parsed Bill Data & API Request</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
-                  {JSON.stringify(parseResult, null, 2)}
-                </pre>
-                <Button onClick={downloadJSON} className="w-full">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download JSON
-                </Button>
-              </div>
+              <Tabs defaultValue="parsed" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="parsed">Parsed Data</TabsTrigger>
+                  <TabsTrigger value="api">API Request Sample</TabsTrigger>
+                </TabsList>
+                <TabsContent value="parsed" className="mt-4 space-y-4">
+                  <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
+                    {JSON.stringify(parseResult, null, 2)}
+                  </pre>
+                  <Button onClick={downloadJSON} className="w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download JSON
+                  </Button>
+                </TabsContent>
+                <TabsContent value="api" className="mt-4">
+                  {renderApiRequestSample(parseResult)}
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         )}
