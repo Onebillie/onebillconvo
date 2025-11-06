@@ -87,10 +87,11 @@ serve(async (req) => {
       console.log('Skipping parse, using existing data');
     }
 
-    // Extract phone number from parsed data or customer record
-    let phone = parsedData.bills?.cus_details?.[0]?.details?.phone;
+    // Extract phone number - PRIORITIZE customer record over parsed data
+    let phone: string | null = null;
     
-    if (!phone && customerId) {
+    // First, try to get phone from customer record (most reliable)
+    if (customerId) {
       const { data: customer } = await supabase
         .from('customers')
         .select('phone, whatsapp_phone')
@@ -99,13 +100,18 @@ serve(async (req) => {
       
       phone = customer?.whatsapp_phone || customer?.phone;
     }
-
+    
+    // Fallback to parsed data if customer doesn't have a phone
     if (!phone) {
-      throw new Error('Phone number not found in parsed data or customer record');
+      phone = parsedData.bills?.cus_details?.[0]?.details?.phone;
     }
 
-    // Normalize phone (remove leading + or 00)
-    phone = phone.replace(/^\+/, '').replace(/^00/, '');
+    if (!phone) {
+      throw new Error('Phone number not found in customer record or parsed data');
+    }
+
+    // Normalize phone (remove leading + or 00, spaces, dashes)
+    phone = phone.replace(/^\+/, '').replace(/^00/, '').replace(/[\s-]/g, '');
 
     console.log('Using phone:', phone);
 
