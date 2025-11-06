@@ -134,33 +134,18 @@ serve(async (req) => {
     // Build request based on document type
     let response: Response;
 
-    if (documentType === 'electricity' || documentType === 'gas') {
-      // For electricity and gas: send entire extracted_fields JSON (matching working project)
-      console.log('Sending complete parsed JSON to OneBill for', documentType);
+    if (documentType === 'electricity') {
+      // For electricity: send phone, MPRN, MCC, DG
+      console.log('Sending electricity data to OneBill');
       
-      const extractedFields = submission.extracted_fields;
-      
-      if (!extractedFields || Object.keys(extractedFields).length === 0) {
-        const errorMsg = 'No extracted_fields found in submission';
-        console.error(errorMsg);
-        await supabaseClient
-          .from('onebill_submissions')
-          .update({ 
-            submission_status: 'failed',
-            error_message: errorMsg
-          })
-          .eq('id', submissionId);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: errorMsg
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      const payload = {
+        phone: fields.phone,
+        MPRN: fields.mprn,
+        MCC: fields.mcc_type,
+        DG: fields.dg_type
+      };
 
-      console.log('Sending extracted_fields:', JSON.stringify(extractedFields).substring(0, 500));
+      console.log('Electricity payload:', payload);
 
       response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -169,7 +154,27 @@ serve(async (req) => {
           'Accept': 'application/json',
           'Authorization': `Bearer ${ONEBILL_API_KEY}`,
         },
-        body: JSON.stringify(extractedFields),
+        body: JSON.stringify(payload),
+      });
+    } else if (documentType === 'gas') {
+      // For gas: send phone, gprn
+      console.log('Sending gas data to OneBill');
+      
+      const payload = {
+        phone: fields.phone,
+        gprn: fields.gprn
+      };
+
+      console.log('Gas payload:', payload);
+
+      response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${ONEBILL_API_KEY}`,
+        },
+        body: JSON.stringify(payload),
       });
     } else {
       // For meter: use multipart/form-data with file upload
