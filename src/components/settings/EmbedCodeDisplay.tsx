@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export const EmbedCodeDisplay = () => {
   const [copiedInbox, setCopiedInbox] = useState(false);
+  const [copiedAdmin, setCopiedAdmin] = useState(false);
   const [copiedCustomer, setCopiedCustomer] = useState(false);
   const [customerId, setCustomerId] = useState('CUSTOMER_ID');
   const [apiKeys, setApiKeys] = useState<any[]>([]);
@@ -56,6 +57,18 @@ export const EmbedCodeDisplay = () => {
 ></iframe>`;
   };
 
+  const getAdminDashboardCode = () => {
+    const apiKey = selectedApiKey || 'YOUR_API_KEY';
+    return `<!-- Full Admin Dashboard Embed -->
+<iframe 
+  id="alacarte-admin-embed"
+  src="${projectUrl}/embed/dashboard?apiKey=${apiKey}"
+  width="100%" 
+  height="800"
+  style="border: 1px solid #e5e7eb; border-radius: 8px;"
+></iframe>`;
+  };
+
   const getCustomerEmbedCode = () => {
     const apiKey = selectedApiKey || 'YOUR_API_KEY';
     return `<!-- Customer-Specific Conversation Embed -->
@@ -68,12 +81,15 @@ export const EmbedCodeDisplay = () => {
 ></iframe>`;
   };
 
-  const handleCopy = async (code: string, type: 'inbox' | 'customer') => {
+  const handleCopy = async (code: string, type: 'inbox' | 'admin' | 'customer') => {
     try {
       await navigator.clipboard.writeText(code);
       if (type === 'inbox') {
         setCopiedInbox(true);
         setTimeout(() => setCopiedInbox(false), 2000);
+      } else if (type === 'admin') {
+        setCopiedAdmin(true);
+        setTimeout(() => setCopiedAdmin(false), 2000);
       } else {
         setCopiedCustomer(true);
         setTimeout(() => setCopiedCustomer(false), 2000);
@@ -109,7 +125,7 @@ export const EmbedCodeDisplay = () => {
           <CardTitle>Embed Code for CRM Integration</CardTitle>
         </div>
         <CardDescription>
-          Embed your entire inbox or customer conversations into third-party CRMs and platforms
+          Embed your inbox or full admin dashboard into third-party CRMs and platforms
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -136,34 +152,36 @@ export const EmbedCodeDisplay = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Security Note</AlertTitle>
           <AlertDescription>
-            The API key is visible in the iframe URL. Only embed this in secure, internal systems 
-            (like CRMs, admin panels, or enterprise platforms). For public-facing embeds, use the 
-            website widget instead (Settings → Embed Widget).
+            Your API key will be visible in the embed code. Only embed on trusted domains.
           </AlertDescription>
         </Alert>
 
-        <Tabs defaultValue="inbox" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="inbox" className="flex items-center gap-2">
-              <Inbox className="h-4 w-4" />
-              Full Inbox
+        <Tabs defaultValue="admin" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="inbox">
+              <Inbox className="w-4 h-4 mr-2" />
+              Simple Inbox
             </TabsTrigger>
-            <TabsTrigger value="customer" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Customer Conversation
+            <TabsTrigger value="admin">
+              <Code2 className="w-4 h-4 mr-2" />
+              Admin Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="customer">
+              <User className="w-4 h-4 mr-2" />
+              Customer View
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="inbox" className="space-y-4">
             <div className="space-y-2">
-              <Label>Full Inbox Embed</Label>
+              <Label>Full Inbox (Read-Only)</Label>
               <p className="text-sm text-muted-foreground">
-                Embed the full conversation inbox to allow staff to manage all conversations from within your CRM or platform.
+                Display all conversations in a simple read-only view.
               </p>
             </div>
 
             <div className="relative">
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs max-h-96 font-mono">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                 <code>{getInboxEmbedCode()}</code>
               </pre>
               <Button
@@ -172,75 +190,59 @@ export const EmbedCodeDisplay = () => {
                 className="absolute top-2 right-2"
                 onClick={() => handleCopy(getInboxEmbedCode(), 'inbox')}
               >
-                {copiedInbox ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </>
-                )}
+                {copiedInbox ? <><Check className="h-4 w-4 mr-2" />Copied</> : <><Copy className="h-4 w-4 mr-2" />Copy</>}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="admin" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Full Admin Dashboard</Label>
+              <p className="text-sm text-muted-foreground">
+                Complete admin interface with all features based on API key permissions.
+              </p>
+            </div>
+
+            <div className="relative">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{getAdminDashboardCode()}</code>
+              </pre>
+              <Button
+                size="sm"
+                variant="outline"
+                className="absolute top-2 right-2"
+                onClick={() => handleCopy(getAdminDashboardCode(), 'admin')}
+              >
+                {copiedAdmin ? <><Check className="h-4 w-4 mr-2" />Copied</> : <><Copy className="h-4 w-4 mr-2" />Copy</>}
               </Button>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-              <h4 className="font-semibold text-sm text-blue-900">Features:</h4>
+              <h4 className="font-semibold text-sm text-blue-900">Admin Features (requires admin permission):</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>View all conversations across all customers</li>
-                <li>Contact list with search and filtering</li>
-                <li>Real-time message updates</li>
-                <li>Full conversation history</li>
-                <li>Secure API key authentication</li>
-              </ul>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-sm text-gray-900 mb-2">Common Use Cases:</h4>
-              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
-                <li>Internal CRM systems (Salesforce, HubSpot, Zendesk)</li>
-                <li>Custom admin dashboards</li>
-                <li>Support team portals</li>
-                <li>Enterprise help desk integrations</li>
+                <li>View all conversations and messages</li>
+                <li>Send messages to customers</li>
+                <li>Assign conversations to team members</li>
+                <li>Change conversation status</li>
+                <li>View customer details and notes</li>
+                <li>Real-time updates</li>
               </ul>
             </div>
           </TabsContent>
 
           <TabsContent value="customer" className="space-y-4">
             <div className="space-y-2">
-              <Label>Customer-Specific Conversation</Label>
-              <p className="text-sm text-muted-foreground">
-                This embed shows conversations for a specific customer. Perfect for embedding in customer profile pages.
-              </p>
-            </div>
-
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Recommended: Use SSO Token API</AlertTitle>
-              <AlertDescription>
-                For customer-specific embeds, we recommend using the SSO Token API instead for better security. 
-                See the "API Access → Integration Examples" section for implementation details.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label htmlFor="customer-id">Customer ID (for preview)</Label>
+              <Label htmlFor="customerId">Customer ID</Label>
               <Input
-                id="customer-id"
+                id="customerId"
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 placeholder="Enter customer ID"
-                className="font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground">
-                Change this to preview the code with a different customer ID
-              </p>
             </div>
 
             <div className="relative">
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs max-h-96 font-mono">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                 <code>{getCustomerEmbedCode()}</code>
               </pre>
               <Button
@@ -249,41 +251,11 @@ export const EmbedCodeDisplay = () => {
                 className="absolute top-2 right-2"
                 onClick={() => handleCopy(getCustomerEmbedCode(), 'customer')}
               >
-                {copiedCustomer ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </>
-                )}
+                {copiedCustomer ? <><Check className="h-4 w-4 mr-2" />Copied</> : <><Copy className="h-4 w-4 mr-2" />Copy</>}
               </Button>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-              <h4 className="font-semibold text-sm text-blue-900">Features:</h4>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Customer-specific conversation view</li>
-                <li>Aggregates all messages across conversations</li>
-                <li>Real-time message updates</li>
-                <li>Perfect for embedding in customer profiles</li>
-              </ul>
             </div>
           </TabsContent>
         </Tabs>
-
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h4 className="font-semibold text-sm text-amber-900 mb-2">⚠️ Important Notes:</h4>
-          <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-            <li>The selected API key is automatically included in the embed code</li>
-            <li>For customer embeds, replace <code className="bg-amber-100 px-1 rounded">CUSTOMER_ID</code> with the actual customer's ID</li>
-            <li>The iframe loads directly - no additional JavaScript required</li>
-            <li>API key provides full access - use only in trusted, internal environments</li>
-          </ul>
-        </div>
       </CardContent>
     </Card>
   );

@@ -43,7 +43,7 @@ serve(async (req) => {
     // Validate API key
     const { data: keyRow, error: keyErr } = await admin
       .from("api_keys")
-      .select("business_id, is_active, expires_at")
+      .select("business_id, is_active, expires_at, permission_level")
       .eq("key_hash", apiKey)
       .single();
 
@@ -68,7 +68,12 @@ serve(async (req) => {
       .maybeSingle();
 
     return new Response(
-      JSON.stringify({ valid: true, business_id: keyRow.business_id, customization }),
+      JSON.stringify({ 
+        valid: true, 
+        business_id: keyRow.business_id, 
+        permission_level: keyRow.permission_level,
+        customization 
+      }),
       { status: 200, headers: corsHeaders }
     );
   } catch (e) {

@@ -44,6 +44,7 @@ import AuthEmailManagement from "./pages/admin/AuthEmailManagement";
 import VoiceBillingTest from "./pages/VoiceBillingTest";
 import EmbedConversation from "./pages/embed/EmbedConversation";
 import EmbedInbox from "./pages/embed/EmbedInbox";
+import EmbedDashboard from "./pages/embed/EmbedDashboard";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
@@ -161,6 +162,7 @@ function AppContent() {
           {/* Embed Routes - No Auth Required */}
           <Route path="/embed/conversation" element={<EmbedConversation />} />
           <Route path="/embed/inbox" element={<EmbedInbox />} />
+          <Route path="/embed/dashboard" element={<EmbedDashboard />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

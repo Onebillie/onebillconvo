@@ -17,14 +17,16 @@ import { isFileSupported, getSupportedFormatsText, type ChannelType } from "@/li
 
 interface MessageInputProps {
   conversationId: string;
-  customerId: string;
-  customerPhone: string;
+  customerId?: string;
+  customerPhone?: string;
   customerEmail?: string;
   lastContactMethod?: "whatsapp" | "email" | "sms" | "facebook" | "instagram" | "embed";
-  onMessageSent: () => void;
+  onMessageSent: (content?: string, attachments?: any[]) => void | Promise<void>;
   onOptimisticMessage?: (message: any) => void;
   customer?: Customer;
   initialMessage?: string;
+  embedMode?: boolean;
+  embedSessionToken?: string;
 }
 
 export const MessageInput = ({
@@ -37,6 +39,8 @@ export const MessageInput = ({
   onOptimisticMessage,
   customer,
   initialMessage,
+  embedMode = false,
+  embedSessionToken,
 }: MessageInputProps) => {
   const storageKey = `message-draft-${conversationId}`;
   const [newMessage, setNewMessage] = useState(() => {
@@ -183,6 +187,32 @@ export const MessageInput = ({
 
     sendingRef.current = true;
     setIsSending(true);
+
+    // Handle embed mode
+    if (embedMode && embedSessionToken) {
+      try {
+        await onMessageSent(newMessage.trim(), []);
+        setNewMessage("");
+        sessionStorage.removeItem(storageKey);
+        window.dispatchEvent(new CustomEvent('draft-changed', { 
+          detail: { conversationId, hasDraft: false } 
+        }));
+        toast({
+          title: "Message sent",
+          description: "Your message was sent successfully.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Failed to send message",
+          description: error.message || "Please try again",
+          variant: "destructive",
+        });
+      } finally {
+        sendingRef.current = false;
+        setIsSending(false);
+      }
+      return;
+    }
 
     // Initialize attachment URLs array (used for optimistic update)
     let attachmentUrls: any[] = [];

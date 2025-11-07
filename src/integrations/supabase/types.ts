@@ -677,6 +677,7 @@ export type Database = {
           last_used_at: string | null
           min_subscription_tier: string | null
           name: string
+          permission_level: Database["public"]["Enums"]["api_permission_level"]
           permissions: Json | null
           rate_limit_per_hour: number | null
         }
@@ -692,6 +693,7 @@ export type Database = {
           last_used_at?: string | null
           min_subscription_tier?: string | null
           name: string
+          permission_level?: Database["public"]["Enums"]["api_permission_level"]
           permissions?: Json | null
           rate_limit_per_hour?: number | null
         }
@@ -707,6 +709,7 @@ export type Database = {
           last_used_at?: string | null
           min_subscription_tier?: string | null
           name?: string
+          permission_level?: Database["public"]["Enums"]["api_permission_level"]
           permissions?: Json | null
           rate_limit_per_hour?: number | null
         }
@@ -3211,6 +3214,8 @@ export type Database = {
           expires_at: string
           id: string
           last_presence_at: string | null
+          metadata: Json | null
+          permission_level: Database["public"]["Enums"]["api_permission_level"]
           session_token: string
           site_id: string
         }
@@ -3221,6 +3226,8 @@ export type Database = {
           expires_at: string
           id?: string
           last_presence_at?: string | null
+          metadata?: Json | null
+          permission_level?: Database["public"]["Enums"]["api_permission_level"]
           session_token: string
           site_id: string
         }
@@ -3231,6 +3238,8 @@ export type Database = {
           expires_at?: string
           id?: string
           last_presence_at?: string | null
+          metadata?: Json | null
+          permission_level?: Database["public"]["Enums"]["api_permission_level"]
           session_token?: string
           site_id?: string
         }
@@ -7275,6 +7284,17 @@ export type Database = {
         Returns: boolean
       }
       is_onebillchat_user: { Args: never; Returns: boolean }
+      is_valid_embed_session: {
+        Args: {
+          _required_permission?: Database["public"]["Enums"]["api_permission_level"]
+          _session_token: string
+        }
+        Returns: {
+          business_id: string
+          permission_level: Database["public"]["Enums"]["api_permission_level"]
+          valid: boolean
+        }[]
+      }
       mark_conversation_resolved: {
         Args: {
           _conversation_id: string
@@ -7291,6 +7311,7 @@ export type Database = {
       }
     }
     Enums: {
+      api_permission_level: "read_only" | "agent" | "admin"
       app_role: "superadmin" | "admin" | "agent"
       user_role: "admin" | "agent" | "viewer"
     }
@@ -7420,6 +7441,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      api_permission_level: ["read_only", "agent", "admin"],
       app_role: ["superadmin", "admin", "agent"],
       user_role: ["admin", "agent", "viewer"],
     },
