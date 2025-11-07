@@ -114,22 +114,6 @@ serve(async (req) => {
       .eq('message_id', messageId)
       .eq('attachment_id', attachmentId);
 
-    // If this is OneBillChat business AND parse succeeded, trigger OneBill submission
-    const ONEBILL_BUSINESS_ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-    if (businessId === ONEBILL_BUSINESS_ID && parseStatus === 'success' && parsedData) {
-      console.log('Triggering auto-process-onebill for OneBillChat business');
-      
-      // Call auto-process-onebill asynchronously (fire and forget)
-      supabase.functions.invoke('auto-process-onebill', {
-        body: {
-          attachment_id: attachmentId,
-          message_id: messageId,
-          attachment_url: attachmentUrl,
-          attachment_type: attachmentType
-        }
-      }).catch(err => console.error('Failed to trigger auto-process-onebill:', err));
-    }
-
     return new Response(
       JSON.stringify({ 
         success: true,
