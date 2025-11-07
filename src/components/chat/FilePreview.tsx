@@ -1,5 +1,5 @@
 import { useState, memo, useEffect } from 'react';
-import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileIcon, FileText, FileImage, Music, Video, Download, AlertCircle, Loader2, RefreshCw, Bot, Maximize2, Bug, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,6 +32,7 @@ interface FilePreviewProps {
     url: string;
     type: string;
     size?: number;
+    parsed_data?: any;
   };
   messageId?: string;
   onClick?: () => void;
@@ -482,6 +483,79 @@ ${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`
     URL.revokeObjectURL(url);
   };
 
+  const handleSubmitToOneBill = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Get parsed data from message_attachments
+    const { data: attachmentData, error: attachmentError } = await supabase
+      .from('message_attachments')
+      .select('parsed_data')
+      .eq('id', attachment.id)
+      .single();
+
+    if (attachmentError || !attachmentData?.parsed_data) {
+      toast({
+        title: "Error",
+        description: "No parsed data available. Please parse the document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parsedData = attachmentData.parsed_data as any;
+
+    setIsResending(true);
+    try {
+      // Get business_id from the conversation
+      const { data: messageData } = await supabase
+        .from('messages')
+        .select('conversation_id, conversations(business_id)')
+        .eq('id', messageId)
+        .single();
+      
+      const businessId = messageData?.conversations?.business_id;
+      
+      if (!businessId) {
+        throw new Error("Could not determine business ID");
+      }
+
+      // Call the onebill-submit function directly - it will create the submission record
+      const { data, error } = await supabase.functions.invoke('onebill-submit', {
+        body: {
+          businessId: businessId,
+          attachmentId: attachment.id,
+          attachmentUrl: attachment.url,
+          documentType: parsedData.documentType,
+          phone: customerPhone || parsedData.phone,
+          mprn: parsedData.mprn,
+          mcc_type: parsedData.mcc_type,
+          dg_type: parsedData.dg_type,
+          gprn: parsedData.gprn,
+        }
+      });
+
+      if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.error || "Submission failed");
+      }
+
+      toast({
+        title: "Success",
+        description: "Submitted to OneBill successfully",
+      });
+    } catch (error: any) {
+      console.error('Error submitting to OneBill:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleResendToOneBill = async () => {
     if (!submissionStatus?.id) {
       toast({
@@ -673,6 +747,17 @@ ${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`
                 >
                   {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                 </Button>
+                {attachment.parsed_data && !submissionStatus && (
+                  <Button
+                    onClick={handleSubmitToOneBill}
+                    size="sm"
+                    variant="default"
+                    disabled={isResending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                )}
                 {messageId && (
                   <Button
                     onClick={(e) => {
