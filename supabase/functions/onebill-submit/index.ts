@@ -31,7 +31,7 @@ serve(async (req) => {
     // Load submission from DB to build payload if fields were not provided
     const { data: submission, error: submissionError } = await supabaseClient
       .from('onebill_submissions')
-      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name, extracted_fields')
+      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name, extracted_fields, retry_count, max_retries, manual_payload_override')
       .eq('id', submissionId)
       .single();
 
@@ -62,20 +62,27 @@ serve(async (req) => {
       return cleaned;
     };
 
-    // Merge fields: prefer body values, fall back to DB columns
-    const fields = bodyFields || {
-      phone: normalizePhone(submission.phone),
-      mprn: submission.mprn,
-      gprn: submission.gprn,
-      mcc_type: submission.mcc_type,
-      dg_type: submission.dg_type,
-      utility: submission.utility,
-      read_value: submission.read_value,
-      unit: submission.unit,
-      meter_make: submission.meter_make,
-      meter_model: submission.meter_model,
-      raw_text: submission.raw_text,
-    };
+    // Check for manual payload override first (from retry with edited payload)
+    let fields;
+    if (submission.manual_payload_override) {
+      console.log('Using manual payload override:', submission.manual_payload_override);
+      fields = submission.manual_payload_override;
+    } else {
+      // Merge fields: prefer body values, fall back to DB columns
+      fields = bodyFields || {
+        phone: normalizePhone(submission.phone),
+        mprn: submission.mprn,
+        gprn: submission.gprn,
+        mcc_type: submission.mcc_type,
+        dg_type: submission.dg_type,
+        utility: submission.utility,
+        read_value: submission.read_value,
+        unit: submission.unit,
+        meter_make: submission.meter_make,
+        meter_model: submission.meter_model,
+        raw_text: submission.raw_text,
+      };
+    }
 
     // Get OneBill API configuration
     const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY') ?? '';
@@ -267,6 +274,18 @@ serve(async (req) => {
     if (!response.ok) {
       console.error('OneBill API error:', response.status, responseData);
       
+      // Calculate retry schedule with exponential backoff
+      const newRetryCount = (submission.retry_count || 0) + 1;
+      const maxRetries = submission.max_retries || 3;
+      const shouldRetry = newRetryCount < maxRetries;
+      
+      const nextRetryDelay = shouldRetry ? Math.pow(2, newRetryCount) * 60 : null; // Exponential backoff in seconds
+      const nextRetryAt = shouldRetry 
+        ? new Date(Date.now() + nextRetryDelay * 1000).toISOString() 
+        : null;
+
+      console.log(`Retry ${newRetryCount}/${maxRetries}. Next retry: ${nextRetryAt || 'none (max reached)'}`);
+
       // Update submission with error
       await supabaseClient
         .from('onebill_submissions')
@@ -275,7 +294,12 @@ serve(async (req) => {
           onebill_response: responseData,
           http_status: response.status,
           onebill_endpoint: apiEndpoint,
-          error_message: `API returned ${response.status}: ${JSON.stringify(responseData)}`
+          error_message: `API returned ${response.status}: ${JSON.stringify(responseData)}`,
+          retry_count: newRetryCount,
+          next_retry_at: nextRetryAt,
+          retry_delay_seconds: nextRetryDelay,
+          last_retry_at: new Date().toISOString(),
+          submitted_at: new Date().toISOString()
         })
         .eq('id', submissionId);
 
@@ -298,7 +322,10 @@ serve(async (req) => {
         onebill_response: responseData,
         http_status: response.status,
         onebill_endpoint: apiEndpoint,
-        submitted_at: new Date().toISOString()
+        submitted_at: new Date().toISOString(),
+        next_retry_at: null,  // Clear retry schedule on success
+        manual_payload_override: null,  // Clear override after successful submission
+        last_retry_at: new Date().toISOString()
       })
       .eq('id', submissionId);
 

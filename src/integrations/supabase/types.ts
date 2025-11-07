@@ -4777,16 +4777,21 @@ export type Database = {
           gprn: string | null
           http_status: number | null
           id: string
+          last_retry_at: string | null
+          manual_payload_override: Json | null
+          max_retries: number | null
           mcc_type: string | null
           meter_make: string | null
           meter_model: string | null
           mprn: string | null
+          next_retry_at: string | null
           onebill_endpoint: string | null
           onebill_response: Json | null
           phone: string
           raw_text: string | null
           read_value: number | null
           retry_count: number
+          retry_delay_seconds: number | null
           submission_status: string
           submitted_at: string
           submitted_by: string | null
@@ -4811,16 +4816,21 @@ export type Database = {
           gprn?: string | null
           http_status?: number | null
           id?: string
+          last_retry_at?: string | null
+          manual_payload_override?: Json | null
+          max_retries?: number | null
           mcc_type?: string | null
           meter_make?: string | null
           meter_model?: string | null
           mprn?: string | null
+          next_retry_at?: string | null
           onebill_endpoint?: string | null
           onebill_response?: Json | null
           phone: string
           raw_text?: string | null
           read_value?: number | null
           retry_count?: number
+          retry_delay_seconds?: number | null
           submission_status?: string
           submitted_at?: string
           submitted_by?: string | null
@@ -4845,16 +4855,21 @@ export type Database = {
           gprn?: string | null
           http_status?: number | null
           id?: string
+          last_retry_at?: string | null
+          manual_payload_override?: Json | null
+          max_retries?: number | null
           mcc_type?: string | null
           meter_make?: string | null
           meter_model?: string | null
           mprn?: string | null
+          next_retry_at?: string | null
           onebill_endpoint?: string | null
           onebill_response?: Json | null
           phone?: string
           raw_text?: string | null
           read_value?: number | null
           retry_count?: number
+          retry_delay_seconds?: number | null
           submission_status?: string
           submitted_at?: string
           submitted_by?: string | null

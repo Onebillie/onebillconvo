@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -53,6 +55,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [phoneOverride, setPhoneOverride] = useState<string>('');
   const [showStatusPanel, setShowStatusPanel] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [editingPayload, setEditingPayload] = useState(false);
+  const [payloadJson, setPayloadJson] = useState('');
+  const [payloadError, setPayloadError] = useState<string | null>(null);
   const { toast } = useToast();
   
   const isImage = attachment.type?.startsWith('image/');
@@ -138,6 +143,22 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       supabase.removeChannel(channel);
     };
   }, [attachment.id, messageId, toast]);
+
+  // Initialize payload JSON from submission when it loads or changes
+  useEffect(() => {
+    if (submissionStatus) {
+      const payload: any = {};
+      if (submissionStatus.phone) payload.phone = submissionStatus.phone;
+      if (submissionStatus.mprn) payload.MPRN = submissionStatus.mprn;
+      if (submissionStatus.mcc_type) payload.MCC = submissionStatus.mcc_type;
+      if (submissionStatus.dg_type) payload.DG = submissionStatus.dg_type;
+      if (submissionStatus.gprn) payload.gprn = submissionStatus.gprn;
+      if (submissionStatus.utility) payload.utility = submissionStatus.utility;
+      if (submissionStatus.read_value) payload.read_value = submissionStatus.read_value;
+      
+      setPayloadJson(JSON.stringify(payload, null, 2));
+    }
+  }, [submissionStatus]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
@@ -543,9 +564,67 @@ fetch('${endpoint}', {
 
                   {/* Retry Information */}
                   {submissionStatus.retry_count > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Retry attempts: {submissionStatus.retry_count}
-                    </p>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        Retry {submissionStatus.retry_count} of {submissionStatus.max_retries || 3}
+                      </span>
+                      <Progress 
+                        value={(submissionStatus.retry_count / (submissionStatus.max_retries || 3)) * 100} 
+                        className="h-1.5 w-20"
+                      />
+                    </div>
+                  )}
+
+                  {/* Next Retry Schedule */}
+                  {submissionStatus.next_retry_at && submissionStatus.submission_status === 'failed' && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        Next automatic retry: {new Date(submissionStatus.next_retry_at).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Manual Payload Editor */}
+                  {submissionStatus.submission_status === 'failed' && (
+                    <div className="border rounded-lg p-4 space-y-3 bg-background/50">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold">Edit Payload for Manual Retry</h4>
+                        <Button
+                          size="sm"
+                          variant={editingPayload ? "secondary" : "outline"}
+                          onClick={() => setEditingPayload(!editingPayload)}
+                        >
+                          {editingPayload ? "Cancel Edit" : "Edit Payload"}
+                        </Button>
+                      </div>
+                      
+                      {editingPayload && (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={payloadJson}
+                            onChange={(e) => {
+                              setPayloadJson(e.target.value);
+                              setPayloadError(null);
+                              try {
+                                JSON.parse(e.target.value);
+                              } catch (err) {
+                                setPayloadError("Invalid JSON format");
+                              }
+                            }}
+                            rows={10}
+                            className="font-mono text-xs"
+                            placeholder="Edit JSON payload..."
+                          />
+                          {payloadError && (
+                            <p className="text-xs text-destructive">{payloadError}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Edit the JSON payload above and click "Resend" to retry with your changes.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -628,56 +707,75 @@ fetch('${endpoint}', {
   };
 
   const handleResendToOneBill = async () => {
-    if (!messageId) {
+    if (!submissionStatus?.id) {
       toast({
         title: "Error",
-        description: "Message ID not available",
+        description: "Submission ID not available",
         variant: "destructive",
       });
       return;
     }
 
+    // Validate edited payload if in edit mode
+    let manualPayload = null;
+    if (editingPayload) {
+      try {
+        manualPayload = JSON.parse(payloadJson);
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Invalid JSON format. Please fix the JSON before retrying.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsResending(true);
     setResending(true);
+    
     try {
-      const body: any = {
-        attachmentId: attachment.id,
-        messageId: messageId,
-        forceReparse: false, // Use existing parsed data
-      };
-      
-      // Add phone override if provided
-      if (phoneOverride && phoneOverride.trim()) {
-        body.phoneOverride = phoneOverride.trim();
-        console.log('Using phone override:', phoneOverride.trim());
+      // Save manual payload override to database if edited
+      if (manualPayload) {
+        await supabase
+          .from('onebill_submissions')
+          .update({ manual_payload_override: manualPayload })
+          .eq('id', submissionStatus.id);
       }
-      
-      const { data, error } = await supabase.functions.invoke('auto-process-onebill', {
-        body
+
+      // Call the onebill-submit function directly with submission ID
+      const { data, error } = await supabase.functions.invoke('onebill-submit', {
+        body: {
+          submissionId: submissionStatus.id,
+          ...(manualPayload && { fields: manualPayload })
+        }
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Resubmitted to OneBill API",
-      });
+      if (data?.success) {
+        toast({
+          title: "Success",
+          description: "Successfully resubmitted to OneBill API",
+        });
+        setEditingPayload(false);
+      } else {
+        throw new Error(data?.error || "Submission failed");
+      }
 
-      // Refresh submission status using attachment_id
+      // Refresh submission status
       const { data: newStatus } = await supabase
         .from('onebill_submissions')
         .select('*')
-        .eq('attachment_id', attachment.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq('id', submissionStatus.id)
+        .single();
 
       setSubmissionStatus(newStatus);
     } catch (error: any) {
-      console.error('Error resending to OneBill:', error);
+      console.error('Error resending:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to resend to OneBill",
+        description: error.message || "Failed to resend",
         variant: "destructive",
       });
     } finally {

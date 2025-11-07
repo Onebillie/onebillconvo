@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Activity, Eye, FileText, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { Activity, Eye, FileText, CheckCircle, XCircle, Clock, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
 
 const OneBillActivity = () => {
   const { currentBusinessId } = useAuth();
@@ -153,6 +154,7 @@ const OneBillActivity = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>HTTP</TableHead>
                   <TableHead>Retries</TableHead>
+                  <TableHead>Next Retry</TableHead>
                   <TableHead>Submitted By</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -160,13 +162,13 @@ const OneBillActivity = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       Loading submissions...
                     </TableCell>
                   </TableRow>
                 ) : submissions?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       No submissions found
                     </TableCell>
                   </TableRow>
@@ -195,7 +197,34 @@ const OneBillActivity = () => {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>{submission.retry_count}</TableCell>
+                      <TableCell>
+                        {submission.retry_count > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs">{submission.retry_count}/{submission.max_retries || 3}</span>
+                            <Progress 
+                              value={(submission.retry_count / (submission.max_retries || 3)) * 100} 
+                              className="h-1.5 w-12"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {submission.next_retry_at ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{format(new Date(submission.next_retry_at), 'HH:mm')}</span>
+                          </div>
+                        ) : submission.submission_status === 'failed' && submission.retry_count >= (submission.max_retries || 3) ? (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <AlertCircle className="w-3 h-3" />
+                            <span>Max reached</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">
                         User
                       </TableCell>
@@ -250,6 +279,16 @@ const OneBillActivity = () => {
                   <label className="text-sm font-medium">HTTP Status</label>
                   <p className="text-sm mt-1">{selectedSubmission.http_status || 'N/A'}</p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium">Retry Count</label>
+                  <p className="text-sm mt-1">{selectedSubmission.retry_count || 0} / {selectedSubmission.max_retries || 3}</p>
+                </div>
+                {selectedSubmission.next_retry_at && (
+                  <div>
+                    <label className="text-sm font-medium">Next Retry</label>
+                    <p className="text-sm mt-1">{format(new Date(selectedSubmission.next_retry_at), 'PPp')}</p>
+                  </div>
+                )}
               </div>
 
               <div>
