@@ -6,41 +6,68 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, Plus, Trash2, Key, FileText, Shield, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Copy, Eye, EyeOff, Plus, Trash2, Key, Monitor, User } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiSetupWizard } from "./ApiSetupWizard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface ApiKey {
   id: string;
   name: string;
   key_prefix: string;
+  key_hash: string;
+  permission_level: 'admin' | 'agent' | 'read_only';
+  customer_id: string | null;
   created_at: string;
   last_used_at: string | null;
   is_active: boolean;
+  customers?: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+  };
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export function ApiAccessManagement() {
   const { currentBusinessId } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showNewKey, setShowNewKey] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
+  const [embedType, setEmbedType] = useState<'full' | 'customer' | null>(null);
+
+  const projectUrl = "https://jrtlrnfdqfkjlkpfirzr.supabase.co";
+  const embedBaseUrl = window.location.origin;
 
   useEffect(() => {
     fetchApiKeys();
+    fetchCustomers();
   }, []);
 
   const fetchApiKeys = async () => {
     try {
       const { data, error } = await supabase
         .from("api_keys")
-        .select("*")
+        .select(`
+          *,
+          customers (
+            name,
+            email,
+            phone
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -52,7 +79,21 @@ export function ApiAccessManagement() {
     }
   };
 
-  const generateApiKey = async () => {
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, name, email, phone")
+        .order("name");
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load customers");
+    }
+  };
+
+  const generateFullDashboardKey = async () => {
     if (!newKeyName.trim()) {
       toast.error("Please enter a key name");
       return;
@@ -72,14 +113,60 @@ export function ApiAccessManagement() {
         key_hash: apiKey,
         key_prefix: keyPrefix,
         business_id: currentBusinessId,
+        permission_level: 'admin',
+        customer_id: null,
       });
 
       if (error) throw error;
 
       setNewApiKey(apiKey);
       setShowNewKey(true);
+      setEmbedType('full');
       setNewKeyName("");
-      toast.success("API key created successfully");
+      toast.success("Full Dashboard API key created successfully");
+      fetchApiKeys();
+    } catch (error: any) {
+      toast.error("Failed to create API key");
+    }
+  };
+
+  const generateCustomerScopedKey = async () => {
+    if (!newKeyName.trim()) {
+      toast.error("Please enter a key name");
+      return;
+    }
+
+    if (!selectedCustomerId) {
+      toast.error("Please select a customer");
+      return;
+    }
+
+    if (!currentBusinessId) {
+      toast.error("No business context found");
+      return;
+    }
+
+    try {
+      const apiKey = `sk_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+      const keyPrefix = apiKey.substring(0, 12);
+
+      const { error } = await supabase.from("api_keys").insert({
+        name: newKeyName,
+        key_hash: apiKey,
+        key_prefix: keyPrefix,
+        business_id: currentBusinessId,
+        permission_level: 'agent',
+        customer_id: selectedCustomerId,
+      });
+
+      if (error) throw error;
+
+      setNewApiKey(apiKey);
+      setShowNewKey(true);
+      setEmbedType('customer');
+      setNewKeyName("");
+      setSelectedCustomerId("");
+      toast.success("Customer-Scoped API key created successfully");
       fetchApiKeys();
     } catch (error: any) {
       toast.error("Failed to create API key");
@@ -102,439 +189,206 @@ export function ApiAccessManagement() {
     toast.success("Copied to clipboard");
   };
 
-  const projectUrl = "https://jrtlrnfdqfkjlkpfirzr.supabase.co";
+  const getFullDashboardIframe = (apiKey: string) => {
+    return `<iframe 
+  src="${embedBaseUrl}/embed/full-inbox?apiKey=${apiKey}" 
+  width="100%" 
+  height="800" 
+  frameborder="0"
+  style="border: 1px solid #e2e8f0; border-radius: 8px;"
+></iframe>`;
+  };
 
-  // SDK Code Generators
-  const getPHPCode = () => `<?php
-// Install: composer require guzzlehttp/guzzle
-require 'vendor/autoload.php';
-
-function generateSSOToken($apiKey, $customerId, $scope = 'conversation') {
-    $client = new \\GuzzleHttp\\Client();
-    
-    try {
-        $response = $client->post('${projectUrl}/functions/v1/api-sso-generate-token', [
-            'headers' => [
-                'x-api-key' => $apiKey,
-                'Content-Type' => 'application/json'
-            ],
-            'json' => [
-                'customer_id' => $customerId,
-                'scope' => $scope,
-                'expires_in_minutes' => 60
-            ]
-        ]);
-        
-        $data = json_decode($response->getBody(), true);
-        return $data;
-    } catch (Exception $e) {
-        error_log('SSO Token Error: ' . $e->getMessage());
-        return null;
-    }
-}
-
-// Usage Example
-$apiKey = 'YOUR_API_KEY';
-$customerId = 'CUSTOMER_ID';
-$result = generateSSOToken($apiKey, $customerId);
-
-if ($result) {
-    echo '<iframe src="' . htmlspecialchars($result['embed_url']) . '" 
-          width="100%" height="600" frameborder="0"></iframe>';
-}
-?>`;
-
-  const getPythonCode = () => `# Install: pip install requests
-import requests
-from typing import Optional, Dict
-
-def generate_sso_token(
-    api_key: str, 
-    customer_id: str, 
-    scope: str = 'conversation',
-    expires_in_minutes: int = 60
-) -> Optional[Dict]:
-    """Generate SSO token for embedding conversations"""
-    
-    url = '${projectUrl}/functions/v1/api-sso-generate-token'
-    headers = {
-        'x-api-key': api_key,
-        'Content-Type': 'application/json'
-    }
-    payload = {
-        'customer_id': customer_id,
-        'scope': scope,
-        'expires_in_minutes': expires_in_minutes
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f'SSO Token Error: {e}')
-        return None
-
-# Usage Example
-api_key = 'YOUR_API_KEY'
-customer_id = 'CUSTOMER_ID'
-result = generate_sso_token(api_key, customer_id)
-
-if result:
-    embed_url = result['embed_url']
-    print(f'<iframe src="{embed_url}" width="100%" height="600"></iframe>')`;
-
-  const getNodeCode = () => `// Install: npm install axios
-const axios = require('axios');
-
-async function generateSSOToken(apiKey, customerId, scope = 'conversation') {
-  try {
-    const response = await axios.post(
-      '${projectUrl}/functions/v1/api-sso-generate-token',
-      {
-        customer_id: customerId,
-        scope: scope,
-        expires_in_minutes: 60
-      },
-      {
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    return response.data;
-  } catch (error) {
-    console.error('SSO Token Error:', error.message);
-    return null;
-  }
-}
-
-// Usage Example
-const apiKey = 'YOUR_API_KEY';
-const customerId = 'CUSTOMER_ID';
-
-generateSSOToken(apiKey, customerId).then(result => {
-  if (result) {
-    const embedHtml = \`
-      <iframe 
-        src="\${result.embed_url}" 
-        width="100%" 
-        height="600" 
-        frameborder="0">
-      </iframe>
-    \`;
-    console.log(embedHtml);
-  }
-});
-
-// React Component Example
-function CustomerChatEmbed({ customerId, apiKey }) {
-  const [embedUrl, setEmbedUrl] = React.useState(null);
-  
-  React.useEffect(() => {
-    generateSSOToken(apiKey, customerId).then(result => {
-      if (result) setEmbedUrl(result.embed_url);
-    });
-  }, [customerId, apiKey]);
-  
-  if (!embedUrl) return <div>Loading...</div>;
-  
-  return (
-    <iframe 
-      src={embedUrl} 
-      width="100%" 
-      height="600" 
-      frameBorder="0"
-      style={{ border: '1px solid #e2e8f0', borderRadius: '8px' }}
-    />
-  );
-}`;
-
-  const getRubyCode = () => `# Install: gem install httparty
-require 'httparty'
-require 'json'
-
-def generate_sso_token(api_key, customer_id, scope = 'conversation')
-  url = '${projectUrl}/functions/v1/api-sso-generate-token'
-  
-  begin
-    response = HTTParty.post(
-      url,
-      headers: {
-        'x-api-key' => api_key,
-        'Content-Type' => 'application/json'
-      },
-      body: {
-        customer_id: customer_id,
-        scope: scope,
-        expires_in_minutes: 60
-      }.to_json
-    )
-    
-    return JSON.parse(response.body) if response.success?
-    puts "Error: #{response.code} - #{response.body}"
-    nil
-  rescue StandardError => e
-    puts "SSO Token Error: #{e.message}"
-    nil
-  end
-end
-
-# Usage Example
-api_key = 'YOUR_API_KEY'
-customer_id = 'CUSTOMER_ID'
-result = generate_sso_token(api_key, customer_id)
-
-if result
-  puts "<iframe src='#{result['embed_url']}' width='100%' height='600'></iframe>"
-end
-
-# Rails Controller Example
-class CustomersController < ApplicationController
-  def chat_embed
-    result = generate_sso_token(ENV['ALACARTE_API_KEY'], params[:customer_id])
-    @embed_url = result['embed_url'] if result
-  end
-end`;
-
-  const getCSharpCode = () => `// Install: dotnet add package Newtonsoft.Json
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-
-public class SSOTokenGenerator
-{
-    private readonly string _apiKey;
-    private readonly HttpClient _httpClient;
-    
-    public SSOTokenGenerator(string apiKey)
-    {
-        _apiKey = apiKey;
-        _httpClient = new HttpClient();
-    }
-    
-    public async Task<SSOTokenResponse> GenerateToken(
-        string customerId, 
-        string scope = "conversation",
-        int expiresInMinutes = 60)
-    {
-        var url = "${projectUrl}/functions/v1/api-sso-generate-token";
-        
-        var payload = new
-        {
-            customer_id = customerId,
-            scope = scope,
-            expires_in_minutes = expiresInMinutes
-        };
-        
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(
-                JsonConvert.SerializeObject(payload),
-                Encoding.UTF8,
-                "application/json"
-            )
-        };
-        request.Headers.Add("x-api-key", _apiKey);
-        
-        try
-        {
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<SSOTokenResponse>(content);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"SSO Token Error: {ex.Message}");
-            return null;
-        }
-    }
-}
-
-public class SSOTokenResponse
-{
-    public string Token { get; set; }
-    public string EmbedUrl { get; set; }
-    public DateTime ExpiresAt { get; set; }
-    public string Scope { get; set; }
-}
-
-// Usage Example
-var generator = new SSOTokenGenerator("YOUR_API_KEY");
-var result = await generator.GenerateToken("CUSTOMER_ID");
-
-if (result != null)
-{
-    var embedHtml = $@"
-        <iframe 
-            src=""{result.EmbedUrl}"" 
-            width=""100%"" 
-            height=""600"" 
-            frameborder=""0"">
-        </iframe>";
-    Console.WriteLine(embedHtml);
-}`;
-
-  const getCurlCode = () => `# Test SSO Token Generation
-curl -X POST '${projectUrl}/functions/v1/api-sso-generate-token' \\
-  -H 'x-api-key: YOUR_API_KEY' \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-    "customer_id": "CUSTOMER_ID",
-    "scope": "conversation",
-    "expires_in_minutes": 60
-  }'
-
-# Example Response:
-# {
-#   "token": "uuid-uuid-uuid-uuid",
-#   "embed_url": "${window.location.origin}/embed/conversation?token=...",
-#   "expires_at": "2025-10-17T12:00:00Z",
-#   "scope": "conversation",
-#   "customer_id": "uuid"
-# }
-
-# Test Token Validation
-curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN' \\
-  -H 'Content-Type: application/json'`;
+  const getCustomerIframe = (apiKey: string) => {
+    return `<iframe 
+  src="${embedBaseUrl}/embed/customer-inbox?apiKey=${apiKey}" 
+  width="100%" 
+  height="600" 
+  frameborder="0"
+  style="border: 1px solid #e2e8f0; border-radius: 8px;"
+></iframe>`;
+  };
 
   return (
     <div className="space-y-8">
-      {/* Setup Wizard CTA */}
-      {!showWizard && apiKeys.length === 0 && (
-        <Alert className="border-primary/50 bg-primary/5">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <AlertTitle className="text-lg">First time setting up the API?</AlertTitle>
-          <AlertDescription className="mt-2 space-y-3">
-            <p>Our step-by-step wizard will guide you through the entire setup process - no technical knowledge required!</p>
-            <Button onClick={() => setShowWizard(true)} size="lg" className="mt-2">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Start Setup Wizard
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Wizard Modal */}
-      <Dialog open={showWizard} onOpenChange={setShowWizard}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>API Setup Wizard</DialogTitle>
-            <DialogDescription>
-              We'll guide you through setting up your API integration step-by-step
-            </DialogDescription>
-          </DialogHeader>
-          <ApiSetupWizard 
-            onComplete={(features, key) => {
-              setShowWizard(false);
-              fetchApiKeys();
-              toast.success('Setup complete! You can now start using the API.');
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Complete API Documentation Notice */}
       <Alert>
-        <FileText className="h-4 w-4" />
-        <AlertTitle>Complete API Documentation</AlertTitle>
+        <Key className="h-4 w-4" />
+        <AlertTitle>Embed Your Dashboard</AlertTitle>
         <AlertDescription>
-          View the comprehensive API documentation including all endpoints, webhooks, examples, and integration guides in the{' '}
-          <a 
-            href="/api-docs" 
-            target="_blank"
-            className="font-medium underline underline-offset-4 hover:text-primary"
-          >
-            API Documentation
-          </a>
+          Generate API keys to embed your full dashboard or customer-specific chat windows into your own application or CRM.
         </AlertDescription>
       </Alert>
 
+      {/* Full Dashboard Key Generator */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>API Keys</span>
-            {apiKeys.length > 0 && (
-              <Button onClick={() => setShowWizard(true)} variant="outline" size="sm">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Setup Wizard
-              </Button>
-            )}
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-primary" />
+            Full Dashboard Embed
           </CardTitle>
           <CardDescription>
-            Generate and manage API keys for external integrations. All API endpoints require x-api-key header.
+            Create an API key to embed the complete dashboard with all conversations, exactly as shown in your app.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <Label htmlFor="keyName">Key Name</Label>
+              <Label htmlFor="fullKeyName">Key Name</Label>
               <Input
-                id="keyName"
-                placeholder="Production CRM"
+                id="fullKeyName"
+                placeholder="Production Dashboard Embed"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={generateApiKey}>
+              <Button onClick={generateFullDashboardKey}>
                 <Plus className="w-4 h-4 mr-2" />
-                Generate Key
+                Generate Full Dashboard Key
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {newApiKey && (
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Key className="w-4 h-4" />
-                  New API Key Generated
-                </CardTitle>
-                <CardDescription>
-                  Copy this key now. You won't be able to see it again.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Input
-                    readOnly
-                    type={showNewKey ? "text" : "password"}
-                    value={newApiKey}
-                    className="font-mono text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowNewKey(!showNewKey)}
-                  >
-                    {showNewKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(newApiKey)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      {/* Customer-Scoped Key Generator */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Customer-Specific Embed
+          </CardTitle>
+          <CardDescription>
+            Create an API key scoped to a specific customer. Only that customer's conversation will be accessible.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="customerKeyName">Key Name</Label>
+              <Input
+                id="customerKeyName"
+                placeholder="Customer Portal - John Doe"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer">Customer</Label>
+              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                <SelectTrigger id="customer">
+                  <SelectValue placeholder="Select a customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name} {customer.email ? `(${customer.email})` : customer.phone ? `(${customer.phone})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button onClick={generateCustomerScopedKey} className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Generate Customer-Scoped Key
+          </Button>
+        </CardContent>
+      </Card>
 
+      {/* New Key Display with Iframe Code */}
+      {newApiKey && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              {embedType === 'full' ? 'Full Dashboard' : 'Customer-Scoped'} API Key Generated
+            </CardTitle>
+            <CardDescription>
+              Copy this key and iframe code now. You won't be able to see the key again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* API Key */}
+            <div>
+              <Label>API Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  type={showNewKey ? "text" : "password"}
+                  value={newApiKey}
+                  className="font-mono text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowNewKey(!showNewKey)}
+                >
+                  {showNewKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(newApiKey)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Iframe Code */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Embed Code (Copy & Paste)</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(
+                    embedType === 'full' 
+                      ? getFullDashboardIframe(newApiKey) 
+                      : getCustomerIframe(newApiKey)
+                  )}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Iframe
+                </Button>
+              </div>
+              <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
+                <code>
+                  {embedType === 'full' 
+                    ? getFullDashboardIframe(newApiKey) 
+                    : getCustomerIframe(newApiKey)}
+                </code>
+              </pre>
+            </div>
+
+            <Alert>
+              <AlertDescription>
+                <strong>Security:</strong> Keep this API key secure. Anyone with this key can access 
+                {embedType === 'full' ? ' your full dashboard' : ' this customer\'s conversation'}.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* API Keys List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Embed API Keys</CardTitle>
+          <CardDescription>
+            Manage your existing embed API keys
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Scope</TableHead>
                   <TableHead>Key Prefix</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Last Used</TableHead>
                   <TableHead></TableHead>
@@ -543,13 +397,13 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
+                    <TableCell colSpan={7} className="text-center">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : apiKeys.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       No API keys created yet
                     </TableCell>
                   </TableRow>
@@ -557,27 +411,87 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
                   apiKeys.map((key) => (
                     <TableRow key={key.id}>
                       <TableCell className="font-medium">{key.name}</TableCell>
-                      <TableCell className="font-mono text-sm">{key.key_prefix}...</TableCell>
                       <TableCell>
-                        <Badge variant={key.is_active ? "default" : "secondary"}>
-                          {key.is_active ? "Active" : "Inactive"}
+                        <Badge variant={key.customer_id ? "secondary" : "default"}>
+                          {key.customer_id ? (
+                            <><User className="w-3 h-3 mr-1" /> Customer</>
+                          ) : (
+                            <><Monitor className="w-3 h-3 mr-1" /> Full Dashboard</>
+                          )}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm">
+                        {key.customer_id ? (
+                          <span className="text-muted-foreground">
+                            {key.customers?.name || 'Unknown Customer'}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">All Conversations</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{key.key_prefix}...</TableCell>
+                      <TableCell className="text-sm">
                         {new Date(key.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm">
                         {key.last_used_at
                           ? new Date(key.last_used_at).toLocaleDateString()
-                          : "Never"}
+                          : <span className="text-muted-foreground">Never</span>}
                       </TableCell>
                       <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View Code
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Embed Code for {key.name}</DialogTitle>
+                              <DialogDescription>
+                                Copy this iframe code to embed {key.customer_id ? 'the customer chat' : 'your full dashboard'}.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <Label>Iframe Code</Label>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(
+                                      key.customer_id 
+                                        ? getCustomerIframe(key.key_hash) 
+                                        : getFullDashboardIframe(key.key_hash)
+                                    )}
+                                  >
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy
+                                  </Button>
+                                </div>
+                                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
+                                  <code>
+                                    {key.customer_id 
+                                      ? getCustomerIframe(key.key_hash) 
+                                      : getFullDashboardIframe(key.key_hash)}
+                                  </code>
+                                </pre>
+                              </div>
+                              <Alert>
+                                <AlertDescription className="text-xs">
+                                  This code is secure and ready to use. The API key is embedded in the URL.
+                                </AlertDescription>
+                              </Alert>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => deleteApiKey(key.id)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -589,286 +503,33 @@ curl -X GET '${projectUrl}/functions/v1/api-sso-validate-token?token=YOUR_TOKEN'
         </CardContent>
       </Card>
 
+      {/* Usage Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle>API Documentation</CardTitle>
-          <CardDescription>Use these endpoints to integrate with your CRM</CardDescription>
+          <CardTitle>How to Use Embed Codes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="font-semibold">Authentication</h4>
-            <p className="text-sm text-muted-foreground">
-              Include your API key in the <code className="bg-muted px-1 py-0.5 rounded">x-api-key</code> header
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Get Conversations</h4>
-                <Badge>GET</Badge>
-              </div>
-              <code className="text-sm block bg-muted p-2 rounded">
-                {projectUrl}/functions/v1/api-conversations
-              </code>
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold mb-2">Full Dashboard Embed</h4>
               <p className="text-sm text-muted-foreground">
-                Add <code>?id=conversation_id</code> to get a specific conversation
+                Paste the Full Dashboard iframe code into your admin panel or internal tools. 
+                Users will see all conversations, contact lists, filters, and all features exactly as they appear in your app.
               </p>
             </div>
-
-            <div className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Get Customers</h4>
-                <Badge>GET</Badge>
-              </div>
-              <code className="text-sm block bg-muted p-2 rounded">
-                {projectUrl}/functions/v1/api-customers
-              </code>
+            <div>
+              <h4 className="font-semibold mb-2">Customer-Specific Embed</h4>
               <p className="text-sm text-muted-foreground">
-                Query params: <code>?id=customer_id</code>, <code>?email=email</code>, or <code>?phone=phone</code>
+                Paste the Customer-Specific iframe code into your CRM or customer portal. 
+                Users will only see that specific customer's conversation and cannot access other customers' data.
               </p>
             </div>
-
-            <div className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Send Message</h4>
-                <Badge variant="secondary">POST</Badge>
-              </div>
-              <code className="text-sm block bg-muted p-2 rounded">
-                {projectUrl}/functions/v1/api-send-message
-              </code>
-              <pre className="text-sm bg-muted p-2 rounded mt-2">
-{`{
-  "customerId": "uuid",
-  "channel": "whatsapp|email",
-  "content": "message text",
-  "subject": "email subject"
-}`}
-              </pre>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>SSO Integration Setup</CardTitle>
-          <CardDescription>
-            Embed conversations directly into your CRM or application with secure Single Sign-On
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Quick Start Guide */}
-          <div className="border-l-4 border-primary pl-4">
-            <h3 className="font-semibold text-lg mb-2">Quick Start Guide</h3>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Generate an API key above (if you haven't already)</li>
-              <li>Choose your tech stack and copy the SDK code below</li>
-              <li>Replace YOUR_API_KEY with your actual API key</li>
-              <li>Replace CUSTOMER_ID with your customer's ID</li>
-              <li>The SDK will generate a secure token and embed URL automatically</li>
-            </ol>
-          </div>
-
-          {/* SDK Snippets */}
-          <div>
-            <h3 className="font-semibold mb-4">SDK Code Snippets</h3>
-            <div className="space-y-4">
-              {/* PHP */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">PHP</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getPHPCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getPHPCode()}</code>
-                </pre>
-              </div>
-
-              {/* Python */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">Python</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getPythonCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getPythonCode()}</code>
-                </pre>
-              </div>
-
-              {/* Node.js */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">Node.js / JavaScript</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getNodeCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getNodeCode()}</code>
-                </pre>
-              </div>
-
-              {/* Ruby */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">Ruby</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getRubyCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getRubyCode()}</code>
-                </pre>
-              </div>
-
-              {/* C# / .NET */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">C# / .NET</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getCSharpCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getCSharpCode()}</code>
-                </pre>
-              </div>
-
-              {/* cURL */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-medium">cURL (Testing)</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(getCurlCode())}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </Button>
-                </div>
-                <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-xs">
-                  <code>{getCurlCode()}</code>
-                </pre>
-              </div>
-            </div>
-          </div>
-
-          {/* API Reference */}
-          <div className="border-t pt-6">
-            <h3 className="font-semibold text-lg mb-4">API Reference</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Generate Token Endpoint</h4>
-                <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Badge>POST</Badge>
-                    <code className="text-sm flex-1">{projectUrl}/functions/v1/api-sso-generate-token</code>
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Headers:</p>
-                    <code className="block bg-background p-2 rounded">x-api-key: YOUR_API_KEY</code>
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Request Body:</p>
-                    <pre className="bg-background p-2 rounded text-xs overflow-x-auto">
-{`{
-  "customer_id": "uuid",           // Required for "conversation" scope
-  "scope": "conversation",         // or "inbox" for full inbox view
-  "expires_in_minutes": 60,        // Optional, default 60
-  "metadata": {                    // Optional custom data
-    "user_id": "your-user-123",
-    "source": "crm"
-  }
-}`}
-                    </pre>
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Response:</p>
-                    <pre className="bg-background p-2 rounded text-xs overflow-x-auto">
-{`{
-  "token": "uuid-uuid-uuid-uuid",
-  "embed_url": "${window.location.origin}/embed/conversation?token=...",
-  "expires_at": "2025-10-17T12:00:00Z",
-  "scope": "conversation",
-  "customer_id": "uuid"
-}`}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Scope Options</h4>
-                <div className="grid gap-3">
-                  <div className="border rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <Badge variant="outline">conversation</Badge>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Single Customer View</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Embeds a specific customer's conversation. Perfect for CRM customer profiles.
-                          Requires <code className="text-xs bg-muted px-1 rounded">customer_id</code> in the request.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <Badge variant="outline">inbox</Badge>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Full Inbox View</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Embeds the complete conversation list with chat interface. Ideal for support dashboards.
-                          No <code className="text-xs bg-muted px-1 rounded">customer_id</code> needed.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Security Features</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Tokens are cryptographically secure and unique</li>
-                  <li>Tokens expire automatically (default 60 minutes)</li>
-                  <li>Each token is tied to your business account</li>
-                  <li>Tokens are validated server-side on every request</li>
-                  <li>Frozen accounts are automatically blocked</li>
-                </ul>
-              </div>
+            <div>
+              <h4 className="font-semibold mb-2">Security</h4>
+              <p className="text-sm text-muted-foreground">
+                All API keys are validated server-side. Customer-scoped keys enforce data isolation at the database level. 
+                Keys can be revoked instantly by deleting them from this page.
+              </p>
             </div>
           </div>
         </CardContent>
