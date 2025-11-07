@@ -102,7 +102,26 @@ serve(async (req) => {
       apiCalls.map(async ({ endpoint, type }) => {
         try {
           console.log(`Calling ${type} API:`, endpoint);
-          console.log(`Payload for ${type}:`, JSON.stringify(parsedData, null, 2));
+          
+          // Transform parsedData to lowercase keys and add file field
+          const requestPayload: Record<string, any> = {
+            file: attachment.url
+          };
+          
+          // Add fields based on service type
+          if (type === 'electricity' && parsedData?.bills?.electricity?.[0]) {
+            const elecData = parsedData.bills.electricity[0];
+            if (elecData.phone) requestPayload.phone = elecData.phone;
+            if (elecData.mprn) requestPayload.mprn = elecData.mprn;
+            if (elecData.mcc_type) requestPayload.mcc = elecData.mcc_type;
+            if (elecData.dg_type) requestPayload.dg = elecData.dg_type;
+          } else if (type === 'gas' && parsedData?.bills?.gas?.[0]) {
+            const gasData = parsedData.bills.gas[0];
+            if (gasData.phone) requestPayload.phone = gasData.phone;
+            if (gasData.gprn) requestPayload.gprn = gasData.gprn;
+          }
+          
+          console.log(`Payload for ${type}:`, JSON.stringify(requestPayload, null, 2));
           
           // THIS IS THE ACTUAL API CALL
           const apiResponse = await fetch(endpoint, {
@@ -111,7 +130,7 @@ serve(async (req) => {
               "Authorization": `Bearer ${ONEBILL_API_KEY}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify(parsedData)  // parsedData sent as-is
+            body: JSON.stringify(requestPayload)
           });
 
           let responseText = "";
