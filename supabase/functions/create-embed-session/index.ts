@@ -64,6 +64,17 @@ serve(async (req) => {
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+    // Determine site identifier (prefer metadata, then Origin/Referer, fallback)
+    const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const siteId = (metadata && (metadata.site_id || metadata.site || metadata.siteId)) || origin || 'embed_dashboard';
+
+    console.log('Creating embed session', {
+      business_id: keyRow.business_id,
+      permission_level: keyRow.permission_level,
+      siteId,
+      apiKeyId: keyRow.id,
+    });
+
     // Create embed session
     const { data: session, error: sessionErr } = await admin
       .from("embed_sessions")
@@ -72,7 +83,7 @@ serve(async (req) => {
         api_key_id: keyRow.id,
         session_token: sessionToken,
         permission_level: keyRow.permission_level,
-        site_id: 'embed_dashboard',
+        site_id: siteId,
         metadata: metadata || {},
         expires_at: expiresAt.toISOString(),
       })
