@@ -31,7 +31,7 @@ serve(async (req) => {
     // Load submission from DB to build payload if fields were not provided
     const { data: submission, error: submissionError } = await supabaseClient
       .from('onebill_submissions')
-      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name, extracted_fields, retry_count, max_retries, manual_payload_override')
+      .select('id, document_type, phone, mprn, gprn, mcc_type, dg_type, utility, read_value, unit, meter_make, meter_model, raw_text, file_url, file_name, extracted_fields, retry_count, max_retries, manual_payload_override, attachment_id')
       .eq('id', submissionId)
       .single();
 
@@ -170,8 +170,8 @@ serve(async (req) => {
     // Build request based on document type
     let response: Response;
 
-    if (documentType === 'electricity') {
-      console.log('Sending electricity data to OneBill with file attachment');
+    if (documentType === 'electricity' || documentType === 'gas') {
+      console.log(`Sending ${documentType} data to OneBill with file attachment and full parsed data`);
       
       const form = new FormData();
       
@@ -197,54 +197,71 @@ serve(async (req) => {
         );
       }
       
-      // Append metadata fields
-      if (fields.phone) form.append('phone', String(fields.phone));
-      if (fields.mprn) form.append('MPRN', String(fields.mprn));
-      if (fields.mcc_type) form.append('MCC', String(fields.mcc_type));
-      if (fields.dg_type) form.append('DG', String(fields.dg_type));
-      
-      console.log('Electricity form data:', { phone: fields.phone, MPRN: fields.mprn, MCC: fields.mcc_type, DG: fields.dg_type, file: fileName });
-      
-      response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${ONEBILL_API_KEY}`,
-        },
-        body: form,
-      });
-    } else if (documentType === 'gas') {
-      console.log('Sending gas data to OneBill with file attachment');
-      
-      const form = new FormData();
-      
-      // Fetch and append file
-      try {
-        const { blob } = await fetchFileAsBlob(fileUrl, fileName);
-        form.append('file', blob, fileName || 'bill.pdf');
-      } catch (e) {
-        const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
-        console.error(errorMsg, { fileUrl, error: e });
+      // Get the full parsed data from attachment_parse_results
+      let fullParsedData = null;
+      if (submission.attachment_id) {
+        const { data: parseResults } = await supabaseClient
+          .from('attachment_parse_results')
+          .select('parsed_data')
+          .eq('attachment_id', submission.attachment_id)
+          .single();
         
-        await supabaseClient
-          .from('onebill_submissions')
-          .update({ 
-            submission_status: 'failed',
-            error_message: errorMsg
-          })
-          .eq('id', submissionId);
-        
-        return new Response(
-          JSON.stringify({ success: false, error: errorMsg }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        if (parseResults?.parsed_data) {
+          fullParsedData = parseResults.parsed_data;
+          console.log('Found parsed data from attachment:', { hasData: !!fullParsedData });
+        }
       }
       
-      // Append metadata fields
-      if (fields.phone) form.append('phone', String(fields.phone));
-      if (fields.gprn) form.append('gprn', String(fields.gprn));
-      
-      console.log('Gas form data:', { phone: fields.phone, gprn: fields.gprn, file: fileName });
+      // If we have full parsed data, inject the customer phone and send it
+      if (fullParsedData && typeof fullParsedData === 'object') {
+        // Inject customer phone number into the parsed data structure
+        if (!fullParsedData.bills) fullParsedData.bills = {};
+        if (!fullParsedData.bills.cus_details) fullParsedData.bills.cus_details = [{}];
+        if (!fullParsedData.bills.cus_details[0]) fullParsedData.bills.cus_details[0] = {};
+        
+        // Use normalized phone from fields or submission
+        const customerPhone = fields.phone || normalizePhone(submission.phone);
+        if (customerPhone) {
+          fullParsedData.bills.cus_details[0].phone = customerPhone;
+        }
+        
+        // Append the full JSON data
+        form.append('data', JSON.stringify(fullParsedData));
+        console.log(`${documentType} payload includes full parsed data with injected phone:`, customerPhone);
+      } else {
+        // Fallback: send minimal fields if no parsed data available
+        console.warn('No full parsed data available, sending minimal fields');
+        const minimalData = {
+          bills: {
+            cus_details: [{
+              phone: fields.phone || normalizePhone(submission.phone)
+            }]
+          }
+        };
+        
+        if (documentType === 'electricity') {
+          minimalData.bills.electricity = [{
+            electricity_details: {
+              meter_details: {
+                mprn: fields.mprn || submission.mprn,
+                mcc: fields.mcc_type || submission.mcc_type,
+                dg: fields.dg_type || submission.dg_type
+              }
+            }
+          }];
+        } else if (documentType === 'gas') {
+          minimalData.bills.gas = [{
+            gas_details: {
+              meter_details: {
+                gprn: fields.gprn || submission.gprn
+              }
+            }
+          }];
+        }
+        
+        form.append('data', JSON.stringify(minimalData));
+        console.log(`${documentType} minimal payload:`, minimalData);
+      }
       
       response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -254,7 +271,7 @@ serve(async (req) => {
         },
         body: form,
       });
-    } else {
+    } else if (documentType === 'meter') {
       // For meter: use multipart/form-data with file upload
       console.log('Sending multipart/form-data to OneBill for meter reading');
       
