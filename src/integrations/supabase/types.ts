@@ -1033,6 +1033,9 @@ export type Database = {
           business_id: string
           company_logo: string | null
           company_name: string | null
+          customer_webhook_enabled: boolean | null
+          customer_webhook_secret: string | null
+          customer_webhook_url: string | null
           email_bundle_window_minutes: number | null
           email_html_template: string | null
           email_signature: string | null
@@ -1053,6 +1056,9 @@ export type Database = {
           business_id: string
           company_logo?: string | null
           company_name?: string | null
+          customer_webhook_enabled?: boolean | null
+          customer_webhook_secret?: string | null
+          customer_webhook_url?: string | null
           email_bundle_window_minutes?: number | null
           email_html_template?: string | null
           email_signature?: string | null
@@ -1073,6 +1079,9 @@ export type Database = {
           business_id?: string
           company_logo?: string | null
           company_name?: string | null
+          customer_webhook_enabled?: boolean | null
+          customer_webhook_secret?: string | null
+          customer_webhook_url?: string | null
           email_bundle_window_minutes?: number | null
           email_html_template?: string | null
           email_signature?: string | null
