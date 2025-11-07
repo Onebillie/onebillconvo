@@ -97,6 +97,20 @@ serve(async (req) => {
         result = await handleDeleteConversation(admin, businessId, data);
         break;
       
+      case 'toggle_ai':
+        if (permissionLevel !== 'admin') {
+          return new Response(JSON.stringify({ error: "permission_denied" }), { status: 403, headers: corsHeaders });
+        }
+        result = await handleToggleAI(admin, businessId, data);
+        break;
+      
+      case 'sync_emails':
+        if (permissionLevel !== 'admin') {
+          return new Response(JSON.stringify({ error: "permission_denied" }), { status: 403, headers: corsHeaders });
+        }
+        result = await handleSyncEmails(admin, businessId);
+        break;
+      
       default:
         return new Response(JSON.stringify({ error: "unknown_operation" }), {
           status: 400,
@@ -274,4 +288,56 @@ async function handleDeleteConversation(admin: any, businessId: string, data: an
   if (error) throw error;
 
   return { conversation_id, deleted: true };
+}
+
+async function handleToggleAI(admin: any, businessId: string, data: any) {
+  const { enabled } = data;
+  
+  const { error } = await admin
+    .from("business_settings")
+    .upsert({
+      business_id: businessId,
+      ai_enabled: enabled,
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: "business_id",
+    });
+  
+  if (error) throw error;
+  
+  console.log(`Toggled AI to ${enabled} for business ${businessId}`);
+  return { success: true, ai_enabled: enabled };
+}
+
+async function handleSyncEmails(admin: any, businessId: string) {
+  // Get all active email accounts for this business
+  const { data: accounts, error: accountsError } = await admin
+    .from("email_accounts")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("is_active", true);
+  
+  if (accountsError) throw accountsError;
+  
+  if (!accounts || accounts.length === 0) {
+    return { success: true, message: "No active email accounts to sync", accounts_synced: 0 };
+  }
+  
+  // Trigger sync for each account (fire and forget)
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  for (const account of accounts) {
+    fetch(`${supabaseUrl}/functions/v1/email-sync`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ account_id: account.id }),
+    }).catch(err => console.error(`Failed to trigger sync for account ${account.id}:`, err));
+  }
+  
+  console.log(`Triggered email sync for ${accounts.length} accounts in business ${businessId}`);
+  return { success: true, accounts_synced: accounts.length };
 }

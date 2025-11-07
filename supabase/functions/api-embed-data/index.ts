@@ -67,8 +67,74 @@ serve(async (req) => {
 
     const resource = body.resource || url.searchParams.get("resource");
 
-    if (resource === "conversations") {
+    // Resource: status_tags
+    if (resource === "status_tags") {
       const { data, error } = await admin
+        .from("conversation_status_tags")
+        .select("id, name, color, icon")
+        .eq("business_id", keyRow.business_id)
+        .order("name");
+      
+      if (error) {
+        return new Response(JSON.stringify({ error: "failed_to_load_status_tags" }), { status: 500, headers: corsHeaders });
+      }
+      return new Response(JSON.stringify({ status_tags: data || [] }), { status: 200, headers: corsHeaders });
+    }
+
+    // Resource: staff
+    if (resource === "staff") {
+      const { data, error } = await admin
+        .from("business_users")
+        .select("user_id, profiles!inner(id, full_name, avatar, department)")
+        .eq("business_id", keyRow.business_id);
+      
+      if (error) {
+        return new Response(JSON.stringify({ error: "failed_to_load_staff" }), { status: 500, headers: corsHeaders });
+      }
+      const staff = (data || []).map((bu: any) => ({
+        id: bu.profiles.id,
+        full_name: bu.profiles.full_name,
+        avatar: bu.profiles.avatar,
+        department: bu.profiles.department,
+      }));
+      return new Response(JSON.stringify({ staff }), { status: 200, headers: corsHeaders });
+    }
+
+    // Resource: counts (unread, total, etc.)
+    if (resource === "counts") {
+      const { count: totalCount } = await admin
+        .from("conversations")
+        .select("*", { count: 'exact', head: true })
+        .eq("business_id", keyRow.business_id)
+        .eq("is_archived", false);
+      
+      const { data: unreadData } = await admin
+        .from("conversations")
+        .select("id, messages!inner(id, is_read, direction)")
+        .eq("business_id", keyRow.business_id)
+        .eq("is_archived", false)
+        .eq("messages.direction", "inbound")
+        .eq("messages.is_read", false);
+      
+      const unreadCount = new Set(unreadData?.map((c: any) => c.id)).size;
+      
+      return new Response(JSON.stringify({ counts: { total: totalCount || 0, unread: unreadCount } }), { status: 200, headers: corsHeaders });
+    }
+
+    if (resource === "conversations") {
+      // Extract filter parameters
+      const filters = {
+        search: body.search || url.searchParams.get("search") || "",
+        unread: body.unread === true || url.searchParams.get("unread") === "true",
+        statusIds: body.statusIds || (url.searchParams.get("statusIds") ? url.searchParams.get("statusIds")!.split(",") : []),
+        platforms: body.platforms || (url.searchParams.get("platforms") ? url.searchParams.get("platforms")!.split(",") : []),
+        assignedTo: body.assignedTo || url.searchParams.get("assignedTo") || null,
+        sortBy: body.sortBy || url.searchParams.get("sortBy") || "newest",
+        dateFrom: body.dateFrom || url.searchParams.get("dateFrom") || null,
+        dateTo: body.dateTo || url.searchParams.get("dateTo") || null,
+      };
+
+      let query = admin
         .from("conversations")
         .select(`
           id, 
@@ -81,15 +147,50 @@ serve(async (req) => {
           updated_at,
           priority,
           metadata,
-          customer:customers(id, name, email, phone, whatsapp_phone, avatar, last_contact_method),
+          customer:customers!inner(id, name, first_name, last_name, email, phone, whatsapp_phone, avatar, last_contact_method),
           assigned_user:profiles!fk_conversations_assigned_to(id, full_name, department),
           conversation_statuses:conversation_statuses(status_tag_id, conversation_status_tags(id, name, color)),
-          last_message:messages!conversation_id(content, subject, platform, direction, created_at)
+          messages!messages_conversation_id_fkey(id, content, subject, platform, direction, created_at, is_read)
         `) 
         .eq("business_id", keyRow.business_id)
-        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .eq("is_archived", false);
+
+      // Apply status filter
+      if (filters.statusIds.length > 0) {
+        query = query.in("status_tag_id", filters.statusIds);
+      }
+
+      // Apply assigned filter
+      if (filters.assignedTo) {
+        if (filters.assignedTo === "unassigned") {
+          query = query.is("assigned_to", null);
+        } else {
+          query = query.eq("assigned_to", filters.assignedTo);
+        }
+      }
+
+      // Apply date range
+      if (filters.dateFrom) {
+        query = query.gte("updated_at", filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query = query.lte("updated_at", filters.dateTo);
+      }
+
+      // Apply search (customer name, email, phone)
+      if (filters.search) {
+        query = query.or(`customers.name.ilike.%${filters.search}%,customers.phone.ilike.%${filters.search}%,customers.email.ilike.%${filters.search}%`);
+      }
+
+      // Sorting
+      const ascending = filters.sortBy === "oldest";
+      query = query
+        .order("last_message_at", { ascending, nullsFirst: false })
         .order("created_at", { foreignTable: "messages", ascending: false })
-        .limit(1, { foreignTable: "messages" });
+        .limit(50)
+        .limit(5, { foreignTable: "messages" });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("api-embed-data conversations error", error);
@@ -99,16 +200,35 @@ serve(async (req) => {
         });
       }
 
-      // Normalize shape: last_message -> single object, status_tags array
-      const normalized = (data || []).map((c: any) => ({
-        ...c,
-        last_message: Array.isArray(c.last_message) ? c.last_message[0] || null : c.last_message || null,
-        status_tags: (c.conversation_statuses || []).map((s: any) => ({
-          id: s.conversation_status_tags?.id,
-          name: s.conversation_status_tags?.name,
-          color: s.conversation_status_tags?.color,
-        })),
-      }));
+      // Deduplicate and normalize
+      const uniqueConvs = (data || []).reduce((acc: any[], conv: any) => {
+        if (!acc.find(c => c.id === conv.id)) acc.push(conv);
+        return acc;
+      }, []);
+
+      const normalized = uniqueConvs.map((c: any) => {
+        const messages = c.messages || [];
+        const unreadCount = messages.filter((m: any) => m.direction === "inbound" && !m.is_read).length;
+        const lastMsg = messages[0] || null;
+
+        return {
+          ...c,
+          customer: c.customer,
+          unread_count: unreadCount,
+          last_message: lastMsg ? {
+            content: lastMsg.content,
+            subject: lastMsg.subject,
+            platform: lastMsg.platform,
+            direction: lastMsg.direction,
+            created_at: lastMsg.created_at,
+          } : null,
+          status_tags: (c.conversation_statuses || []).map((s: any) => ({
+            id: s.conversation_status_tags?.id,
+            name: s.conversation_status_tags?.name,
+            color: s.conversation_status_tags?.color,
+          })),
+        };
+      });
 
       return new Response(JSON.stringify({ conversations: normalized }), { status: 200, headers: corsHeaders });
     }
