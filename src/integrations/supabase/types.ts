@@ -669,6 +669,7 @@ export type Database = {
           business_id: string | null
           created_at: string | null
           created_by: string | null
+          customer_id: string | null
           expires_at: string | null
           id: string
           is_active: boolean | null
@@ -685,6 +686,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          customer_id?: string | null
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -701,6 +703,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          customer_id?: string | null
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -719,6 +722,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_customer_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]

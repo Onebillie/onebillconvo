@@ -38,19 +38,26 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    // Validate API key and get business
+    // Validate API key and get business + customer scope
     const { data: keyRow, error: keyErr } = await admin
       .from("api_keys")
-      .select("business_id, is_active, expires_at")
+      .select("business_id, customer_id, is_active, expires_at, permission_level")
       .eq("key_hash", apiKey)
       .single();
 
     if (keyErr || !keyRow || !keyRow.is_active || (keyRow.expires_at && new Date(keyRow.expires_at) < new Date())) {
+      console.error("Invalid API key:", keyErr?.message || "Key not found or inactive");
       return new Response(JSON.stringify({ error: "invalid_api_key" }), {
         status: 401,
         headers: corsHeaders,
       });
     }
+
+    console.log("API key validated:", {
+      business_id: keyRow.business_id,
+      customer_id: keyRow.customer_id,
+      permission_level: keyRow.permission_level,
+    });
 
     // Update last_used_at (best effort)
     await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("key_hash", apiKey);
@@ -102,13 +109,20 @@ serve(async (req) => {
 
     // Resource: counts (unread, total, etc.)
     if (resource === "counts") {
-      const { count: totalCount } = await admin
+      let totalQuery = admin
         .from("conversations")
         .select("*", { count: 'exact', head: true })
         .eq("business_id", keyRow.business_id)
         .eq("is_archived", false);
       
-      const { data: unreadData } = await admin
+      // Apply customer scope if present
+      if (keyRow.customer_id) {
+        totalQuery = totalQuery.eq("customer_id", keyRow.customer_id);
+      }
+      
+      const { count: totalCount } = await totalQuery;
+      
+      let unreadQuery = admin
         .from("conversations")
         .select("id, messages!inner(id, is_read, direction)")
         .eq("business_id", keyRow.business_id)
@@ -116,6 +130,12 @@ serve(async (req) => {
         .eq("messages.direction", "inbound")
         .eq("messages.is_read", false);
       
+      // Apply customer scope if present
+      if (keyRow.customer_id) {
+        unreadQuery = unreadQuery.eq("customer_id", keyRow.customer_id);
+      }
+      
+      const { data: unreadData } = await unreadQuery;
       const unreadCount = new Set(unreadData?.map((c: any) => c.id)).size;
       
       return new Response(JSON.stringify({ counts: { total: totalCount || 0, unread: unreadCount } }), { status: 200, headers: corsHeaders });
@@ -154,6 +174,12 @@ serve(async (req) => {
         `) 
         .eq("business_id", keyRow.business_id)
         .eq("is_archived", false);
+
+      // CRITICAL: Apply customer scope if present
+      if (keyRow.customer_id) {
+        console.log("Scoping conversations to customer_id:", keyRow.customer_id);
+        query = query.eq("customer_id", keyRow.customer_id);
+      }
 
       // Apply status filter
       if (filters.statusIds.length > 0) {
@@ -230,6 +256,7 @@ serve(async (req) => {
         };
       });
 
+      console.log(`Returning ${normalized.length} conversations for business ${keyRow.business_id}${keyRow.customer_id ? ` scoped to customer ${keyRow.customer_id}` : ''}`);
       return new Response(JSON.stringify({ conversations: normalized }), { status: 200, headers: corsHeaders });
     }
 
@@ -240,15 +267,25 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "missing_conversation_id" }), { status: 400, headers: corsHeaders });
       }
 
-      // Ensure conversation belongs to the API key's business
-      const { data: conv, error: convErr } = await admin
+      // Ensure conversation belongs to the API key's business AND customer scope
+      let convQuery = admin
         .from("conversations")
-        .select("id")
+        .select("id, customer_id")
         .eq("id", conversationId)
-        .eq("business_id", keyRow.business_id)
-        .single();
+        .eq("business_id", keyRow.business_id);
+      
+      // CRITICAL: If key is customer-scoped, verify conversation belongs to that customer
+      if (keyRow.customer_id) {
+        convQuery = convQuery.eq("customer_id", keyRow.customer_id);
+      }
+      
+      const { data: conv, error: convErr } = await convQuery.single();
 
       if (convErr || !conv) {
+        console.error("E_EMBED_SCOPE_VIOLATION: Conversation not found or access denied", {
+          conversation_id: conversationId,
+          customer_id: keyRow.customer_id,
+        });
         return new Response(JSON.stringify({ error: "conversation_not_found" }), { status: 404, headers: corsHeaders });
       }
 

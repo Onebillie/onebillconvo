@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json"
 };
@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const sessionToken = req.headers.get("x-session-token");
-    if (!sessionToken) {
-      return new Response(JSON.stringify({ error: "missing_session_token" }), {
+    const apiKey = req.headers.get("x-api-key");
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "missing_api_key" }), {
         status: 401,
         headers: corsHeaders,
       });
@@ -45,69 +45,67 @@ serve(async (req) => {
       });
     }
 
-    // Validate session based on required permission for operation
-    let requiredPermission = 'read_only';
-    if (['send_message', 'update_status', 'assign_conversation'].includes(operation)) {
-      requiredPermission = 'agent';
-    }
-    if (['delete_conversation', 'manage_settings'].includes(operation)) {
-      requiredPermission = 'admin';
-    }
+    // Validate API key and get business + customer scope + permission level
+    const { data: keyRow, error: keyErr } = await admin
+      .from("api_keys")
+      .select("business_id, customer_id, permission_level, is_active, expires_at")
+      .eq("key_hash", apiKey)
+      .single();
 
-    const { data: validationResult } = await admin.rpc('is_valid_embed_session', {
-      _session_token: sessionToken,
-      _required_permission: requiredPermission
-    });
-
-    const sessionValid = validationResult?.[0];
-    
-    if (!sessionValid?.valid) {
-      return new Response(JSON.stringify({ error: "invalid_session_or_insufficient_permissions" }), {
-        status: 403,
+    if (keyErr || !keyRow || !keyRow.is_active || (keyRow.expires_at && new Date(keyRow.expires_at) < new Date())) {
+      return new Response(JSON.stringify({ error: "invalid_api_key" }), {
+        status: 401,
         headers: corsHeaders,
       });
     }
 
-    const businessId = sessionValid.business_id;
-    const permissionLevel = sessionValid.permission_level;
+    const businessId = keyRow.business_id;
+    const customerScope = keyRow.customer_id;
+    const permissionLevel = keyRow.permission_level;
 
-    console.log(`Embed operation: ${operation} for business ${businessId} with ${permissionLevel} permission`);
+    console.log(`Embed operation: ${operation} for business ${businessId}${customerScope ? ` (customer-scoped: ${customerScope})` : ''} with ${permissionLevel} permission`);
+
+    // Permission checks
+    const writeOps = ['send_message', 'update_status', 'assign_conversation', 'create_task'];
+    const adminOps = ['delete_conversation', 'toggle_ai', 'sync_emails'];
+    
+    if (writeOps.includes(operation) && permissionLevel === 'read_only') {
+      return new Response(JSON.stringify({ error: "permission_denied_read_only" }), { status: 403, headers: corsHeaders });
+    }
+    
+    if (adminOps.includes(operation) && permissionLevel !== 'admin') {
+      return new Response(JSON.stringify({ error: "permission_denied_requires_admin" }), { status: 403, headers: corsHeaders });
+    }
 
     // Handle different operations
     let result;
     
     switch (operation) {
       case 'send_message':
-        result = await handleSendMessage(admin, businessId, data);
+        result = await handleSendMessage(admin, businessId, customerScope, data);
         break;
       
       case 'update_status':
-        result = await handleUpdateStatus(admin, businessId, data);
+        result = await handleUpdateStatus(admin, businessId, customerScope, data);
         break;
       
       case 'assign_conversation':
-        result = await handleAssignConversation(admin, businessId, data);
+        result = await handleAssignConversation(admin, businessId, customerScope, data);
         break;
       
       case 'create_task':
-        result = await handleCreateTask(admin, businessId, data);
+        result = await handleCreateTask(admin, businessId, customerScope, data);
         break;
       
       case 'delete_conversation':
-        result = await handleDeleteConversation(admin, businessId, data);
+        result = await handleDeleteConversation(admin, businessId, customerScope, data);
         break;
       
       case 'toggle_ai':
-        if (permissionLevel !== 'admin') {
-          return new Response(JSON.stringify({ error: "permission_denied" }), { status: 403, headers: corsHeaders });
-        }
         result = await handleToggleAI(admin, businessId, data);
         break;
       
       case 'sync_emails':
-        if (permissionLevel !== 'admin') {
-          return new Response(JSON.stringify({ error: "permission_denied" }), { status: 403, headers: corsHeaders });
-        }
         result = await handleSyncEmails(admin, businessId);
         break;
       
@@ -132,18 +130,24 @@ serve(async (req) => {
   }
 });
 
-async function handleSendMessage(admin: any, businessId: string, data: any) {
+async function handleSendMessage(admin: any, businessId: string, customerScope: string | null, data: any) {
   const { conversation_id, content, attachments } = data;
 
-  // Verify conversation belongs to business
-  const { data: conv } = await admin
+  // Verify conversation belongs to business AND customer scope
+  let convQuery = admin
     .from("conversations")
-    .select("id")
+    .select("id, customer_id")
     .eq("id", conversation_id)
-    .eq("business_id", businessId)
-    .single();
+    .eq("business_id", businessId);
+  
+  if (customerScope) {
+    convQuery = convQuery.eq("customer_id", customerScope);
+  }
+  
+  const { data: conv } = await convQuery.single();
 
   if (!conv) {
+    console.error("E_EMBED_SCOPE_VIOLATION: send_message denied", { conversation_id, customerScope });
     throw new Error("Conversation not found or access denied");
   }
 
@@ -178,18 +182,24 @@ async function handleSendMessage(admin: any, businessId: string, data: any) {
   return message;
 }
 
-async function handleUpdateStatus(admin: any, businessId: string, data: any) {
+async function handleUpdateStatus(admin: any, businessId: string, customerScope: string | null, data: any) {
   const { conversation_id, status_tag_id } = data;
 
-  // Verify conversation belongs to business
-  const { data: conv } = await admin
+  // Verify conversation belongs to business AND customer scope
+  let convQuery = admin
     .from("conversations")
-    .select("id")
+    .select("id, customer_id")
     .eq("id", conversation_id)
-    .eq("business_id", businessId)
-    .single();
+    .eq("business_id", businessId);
+  
+  if (customerScope) {
+    convQuery = convQuery.eq("customer_id", customerScope);
+  }
+  
+  const { data: conv } = await convQuery.single();
 
   if (!conv) {
+    console.error("E_EMBED_SCOPE_VIOLATION: update_status denied", { conversation_id, customerScope });
     throw new Error("Conversation not found or access denied");
   }
 
@@ -205,18 +215,24 @@ async function handleUpdateStatus(admin: any, businessId: string, data: any) {
   return { conversation_id, status_tag_id };
 }
 
-async function handleAssignConversation(admin: any, businessId: string, data: any) {
+async function handleAssignConversation(admin: any, businessId: string, customerScope: string | null, data: any) {
   const { conversation_id, user_id } = data;
 
-  // Verify conversation belongs to business
-  const { data: conv } = await admin
+  // Verify conversation belongs to business AND customer scope
+  let convQuery = admin
     .from("conversations")
-    .select("id")
+    .select("id, customer_id")
     .eq("id", conversation_id)
-    .eq("business_id", businessId)
-    .single();
+    .eq("business_id", businessId);
+  
+  if (customerScope) {
+    convQuery = convQuery.eq("customer_id", customerScope);
+  }
+  
+  const { data: conv } = await convQuery.single();
 
   if (!conv) {
+    console.error("E_EMBED_SCOPE_VIOLATION: assign_conversation denied", { conversation_id, customerScope });
     throw new Error("Conversation not found or access denied");
   }
 
@@ -230,18 +246,24 @@ async function handleAssignConversation(admin: any, businessId: string, data: an
   return { conversation_id, assigned_to: user_id };
 }
 
-async function handleCreateTask(admin: any, businessId: string, data: any) {
+async function handleCreateTask(admin: any, businessId: string, customerScope: string | null, data: any) {
   const { conversation_id, customer_id, title, description, priority, due_date, assigned_to } = data;
 
-  // Verify conversation belongs to business
-  const { data: conv } = await admin
+  // Verify conversation belongs to business AND customer scope
+  let convQuery = admin
     .from("conversations")
-    .select("id")
+    .select("id, customer_id")
     .eq("id", conversation_id)
-    .eq("business_id", businessId)
-    .single();
+    .eq("business_id", businessId);
+  
+  if (customerScope) {
+    convQuery = convQuery.eq("customer_id", customerScope);
+  }
+  
+  const { data: conv } = await convQuery.single();
 
   if (!conv) {
+    console.error("E_EMBED_SCOPE_VIOLATION: create_task denied", { conversation_id, customerScope });
     throw new Error("Conversation not found or access denied");
   }
 
@@ -265,18 +287,24 @@ async function handleCreateTask(admin: any, businessId: string, data: any) {
   return task;
 }
 
-async function handleDeleteConversation(admin: any, businessId: string, data: any) {
+async function handleDeleteConversation(admin: any, businessId: string, customerScope: string | null, data: any) {
   const { conversation_id } = data;
 
-  // Verify conversation belongs to business
-  const { data: conv } = await admin
+  // Verify conversation belongs to business AND customer scope
+  let convQuery = admin
     .from("conversations")
-    .select("id")
+    .select("id, customer_id")
     .eq("id", conversation_id)
-    .eq("business_id", businessId)
-    .single();
+    .eq("business_id", businessId);
+  
+  if (customerScope) {
+    convQuery = convQuery.eq("customer_id", customerScope);
+  }
+  
+  const { data: conv } = await convQuery.single();
 
   if (!conv) {
+    console.error("E_EMBED_SCOPE_VIOLATION: delete_conversation denied", { conversation_id, customerScope });
     throw new Error("Conversation not found or access denied");
   }
 
