@@ -106,34 +106,40 @@ serve(async (req) => {
         try {
           console.log(`Calling ${type} API:`, endpoint);
           
-          // Transform parsedData to lowercase keys and add file field
-          const requestPayload: Record<string, any> = {
-            file: attachment.url
-          };
+          // Download the file from Supabase storage
+          const fileResponse = await fetch(attachment.url);
+          if (!fileResponse.ok) {
+            throw new Error(`Failed to download file: ${fileResponse.statusText}`);
+          }
+          const fileBlob = await fileResponse.blob();
+          
+          // Create FormData for multipart/form-data request
+          const formData = new FormData();
+          formData.append('file', fileBlob, attachment.filename);
           
           // Add fields based on service type
           if (type === 'electricity' && parsedData?.bills?.electricity?.[0]) {
             const elecData = parsedData.bills.electricity[0];
-            if (elecData.phone) requestPayload.phone = elecData.phone;
-            if (elecData.mprn) requestPayload.mprn = elecData.mprn;
-            if (elecData.mcc_type) requestPayload.mcc = elecData.mcc_type;
-            if (elecData.dg_type) requestPayload.dg = elecData.dg_type;
+            if (elecData.phone) formData.append('phone', elecData.phone);
+            if (elecData.mprn) formData.append('mprn', elecData.mprn);
+            if (elecData.mcc_type) formData.append('mcc_type', elecData.mcc_type);
+            if (elecData.dg_type) formData.append('dg_type', elecData.dg_type);
           } else if (type === 'gas' && parsedData?.bills?.gas?.[0]) {
             const gasData = parsedData.bills.gas[0];
-            if (gasData.phone) requestPayload.phone = gasData.phone;
-            if (gasData.gprn) requestPayload.gprn = gasData.gprn;
+            if (gasData.phone) formData.append('phone', gasData.phone);
+            if (gasData.gprn) formData.append('gprn', gasData.gprn);
           }
           
-          console.log(`Payload for ${type}:`, JSON.stringify(requestPayload, null, 2));
+          console.log(`Sending ${type} with form fields`);
           
-          // THIS IS THE ACTUAL API CALL
+          // THIS IS THE ACTUAL API CALL - multipart/form-data
           const apiResponse = await fetch(endpoint, {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${ONEBILL_API_KEY}`,
-              "Content-Type": "application/json"
+              // Don't set Content-Type - FormData sets it automatically with boundary
             },
-            body: JSON.stringify(requestPayload)
+            body: formData
           });
 
           let responseText = "";
