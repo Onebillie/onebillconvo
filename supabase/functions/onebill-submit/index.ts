@@ -47,11 +47,19 @@ serve(async (req) => {
     const fileUrl = bodyFileUrl || submission.file_url;
     const fileName = bodyFileName || submission.file_name;
 
-    // Helper function to normalize phone number (remove spaces)
+    // Helper function to normalize phone number to Irish local format (0XXXXXXXXX)
     const normalizePhone = (phone: string | null | undefined): string | null => {
       if (!phone) return null;
-      // Remove all spaces and keep only + and digits
-      return phone.replace(/\s+/g, '');
+      // Remove all spaces, hyphens, and parentheses
+      let cleaned = phone.replace(/[\s\-\(\)]/g, '');
+      // Convert international format to local format
+      // +353858007335 or 353858007335 -> 0858007335
+      if (cleaned.startsWith('+353')) {
+        cleaned = '0' + cleaned.substring(4);
+      } else if (cleaned.startsWith('353')) {
+        cleaned = '0' + cleaned.substring(3);
+      }
+      return cleaned;
     };
 
     // Merge fields: prefer body values, fall back to DB columns
