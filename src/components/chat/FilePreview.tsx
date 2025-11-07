@@ -352,7 +352,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     
     // Add the ACTUAL phone that will be/was used for submission
     if (actualPhone) {
-      payload.phone = actualPhone;
+      payload.phone = formatPhoneForDisplay(actualPhone);
     }
     
     // Check for electricity data
