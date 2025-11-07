@@ -3208,42 +3208,65 @@ export type Database = {
       }
       embed_sessions: {
         Row: {
+          api_key_id: string | null
+          business_id: string | null
           conversation_id: string | null
           created_at: string | null
           customer_id: string | null
           expires_at: string
           id: string
           last_presence_at: string | null
+          last_used_at: string | null
           metadata: Json | null
           permission_level: Database["public"]["Enums"]["api_permission_level"]
           session_token: string
           site_id: string
         }
         Insert: {
+          api_key_id?: string | null
+          business_id?: string | null
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           expires_at: string
           id?: string
           last_presence_at?: string | null
+          last_used_at?: string | null
           metadata?: Json | null
           permission_level?: Database["public"]["Enums"]["api_permission_level"]
           session_token: string
           site_id: string
         }
         Update: {
+          api_key_id?: string | null
+          business_id?: string | null
           conversation_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           expires_at?: string
           id?: string
           last_presence_at?: string | null
+          last_used_at?: string | null
           metadata?: Json | null
           permission_level?: Database["public"]["Enums"]["api_permission_level"]
           session_token?: string
           site_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "embed_sessions_api_key_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "embed_sessions_business_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "embed_sessions_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -7284,17 +7307,27 @@ export type Database = {
         Returns: boolean
       }
       is_onebillchat_user: { Args: never; Returns: boolean }
-      is_valid_embed_session: {
-        Args: {
-          _required_permission?: Database["public"]["Enums"]["api_permission_level"]
-          _session_token: string
-        }
-        Returns: {
-          business_id: string
-          permission_level: Database["public"]["Enums"]["api_permission_level"]
-          valid: boolean
-        }[]
-      }
+      is_valid_embed_session:
+        | {
+            Args: {
+              _required_permission?: Database["public"]["Enums"]["api_permission_level"]
+              _session_token: string
+            }
+            Returns: {
+              business_id: string
+              permission_level: Database["public"]["Enums"]["api_permission_level"]
+              valid: boolean
+            }[]
+          }
+        | {
+            Args: { token: string }
+            Returns: {
+              business_id: string
+              is_valid: boolean
+              permission_level: string
+              required_permission: string
+            }[]
+          }
       mark_conversation_resolved: {
         Args: {
           _conversation_id: string
