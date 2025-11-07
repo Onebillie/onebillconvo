@@ -429,267 +429,43 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
       );
     }
     
-    // For meter reading (file upload), show FormData approach
-    if (classification === 'meter') {
-      return (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold mb-2">Meter Reading Submission</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`curl -X POST ${endpoint} \\
-  -F "phone=${actualPhone || '353XXXXXXXXX'}" \\
-  -F "file=@/path/to/meter-image.jpg"`}
-            </pre>
-          </div>
-          
-          <div>
-            <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
-            <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`const formData = new FormData();
-formData.append('phone', '${actualPhone || '353XXXXXXXXX'}');
-formData.append('file', fileBlob, 'meter-image.jpg');
+    // All three document types now use multipart/form-data with file upload
+    const formFields = Object.entries(payload)
+      .filter(([key]) => key !== 'file')
+      .map(([key, value]) => `-F "${key}=${value}"`)
+      .join(' \\\n  ');
 
-fetch('${endpoint}', {
-  method: 'POST',
-  body: formData
-})`}
-            </pre>
-          </div>
-        </div>
-      );
-    }
-    
-    // For electricity/gas, show JSON payload
-    const payloadJson = JSON.stringify(payload, null, 2);
-    
+    const curlCommand = `curl -X POST ${endpoint} \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F "file=@/path/to/${attachment.filename}" \\
+  ${formFields}`;
+
     return (
       <div className="space-y-4">
-        {/* Phone Number Clarification - SHOW THIS FIRST */}
-        {phoneFromBill && actualPhone && phoneFromBill !== actualPhone && (
-          <div className="p-3 rounded-lg bg-yellow-500/10 border-2 border-yellow-500/50">
-            <p className="text-sm font-semibold mb-2">⚠️ Phone Number Mismatch Detected</p>
-            <div className="text-xs space-y-1">
-              <p><strong>Phone on Bill (Service Provider):</strong> {formatPhoneForDisplay(phoneFromBill)}</p>
-              <p className="text-green-600 dark:text-green-400"><strong>✓ Phone Used for Submission (Customer):</strong> {formatPhoneForDisplay(actualPhone)}</p>
-              <p className="text-muted-foreground mt-2">
-                The customer's registered phone ({formatPhoneForDisplay(actualPhone)}) was used for OneBill submission, not the service provider number from the bill.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* OneBill API Status Indicator - PROMINENT DISPLAY */}
-        {submissionStatus && (
-          <div className={cn(
-            "p-5 rounded-lg border-2",
-            submissionStatus.submission_status === 'completed' ? "bg-green-500/10 border-green-500" :
-            submissionStatus.submission_status === 'failed' ? "bg-destructive/10 border-destructive" :
-            "bg-yellow-500/10 border-yellow-500"
-          )}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 flex-1">
-                {submissionStatus.submission_status === 'completed' ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0 mt-0.5" />
-                ) : submissionStatus.submission_status === 'failed' ? (
-                  <XCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
-                ) : (
-                  <Clock className="w-6 h-6 text-yellow-500 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1 min-w-0 space-y-3">
-                  <div>
-                    <p className="font-bold text-base mb-1">
-                      OneBill API: {submissionStatus.submission_status.toUpperCase()}
-                    </p>
-                    {submissionStatus.http_status && (
-                      <p className="text-sm text-muted-foreground">
-                        HTTP Status: <code className="bg-background/50 px-1.5 py-0.5 rounded">{submissionStatus.http_status}</code>
-                      </p>
-                    )}
-                    {submissionStatus.submitted_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Submitted: {new Date(submissionStatus.submitted_at).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Error Message */}
-                  {submissionStatus.error_message && (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-                      <p className="text-sm font-semibold text-destructive mb-1">Error Details:</p>
-                      <p className="text-sm">{submissionStatus.error_message}</p>
-                    </div>
-                  )}
-
-                  {/* Request Payload Sent */}
-                  <details className="group">
-                    <summary className="text-sm font-semibold cursor-pointer hover:text-primary flex items-center gap-2">
-                      <span>📤 Request Payload Sent to OneBill</span>
-                      <span className="text-xs text-muted-foreground">(click to expand)</span>
-                    </summary>
-                    <div className="mt-2 p-3 rounded-lg bg-background/80 border">
-                      <p className="text-xs font-semibold mb-2">Endpoint: {submissionStatus.onebill_endpoint || endpoint}</p>
-                      <pre className="text-xs overflow-x-auto">
-                        {JSON.stringify({
-                          phone: submissionStatus.phone || actualPhone,
-                          ...(submissionStatus.mprn && { MPRN: submissionStatus.mprn }),
-                          ...(submissionStatus.mcc_type && { MCC: submissionStatus.mcc_type }),
-                          ...(submissionStatus.dg_type && { DG: submissionStatus.dg_type }),
-                          ...(submissionStatus.gprn && { gprn: submissionStatus.gprn }),
-                        }, null, 2)}
-                      </pre>
-                    </div>
-                  </details>
-
-                  {/* API Response */}
-                  {submissionStatus.onebill_response && (
-                    <details className="group">
-                      <summary className="text-sm font-semibold cursor-pointer hover:text-primary flex items-center gap-2">
-                        <span>📥 OneBill API Response</span>
-                        <span className="text-xs text-muted-foreground">(click to expand)</span>
-                      </summary>
-                      <div className="mt-2 p-3 rounded-lg bg-background/80 border">
-                        <pre className="text-xs overflow-x-auto">
-                          {JSON.stringify(submissionStatus.onebill_response, null, 2)}
-                        </pre>
-                      </div>
-                    </details>
-                  )}
-
-                  {/* Retry Information */}
-                  {submissionStatus.retry_count > 0 && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground">
-                        Retry {submissionStatus.retry_count} of {submissionStatus.max_retries || 3}
-                      </span>
-                      <Progress 
-                        value={(submissionStatus.retry_count / (submissionStatus.max_retries || 3)) * 100} 
-                        className="h-1.5 w-20"
-                      />
-                    </div>
-                  )}
-
-                  {/* Next Retry Schedule */}
-                  {submissionStatus.next_retry_at && submissionStatus.submission_status === 'failed' && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        Next automatic retry: {new Date(submissionStatus.next_retry_at).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Manual Payload Editor */}
-                  {submissionStatus.submission_status === 'failed' && (
-                    <div className="border rounded-lg p-4 space-y-3 bg-background/50">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold">Edit Payload for Manual Retry</h4>
-                        <Button
-                          size="sm"
-                          variant={editingPayload ? "secondary" : "outline"}
-                          onClick={() => setEditingPayload(!editingPayload)}
-                        >
-                          {editingPayload ? "Cancel Edit" : "Edit Payload"}
-                        </Button>
-                      </div>
-                      
-                      {editingPayload && (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={payloadJson}
-                            onChange={(e) => {
-                              setPayloadJson(e.target.value);
-                              setPayloadError(null);
-                              try {
-                                JSON.parse(e.target.value);
-                              } catch (err) {
-                                setPayloadError("Invalid JSON format");
-                              }
-                            }}
-                            rows={10}
-                            className="font-mono text-xs"
-                            placeholder="Edit JSON payload..."
-                          />
-                          {payloadError && (
-                            <p className="text-xs text-destructive">{payloadError}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            Edit the JSON payload above and click "Resend" to retry with your changes.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Resend Button */}
-              {submissionStatus.submission_status === 'failed' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleResendToOneBill}
-                  disabled={resending}
-                  className="shrink-0"
-                >
-                  {resending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Resending...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Resend
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
         <div>
           <h3 className="text-sm font-semibold mb-2">
-            {classification === 'electricity' ? 'Electricity' : 'Gas'} Bill Submission
+            {classification === 'electricity' ? 'Electricity Bill' : classification === 'gas' ? 'Gas Bill' : 'Meter Reading'} Submission
           </h3>
           <p className="text-xs text-muted-foreground mb-4">
             Endpoint: <code className="bg-muted px-1 py-0.5 rounded">POST {endpoint}</code>
           </p>
+          <p className="text-xs text-yellow-600 mb-2">
+            ⚠️ This endpoint requires multipart/form-data with file attachment
+          </p>
         </div>
         
         <div>
-          <h4 className="text-xs font-semibold mb-2">API Payload:</h4>
+          <h4 className="text-xs font-semibold mb-2">Form Data Fields:</h4>
           <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{payloadJson}
+{`file: [attachment file - ${attachment.filename}]
+${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`}
           </pre>
         </div>
         
         <div>
           <h4 className="text-xs font-semibold mb-2">cURL Example:</h4>
           <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`curl -X POST ${endpoint} \\
-  -H "Content-Type: application/json" \\
-  -d '${payloadJson}'`}
-          </pre>
-        </div>
-        
-        <div>
-          <h4 className="text-xs font-semibold mb-2">JavaScript/Fetch Example:</h4>
-          <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
-{`fetch('${endpoint}', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(${payloadJson})
-})`}
+            {curlCommand}
           </pre>
         </div>
       </div>

@@ -153,50 +153,106 @@ serve(async (req) => {
       console.warn('File not reachable before OneBill submit', { fileUrl });
     }
 
+    // Helper to fetch file from URL and create a Blob
+    const fetchFileAsBlob = async (fileUrl: string, fileName: string) => {
+      const fileResp = await fetch(fileUrl, { redirect: 'follow' });
+      if (!fileResp.ok) {
+        throw new Error(`Failed to fetch file: HTTP ${fileResp.status}`);
+      }
+      
+      const contentType = fileResp.headers.get('content-type') || 'application/octet-stream';
+      const buf = new Uint8Array(await fileResp.arrayBuffer());
+      const blob = new Blob([buf], { type: contentType });
+      
+      return { blob, contentType };
+    };
+
     // Build request based on document type
     let response: Response;
 
     if (documentType === 'electricity') {
-      // For electricity: send phone, MPRN, MCC, DG
-      console.log('Sending electricity data to OneBill');
+      console.log('Sending electricity data to OneBill with file attachment');
       
-      const payload = {
-        phone: fields.phone,
-        MPRN: fields.mprn,
-        MCC: fields.mcc_type,
-        DG: fields.dg_type
-      };
-
-      console.log('Electricity payload:', payload);
-
+      const form = new FormData();
+      
+      // Fetch and append file
+      try {
+        const { blob } = await fetchFileAsBlob(fileUrl, fileName);
+        form.append('file', blob, fileName || 'bill.pdf');
+      } catch (e) {
+        const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        console.error(errorMsg, { fileUrl, error: e });
+        
+        await supabaseClient
+          .from('onebill_submissions')
+          .update({ 
+            submission_status: 'failed',
+            error_message: errorMsg
+          })
+          .eq('id', submissionId);
+        
+        return new Response(
+          JSON.stringify({ success: false, error: errorMsg }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Append metadata fields
+      if (fields.phone) form.append('phone', String(fields.phone));
+      if (fields.mprn) form.append('MPRN', String(fields.mprn));
+      if (fields.mcc_type) form.append('MCC', String(fields.mcc_type));
+      if (fields.dg_type) form.append('DG', String(fields.dg_type));
+      
+      console.log('Electricity form data:', { phone: fields.phone, MPRN: fields.mprn, MCC: fields.mcc_type, DG: fields.dg_type, file: fileName });
+      
       response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Bearer ${ONEBILL_API_KEY}`,
         },
-        body: JSON.stringify(payload),
+        body: form,
       });
     } else if (documentType === 'gas') {
-      // For gas: send phone, gprn
-      console.log('Sending gas data to OneBill');
+      console.log('Sending gas data to OneBill with file attachment');
       
-      const payload = {
-        phone: fields.phone,
-        gprn: fields.gprn
-      };
-
-      console.log('Gas payload:', payload);
-
+      const form = new FormData();
+      
+      // Fetch and append file
+      try {
+        const { blob } = await fetchFileAsBlob(fileUrl, fileName);
+        form.append('file', blob, fileName || 'bill.pdf');
+      } catch (e) {
+        const errorMsg = `Error fetching file: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        console.error(errorMsg, { fileUrl, error: e });
+        
+        await supabaseClient
+          .from('onebill_submissions')
+          .update({ 
+            submission_status: 'failed',
+            error_message: errorMsg
+          })
+          .eq('id', submissionId);
+        
+        return new Response(
+          JSON.stringify({ success: false, error: errorMsg }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Append metadata fields
+      if (fields.phone) form.append('phone', String(fields.phone));
+      if (fields.gprn) form.append('gprn', String(fields.gprn));
+      
+      console.log('Gas form data:', { phone: fields.phone, gprn: fields.gprn, file: fileName });
+      
       response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Bearer ${ONEBILL_API_KEY}`,
         },
-        body: JSON.stringify(payload),
+        body: form,
       });
     } else {
       // For meter: use multipart/form-data with file upload
