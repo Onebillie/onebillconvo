@@ -428,3 +428,6 @@ verify_jwt = false
 
 [functions.convert-pdf-to-png]
 verify_jwt = false
+
+[functions.create-embed-session]
+verify_jwt = false

@@ -72,6 +72,7 @@ serve(async (req) => {
         api_key_id: keyRow.id,
         session_token: sessionToken,
         permission_level: keyRow.permission_level,
+        site_id: 'embed_dashboard',
         metadata: metadata || {},
         expires_at: expiresAt.toISOString(),
       })
