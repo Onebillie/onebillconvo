@@ -12,11 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { attachmentId, businessId } = await req.json();
-
+    const requestBody = await req.json();
+    console.log('Request body received:', JSON.stringify(requestBody, null, 2));
+    
+    const { attachmentId, businessId } = requestBody;
     console.log('OneBill submit called:', { attachmentId, businessId });
 
     if (!attachmentId) {
+      console.error('Missing attachmentId in request:', requestBody);
       return new Response(
         JSON.stringify({ error: 'Missing required field: attachmentId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
