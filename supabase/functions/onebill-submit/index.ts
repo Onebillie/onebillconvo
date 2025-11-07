@@ -47,9 +47,16 @@ serve(async (req) => {
     const fileUrl = bodyFileUrl || submission.file_url;
     const fileName = bodyFileName || submission.file_name;
 
+    // Helper function to normalize phone number (remove spaces)
+    const normalizePhone = (phone: string | null | undefined): string | null => {
+      if (!phone) return null;
+      // Remove all spaces and keep only + and digits
+      return phone.replace(/\s+/g, '');
+    };
+
     // Merge fields: prefer body values, fall back to DB columns
     const fields = bodyFields || {
-      phone: submission.phone,
+      phone: normalizePhone(submission.phone),
       mprn: submission.mprn,
       gprn: submission.gprn,
       mcc_type: submission.mcc_type,
