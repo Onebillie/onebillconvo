@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Info, Upload, FileText, Check } from "lucide-react";
+import { Plus, Trash2, Info, Upload, FileText, Check, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AIDocumentUpload } from "./AIDocumentUpload";
 import { AIPrivacySettings } from "./AIPrivacySettings";
@@ -82,6 +82,12 @@ export function AIAssistantSettings() {
   const [businessName, setBusinessName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [isOnebill, setIsOnebill] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    success: boolean;
+    error?: string;
+    model?: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -128,6 +134,42 @@ export function AIAssistantSettings() {
     }
     
     setLoading(false);
+  };
+
+  const testConnection = async () => {
+    if (!provider || !customApiKey || customApiKey === '••••••••') {
+      toast.error('Please enter a valid API key');
+      return;
+    }
+
+    setTestingConnection(true);
+    setConnectionStatus(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ai-provider', {
+        body: {
+          provider_name: provider,
+          api_key: customApiKey,
+          model_name: customModel || null,
+          api_endpoint: customEndpoint || null,
+        },
+      });
+
+      if (error) throw error;
+
+      setConnectionStatus(data);
+      if (data.success) {
+        toast.success(`Successfully connected to ${AI_PROVIDERS.find(p => p.id === provider)?.name}!`);
+      } else {
+        toast.error(`Connection failed: ${data.error}`);
+      }
+    } catch (error: any) {
+      toast.error('Failed to test connection');
+      console.error('Test connection error:', error);
+      setConnectionStatus({ success: false, error: error.message });
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const saveProviderConfig = async () => {
@@ -352,13 +394,53 @@ export function AIAssistantSettings() {
                     </div>
                   )}
 
-                  <Button 
-                    onClick={saveProviderConfig}
-                    className="w-full"
-                    disabled={!customApiKey || customApiKey === '••••••••' || !customModel}
-                  >
-                    Save Configuration
-                  </Button>
+                  {/* Connection Status */}
+                  {connectionStatus && (
+                    <div className={`p-3 rounded-lg border ${
+                      connectionStatus.success 
+                        ? 'bg-green-50 border-green-200 text-green-800' 
+                        : 'bg-red-50 border-red-200 text-red-800'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {connectionStatus.success ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            <span className="text-sm font-medium">Connected successfully</span>
+                            {connectionStatus.model && (
+                              <span className="text-xs opacity-75">({connectionStatus.model})</span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex-1">
+                              <span className="text-sm font-medium">Connection failed</span>
+                              {connectionStatus.error && (
+                                <p className="text-xs mt-1">{connectionStatus.error}</p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={testConnection}
+                      disabled={testingConnection || !customApiKey || customApiKey === '••••••••' || !customModel}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      {testingConnection ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                    <Button 
+                      onClick={saveProviderConfig}
+                      className="flex-1"
+                      disabled={!customApiKey || customApiKey === '••••••••' || !customModel}
+                    >
+                      Save Configuration
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}

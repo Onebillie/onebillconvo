@@ -111,6 +111,9 @@ verify_jwt = true
 [functions.ai-suggest-response]
 verify_jwt = true
 
+[functions.test-ai-provider]
+verify_jwt = true
+
 [functions.verify-payment-session]
 verify_jwt = true
 

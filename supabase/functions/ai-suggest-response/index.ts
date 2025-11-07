@@ -85,38 +85,41 @@ Guidelines:
 - Address the customer's question directly
 - Provide actionable information when possible`;
 
-    // Call Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Get business_id from conversation
+    const { data: conversation } = await supabaseClient
+      .from('conversations')
+      .select('business_id')
+      .eq('id', conversation_id)
+      .single();
+
+    if (!conversation) {
+      throw new Error('Conversation not found');
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversationHistory.slice(-5), // Last 5 messages for context
-          { role: 'user', content: `Customer message: "${latest_message}"\n\nGenerate 2-3 brief response suggestions, separated by "|||". Each should be max 2 sentences.` }
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
+    // Get active AI provider for this business
+    const { data: provider } = await supabaseClient
+      .from('ai_providers')
+      .select('*')
+      .eq('business_id', conversation.business_id)
+      .eq('is_active', true)
+      .single();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+    if (!provider) {
+      return new Response(
+        JSON.stringify({ suggestions: [], error: 'No AI provider configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || '';
+    // Build full prompt
+    const fullMessages = [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory.slice(-5),
+      { role: 'user', content: `Customer message: "${latest_message}"\n\nGenerate 2-3 brief response suggestions, separated by "|||". Each should be max 2 sentences.` }
+    ];
+
+    // Call AI provider
+    const aiResponse = await callAIProvider(provider, fullMessages);
 
     // Parse suggestions
     const suggestionTexts = aiResponse.split('|||')
@@ -142,3 +145,98 @@ Guidelines:
     );
   }
 });
+
+async function callAIProvider(provider: any, messages: any[]): Promise<string> {
+  try {
+    switch (provider.provider_name) {
+      case 'openai': {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${provider.api_key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: provider.model_name || 'gpt-4o-mini',
+            messages,
+            temperature: 0.7,
+            max_tokens: 300,
+          }),
+        });
+        
+        if (!response.ok) throw new Error('OpenAI request failed');
+        const data = await response.json();
+        return data.choices[0].message.content;
+      }
+
+      case 'anthropic': {
+        const systemMsg = messages.find(m => m.role === 'system');
+        const userMessages = messages.filter(m => m.role !== 'system');
+        
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': provider.api_key,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: provider.model_name || 'claude-3-5-sonnet-20241022',
+            max_tokens: 300,
+            system: systemMsg?.content || '',
+            messages: userMessages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+          }),
+        });
+        
+        if (!response.ok) throw new Error('Anthropic request failed');
+        const data = await response.json();
+        return data.content[0].text;
+      }
+
+      case 'google': {
+        const model = provider.model_name || 'gemini-2.5-flash';
+        const fullPrompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${provider.api_key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+          }),
+        });
+        
+        if (!response.ok) throw new Error('Google AI request failed');
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      }
+
+      case 'azure': {
+        if (!provider.api_endpoint) throw new Error('Azure endpoint not configured');
+        
+        const response = await fetch(provider.api_endpoint, {
+          method: 'POST',
+          headers: {
+            'api-key': provider.api_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            temperature: 0.7,
+            max_tokens: 300,
+          }),
+        });
+        
+        if (!response.ok) throw new Error('Azure request failed');
+        const data = await response.json();
+        return data.choices[0].message.content;
+      }
+
+      default:
+        throw new Error('Unknown provider: ' + provider.provider_name);
+    }
+  } catch (error) {
+    console.error('AI provider call error:', error);
+    throw error;
+  }
+}

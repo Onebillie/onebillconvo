@@ -151,31 +151,24 @@ serve(async (req) => {
 
     context += '\nIMPORTANT: Be accurate, helpful, and stay within the scope of the provided information. If unsure, admit it and offer to connect to a human agent.\n';
 
-    // Call Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.model || 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: context },
-          { role: 'user', content: message }
-        ],
-        temperature: config.temperature || 0.7,
-        max_tokens: config.max_tokens || 500,
-      }),
-    });
+    // Get active AI provider for this business
+    const { data: provider } = await supabase
+      .from('ai_providers')
+      .select('*')
+      .eq('business_id', businessId)
+      .eq('is_active', true)
+      .single();
 
-    if (!response.ok) {
-      throw new Error('AI request failed');
+    if (!provider) {
+      throw new Error('No AI provider configured. Please configure an AI provider in settings.');
     }
 
-    const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    // Call AI provider based on configuration
+    const aiResponse = await callAIProvider(provider, context, message, config);
+    
+    if (!aiResponse) {
+      throw new Error('AI request failed');
+    }
 
     // Calculate confidence (simplified)
     const confidence = relevantChunks && relevantChunks.length > 0 ? 0.85 : 0.60;
@@ -260,4 +253,127 @@ function maskPII(text: string): string {
   text = text.replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD]');
   
   return text;
+}
+
+async function callAIProvider(provider: any, systemPrompt: string, userMessage: string, config: any): Promise<string | null> {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ];
+
+  try {
+    switch (provider.provider_name) {
+      case 'openai': {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${provider.api_key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: provider.model_name || 'gpt-4o-mini',
+            messages,
+            temperature: config.temperature || 0.7,
+            max_tokens: config.max_tokens || 500,
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('OpenAI error:', error);
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.choices[0].message.content;
+      }
+
+      case 'anthropic': {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': provider.api_key,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: provider.model_name || 'claude-3-5-sonnet-20241022',
+            max_tokens: config.max_tokens || 500,
+            messages: [{ role: 'user', content: systemPrompt + '\n\n' + userMessage }],
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('Anthropic error:', error);
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.content[0].text;
+      }
+
+      case 'google': {
+        const model = provider.model_name || 'gemini-2.5-flash';
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${provider.api_key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: systemPrompt + '\n\n' + userMessage }]
+            }],
+            generationConfig: {
+              temperature: config.temperature || 0.7,
+              maxOutputTokens: config.max_tokens || 500,
+            }
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('Google AI error:', error);
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      }
+
+      case 'azure': {
+        if (!provider.api_endpoint) {
+          console.error('Azure endpoint not configured');
+          return null;
+        }
+        
+        const response = await fetch(provider.api_endpoint, {
+          method: 'POST',
+          headers: {
+            'api-key': provider.api_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            temperature: config.temperature || 0.7,
+            max_tokens: config.max_tokens || 500,
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('Azure error:', error);
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.choices[0].message.content;
+      }
+
+      default:
+        console.error('Unknown provider:', provider.provider_name);
+        return null;
+    }
+  } catch (error) {
+    console.error('AI provider call error:', error);
+    return null;
+  }
 }
