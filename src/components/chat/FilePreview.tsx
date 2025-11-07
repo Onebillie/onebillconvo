@@ -149,9 +149,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     if (submissionStatus) {
       const payload: any = {};
       if (submissionStatus.phone) payload.phone = submissionStatus.phone;
-      if (submissionStatus.mprn) payload.MPRN = submissionStatus.mprn;
-      if (submissionStatus.mcc_type) payload.MCC = submissionStatus.mcc_type;
-      if (submissionStatus.dg_type) payload.DG = submissionStatus.dg_type;
+      if (submissionStatus.mprn) payload.mprn = submissionStatus.mprn;
+      if (submissionStatus.mcc_type) payload.mcc_type = submissionStatus.mcc_type;
+      if (submissionStatus.dg_type) payload.dg_type = submissionStatus.dg_type;
       if (submissionStatus.gprn) payload.gprn = submissionStatus.gprn;
       if (submissionStatus.utility) payload.utility = submissionStatus.utility;
       if (submissionStatus.read_value) payload.read_value = submissionStatus.read_value;
@@ -381,9 +381,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     const elecDetails = electricityData?.elec_details || electricityData?.electricity_details;
     const meterDetails = elecDetails?.meter_details;
     
-    if (meterDetails?.mprn) payload.MPRN = meterDetails.mprn;
-    if (meterDetails?.mcc || meterDetails?.mcc_type) payload.MCC = meterDetails.mcc || meterDetails.mcc_type;
-    if (meterDetails?.dg || meterDetails?.dg_type) payload.DG = meterDetails.dg || meterDetails.dg_type;
+    if (meterDetails?.mprn) payload.mprn = meterDetails.mprn;
+    if (meterDetails?.mcc || meterDetails?.mcc_type) payload.mcc_type = meterDetails.mcc || meterDetails.mcc_type;
+    if (meterDetails?.dg || meterDetails?.dg_type) payload.dg_type = meterDetails.dg || meterDetails.dg_type;
     
     // Check for gas data
     const gasData = bills?.gas?.[0];
@@ -395,9 +395,9 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     // Check top-level structures as fallback
     if (bills?.electricity_bill) {
       const topElec = bills.electricity_bill;
-      if (topElec.mprn && !payload.MPRN) payload.MPRN = topElec.mprn;
-      if (topElec.mcc && !payload.MCC) payload.MCC = topElec.mcc;
-      if (topElec.dg && !payload.DG) payload.DG = topElec.dg;
+      if (topElec.mprn && !payload.mprn) payload.mprn = topElec.mprn;
+      if (topElec.mcc && !payload.mcc_type) payload.mcc_type = topElec.mcc;
+      if (topElec.dg && !payload.dg_type) payload.dg_type = topElec.dg;
     }
     
     if (bills?.gas_bill) {
@@ -409,7 +409,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     let classification = null;
     let endpoint = '';
     
-    if (payload.MPRN || payload.MCC || payload.DG) {
+    if (payload.mprn || payload.mcc_type || payload.dg_type) {
       classification = 'electricity';
       endpoint = 'https://api.onebill.ie/api/electricity-file';
     } else if (payload.gprn) {

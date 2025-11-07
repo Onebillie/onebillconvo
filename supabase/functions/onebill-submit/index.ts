@@ -171,7 +171,7 @@ serve(async (req) => {
     let response: Response;
 
     if (documentType === 'electricity' || documentType === 'gas') {
-      console.log(`Sending ${documentType} data to OneBill with file attachment and full parsed data`);
+      console.log(`Sending ${documentType} data to OneBill with file attachment`);
       
       const form = new FormData();
       
@@ -197,70 +197,29 @@ serve(async (req) => {
         );
       }
       
-      // Get the full parsed data from attachment_parse_results
-      let fullParsedData = null;
-      if (submission.attachment_id) {
-        const { data: parseResults } = await supabaseClient
-          .from('attachment_parse_results')
-          .select('parsed_data')
-          .eq('attachment_id', submission.attachment_id)
-          .single();
+      // Append simple form fields based on document type
+      if (documentType === 'electricity') {
+        if (fields.phone) form.append('phone', String(fields.phone));
+        if (fields.mprn) form.append('mprn', String(fields.mprn));
+        if (fields.mcc_type) form.append('mcc_type', String(fields.mcc_type));
+        if (fields.dg_type) form.append('dg_type', String(fields.dg_type));
         
-        if (parseResults?.parsed_data) {
-          fullParsedData = parseResults.parsed_data;
-          console.log('Found parsed data from attachment:', { hasData: !!fullParsedData });
-        }
-      }
-      
-      // If we have full parsed data, inject the customer phone and send it
-      if (fullParsedData && typeof fullParsedData === 'object') {
-        // Inject customer phone number into the parsed data structure
-        if (!fullParsedData.bills) fullParsedData.bills = {};
-        if (!fullParsedData.bills.cus_details) fullParsedData.bills.cus_details = [{}];
-        if (!fullParsedData.bills.cus_details[0]) fullParsedData.bills.cus_details[0] = {};
+        console.log('Electricity form fields:', { 
+          phone: fields.phone, 
+          mprn: fields.mprn, 
+          mcc_type: fields.mcc_type, 
+          dg_type: fields.dg_type, 
+          file: fileName 
+        });
+      } else if (documentType === 'gas') {
+        if (fields.phone) form.append('phone', String(fields.phone));
+        if (fields.gprn) form.append('gprn', String(fields.gprn));
         
-        // Use normalized phone from fields or submission
-        const customerPhone = fields.phone || normalizePhone(submission.phone);
-        if (customerPhone) {
-          fullParsedData.bills.cus_details[0].phone = customerPhone;
-        }
-        
-        // Append the full JSON data
-        form.append('data', JSON.stringify(fullParsedData));
-        console.log(`${documentType} payload includes full parsed data with injected phone:`, customerPhone);
-      } else {
-        // Fallback: send minimal fields if no parsed data available
-        console.warn('No full parsed data available, sending minimal fields');
-        const minimalData = {
-          bills: {
-            cus_details: [{
-              phone: fields.phone || normalizePhone(submission.phone)
-            }]
-          }
-        };
-        
-        if (documentType === 'electricity') {
-          minimalData.bills.electricity = [{
-            electricity_details: {
-              meter_details: {
-                mprn: fields.mprn || submission.mprn,
-                mcc: fields.mcc_type || submission.mcc_type,
-                dg: fields.dg_type || submission.dg_type
-              }
-            }
-          }];
-        } else if (documentType === 'gas') {
-          minimalData.bills.gas = [{
-            gas_details: {
-              meter_details: {
-                gprn: fields.gprn || submission.gprn
-              }
-            }
-          }];
-        }
-        
-        form.append('data', JSON.stringify(minimalData));
-        console.log(`${documentType} minimal payload:`, minimalData);
+        console.log('Gas form fields:', { 
+          phone: fields.phone, 
+          gprn: fields.gprn, 
+          file: fileName 
+        });
       }
       
       response = await fetch(apiEndpoint, {
