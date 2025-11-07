@@ -486,24 +486,6 @@ ${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`
   const handleSubmitToOneBill = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Get parsed data from message_attachments
-    const { data: attachmentData, error: attachmentError } = await supabase
-      .from('message_attachments')
-      .select('parsed_data')
-      .eq('id', attachment.id)
-      .single();
-
-    if (attachmentError || !attachmentData?.parsed_data) {
-      toast({
-        title: "Error",
-        description: "No parsed data available. Please parse the document first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const parsedData = attachmentData.parsed_data as any;
-
     setIsResending(true);
     try {
       // Get business_id from the conversation
@@ -519,18 +501,11 @@ ${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`
         throw new Error("Could not determine business ID");
       }
 
-      // Call the onebill-submit function directly - it will create the submission record
+      // Call the onebill-submit function with attachment ID and business ID
       const { data, error } = await supabase.functions.invoke('onebill-submit', {
         body: {
-          businessId: businessId,
           attachmentId: attachment.id,
-          attachmentUrl: attachment.url,
-          documentType: parsedData.documentType,
-          phone: customerPhone || parsedData.phone,
-          mprn: parsedData.mprn,
-          mcc_type: parsedData.mcc_type,
-          dg_type: parsedData.dg_type,
-          gprn: parsedData.gprn,
+          businessId: businessId,
         }
       });
 
@@ -542,7 +517,7 @@ ${Object.entries(payload).map(([key, value]) => `${key}: ${value}`).join('\n')}`
 
       toast({
         title: "Success",
-        description: "Submitted to OneBill successfully",
+        description: data.message || "Submitted to OneBill successfully",
       });
     } catch (error: any) {
       console.error('Error submitting to OneBill:', error);
