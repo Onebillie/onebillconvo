@@ -15,13 +15,13 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Request body received:', JSON.stringify(requestBody, null, 2));
     
-    const { attachmentId, businessId } = requestBody;
-    console.log('OneBill submit called:', { attachmentId, businessId });
+    const { attachmentId, businessId, documentType, fields, fileUrl, fileName } = requestBody;
+    console.log('OneBill submit called:', { attachmentId, businessId, documentType, hasFileUrl: !!fileUrl });
 
-    if (!attachmentId) {
-      console.error('Missing attachmentId in request:', requestBody);
+    if (!attachmentId && !(fileUrl && documentType)) {
+      console.error('Missing required identifiers in request:', requestBody);
       return new Response(
-        JSON.stringify({ error: 'Missing required field: attachmentId' }),
+        JSON.stringify({ error: 'Missing required field: attachmentId or (fileUrl and documentType)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -31,23 +31,31 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get parsed data from attachment
-    const { data: attachment, error: attachmentError } = await supabaseClient
-      .from('message_attachments')
-      .select('id, parsed_data, url, filename, message_id')
-      .eq('id', attachmentId)
-      .single();
+    // Get parsed data from attachment when provided
+    let attachment: any = null;
+    let parsedData: any = null;
+    if (attachmentId) {
+      const { data, error: attachmentError } = await supabaseClient
+        .from('message_attachments')
+        .select('id, parsed_data, url, filename, message_id')
+        .eq('id', attachmentId)
+        .maybeSingle();
 
-    if (attachmentError || !attachment?.parsed_data) {
-      console.error('Attachment or parsed data not found:', attachmentError);
-      return new Response(
-        JSON.stringify({ error: 'Attachment or parsed data not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (attachmentError || !data?.parsed_data) {
+        console.error('Attachment or parsed data not found:', attachmentError);
+        return new Response(
+          JSON.stringify({ error: 'Attachment or parsed data not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      attachment = data;
+      parsedData = data.parsed_data;
     }
 
-    const parsedData = attachment.parsed_data;
-    console.log('Parsed data:', JSON.stringify(parsedData, null, 2));
+    if (parsedData) {
+      console.log('Parsed data:', JSON.stringify(parsedData, null, 2));
+    }
 
     // Get OneBill API configuration
     const ONEBILL_API_KEY = Deno.env.get('ONEBILL_API_KEY') ?? '';
@@ -94,6 +102,21 @@ serve(async (req) => {
       });
     }
 
+    // If called with a specific document type and fileUrl (resend/override path)
+    if (!attachmentId && documentType && fileUrl) {
+      let endpoint = '';
+      if (documentType === 'meter') endpoint = 'https://api.onebill.ie/api/meter-file';
+      else if (documentType === 'electricity') endpoint = 'https://api.onebill.ie/api/electricity-file';
+      else if (documentType === 'gas') endpoint = 'https://api.onebill.ie/api/gas-file';
+      else {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid documentType' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      apiCalls.push({ endpoint, type: documentType });
+    }
+
     if (apiCalls.length === 0) {
       console.log('No electricity, gas, or meter reading detected in parsed data');
       return new Response(
@@ -114,8 +137,13 @@ serve(async (req) => {
         try {
           console.log(`Calling ${type} API:`, endpoint);
           
-          // Download the file from Supabase storage
-          const fileResponse = await fetch(attachment.url);
+          // Pick file source (attachment or provided fileUrl)
+          const sourceUrl = attachment?.url ?? fileUrl;
+          if (!sourceUrl) {
+            throw new Error('No file URL provided');
+          }
+          // Download the file
+          const fileResponse = await fetch(sourceUrl);
           if (!fileResponse.ok) {
             throw new Error(`Failed to download file: ${fileResponse.statusText}`);
           }
@@ -123,23 +151,41 @@ serve(async (req) => {
           
           // Create FormData for multipart/form-data request
           const formData = new FormData();
-          formData.append('file', fileBlob, attachment.filename);
+          const sourceName = attachment?.filename ?? fileName ?? 'upload';
+          formData.append('file', fileBlob, sourceName);
           
           // Add fields based on service type
-          if (type === 'meter' && parsedData?.bills?.meter_reading) {
-            const meterData = parsedData.bills.meter_reading;
-            formData.append('url', attachment.url);
-            if (meterData.phone) formData.append('phone', meterData.phone);
-          } else if (type === 'electricity' && parsedData?.bills?.electricity?.[0]) {
-            const elecData = parsedData.bills.electricity[0];
-            if (elecData.phone) formData.append('phone', elecData.phone);
-            if (elecData.mprn) formData.append('mprn', elecData.mprn);
-            if (elecData.mcc_type) formData.append('mcc_type', elecData.mcc_type);
-            if (elecData.dg_type) formData.append('dg_type', elecData.dg_type);
-          } else if (type === 'gas' && parsedData?.bills?.gas?.[0]) {
-            const gasData = parsedData.bills.gas[0];
-            if (gasData.phone) formData.append('phone', gasData.phone);
-            if (gasData.gprn) formData.append('gprn', gasData.gprn);
+          if (type === 'meter') {
+            if (parsedData?.bills?.meter_reading) {
+              const meterData = parsedData.bills.meter_reading;
+              formData.append('url', attachment.url);
+              if (meterData.phone) formData.append('phone', meterData.phone);
+            } else {
+              formData.append('url', sourceUrl);
+              if (fields?.phone) formData.append('phone', fields.phone);
+            }
+          } else if (type === 'electricity') {
+            if (parsedData?.bills?.electricity?.[0]) {
+              const elecData = parsedData.bills.electricity[0];
+              if (elecData.phone) formData.append('phone', elecData.phone);
+              if (elecData.mprn) formData.append('mprn', elecData.mprn);
+              if (elecData.mcc_type) formData.append('mcc_type', elecData.mcc_type);
+              if (elecData.dg_type) formData.append('dg_type', elecData.dg_type);
+            } else {
+              if (fields?.phone) formData.append('phone', fields.phone);
+              if (fields?.mprn) formData.append('mprn', fields.mprn);
+              if (fields?.mcc_type) formData.append('mcc_type', fields.mcc_type);
+              if (fields?.dg_type) formData.append('dg_type', fields.dg_type);
+            }
+          } else if (type === 'gas') {
+            if (parsedData?.bills?.gas?.[0]) {
+              const gasData = parsedData.bills.gas[0];
+              if (gasData.phone) formData.append('phone', gasData.phone);
+              if (gasData.gprn) formData.append('gprn', gasData.gprn);
+            } else {
+              if (fields?.phone) formData.append('phone', fields.phone);
+              if (fields?.gprn) formData.append('gprn', fields.gprn);
+            }
           }
           
           console.log(`Sending ${type} with form fields`);
@@ -199,7 +245,7 @@ serve(async (req) => {
     for (const result of apiResults) {
       const submissionData = {
         business_id: businessId,
-        attachment_id: attachmentId,
+        attachment_id: attachmentId ?? null,
         document_type: result.type,
         submission_status: result.ok ? 'completed' : 'failed',
         onebill_endpoint: result.endpoint,
