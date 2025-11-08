@@ -66,11 +66,19 @@ serve(async (req) => {
     // Detect which services are present in parsed data
     const hasElectricity = parsedData?.bills?.electricity?.length > 0;
     const hasGas = parsedData?.bills?.gas?.length > 0;
+    const hasMeterReading = parsedData?.bills?.meter_reading?.read_value;
 
-    console.log('Detected services:', { hasElectricity, hasGas });
+    console.log('Detected services:', { hasElectricity, hasGas, hasMeterReading });
 
     // Prepare API calls based on detected services
     const apiCalls: Array<{ endpoint: string; type: string }> = [];
+
+    if (hasMeterReading) {
+      apiCalls.push({
+        endpoint: "https://api.onebill.ie/api/meter-file",
+        type: "meter"
+      });
+    }
 
     if (hasElectricity) {
       apiCalls.push({
@@ -87,11 +95,11 @@ serve(async (req) => {
     }
 
     if (apiCalls.length === 0) {
-      console.log('No electricity or gas services detected in parsed data');
+      console.log('No electricity, gas, or meter reading detected in parsed data');
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'No electricity or gas services detected in parsed data'
+          error: 'No electricity, gas, or meter reading detected in parsed data'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -118,7 +126,11 @@ serve(async (req) => {
           formData.append('file', fileBlob, attachment.filename);
           
           // Add fields based on service type
-          if (type === 'electricity' && parsedData?.bills?.electricity?.[0]) {
+          if (type === 'meter' && parsedData?.bills?.meter_reading) {
+            const meterData = parsedData.bills.meter_reading;
+            formData.append('url', attachment.url);
+            if (meterData.phone) formData.append('phone', meterData.phone);
+          } else if (type === 'electricity' && parsedData?.bills?.electricity?.[0]) {
             const elecData = parsedData.bills.electricity[0];
             if (elecData.phone) formData.append('phone', elecData.phone);
             if (elecData.mprn) formData.append('mprn', elecData.mprn);
