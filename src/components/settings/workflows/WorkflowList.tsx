@@ -21,10 +21,13 @@ import {
 import { MoreVertical, Pencil, Trash2, Copy, Play } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
+import { WorkflowBuilderDialog } from "./builder/WorkflowBuilderDialog";
 
 export function WorkflowList() {
   const { currentBusinessId } = useAuth();
   const queryClient = useQueryClient();
+  const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
 
   const { data: workflows, isLoading } = useQuery({
     queryKey: ["document-workflows", currentBusinessId],
@@ -164,7 +167,7 @@ export function WorkflowList() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditingWorkflowId(workflow.id)}>
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
@@ -190,6 +193,14 @@ export function WorkflowList() {
           ))}
         </TableBody>
       </Table>
+      
+      {editingWorkflowId && (
+        <WorkflowBuilderDialog
+          workflowId={editingWorkflowId}
+          open={!!editingWorkflowId}
+          onOpenChange={(open) => !open && setEditingWorkflowId(null)}
+        />
+      )}
     </div>
   );
 }
