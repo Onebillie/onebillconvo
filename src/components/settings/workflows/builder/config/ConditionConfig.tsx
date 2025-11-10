@@ -18,7 +18,7 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
       ...data,
       conditions: [
         ...conditions,
-        { field: "", operator: "equals", value: "", logicalOperator: "AND" },
+        { id: crypto.randomUUID(), field: "", operator: "equals", value: "", logicalOperator: "AND" },
       ],
     });
   };
@@ -67,7 +67,7 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
       )}
 
       {conditions.map((condition: any, index: number) => (
-        <div key={index} className="border rounded p-3 space-y-2">
+        <div key={condition.id || index} className="border rounded p-3 space-y-2">
           <div>
             <Label className="text-xs">Field</Label>
             <Input
