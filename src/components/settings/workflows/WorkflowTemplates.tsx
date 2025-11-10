@@ -17,10 +17,32 @@ export function WorkflowTemplates() {
     try {
       if (!currentBusinessId) throw new Error("No business found");
 
-      // 1. Create Document Types
-      const { data: docTypes, error: docTypesError } = await supabase
+      // Check if workflow already exists
+      const { data: existingWorkflow } = await supabase
+        .from("document_workflows")
+        .select("id")
+        .eq("business_id", currentBusinessId)
+        .eq("name", "OneBill Utility Processing")
+        .single();
+
+      if (existingWorkflow) {
+        toast.error("OneBill workflow already exists for this business");
+        return;
+      }
+
+      // 1. Get or Create Document Types
+      const docTypeNames = ["Electricity File", "Gas File", "Meter Reading"];
+      const { data: existingDocTypes } = await supabase
         .from("document_types")
-        .insert([
+        .select("*")
+        .eq("business_id", currentBusinessId)
+        .in("name", docTypeNames);
+
+      const existingNames = new Set(existingDocTypes?.map(dt => dt.name) || []);
+      const docTypesToCreate = [];
+
+      if (!existingNames.has("Electricity File")) {
+        docTypesToCreate.push(
           {
             business_id: currentBusinessId,
             name: "Electricity File",
@@ -33,7 +55,12 @@ export function WorkflowTemplates() {
               { name: "mcc_type", type: "string", isPII: false, description: "MCC type code" },
               { name: "dg_type", type: "string", isPII: false, description: "DG type code" }
             ]
-          },
+          }
+        );
+      }
+
+      if (!existingNames.has("Gas File")) {
+        docTypesToCreate.push(
           {
             business_id: currentBusinessId,
             name: "Gas File",
@@ -43,7 +70,12 @@ export function WorkflowTemplates() {
               { name: "phone", type: "string", isPII: true, description: "Customer phone number" },
               { name: "gprn", type: "string", isPII: false, description: "Gas Point Reference Number" }
             ]
-          },
+          }
+        );
+      }
+
+      if (!existingNames.has("Meter Reading")) {
+        docTypesToCreate.push(
           {
             business_id: currentBusinessId,
             name: "Meter Reading",
@@ -53,15 +85,35 @@ export function WorkflowTemplates() {
               { name: "phone", type: "string", isPII: true, description: "Customer phone number" }
             ]
           }
-        ])
-        .select();
+        );
+      }
 
-      if (docTypesError) throw docTypesError;
+      let newDocTypes: any[] = [];
+      if (docTypesToCreate.length > 0) {
+        const { data, error: docTypesError } = await supabase
+          .from("document_types")
+          .insert(docTypesToCreate)
+          .select();
+        
+        if (docTypesError) throw docTypesError;
+        newDocTypes = data || [];
+      }
 
-      // 2. Create API Endpoints
-      const { data: apiEndpoints, error: apiError } = await supabase
+      const allDocTypes = [...(existingDocTypes || []), ...newDocTypes];
+
+      // 2. Get or Create API Endpoints
+      const apiEndpointNames = ["OneBill Electricity File API", "OneBill Gas File API", "OneBill Meter File API"];
+      const { data: existingApiEndpoints } = await supabase
         .from("api_endpoints")
-        .insert([
+        .select("*")
+        .eq("business_id", currentBusinessId)
+        .in("name", apiEndpointNames);
+
+      const existingApiNames = new Set(existingApiEndpoints?.map(ep => ep.name) || []);
+      const apiEndpointsToCreate = [];
+
+      if (!existingApiNames.has("OneBill Electricity File API")) {
+        apiEndpointsToCreate.push(
           {
             business_id: currentBusinessId,
             name: "OneBill Electricity File API",
@@ -75,7 +127,12 @@ export function WorkflowTemplates() {
               dg_type: "{{parsed_data.dg_type}}",
               file: "{{attachment.url}}"
             }
-          },
+          }
+        );
+      }
+
+      if (!existingApiNames.has("OneBill Gas File API")) {
+        apiEndpointsToCreate.push(
           {
             business_id: currentBusinessId,
             name: "OneBill Gas File API",
@@ -87,7 +144,12 @@ export function WorkflowTemplates() {
               gprn: "{{parsed_data.gprn}}",
               file: "{{attachment.url}}"
             }
-          },
+          }
+        );
+      }
+
+      if (!existingApiNames.has("OneBill Meter File API")) {
+        apiEndpointsToCreate.push(
           {
             business_id: currentBusinessId,
             name: "OneBill Meter File API",
@@ -99,10 +161,21 @@ export function WorkflowTemplates() {
               file: "{{attachment.url}}"
             }
           }
-        ])
-        .select();
+        );
+      }
 
-      if (apiError) throw apiError;
+      let newApiEndpoints: any[] = [];
+      if (apiEndpointsToCreate.length > 0) {
+        const { data, error: apiError } = await supabase
+          .from("api_endpoints")
+          .insert(apiEndpointsToCreate)
+          .select();
+        
+        if (apiError) throw apiError;
+        newApiEndpoints = data || [];
+      }
+
+      const allApiEndpoints = [...(existingApiEndpoints || []), ...newApiEndpoints];
 
       // 3. Create Workflow
       const { data: workflow, error: workflowError } = await supabase
