@@ -7,6 +7,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface ParseResult {
   id: string;
@@ -23,6 +30,7 @@ interface AttachmentParseStatusProps {
 export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps) => {
   const [parseResults, setParseResults] = useState<ParseResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchParseResults();
@@ -116,20 +124,65 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 border border-border shrink-0">
-            <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-            <div className="absolute -top-0.5 -right-0.5">
-              {getStatusIcon()}
-            </div>
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 border border-border shrink-0 p-0 h-6 hover:bg-muted"
+              onClick={() => setDialogOpen(true)}
+            >
+              <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="absolute -top-0.5 -right-0.5">
+                {getStatusIcon()}
+              </div>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-xs">
+            {getTooltipContent()}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Attachment Parse Results</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {parseResults.map((result, idx) => (
+              <div key={idx} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Status:</span>
+                  <span className="text-sm text-muted-foreground capitalize">{result.parse_status}</span>
+                </div>
+                {result.document_type && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Type:</span>
+                    <span className="text-sm text-muted-foreground">{result.document_type.replace(/_/g, ' ').toUpperCase()}</span>
+                  </div>
+                )}
+                {result.error_message && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-destructive">Error:</span>
+                    <p className="text-sm text-muted-foreground">{result.error_message}</p>
+                  </div>
+                )}
+                {result.parsed_data && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium">Parsed Data:</span>
+                    <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
+                      {JSON.stringify(result.parsed_data, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="left" className="max-w-xs">
-          {getTooltipContent()}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
