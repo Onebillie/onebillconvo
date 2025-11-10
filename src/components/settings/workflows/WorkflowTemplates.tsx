@@ -5,27 +5,24 @@ import { Zap, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function WorkflowTemplates() {
   const [isCreating, setIsCreating] = useState(false);
   const queryClient = useQueryClient();
+  const { currentBusinessId } = useAuth();
 
   const createOneBillWorkflow = async () => {
     setIsCreating(true);
     try {
-      // Get current business_id from session metadata
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const businessId = session.user.user_metadata?.business_id;
-      if (!businessId) throw new Error("No business found");
+      if (!currentBusinessId) throw new Error("No business found");
 
       // 1. Create Document Types
       const { data: docTypes, error: docTypesError } = await supabase
         .from("document_types")
         .insert([
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "Electricity File",
             description: "Electricity bill or document containing MPRN/DG reference",
             ai_detection_keywords: ["electricity", "ESB", "Electric Ireland", "MPRN", "DG", "kWh"],
@@ -38,7 +35,7 @@ export function WorkflowTemplates() {
             ]
           },
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "Gas File",
             description: "Gas bill or document containing GPRN reference",
             ai_detection_keywords: ["gas", "natural gas", "Bord Gáis", "GPRN"],
@@ -48,7 +45,7 @@ export function WorkflowTemplates() {
             ]
           },
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "Meter Reading",
             description: "Photo of gas or electricity meter reading",
             ai_detection_keywords: ["meter", "reading", "meter reading", "display"],
@@ -66,7 +63,7 @@ export function WorkflowTemplates() {
         .from("api_endpoints")
         .insert([
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "OneBill Electricity File API",
             endpoint_url: "https://api.onebill.ie/api/electricity-file",
             http_method: "POST",
@@ -80,7 +77,7 @@ export function WorkflowTemplates() {
             }
           },
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "OneBill Gas File API",
             endpoint_url: "https://api.onebill.ie/api/gas-file",
             http_method: "POST",
@@ -92,7 +89,7 @@ export function WorkflowTemplates() {
             }
           },
           {
-            business_id: businessId,
+            business_id: currentBusinessId,
             name: "OneBill Meter File API",
             endpoint_url: "https://api.onebill.ie/api/meter-file",
             http_method: "POST",
@@ -111,7 +108,7 @@ export function WorkflowTemplates() {
       const { data: workflow, error: workflowError } = await supabase
         .from("document_workflows")
         .insert({
-          business_id: businessId,
+          business_id: currentBusinessId,
           name: "OneBill Utility Processing",
           description: "Automatically parse, classify, and route electricity, gas, and meter reading documents to OneBill API",
           trigger_type: "attachment_received",
