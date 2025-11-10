@@ -3,6 +3,7 @@ import { WorkflowList } from "./WorkflowList";
 import { CreateWorkflowDialog } from "./CreateWorkflowDialog";
 import { DocumentTypeManager } from "./DocumentTypeManager";
 import { ApiEndpointManager } from "./ApiEndpointManager";
+import { WorkflowTemplates } from "./WorkflowTemplates";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Info } from "lucide-react";
@@ -22,12 +23,17 @@ export function DocumentWorkflowsAccordion() {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="workflows" className="w-full">
-        <TabsList>
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="document-types">Document Types</TabsTrigger>
           <TabsTrigger value="api-endpoints">API Endpoints</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="templates" className="mt-6">
+          <WorkflowTemplates />
+        </TabsContent>
 
         <TabsContent value="workflows" className="mt-6">
           <Card>
