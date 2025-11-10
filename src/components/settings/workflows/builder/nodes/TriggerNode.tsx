@@ -12,6 +12,7 @@ export const TriggerNode = memo(({ data }: { data: any }) => {
       </div>
       <div className="text-xs text-muted-foreground mb-2">
         {data.triggerType === "attachment_received" && "On attachment received"}
+        {data.triggerType === "message_received" && "On message received"}
         {data.triggerType === "manual" && "Manual trigger"}
         {data.triggerType === "scheduled" && "Scheduled trigger"}
       </div>

@@ -64,36 +64,47 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
             </Select>
           )}
 
-          <Input
-            placeholder="Field (e.g., parsed_data.mprn)"
-            value={condition.field || ""}
-            onChange={(e) => updateCondition(index, { field: e.target.value })}
-          />
+          <div>
+            <Label className="text-xs">Field</Label>
+            <Input
+              placeholder="parsed_data.mprn"
+              value={condition.field || ""}
+              onChange={(e) => updateCondition(index, { field: e.target.value })}
+            />
+          </div>
 
-          <Select
-            value={condition.operator || "equals"}
-            onValueChange={(value) => updateCondition(index, { operator: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="equals">Equals</SelectItem>
-              <SelectItem value="not_equals">Not Equals</SelectItem>
-              <SelectItem value="contains">Contains</SelectItem>
-              <SelectItem value="not_contains">Not Contains</SelectItem>
-              <SelectItem value="greater_than">Greater Than</SelectItem>
-              <SelectItem value="less_than">Less Than</SelectItem>
-              <SelectItem value="exists">Exists</SelectItem>
-              <SelectItem value="not_exists">Not Exists</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <Label className="text-xs">Operator</Label>
+            <Select
+              value={condition.operator || "equals"}
+              onValueChange={(value) => updateCondition(index, { operator: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="equals">Equals</SelectItem>
+                <SelectItem value="not_equals">Not Equals</SelectItem>
+                <SelectItem value="contains">Contains</SelectItem>
+                <SelectItem value="not_contains">Not Contains</SelectItem>
+                <SelectItem value="greater_than">Greater Than</SelectItem>
+                <SelectItem value="less_than">Less Than</SelectItem>
+                <SelectItem value="exists">Exists</SelectItem>
+                <SelectItem value="not_exists">Not Exists</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Input
-            placeholder="Value"
-            value={condition.value || ""}
-            onChange={(e) => updateCondition(index, { value: e.target.value })}
-          />
+          {condition.operator !== "exists" && condition.operator !== "not_exists" && (
+            <div>
+              <Label className="text-xs">Value</Label>
+              <Input
+                placeholder="Enter value"
+                value={condition.value || ""}
+                onChange={(e) => updateCondition(index, { value: e.target.value })}
+              />
+            </div>
+          )}
 
           <Button variant="ghost" size="sm" onClick={() => removeCondition(index)} className="w-full">
             <Trash2 className="h-4 w-4 mr-2" />

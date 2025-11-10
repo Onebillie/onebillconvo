@@ -21,6 +21,7 @@ export function TriggerConfig({ data, onChange }: TriggerConfigProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="attachment_received">On Attachment Received</SelectItem>
+            <SelectItem value="message_received">On Message Received</SelectItem>
             <SelectItem value="manual">Manual Trigger</SelectItem>
             <SelectItem value="scheduled">Scheduled</SelectItem>
           </SelectContent>
@@ -52,6 +53,21 @@ export function TriggerConfig({ data, onChange }: TriggerConfigProps) {
         />
         <p className="text-xs text-muted-foreground mt-1">Comma-separated list</p>
       </div>
+
+      {data.triggerType === "message_received" && (
+        <div>
+          <Label>Message Keyword Filters (optional)</Label>
+          <Input
+            placeholder="bill, invoice, receipt"
+            value={data.filters?.keywords?.join(", ") || ""}
+            onChange={(e) => {
+              const keywords = e.target.value.split(",").map((t) => t.trim()).filter(Boolean);
+              onChange({ ...data, filters: { ...data.filters, keywords } });
+            }}
+          />
+          <p className="text-xs text-muted-foreground mt-1">Trigger only when message contains these keywords</p>
+        </div>
+      )}
     </div>
   );
 }
