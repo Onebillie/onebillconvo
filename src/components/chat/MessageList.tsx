@@ -351,53 +351,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
     });
   };
 
-  const handleReparse = async (message: Message) => {
-    if (!message.message_attachments || message.message_attachments.length === 0) {
-      toast({
-        title: "No attachments",
-        description: "This message has no attachments to parse",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Parsing document...",
-      description: "AI is analyzing the attachment",
-    });
-
-    try {
-      // Parse first attachment (most common use case)
-      const attachment = message.message_attachments[0];
-      
-      const { data, error } = await supabase.functions.invoke('onebill-classify-document', {
-        body: {
-          fileUrl: attachment.url,
-          fileName: attachment.filename,
-          businessId: (message as any).business_id,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.success && data?.classification) {
-        toast({
-          title: "Parse complete",
-          description: `Classified as: ${data.classification.document_type}`,
-        });
-      } else {
-        throw new Error('Invalid response from parsing service');
-      }
-    } catch (error: any) {
-      console.error('Parse error:', error);
-      toast({
-        title: "Parse failed",
-        description: error.message || "Failed to parse attachment",
-        variant: "destructive",
-      });
-    }
-  };
-
   const renderAttachment = (attachment: any, messageId?: string) => {
     return <AttachmentItem key={attachment.id} attachment={attachment} messageId={messageId} />;
   };
@@ -537,7 +490,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                     onEdit={(msg) => setEditingMessage(msg)}
                     onInfo={(msg) => setInfoMessage(msg)}
                     onDelete={(msg) => setDeleteConfirmMessage(msg)}
-                    onReparse={handleReparse}
                     onSelectMessages={() => {}}
                   >
                     <div
