@@ -41,7 +41,20 @@ const extractElectricityFields = (parsedData: any) => {
   const mcc = parsedData?.bills?.electricity?.[0]?.electricity_details?.meter_details?.mcc;
   const dg = parsedData?.bills?.electricity?.[0]?.electricity_details?.meter_details?.dg;
   
-  return { phone, mprn, mcc_type: mcc, dg_type: dg };
+  // Try nested structure first, then flat structure (for new parsing format)
+  const account_number = parsedData?.bills?.electricity?.[0]?.electricity_details?.account_number 
+    || parsedData?.fields?.account_number;
+  const supplier_name = parsedData?.bills?.electricity?.[0]?.electricity_details?.supplier_name 
+    || parsedData?.fields?.supplier_name;
+  
+  return { 
+    phone, 
+    mprn, 
+    mcc_type: mcc, 
+    dg_type: dg,
+    account_number,
+    supplier_name
+  };
 };
 
 const extractGasFields = (parsedData: any) => {
@@ -208,12 +221,22 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
                 <span className="font-medium">mcc_type (string):</span>
                 <span className="text-muted-foreground">{electricityFields?.mcc_type || 'Missing'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                {isValid(electricityFields?.dg_type) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
-                <span className="font-medium">dg_type (string):</span>
-                <span className="text-muted-foreground">{electricityFields?.dg_type || 'Missing'}</span>
-              </div>
+            <div className="flex items-center gap-2">
+              {isValid(electricityFields?.dg_type) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+              <span className="font-medium">dg_type (string):</span>
+              <span className="text-muted-foreground">{electricityFields?.dg_type || 'Missing'}</span>
             </div>
+            <div className="flex items-center gap-2">
+              {isValid(electricityFields?.account_number) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+              <span className="font-medium">account_number (string):</span>
+              <span className="text-muted-foreground">{electricityFields?.account_number || 'Missing'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isValid(electricityFields?.supplier_name) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+              <span className="font-medium">supplier_name (string):</span>
+              <span className="text-muted-foreground">{electricityFields?.supplier_name || 'Missing'}</span>
+            </div>
+          </div>
           </div>
         )}
         

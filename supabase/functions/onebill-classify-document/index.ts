@@ -122,6 +122,7 @@ FIELD EXTRACTION (extract ALL that apply):
 - **dg_type**: Demand Group type (e.g., "Urban", "Rural", "Night Saver")
 - **meter_reading**: The actual meter reading value (for meter submissions)
 - **account_number**: Customer account number
+- **supplier_name**: Electricity or gas supplier name (e.g., "Electric Ireland", "SSE Airtricity", "Bord Gáis Energy", "Energia", "Flogas")
 - **address**: Service address
 
 Return ONLY valid JSON in this exact format:
