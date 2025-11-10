@@ -19,6 +19,7 @@ import {
   Palette,
   Package,
   LucideIcon,
+  Workflow,
 } from "lucide-react";
 
 interface TabGroup {
@@ -68,6 +69,7 @@ export function GroupedSettingsNav({ activeTab, onTabChange, isSuperAdmin }: Gro
       tabs: [
         { value: "ai", label: "AI Assistant", icon: Bot },
         { value: "ai-approval", label: "AI Approval", icon: Shield },
+        { value: "workflows", label: "Document Workflows", icon: Workflow },
       ],
     },
     {

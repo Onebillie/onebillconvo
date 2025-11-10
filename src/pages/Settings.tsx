@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook, Package, Database } from "lucide-react";
+import { Settings as SettingsIcon, Users, Mail, CreditCard, MessageSquare, Tags, CheckSquare, Building2, Calendar, Bot, MessageCircle, Shield, Bell, Key, Palette, Webhook, Package, Database, Workflow } from "lucide-react";
 import { UnifiedStaffManagement } from "@/components/settings/UnifiedStaffManagement";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { InMailAccordion } from "@/components/settings/InMailAccordion";
@@ -26,6 +26,7 @@ import { CustomerSegments } from "@/components/settings/CustomerSegments";
 import { EmailTemplatesAccordion } from "@/components/settings/EmailTemplatesAccordion";
 import { GroupedSettingsNav } from "@/components/settings/GroupedSettingsNav";
 import { DataBackupManagement } from "@/components/settings/DataBackupManagement";
+import { DocumentWorkflowsAccordion } from "@/components/settings/workflows/DocumentWorkflowsAccordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
@@ -73,6 +74,7 @@ export default function Settings() {
       options: [
         { value: "ai", label: "AI Assistant", icon: Bot },
         { value: "ai-approval", label: "AI Approval", icon: Shield },
+        { value: "workflows", label: "Document Workflows", icon: Workflow },
       ],
     },
     {
@@ -266,6 +268,10 @@ export default function Settings() {
 
               <TabsContent value="ai-approval" forceMount>
                 <AIApprovalAccordion />
+              </TabsContent>
+
+              <TabsContent value="workflows" forceMount>
+                <DocumentWorkflowsAccordion />
               </TabsContent>
 
               <TabsContent value="notifications" forceMount>
