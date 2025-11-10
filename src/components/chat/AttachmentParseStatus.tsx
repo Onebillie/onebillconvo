@@ -129,10 +129,15 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 border border-border shrink-0 p-0 h-6 hover:bg-muted"
-              onClick={() => setDialogOpen(true)}
+              className="relative z-20 flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 border border-border shrink-0 p-0 hover:bg-muted"
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Parse status clicked', { messageId, parseResults });
+                setDialogOpen(true);
+              }}
             >
               <Bot className="h-3.5 w-3.5 text-muted-foreground" />
               <div className="absolute -top-0.5 -right-0.5">
