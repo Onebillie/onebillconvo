@@ -664,6 +664,63 @@ export type Database = {
           },
         ]
       }
+      api_endpoints: {
+        Row: {
+          body_template: Json | null
+          business_id: string
+          created_at: string
+          document_type_id: string | null
+          endpoint_url: string
+          headers: Json | null
+          http_method: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          body_template?: Json | null
+          business_id: string
+          created_at?: string
+          document_type_id?: string | null
+          endpoint_url: string
+          headers?: Json | null
+          http_method?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: Json | null
+          business_id?: string
+          created_at?: string
+          document_type_id?: string | null
+          endpoint_url?: string
+          headers?: Json | null
+          http_method?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_endpoints_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_endpoints_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           business_id: string | null
@@ -822,44 +879,73 @@ export type Database = {
       }
       attachment_parse_results: {
         Row: {
+          actions_triggered: Json | null
           attachment_id: string
+          confidence_score: number | null
           created_at: string
           document_type: string | null
+          document_type_id: string | null
           error_message: string | null
+          gdpr_compliant: boolean | null
           id: string
           message_id: string
           parse_status: string
           parsed_data: Json | null
           updated_at: string
+          workflow_id: string | null
         }
         Insert: {
+          actions_triggered?: Json | null
           attachment_id: string
+          confidence_score?: number | null
           created_at?: string
           document_type?: string | null
+          document_type_id?: string | null
           error_message?: string | null
+          gdpr_compliant?: boolean | null
           id?: string
           message_id: string
           parse_status: string
           parsed_data?: Json | null
           updated_at?: string
+          workflow_id?: string | null
         }
         Update: {
+          actions_triggered?: Json | null
           attachment_id?: string
+          confidence_score?: number | null
           created_at?: string
           document_type?: string | null
+          document_type_id?: string | null
           error_message?: string | null
+          gdpr_compliant?: boolean | null
           id?: string
           message_id?: string
           parse_status?: string
           parsed_data?: Json | null
           updated_at?: string
+          workflow_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "attachment_parse_results_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attachment_parse_results_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachment_parse_results_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "document_workflows"
             referencedColumns: ["id"]
           },
         ]
@@ -2827,6 +2913,94 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_types: {
+        Row: {
+          ai_detection_keywords: string[] | null
+          business_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          required_fields: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ai_detection_keywords?: string[] | null
+          business_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          required_fields?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ai_detection_keywords?: string[] | null
+          business_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          required_fields?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_types_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_workflows: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_workflows_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -7102,6 +7276,82 @@ export type Database = {
           },
         ]
       }
+      workflow_actions: {
+        Row: {
+          action_type: string
+          business_id: string
+          config: Json | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          business_id: string
+          config?: Json | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          business_id?: string
+          config?: Json | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_actions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_audit_log: {
+        Row: {
+          action: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          timestamp: string
+          user_id: string | null
+          workflow_execution_id: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          timestamp?: string
+          user_id?: string | null
+          workflow_execution_id?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          timestamp?: string
+          user_id?: string | null
+          workflow_execution_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_audit_log_workflow_execution_id_fkey"
+            columns: ["workflow_execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_enrollments: {
         Row: {
           completed_at: string | null
@@ -7149,6 +7399,132 @@ export type Database = {
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "marketing_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_executions: {
+        Row: {
+          attachment_id: string | null
+          completed_at: string | null
+          current_step_id: string | null
+          error_message: string | null
+          execution_data: Json | null
+          id: string
+          message_id: string | null
+          started_at: string
+          status: string
+          workflow_id: string
+        }
+        Insert: {
+          attachment_id?: string | null
+          completed_at?: string | null
+          current_step_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          message_id?: string | null
+          started_at?: string
+          status?: string
+          workflow_id: string
+        }
+        Update: {
+          attachment_id?: string | null
+          completed_at?: string | null
+          current_step_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          message_id?: string | null
+          started_at?: string
+          status?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "message_attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_current_step_id_fkey"
+            columns: ["current_step_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "document_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_steps: {
+        Row: {
+          created_at: string
+          id: string
+          next_step_on_failure: string | null
+          next_step_on_success: string | null
+          step_config: Json | null
+          step_order: number
+          step_type: string
+          updated_at: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          next_step_on_failure?: string | null
+          next_step_on_success?: string | null
+          step_config?: Json | null
+          step_order: number
+          step_type: string
+          updated_at?: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          next_step_on_failure?: string | null
+          next_step_on_success?: string | null
+          step_config?: Json | null
+          step_order?: number
+          step_type?: string
+          updated_at?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_steps_next_step_on_failure_fkey"
+            columns: ["next_step_on_failure"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_steps_next_step_on_success_fkey"
+            columns: ["next_step_on_success"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "document_workflows"
             referencedColumns: ["id"]
           },
         ]
