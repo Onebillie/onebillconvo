@@ -14,6 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface ParseResult {
   id: string;
@@ -21,7 +27,29 @@ interface ParseResult {
   document_type?: string | null;
   parsed_data?: any;
   error_message?: string | null;
+  attachment_id?: string;
 }
+
+// Helper functions for field extraction
+const isValid = (value: any): boolean => {
+  return value !== null && value !== undefined && value !== '';
+};
+
+const extractElectricityFields = (parsedData: any) => {
+  const phone = parsedData?.bills?.cus_details?.[0]?.details?.phone;
+  const mprn = parsedData?.bills?.electricity?.[0]?.electricity_details?.meter_details?.mprn;
+  const mcc = parsedData?.bills?.electricity?.[0]?.electricity_details?.meter_details?.mcc;
+  const dg = parsedData?.bills?.electricity?.[0]?.electricity_details?.meter_details?.dg;
+  
+  return { phone, mprn, mcc_type: mcc, dg_type: dg };
+};
+
+const extractGasFields = (parsedData: any) => {
+  const phone = parsedData?.bills?.cus_details?.[0]?.details?.phone;
+  const gprn = parsedData?.bills?.gas?.[0]?.gas_details?.meter_details?.gprn;
+  
+  return { phone, gprn };
+};
 
 interface AttachmentParseStatusProps {
   messageId: string;
@@ -31,6 +59,8 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
   const [parseResults, setParseResults] = useState<ParseResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState<string>('');
+  const [attachmentFilename, setAttachmentFilename] = useState<string>('');
 
   useEffect(() => {
     fetchParseResults();
@@ -45,8 +75,25 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
 
     if (!error && data) {
       setParseResults(data);
+      // Fetch attachment details if available
+      if (data.length > 0 && data[0].attachment_id) {
+        fetchAttachmentDetails(data[0].attachment_id);
+      }
     }
     setLoading(false);
+  };
+
+  const fetchAttachmentDetails = async (attachmentId: string) => {
+    const { data, error } = await supabase
+      .from('message_attachments')
+      .select('url, filename, type')
+      .eq('id', attachmentId)
+      .single();
+    
+    if (!error && data) {
+      setAttachmentUrl(data.url);
+      setAttachmentFilename(data.filename);
+    }
   };
 
   const subscribeToUpdates = () => {
@@ -123,6 +170,90 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
     return null;
   };
 
+  const ProcessedDataView = ({ result }: { result: ParseResult }) => {
+    const hasElectricity = result.parsed_data?.bills?.electricity?.length > 0;
+    const hasGas = result.parsed_data?.bills?.gas?.length > 0;
+    
+    const electricityFields = hasElectricity ? extractElectricityFields(result.parsed_data) : null;
+    const gasFields = hasGas ? extractGasFields(result.parsed_data) : null;
+    
+    return (
+      <div className="space-y-6">
+        {hasElectricity && (
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Electricity API Specification</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                {isValid(attachmentFilename) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">file (binary):</span>
+                <span className="text-muted-foreground">{attachmentFilename || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(attachmentUrl) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">url (string):</span>
+                <span className="text-muted-foreground text-xs truncate max-w-md">{attachmentUrl || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(electricityFields?.phone) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">phone (string):</span>
+                <span className="text-muted-foreground">{electricityFields?.phone || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(electricityFields?.mprn) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">mprn (string):</span>
+                <span className="text-muted-foreground">{electricityFields?.mprn || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(electricityFields?.mcc_type) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">mcc_type (string):</span>
+                <span className="text-muted-foreground">{electricityFields?.mcc_type || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(electricityFields?.dg_type) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">dg_type (string):</span>
+                <span className="text-muted-foreground">{electricityFields?.dg_type || 'Missing'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {hasGas && (
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Gas API Specification</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                {isValid(attachmentFilename) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">file (binary):</span>
+                <span className="text-muted-foreground">{attachmentFilename || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(attachmentUrl) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">url (string):</span>
+                <span className="text-muted-foreground text-xs truncate max-w-md">{attachmentUrl || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(gasFields?.phone) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">phone (string):</span>
+                <span className="text-muted-foreground">{gasFields?.phone || 'Missing'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isValid(gasFields?.gprn) ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                <span className="font-medium">gprn (string):</span>
+                <span className="text-muted-foreground">{gasFields?.gprn || 'Missing'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {!hasElectricity && !hasGas && (
+          <div className="text-sm text-muted-foreground">
+            No electricity or gas bill data found in parsed results.
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <TooltipProvider>
@@ -156,36 +287,58 @@ export const AttachmentParseStatus = ({ messageId }: AttachmentParseStatusProps)
           <DialogHeader>
             <DialogTitle>Attachment Parse Results</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {parseResults.map((result, idx) => (
-              <div key={idx} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Status:</span>
-                  <span className="text-sm text-muted-foreground capitalize">{result.parse_status}</span>
-                </div>
-                {result.document_type && (
+          
+          <Tabs defaultValue="parsed" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="parsed">Parsed Data</TabsTrigger>
+              <TabsTrigger value="processed">Processed Data</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="parsed" className="space-y-4 mt-4">
+              {parseResults.map((result, idx) => (
+                <div key={idx} className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Type:</span>
-                    <span className="text-sm text-muted-foreground">{result.document_type.replace(/_/g, ' ').toUpperCase()}</span>
+                    <span className="text-sm font-medium">Status:</span>
+                    <span className="text-sm text-muted-foreground capitalize">{result.parse_status}</span>
                   </div>
-                )}
-                {result.error_message && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-destructive">Error:</span>
-                    <p className="text-sm text-muted-foreground">{result.error_message}</p>
-                  </div>
-                )}
-                {result.parsed_data && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium">Parsed Data:</span>
-                    <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
-                      {JSON.stringify(result.parsed_data, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {result.document_type && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Type:</span>
+                      <span className="text-sm text-muted-foreground">{result.document_type.replace(/_/g, ' ').toUpperCase()}</span>
+                    </div>
+                  )}
+                  {result.error_message && (
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-destructive">Error:</span>
+                      <p className="text-sm text-muted-foreground">{result.error_message}</p>
+                    </div>
+                  )}
+                  {result.parsed_data && (
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium">Parsed Data:</span>
+                      <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto max-h-[400px]">
+                        {JSON.stringify(result.parsed_data, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </TabsContent>
+            
+            <TabsContent value="processed" className="mt-4">
+              {parseResults.map((result, idx) => (
+                <div key={idx}>
+                  {result.parse_status === 'success' ? (
+                    <ProcessedDataView result={result} />
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      Parse must be successful to view processed data.
+                    </div>
+                  )}
+                </div>
+              ))}
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </>
