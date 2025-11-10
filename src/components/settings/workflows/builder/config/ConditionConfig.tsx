@@ -11,6 +11,7 @@ interface ConditionConfigProps {
 
 export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
   const conditions = data.conditions || [];
+  const logic = data.logic || 'AND';
 
   const addCondition = () => {
     onChange({
@@ -41,6 +42,24 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
         </p>
       </div>
 
+      {conditions.length > 1 && (
+        <div>
+          <Label>Logic Operator</Label>
+          <Select
+            value={logic}
+            onValueChange={(value) => onChange({ ...data, logic: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="AND">AND (all conditions must match)</SelectItem>
+              <SelectItem value="OR">OR (any condition must match)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {conditions.length === 0 && (
         <div className="p-4 bg-muted/50 rounded text-center text-sm text-muted-foreground">
           No conditions added yet
@@ -49,21 +68,6 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
 
       {conditions.map((condition: any, index: number) => (
         <div key={index} className="border rounded p-3 space-y-2">
-          {index > 0 && (
-            <Select
-              value={condition.logicalOperator || "AND"}
-              onValueChange={(value) => updateCondition(index, { logicalOperator: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AND">AND</SelectItem>
-                <SelectItem value="OR">OR</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
           <div>
             <Label className="text-xs">Field</Label>
             <Input
@@ -95,7 +99,7 @@ export function ConditionConfig({ data, onChange }: ConditionConfigProps) {
             </Select>
           </div>
 
-          {condition.operator !== "exists" && condition.operator !== "not_exists" && (
+          {!['exists', 'not_exists'].includes(condition.operator) && (
             <div>
               <Label className="text-xs">Value</Label>
               <Input

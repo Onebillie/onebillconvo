@@ -437,3 +437,12 @@ verify_jwt = false
 
 [functions.create-embed-session]
 verify_jwt = false
+
+[functions.universal-document-parser]
+verify_jwt = false
+
+[functions.classify-document-type]
+verify_jwt = false
+
+[functions.workflow-executor]
+verify_jwt = false

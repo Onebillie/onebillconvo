@@ -41,6 +41,29 @@ const nodeTypes = {
   end: EndNode,
 };
 
+// Type mappings between UI and database
+const uiTypeToDbType: Record<string, string> = {
+  trigger: 'trigger',
+  parse: 'parse',
+  documentType: 'document_type',
+  condition: 'condition',
+  transform: 'transform',
+  apiAction: 'api_action',
+  delay: 'delay',
+  end: 'end',
+};
+
+const dbTypeToUiType: Record<string, string> = {
+  trigger: 'trigger',
+  parse: 'parse',
+  document_type: 'documentType',
+  condition: 'condition',
+  transform: 'transform',
+  api_action: 'apiAction',
+  delay: 'delay',
+  end: 'end',
+};
+
 interface WorkflowBuilderDialogProps {
   workflowId: string;
   open: boolean;
@@ -121,7 +144,7 @@ function WorkflowBuilderContent({ workflowId, onOpenChange }: Omit<WorkflowBuild
         // Convert database steps to React Flow nodes
         const loadedNodes: Node[] = steps.map((step) => ({
           id: step.id,
-          type: step.step_type,
+          type: dbTypeToUiType[step.step_type] || step.step_type,
           position: { x: 0, y: 0 },
           data: step.step_config || {},
         }));
@@ -172,12 +195,18 @@ function WorkflowBuilderContent({ workflowId, onOpenChange }: Omit<WorkflowBuild
   // Handle new connections
   const onConnect = useCallback(
     (params: Connection) => {
+      // Auto-set edge label based on source handle
+      const label = params.sourceHandle === 'success' ? 'Success' : 
+                    params.sourceHandle === 'failure' ? 'Failure' : undefined;
+      
       setEdges((eds) =>
         addEdge(
           {
             ...params,
+            label,
             type: "smoothstep",
             animated: true,
+            style: params.sourceHandle === 'failure' ? { stroke: "hsl(var(--destructive))" } : undefined,
           },
           eds
         )
@@ -270,13 +299,14 @@ function WorkflowBuilderContent({ workflowId, onOpenChange }: Omit<WorkflowBuild
 
       // Convert nodes to database format
       const steps = nodes.map((node, index) => {
-        const successEdge = edges.find((e) => e.source === node.id && e.label === "Success");
-        const failureEdge = edges.find((e) => e.source === node.id && e.label === "Failure");
+        // Find edges by sourceHandle instead of label
+        const successEdge = edges.find((e) => e.source === node.id && e.sourceHandle === 'success');
+        const failureEdge = edges.find((e) => e.source === node.id && e.sourceHandle === 'failure');
 
         return {
           workflow_id: workflowId,
           step_order: index,
-          step_type: node.type!,
+          step_type: uiTypeToDbType[node.type!] || node.type!,
           step_config: node.data,
           next_step_on_success: successEdge?.target || null,
           next_step_on_failure: failureEdge?.target || null,
