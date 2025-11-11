@@ -95,13 +95,6 @@ export const EnhancedTemplateSelector = ({
         const variableMatches = (template.content || '').match(/\{\{(\d+)\}\}/g);
         const hasVariables = variableMatches && variableMatches.length > 0;
 
-      const payload: any = {
-        to: customerPhone,
-        conversation_id: conversationId,
-        templateName: (template.variables as any)?.meta_template_name || template.name,
-        templateLanguage: (template.variables as any)?.template_language || 'en',
-      };
-
         let values: string[] = [];
         if (hasVariables && variableMatches) {
           const indices = Array.from(new Set(variableMatches.map((v) => parseInt(v.replace(/\{|\}/g, ''), 10)))).sort((a,b)=>a-b);
@@ -119,11 +112,39 @@ export const EnhancedTemplateSelector = ({
             }
             values.push(val);
           }
-          payload.templateVariables = values;
 
           // Apply variables locally for optimistic preview
           appliedContent = indices.reduce((acc, idx, i) => acc.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), values[i] || ''), appliedContent);
         }
+
+        // Get business_id
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: businessData } = await supabase
+          .from('business_users')
+          .select('business_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+
+        // PERSIST-FIRST: Insert pending message before sending
+        const { data: pendingMessage, error: insertError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            customer_id: customerId,
+            content: appliedContent,
+            template_name: (template.variables as any)?.meta_template_name || template.name,
+            template_content: appliedContent,
+            template_variables: values.length > 0 ? { variables: values } : null,
+            direction: 'outbound',
+            platform: 'whatsapp',
+            status: 'pending',
+            is_read: true,
+            business_id: businessData?.business_id
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
 
         // Optimistic message
         onOptimisticMessage?.({
@@ -138,6 +159,18 @@ export const EnhancedTemplateSelector = ({
           status: 'sending',
           message_attachments: [],
         });
+
+        const payload: any = {
+          to: customerPhone,
+          conversation_id: conversationId,
+          message_id: pendingMessage.id,
+          templateName: (template.variables as any)?.meta_template_name || template.name,
+          templateLanguage: (template.variables as any)?.template_language || 'en',
+        };
+
+        if (values.length > 0) {
+          payload.templateVariables = values;
+        }
 
         const { error } = await supabase.functions.invoke("whatsapp-send", {
           body: payload,

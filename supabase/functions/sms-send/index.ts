@@ -118,10 +118,9 @@ serve(async (req) => {
           platform: 'sms',
           status: 'sent',
           delivery_status: 'sent',
-          platform_message_id: twilioData.sid,
+          external_message_id: twilioData.sid,
           is_read: true,
           business_id: customer.business_id,
-          external_message_id: twilioData.sid,
         })
         .select()
         .single();

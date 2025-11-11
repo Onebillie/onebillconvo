@@ -403,9 +403,9 @@ serve(async (req) => {
         .from('messages')
         .update({
           external_message_id: responseData.messages[0].id,
-          platform_message_id: responseData.messages[0].id,
           delivery_status: 'sent',
           status: 'sent',
+          content: templateContent || message || null,
           template_name: templateName || null,
           template_content: templateContent || null,
           template_variables: templateVariables ? { variables: templateVariables } : null,
@@ -503,14 +503,13 @@ serve(async (req) => {
           .insert({
             conversation_id: conversation.id,
             customer_id: customer.id,
-            content: message || `Template: ${templateName}`,
+            content: templateContent || message || `Template: ${templateName}`,
             template_name: templateName,
             template_content: templateContent,
             template_variables: templateVariables ? { variables: templateVariables } : null,
             direction: 'outbound',
             platform: 'whatsapp',
             external_message_id: responseData.messages[0].id,
-            platform_message_id: responseData.messages[0].id,
             delivery_status: 'sent',
             status: 'sent',
             thread_id: conversation.id,
