@@ -95,11 +95,12 @@ export const EnhancedTemplateSelector = ({
         const variableMatches = (template.content || '').match(/\{\{(\d+)\}\}/g);
         const hasVariables = variableMatches && variableMatches.length > 0;
 
-        const payload: any = {
-          to: customerPhone,
-          templateName: (template.variables as any)?.meta_template_name || template.name,
-          templateLanguage: (template.variables as any)?.template_language || 'en',
-        };
+      const payload: any = {
+        to: customerPhone,
+        conversation_id: conversationId,
+        templateName: (template.variables as any)?.meta_template_name || template.name,
+        templateLanguage: (template.variables as any)?.template_language || 'en',
+      };
 
         let values: string[] = [];
         if (hasVariables && variableMatches) {
