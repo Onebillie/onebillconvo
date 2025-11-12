@@ -377,38 +377,16 @@ serve(async (req) => {
       console.log(`[${requestId}] No business_id found for message count increment`);
     }
 
-    // Get template content if using a template
-    let templateContent = message;
-    if (templateName) {
-      const { data: template } = await supabase
-        .from('whatsapp_templates')
-        .select('body')
-        .eq('name', templateName)
-        .single();
-      
-      templateContent = template?.body || `Template: ${templateName}`;
-      
-      // Replace variables in template
-      if (templateVariables && Array.isArray(templateVariables)) {
-        templateVariables.forEach((val: string, idx: number) => {
-          templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
-        });
-      }
-    }
-
     // PERSIST-FIRST STRATEGY: Update existing message OR insert new one
     if (message_id) {
-      // Update the pending message row
+      // The message already exists with correct content from persist-first creation
+      // Only update delivery-related fields, do NOT overwrite content
       const { error: updateError } = await supabase
         .from('messages')
         .update({
           external_message_id: responseData.messages[0].id,
           delivery_status: 'sent',
           status: 'sent',
-          content: templateContent || message || null,
-          template_name: templateName || null,
-          template_content: templateContent || null,
-          template_variables: templateVariables ? { variables: templateVariables } : null,
         })
         .eq('id', message_id);
       
@@ -444,6 +422,26 @@ serve(async (req) => {
       }
     } else {
       // Legacy path: Create new message (backward compatibility)
+      // Get template content if using a template
+      let templateContent = message;
+      if (templateName) {
+        const { data: template } = await supabase
+          .from('message_templates')
+          .select('content')
+          .eq('name', templateName)
+          .eq('business_id', businessId)
+          .maybeSingle();
+        
+        templateContent = template?.content || message || `Template: ${templateName}`;
+        
+        // Replace variables in template
+        if (templateVariables && Array.isArray(templateVariables)) {
+          templateVariables.forEach((val: string, idx: number) => {
+            templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
+          });
+        }
+      }
+      
       let conversation = null;
       let customer = null;
       
@@ -503,7 +501,7 @@ serve(async (req) => {
           .insert({
             conversation_id: conversation.id,
             customer_id: customer.id,
-            content: templateContent || message || `Template: ${templateName}`,
+            content: templateContent,
             template_name: templateName,
             template_content: templateContent,
             template_variables: templateVariables ? { variables: templateVariables } : null,
