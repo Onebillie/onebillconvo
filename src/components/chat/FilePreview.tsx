@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { PDFViewer } from './PDFViewer';
 
 // Cache for loaded images to prevent flickering
 const loadedImages = new Set<string>();
@@ -36,6 +37,7 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [fullSizeOpen, setFullSizeOpen] = useState(false);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   
   const isImage = attachment.type?.startsWith('image/');
   const isPDF = attachment.type === 'application/pdf';
@@ -57,8 +59,24 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
     return <FileIcon className="w-4 h-4" />;
   };
 
-  const handleDownload = () => {
-    window.open(attachment.url, '_blank');
+  const handleDownload = async () => {
+    try {
+      // Force download using blob to avoid blank tab issues
+      const response = await fetch(attachment.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to window.open
+      window.open(attachment.url, '_blank');
+    }
   };
 
   const handleRetry = () => {
@@ -183,15 +201,24 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
   return (
     <>
       <div className="mt-2">
-        <div className="p-3 bg-background/10 rounded-lg flex items-center justify-between gap-3 max-w-xs group hover:bg-background/20 transition-colors">
-          <div className="flex items-center gap-2 flex-1 min-w-0" onClick={handleDownload}>
+        <div 
+          className="p-3 bg-background/10 rounded-lg flex items-center justify-between gap-3 max-w-xs group hover:bg-background/20 transition-colors cursor-pointer"
+          onClick={() => {
+            if (isPDF) {
+              setPdfViewerOpen(true);
+            } else {
+              handleDownload();
+            }
+          }}
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {getFileIcon()}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{attachment.filename}</p>
               {attachment.size ? (
                 <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
               ) : (
-                <p className="text-xs opacity-70">Click to download</p>
+                <p className="text-xs opacity-70">{isPDF ? 'Click to view' : 'Click to download'}</p>
               )}
             </div>
           </div>
@@ -210,6 +237,15 @@ export const FilePreview = memo(({ attachment, messageId, onClick }: FilePreview
           </div>
         </div>
       </div>
+
+      {isPDF && (
+        <PDFViewer
+          open={pdfViewerOpen}
+          onOpenChange={setPdfViewerOpen}
+          url={attachment.url}
+          filename={attachment.filename}
+        />
+      )}
     </>
   );
 }, (prevProps, nextProps) => {
