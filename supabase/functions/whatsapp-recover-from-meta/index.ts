@@ -129,7 +129,7 @@ serve(async (req) => {
           const { data: existing } = await supabase
             .from('messages')
             .select('id')
-            .eq('platform_message_id', metaMsg.id)
+            .eq('external_message_id', metaMsg.id)
             .maybeSingle();
 
           if (!existing && metaMsg.timestamp >= sinceTimestamp) {
@@ -143,7 +143,7 @@ serve(async (req) => {
                 content: metaMsg.text?.body || '[Message recovered from Meta API]',
                 direction: 'outbound',
                 platform: 'whatsapp',
-                platform_message_id: metaMsg.id,
+                external_message_id: metaMsg.id,
                 status: 'sent',
                 delivery_status: metaMsg.status || 'sent',
                 is_read: true,

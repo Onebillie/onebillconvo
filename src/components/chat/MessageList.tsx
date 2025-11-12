@@ -623,17 +623,17 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                     {message.metadata.button_text}
                                   </span>
                                 </div>
-                              ) : (
-                                <p 
-                                  className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
-                                  dangerouslySetInnerHTML={{ 
-                                    __html: DOMPurify.sanitize(
-                                      searchTerm ? highlightText(message.template_content || message.content) : (message.template_content || message.content),
-                                      { ALLOWED_TAGS: ['mark', 'br'], ALLOWED_ATTR: ['class'] }
-                                    ) 
-                                  }}
-                                />
-                              )}
+                               ) : (
+                                 <p 
+                                   className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
+                                   dangerouslySetInnerHTML={{ 
+                                     __html: DOMPurify.sanitize(
+                                       searchTerm ? highlightText(message.content || message.template_content || '[No content]') : (message.content || message.template_content || '[No content]'),
+                                       { ALLOWED_TAGS: ['mark', 'br'], ALLOWED_ATTR: ['class'] }
+                                     ) 
+                                   }}
+                                 />
+                               )}
                                 {/* Attachments for non-email */}
                                 {(
                                   (message.message_attachments?.length ? message.message_attachments : attachmentsMap[message.id])
@@ -648,22 +648,28 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                            )}
                            
                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <span className="text-xs opacity-70">
-                                {new Date(message.created_at).toLocaleString([], {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                              {message.direction === "outbound" && (
-                                <MessageStatusIndicator status={message.status} />
-                              )}
-                              {message.is_edited && (
-                                <span className="text-xs opacity-60">Edited</span>
-                              )}
-                            </div>
+                               <span className="text-xs opacity-70">
+                                 {new Date(message.created_at).toLocaleString([], {
+                                   year: 'numeric',
+                                   month: 'short',
+                                   day: 'numeric',
+                                   hour: "2-digit",
+                                   minute: "2-digit",
+                                 })}
+                               </span>
+                               {message.direction === "outbound" && (
+                                 <MessageStatusIndicator status={message.status} />
+                               )}
+                               {message.is_edited && (
+                                 <span className="text-xs opacity-60">Edited</span>
+                               )}
+                               {/* Recovered message badge */}
+                               {(message.metadata as any)?.recovered || (message.metadata as any)?.backfilled ? (
+                                 <Badge variant="outline" className="text-xs py-0 px-1.5 opacity-60">
+                                   Recovered
+                                 </Badge>
+                               ) : null}
+                             </div>
                           </div>
 
                         {/* Reactions */}

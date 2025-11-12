@@ -794,6 +794,56 @@ const Dashboard = () => {
                     }}
                   />
                   
+                  {/* Recover WhatsApp History button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        toast({
+                          title: "Recovering messages...",
+                          description: "Fetching WhatsApp history from Meta API"
+                        });
+                        
+                        const { data, error } = await supabase.functions.invoke('whatsapp-recover-from-meta', {
+                          body: {
+                            conversation_id: selectedConversation.id,
+                            days_back: 7
+                          }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        if (data?.success) {
+                          toast({
+                            title: "✅ Recovery Complete",
+                            description: `Recovered ${data.results.messages_recovered} messages`
+                          });
+                          
+                          // Refresh messages to show recovered ones
+                          await fetchMessages(selectedConversation.id, 0, false);
+                        } else {
+                          toast({
+                            title: "⚠️ Recovery failed",
+                            description: data?.message || "Could not recover messages",
+                            variant: "destructive"
+                          });
+                        }
+                      } catch (error: any) {
+                        console.error('Recovery error:', error);
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to recover messages",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    className="whitespace-nowrap"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Recover History
+                  </Button>
+                  
                   <EmailSyncButton onSyncComplete={() => {
                     if (selectedConversation) {
                       fetchMessages(selectedConversation.id, 0, false);
@@ -824,7 +874,7 @@ const Dashboard = () => {
             
             {/* Mobile: Action buttons row */}
             {isMobile && (
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 overflow-x-auto">
                 <AIToggle conversationId={selectedConversation.id} />
                 
                 <RefreshButton
@@ -837,6 +887,47 @@ const Dashboard = () => {
                     });
                   }}
                 />
+                
+                {/* Recover WhatsApp History button - Mobile */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      toast({
+                        title: "Recovering messages...",
+                        description: "Fetching WhatsApp history"
+                      });
+                      
+                      const { data, error } = await supabase.functions.invoke('whatsapp-recover-from-meta', {
+                        body: {
+                          conversation_id: selectedConversation.id,
+                          days_back: 7
+                        }
+                      });
+                      
+                      if (error) throw error;
+                      
+                      if (data?.success) {
+                        toast({
+                          title: "✅ Done",
+                          description: `Recovered ${data.results.messages_recovered} messages`
+                        });
+                        await fetchMessages(selectedConversation.id, 0, false);
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: error.message,
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Recover
+                </Button>
                 
                 <EmailSyncButton onSyncComplete={() => {
                   if (selectedConversation) {

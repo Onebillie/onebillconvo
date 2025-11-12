@@ -424,7 +424,7 @@ serve(async (req) => {
       // Legacy path: Create new message (backward compatibility)
       // Get template content if using a template
       let templateContent = message;
-      if (templateName) {
+      if (templateName && businessId) {
         const { data: template } = await supabase
           .from('message_templates')
           .select('content')
@@ -432,13 +432,18 @@ serve(async (req) => {
           .eq('business_id', businessId)
           .maybeSingle();
         
-        templateContent = template?.content || message || `Template: ${templateName}`;
-        
-        // Replace variables in template
-        if (templateVariables && Array.isArray(templateVariables)) {
-          templateVariables.forEach((val: string, idx: number) => {
-            templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
-          });
+        if (template?.content) {
+          templateContent = template.content;
+          
+          // Replace variables in template
+          if (templateVariables && Array.isArray(templateVariables)) {
+            templateVariables.forEach((val: string, idx: number) => {
+              templateContent = templateContent.replace(`{{${idx + 1}}}`, val);
+            });
+          }
+        } else {
+          // Fallback if template not found
+          templateContent = message || `Template: ${templateName}`;
         }
       }
       

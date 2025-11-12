@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { customer_id, content, conversation_id } = await req.json();
+    const { customer_id, content, conversation_id, message_id } = await req.json();
 
     if (!customer_id || !content) {
       throw new Error('Missing required fields');
@@ -72,6 +72,13 @@ serve(async (req) => {
       const limit = limits[business.subscription_tier] || 0;
 
       if (business.message_count_current_period >= limit) {
+        // Update pending message if provided
+        if (message_id) {
+          await supabase
+            .from('messages')
+            .update({ status: 'failed', delivery_status: 'failed' })
+            .eq('id', message_id);
+        }
         throw new Error(`Message limit reached. Upgrade your plan.`);
       }
 
@@ -104,52 +111,87 @@ serve(async (req) => {
       const twilioData = await twilioResponse.json();
 
       if (!twilioResponse.ok) {
+        // Update pending message if provided
+        if (message_id) {
+          await supabase
+            .from('messages')
+            .update({ 
+              status: 'failed', 
+              delivery_status: 'failed',
+              metadata: { last_error: twilioData.message }
+            })
+            .eq('id', message_id);
+        }
         throw new Error(twilioData.message || 'Failed to send SMS');
       }
 
-      // Insert message into database
-      const { data: newMessage, error: insertError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id,
-          customer_id,
-          content,
-          direction: 'outbound',
-          platform: 'sms',
-          status: 'sent',
-          delivery_status: 'sent',
-          external_message_id: twilioData.sid,
-          is_read: true,
-          business_id: customer.business_id,
-        })
-        .select()
-        .single();
+      // PERSIST-FIRST: Update existing message OR create new one
+      if (message_id) {
+        // Update pending message with delivery info only
+        const { error: updateError } = await supabase
+          .from('messages')
+          .update({
+            external_message_id: twilioData.sid,
+            status: 'sent',
+            delivery_status: 'sent',
+          })
+          .eq('id', message_id);
 
-      if (newMessage) {
-        // Log SMS created and sent
-        await logMessageEvent(
-          supabaseUrl,
-          supabaseKey,
-          newMessage.id,
-          'created',
-          'success',
-          'sms',
-          { to: customer.phone }
-        );
+        if (!updateError) {
+          await logMessageEvent(
+            supabaseUrl,
+            supabaseKey,
+            message_id,
+            'sent',
+            'success',
+            'sms',
+            { sid: twilioData.sid }
+          );
+        }
+      } else {
+        // Legacy path: Insert new message
+        const { data: newMessage, error: insertError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id,
+            customer_id,
+            content,
+            direction: 'outbound',
+            platform: 'sms',
+            status: 'sent',
+            delivery_status: 'sent',
+            external_message_id: twilioData.sid,
+            is_read: true,
+            business_id: customer.business_id,
+          })
+          .select()
+          .single();
 
-        await logMessageEvent(
-          supabaseUrl,
-          supabaseKey,
-          newMessage.id,
-          'sent',
-          'success',
-          'sms',
-          { sid: twilioData.sid }
-        );
-      }
+        if (newMessage) {
+          await logMessageEvent(
+            supabaseUrl,
+            supabaseKey,
+            newMessage.id,
+            'created',
+            'success',
+            'sms',
+            { to: customer.phone }
+          );
 
-      if (insertError) {
-        console.error('Error inserting message:', insertError);
+          await logMessageEvent(
+            supabaseUrl,
+            supabaseKey,
+            newMessage.id,
+            'sent',
+            'success',
+            'sms',
+            { sid: twilioData.sid }
+          );
+        }
+
+        if (insertError) {
+          console.error('Error inserting message:', insertError);
+        }
       }
 
       return new Response(

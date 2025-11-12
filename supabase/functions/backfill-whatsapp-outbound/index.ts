@@ -65,6 +65,32 @@ serve(async (req) => {
               .maybeSingle();
 
             if (conv) {
+              // Try to reconstruct actual content from template if available
+              let messageContent = '[Message recovered from logs]';
+              const metadata = log.metadata as any;
+              
+              if (metadata.template_name) {
+                // Try to fetch template and reconstruct content
+                const { data: template } = await supabase
+                  .from('message_templates')
+                  .select('content')
+                  .eq('name', metadata.template_name)
+                  .eq('business_id', conv.business_id)
+                  .maybeSingle();
+                
+                if (template?.content) {
+                  messageContent = template.content;
+                  
+                  // Apply variables if present
+                  const variables = metadata.template_variables || metadata.variables;
+                  if (variables && Array.isArray(variables)) {
+                    variables.forEach((val: string, idx: number) => {
+                      messageContent = messageContent.replace(`{{${idx + 1}}}`, val);
+                    });
+                  }
+                }
+              }
+
               // Reconstruct message
               const { error: insertError } = await supabase
                 .from('messages')
@@ -72,7 +98,10 @@ serve(async (req) => {
                   id: log.message_id,
                   conversation_id: conversationId,
                   customer_id: conv.customer_id,
-                  content: '[Message recovered from logs]',
+                  content: messageContent,
+                  template_name: metadata.template_name || null,
+                  template_content: metadata.template_name ? messageContent : null,
+                  template_variables: metadata.template_variables || metadata.variables || null,
                   direction: 'outbound',
                   platform: 'whatsapp',
                   status: 'sent',
