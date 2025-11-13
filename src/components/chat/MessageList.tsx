@@ -15,6 +15,7 @@ import { AttachmentParseStatus } from "./AttachmentParseStatus";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
+import { MessageContent } from "./MessageContent";
 import { Pencil, Reply, Search, Paperclip, Star, Pin, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -614,7 +615,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                               </>
                             ) : (
                             <>
-                              {message.metadata?.button_clicked ? (
+                               {message.metadata?.button_clicked ? (
                                 <div className="inline-flex items-center gap-2 text-sm mb-1">
                                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -624,14 +625,10 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                   </span>
                                 </div>
                                ) : (
-                                 <p 
-                                   className="text-sm whitespace-pre-wrap leading-relaxed [word-break:break-word] mb-1"
-                                   dangerouslySetInnerHTML={{ 
-                                     __html: DOMPurify.sanitize(
-                                       searchTerm ? highlightText(message.content || message.template_content || '[No content]') : (message.content || message.template_content || '[No content]'),
-                                       { ALLOWED_TAGS: ['mark', 'br'], ALLOWED_ATTR: ['class'] }
-                                     ) 
-                                   }}
+                                 <MessageContent 
+                                   message={message}
+                                   searchTerm={searchTerm}
+                                   highlightText={highlightText}
                                  />
                                )}
                                 {/* Attachments for non-email */}

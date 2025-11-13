@@ -379,15 +379,25 @@ serve(async (req) => {
 
     // PERSIST-FIRST STRATEGY: Update existing message OR insert new one
     if (message_id) {
-      // The message already exists with correct content from persist-first creation
-      // Only update delivery-related fields, do NOT overwrite content
+      // CRITICAL SAFEGUARD: The message already exists with correct content from persist-first creation
+      // Only update delivery-related fields, NEVER overwrite content/template_content/template_name/template_variables
+      const updatePayload: any = {
+        external_message_id: responseData.messages[0].id,
+        delivery_status: 'sent',
+        status: 'sent',
+      };
+      
+      // Explicit guard: log warning if someone tries to overwrite content fields
+      const forbiddenFields = ['content', 'template_content', 'template_name', 'template_variables'];
+      const attemptedOverwrites = forbiddenFields.filter(f => updatePayload.hasOwnProperty(f));
+      if (attemptedOverwrites.length > 0) {
+        console.warn(`[${requestId}] BLOCKED attempt to overwrite protected fields: ${attemptedOverwrites.join(', ')}`);
+        attemptedOverwrites.forEach(f => delete updatePayload[f]);
+      }
+      
       const { error: updateError } = await supabase
         .from('messages')
-        .update({
-          external_message_id: responseData.messages[0].id,
-          delivery_status: 'sent',
-          status: 'sent',
-        })
+        .update(updatePayload)
         .eq('id', message_id);
       
       if (updateError) {

@@ -97,13 +97,19 @@ async function processStatusUpdates(statuses: any[], supabase: any) {
         newStatus = 'failed';
       }
 
-      // Update message status
+      // Update message status - SAFEGUARD: Only update delivery fields, never content
+      const updatePayload: any = { 
+        status: newStatus,
+        is_read: messageStatus === 'read' ? true : undefined
+      };
+      
+      // Explicit guard: prevent accidental content overwrites from webhook
+      const forbiddenFields = ['content', 'template_content', 'template_name', 'template_variables'];
+      forbiddenFields.forEach(f => delete updatePayload[f]);
+      
       const { data: updatedMessages, error } = await supabase
         .from('messages')
-        .update({ 
-          status: newStatus,
-          is_read: messageStatus === 'read' ? true : undefined
-        })
+        .update(updatePayload)
         .eq('external_message_id', messageId)
         .eq('platform', 'whatsapp')
         .select('id');
