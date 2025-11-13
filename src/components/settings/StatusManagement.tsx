@@ -42,7 +42,7 @@ export const StatusManagement = () => {
     const { data, error } = await supabase
       .from("conversation_status_tags")
       .select("*")
-      .order("name");
+      .order("priority_score", { ascending: false });
 
     if (error) {
       console.error("Error fetching statuses:", error);
@@ -231,6 +231,20 @@ export const StatusManagement = () => {
                     placeholder="e.g., check, clock"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Priority Ranking (1-100)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={formData.priority_score}
+                    onChange={(e) => setFormData({ ...formData, priority_score: parseInt(e.target.value) || 50 })}
+                    placeholder="50"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Higher numbers (100) appear at top, lower (1) at bottom. Within same priority, oldest messages appear first.
+                  </p>
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancel
@@ -249,6 +263,7 @@ export const StatusManagement = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Priority</TableHead>
               <TableHead>Preview</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -257,6 +272,7 @@ export const StatusManagement = () => {
             {statuses.map((status) => (
               <TableRow key={status.id}>
                 <TableCell className="font-medium">{status.name}</TableCell>
+                <TableCell className="text-muted-foreground">{(status as any).priority_score || 50}</TableCell>
                 <TableCell>
                   <Badge style={{ backgroundColor: status.color }}>
                     {status.name}
