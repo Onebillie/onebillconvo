@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw } from "lucide-react";
+import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Conversation, Message, Customer } from "@/types/chat";
@@ -72,6 +72,7 @@ const Dashboard = () => {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
@@ -214,9 +215,9 @@ const Dashboard = () => {
       query = query.lte('updated_at', filters.dateRange.to.toISOString());
     }
 
-    // Apply search filter on customer name, email, phone
+    // Apply search filter on customer name, email, phone, and message content
     if (filters.search) {
-      query = query.or(`customers.name.ilike.%${filters.search}%,customers.phone.ilike.%${filters.search}%,customers.email.ilike.%${filters.search}%`);
+      query = query.or(`customers.name.ilike.%${filters.search}%,customers.phone.ilike.%${filters.search}%,customers.email.ilike.%${filters.search}%,messages.content.ilike.%${filters.search}%,messages.subject.ilike.%${filters.search}%`);
     }
 
     const { data, error } = await query
@@ -788,6 +789,28 @@ const Dashboard = () => {
               {/* Desktop: All controls in one row */}
               {!isMobile && (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSearch(!showSearch)}
+                    className="h-8 w-8"
+                    title="Search in conversation (Ctrl+F)"
+                  >
+                    <Search className="w-4 h-4" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setContextMenuConversation(selectedConversation);
+                      setStatusDialogOpen(true);
+                    }}
+                    className="h-8 px-3"
+                  >
+                    Status
+                  </Button>
+                  
                   <AIToggle conversationId={selectedConversation.id} />
                   
                   <RefreshButton
@@ -882,6 +905,28 @@ const Dashboard = () => {
             {/* Mobile: Action buttons row */}
             {isMobile && (
               <div className="flex items-center gap-2 mb-3 overflow-x-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="h-8 w-8 flex-shrink-0"
+                  title="Search"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setContextMenuConversation(selectedConversation);
+                    setStatusDialogOpen(true);
+                  }}
+                  className="h-8 px-3 flex-shrink-0"
+                >
+                  Status
+                </Button>
+                
                 <AIToggle conversationId={selectedConversation.id} />
                 
                 <RefreshButton
@@ -971,6 +1016,8 @@ const Dashboard = () => {
               <div className="flex-1 overflow-y-auto">
                 <MessageList
                   messages={messages}
+                  showSearch={showSearch}
+                  onSearchClose={() => setShowSearch(false)}
                   onCreateTask={(message) => {
                     setSelectedMessageForTask(message);
                     setTaskDialogOpen(true);
