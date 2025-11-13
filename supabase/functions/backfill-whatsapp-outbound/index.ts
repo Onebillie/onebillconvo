@@ -109,7 +109,7 @@ serve(async (req) => {
                   is_read: true,
                   business_id: conv.business_id,
                   created_at: log.created_at,
-                  metadata: { backfilled: true, recovered_from: 'message_logs' }
+                  metadata: { backfilled: true, recovered_from: 'message_logs', content_repaired: metadata.template_name ? true : false }
                 });
 
               if (!insertError) {

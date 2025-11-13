@@ -663,12 +663,12 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                                {message.is_edited && (
                                  <span className="text-xs opacity-60">Edited</span>
                                )}
-                               {/* Recovered message badge */}
-                               {(message.metadata as any)?.recovered || (message.metadata as any)?.backfilled ? (
-                                 <Badge variant="outline" className="text-xs py-0 px-1.5 opacity-60">
-                                   Recovered
-                                 </Badge>
-                               ) : null}
+                                {/* Recovered message badge */}
+                                {((message.metadata as any)?.recovered || (message.metadata as any)?.backfilled || (message.metadata as any)?.content_repaired) ? (
+                                  <Badge variant="outline" className="text-xs py-0 px-1.5 opacity-60">
+                                    Recovered
+                                  </Badge>
+                                ) : null}
                              </div>
                           </div>
 
