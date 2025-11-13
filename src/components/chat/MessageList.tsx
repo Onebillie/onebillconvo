@@ -51,6 +51,8 @@ const AttachmentItem = memo(({ attachment, messageId }: { attachment: any; messa
 
 interface MessageListProps {
   messages: Message[];
+  showSearch?: boolean;
+  onSearchClose?: () => void;
   onCreateTask?: (message: Message) => void;
   onMessageUpdate?: () => void;
   isEmbedActive?: boolean;
@@ -59,7 +61,7 @@ interface MessageListProps {
   isLoadingMore?: boolean;
 }
 
-export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
+export const MessageList = memo(({ messages, showSearch = false, onSearchClose, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [emailDetailMessage, setEmailDetailMessage] = useState<Message | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({});
-  const [showSearch, setShowSearch] = useState(false);
+  const [internalShowSearch, setInternalShowSearch] = useState(false);
   const [infoMessage, setInfoMessage] = useState<Message | null>(null);
   const [deleteConfirmMessage, setDeleteConfirmMessage] = useState<Message | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
@@ -411,7 +413,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
           onNext={goToNextMatch}
           onPrevious={goToPreviousMatch}
           onClear={clearSearch}
-      onClose={() => setShowSearch(false)}
+          onClose={onSearchClose}
         />
       )}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10">
@@ -440,20 +442,6 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                   Load Older Messages
                 </>
               )}
-            </Button>
-          </div>
-        )}
-        
-        {!showSearch && messages.length > 5 && (
-          <div className="sticky top-0 z-10 flex justify-center py-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSearch(true)}
-              className="bg-background/95 backdrop-blur"
-            >
-              <Search className="h-4 w-4 mr-2" />
-              Search in conversation
             </Button>
           </div>
         )}
@@ -495,13 +483,12 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                   >
                     <div
                       ref={(el) => { if (el) messageRefs.current[message.id] = el; }}
-                      className={`flex ${
-                        message.direction === "outbound" ? "justify-end" : "justify-start"
-                      } mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
+                      className={`mb-2 group ${isMatch ? 'ring-2 ring-primary rounded-lg' : ''}`}
                     >
-                      <div className="flex items-start gap-2 relative group">
-                        <AttachmentParseStatus messageId={message.id} />
-                        
+                      <div className={cn(
+                        "flex items-start gap-2 max-w-[90%] lg:max-w-[75%] relative",
+                        message.direction === "outbound" ? "ml-auto" : "mr-auto"
+                      )}>
                         {/* Star indicator */}
                         {message.is_starred && (
                           <Star className="absolute -top-2 -left-2 h-4 w-4 fill-yellow-500 text-yellow-500 z-10" />
@@ -511,6 +498,8 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                         {message.is_pinned && (
                           <Pin className="absolute -top-2 -right-2 h-4 w-4 fill-primary text-primary z-10 rotate-45" />
                         )}
+                        
+                        <AttachmentParseStatus messageId={message.id} />
                         
                         {message.direction === "inbound" && (
                           <div className="flex-shrink-0 mt-1 flex flex-col items-center gap-1">
@@ -526,7 +515,7 @@ export const MessageList = memo(({ messages, onCreateTask, onMessageUpdate, isEm
                           </div>
                         )}
                         
-                        <div className="relative max-w-[90%] lg:max-w-[75%]">
+                        <div className="relative flex-1">
                           {/* Category badge */}
                           {message.category && message.category !== 'customer_service' && messageCategories[message.category] && (
                             <Badge 
