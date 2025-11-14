@@ -135,7 +135,7 @@ export default function EmbedDashboard() {
       }
 
       setBusinessId(validation.business_id);
-      setPermissionLevel(validation.permission_level || 'read_only');
+      setPermissionLevel(validation.permission_level || 'admin');
       setCustomization(validation.customization || {});
 
       // Create embed session
