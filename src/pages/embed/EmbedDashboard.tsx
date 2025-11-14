@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
+import { setupAutoResize } from "@/lib/embedResize";
 import { ContactList } from "@/components/chat/ContactList";
 import { MessageList } from "@/components/chat/MessageList";
 import { MessageInput } from "@/components/chat/MessageInput";
@@ -29,6 +31,7 @@ interface EmbedCustomization {
 export default function EmbedDashboard() {
   const [searchParams] = useSearchParams();
   const apiKey = searchParams.get("apiKey");
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +80,14 @@ export default function EmbedDashboard() {
     }
     validateAndLoadData();
   }, [apiKey]);
+
+  // Setup auto-resize for iframe embedding
+  useEffect(() => {
+    if (containerRef.current) {
+      const cleanup = setupAutoResize(containerRef.current);
+      return cleanup;
+    }
+  }, []);
 
   // Fetch conversations when filters change
   useEffect(() => {
@@ -325,8 +336,16 @@ export default function EmbedDashboard() {
   }
 
   return (
-    <div className="h-screen w-full flex flex-col bg-background m-0 p-0" style={{ fontFamily: customization.font_family }}>
-      {/* Header */}
+    <>
+      <Helmet>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </Helmet>
+      <div 
+        ref={containerRef}
+        className="h-full min-h-screen w-full flex flex-col bg-background m-0 p-0" 
+        style={{ fontFamily: customization.font_family }}
+      >
+        {/* Header */}
       <div className="border-b border-border bg-background px-2 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-semibold text-lg">Dashboard</h1>
@@ -499,6 +518,7 @@ export default function EmbedDashboard() {
           </>
         )}
       </ResizablePanelGroup>
-    </div>
+      </div>
+    </>
   );
 }
