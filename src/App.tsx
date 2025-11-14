@@ -45,6 +45,7 @@ import EmbedInbox from "./pages/embed/EmbedInbox";
 import EmbedDashboard from "./pages/embed/EmbedDashboard";
 import FullInboxEmbed from "./pages/embed/FullInboxEmbed";
 import CustomerInboxEmbed from "./pages/embed/CustomerInboxEmbed";
+import EmbedCustomer from "./pages/embed/EmbedCustomer";
 import { AccountFrozenBanner } from "./components/AccountFrozenBanner";
 import { CookieConsent } from "./components/CookieConsent";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
@@ -163,6 +164,7 @@ function AppContent() {
           <Route path="/embed/dashboard" element={<EmbedDashboard />} />
           <Route path="/embed/full-inbox" element={<FullInboxEmbed />} />
           <Route path="/embed/customer-inbox" element={<CustomerInboxEmbed />} />
+          <Route path="/embed/customer/:customerId" element={<EmbedCustomer />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
