@@ -117,7 +117,9 @@ const Dashboard = () => {
     const validateApiKey = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('api-validate-api-key', {
-          body: { apiKey }
+          headers: {
+            'x-api-key': apiKey
+          }
         });
 
         if (error) throw error;
