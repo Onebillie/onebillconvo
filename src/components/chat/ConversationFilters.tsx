@@ -389,20 +389,25 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
         </Button>
 
         {/* Top 5 Status Quick Filters */}
-        {statusTags.slice(0, 5).map((status) => (
-          <Button
-            key={status.id}
-            variant={currentFilters.statusIds.includes(status.id) ? "default" : "outline"}
-            size="sm"
-            onClick={() => toggleStatus(status.id)}
-            style={currentFilters.statusIds.includes(status.id) ? {
-              backgroundColor: status.color,
-              borderColor: status.color,
-            } : undefined}
-          >
-            {status.name}
-          </Button>
-        ))}
+        {statusTags.slice(0, 5).map((status) => {
+          const isActive = currentFilters.statusIds.includes(status.id);
+          return (
+            <Button
+              key={status.id}
+              variant="outline"
+              size="sm"
+              onClick={() => toggleStatus(status.id)}
+              className="h-7 px-2 text-xs"
+              style={{
+                backgroundColor: isActive ? status.color : `${status.color}15`,
+                borderColor: status.color,
+                color: isActive ? '#fff' : status.color,
+              }}
+            >
+              {status.name}
+            </Button>
+          );
+        })}
 
         {/* All Status filter dropdown */}
         <DropdownMenu>
