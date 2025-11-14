@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getParentListenerScript } from '@/lib/embedResize';
 
 export const EmbedCodeDisplay = () => {
   const [copiedInbox, setCopiedInbox] = useState(false);
@@ -18,6 +19,7 @@ export const EmbedCodeDisplay = () => {
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [selectedApiKey, setSelectedApiKey] = useState('');
   const [loading, setLoading] = useState(true);
+  const [embedMode, setEmbedMode] = useState<'fixed' | 'fullscreen' | 'responsive' | 'dynamic'>('fixed');
 
   const projectUrl = window.location.origin;
 
@@ -57,16 +59,55 @@ export const EmbedCodeDisplay = () => {
 ></iframe>`;
   };
 
-  const getAdminDashboardCode = () => {
+  const getAdminDashboardCode = (mode: 'fixed' | 'fullscreen' | 'responsive' | 'dynamic' = 'fixed') => {
     const apiKey = selectedApiKey || 'YOUR_API_KEY';
-    return `<!-- Full Admin Dashboard Embed -->
+    const iframeId = 'alacarte-admin-embed';
+    
+    if (mode === 'fixed') {
+      return `<!-- Admin Dashboard Embed - Fixed Height -->
 <iframe 
-  id="alacarte-admin-embed"
+  id="${iframeId}"
   src="${projectUrl}/embed/dashboard?apiKey=${apiKey}"
   width="100%" 
   height="800"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
 ></iframe>`;
+    }
+    
+    if (mode === 'fullscreen') {
+      return `<!-- Admin Dashboard Embed - Full Screen -->
+<div style="width: 100%; height: 100vh; position: relative;">
+  <iframe 
+    id="${iframeId}"
+    src="${projectUrl}/embed/dashboard?apiKey=${apiKey}"
+    style="width: 100%; height: 100%; border: none;"
+  ></iframe>
+</div>`;
+    }
+    
+    if (mode === 'responsive') {
+      return `<!-- Admin Dashboard Embed - Responsive Container -->
+<div style="width: 100%; height: 100%; min-height: 600px; position: relative;">
+  <iframe 
+    id="${iframeId}"
+    src="${projectUrl}/embed/dashboard?apiKey=${apiKey}"
+    style="width: 100%; height: 100%; border: 1px solid #e5e7eb; border-radius: 8px;"
+  ></iframe>
+</div>`;
+    }
+    
+    if (mode === 'dynamic') {
+      return `<!-- Admin Dashboard Embed - Dynamic Resizing -->
+<iframe 
+  id="${iframeId}"
+  src="${projectUrl}/embed/dashboard?apiKey=${apiKey}"
+  width="100%" 
+  height="800"
+  style="border: 1px solid #e5e7eb; border-radius: 8px;"
+></iframe>
+
+${getParentListenerScript(iframeId)}`;
+    }
   };
 
   const getCustomerEmbedCode = () => {
@@ -195,39 +236,89 @@ export const EmbedCodeDisplay = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="admin" className="space-y-4">
+          <TabsContent value="admin" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label>Full Admin Dashboard</Label>
+              <Label>Embed Mode</Label>
+              <Select value={embedMode} onValueChange={(value: any) => setEmbedMode(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed Height (800px)</SelectItem>
+                  <SelectItem value="fullscreen">Full Screen (100vh)</SelectItem>
+                  <SelectItem value="responsive">Responsive Container</SelectItem>
+                  <SelectItem value="dynamic">Dynamic Resizing (Auto-height)</SelectItem>
+                </SelectContent>
+              </Select>
               <p className="text-sm text-muted-foreground">
-                Complete admin interface with all features based on API key permissions.
+                {embedMode === 'fixed' && 'Standard iframe with fixed 800px height'}
+                {embedMode === 'fullscreen' && 'Full viewport height - ideal for dedicated CRM pages'}
+                {embedMode === 'responsive' && 'Fills parent container - set min-height on parent'}
+                {embedMode === 'dynamic' && 'Automatically adjusts height based on content'}
               </p>
             </div>
 
             <div className="relative">
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                <code>{getAdminDashboardCode()}</code>
+              <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-sm">
+                <code>{getAdminDashboardCode(embedMode)}</code>
               </pre>
               <Button
                 size="sm"
                 variant="outline"
                 className="absolute top-2 right-2"
-                onClick={() => handleCopy(getAdminDashboardCode(), 'admin')}
+                onClick={() => handleCopy(getAdminDashboardCode(embedMode), 'admin')}
               >
-                {copiedAdmin ? <><Check className="h-4 w-4 mr-2" />Copied</> : <><Copy className="h-4 w-4 mr-2" />Copy</>}
+                {copiedAdmin ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
+                )}
               </Button>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-              <h4 className="font-semibold text-sm text-blue-900">Admin Features (requires admin permission):</h4>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>View all conversations and messages</li>
-                <li>Send messages to customers</li>
-                <li>Assign conversations to team members</li>
-                <li>Change conversation status</li>
-                <li>View customer details and notes</li>
-                <li>Real-time updates</li>
-              </ul>
-            </div>
+            <Alert>
+              <Code2 className="h-4 w-4" />
+              <AlertTitle>Admin Dashboard Features</AlertTitle>
+              <AlertDescription>
+                The admin dashboard embed provides full inbox management with:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>View all conversations and customer details</li>
+                  <li>Send and receive messages in real-time</li>
+                  <li>Filter by status, tags, and date ranges</li>
+                  <li>Toggle AI features and sync emails</li>
+                  <li>Resizable panels for optimal workspace</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+
+            {embedMode === 'dynamic' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Dynamic Resizing Setup</AlertTitle>
+                <AlertDescription>
+                  The dynamic resizing mode includes a script that listens for size changes from the iframe.
+                  The iframe will automatically adjust its height based on the content inside.
+                  Make sure the parent page allows postMessage communication.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {embedMode === 'fullscreen' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Full Screen Integration</AlertTitle>
+                <AlertDescription>
+                  This mode is ideal for dedicating an entire page in your CRM to the chat dashboard.
+                  The embed will fill the full viewport height (100vh) and adjust to any screen size.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
 
           <TabsContent value="customer" className="space-y-4">
