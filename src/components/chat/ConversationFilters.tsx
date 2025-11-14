@@ -397,7 +397,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
               variant="outline"
               size="sm"
               onClick={() => toggleStatus(status.id)}
-              className="h-7 px-2 text-xs"
+              className="h-5 px-2 py-0 text-[10px]"
               style={{
                 backgroundColor: isActive ? status.color : `${status.color}15`,
                 borderColor: status.color,
