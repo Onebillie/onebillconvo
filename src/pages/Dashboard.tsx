@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -51,9 +51,20 @@ const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut, currentBusinessId } = useAuth();
   const { unreadCount } = useGlobalNotifications();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Embed mode support
+  const apiKey = searchParams.get('apiKey');
+  const [isEmbedMode, setIsEmbedMode] = useState(false);
+  const [embedBusinessId, setEmbedBusinessId] = useState<string | null>(null);
+  const [embedLoading, setEmbedLoading] = useState(!!apiKey);
+  
+  // Use business ID from either auth context or embed mode
+  const effectiveBusinessId = isEmbedMode ? embedBusinessId : currentBusinessId;
   
   // Load and apply user's theme preferences
-  useThemePreferences(currentBusinessId);
+  useThemePreferences(effectiveBusinessId);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -89,7 +100,6 @@ const Dashboard = () => {
     conversations: any[];
   } | null>(null);
   const [isEmbedActive, setIsEmbedActive] = useState(false);
-  const navigate = useNavigate();
 
   // Check for merge suggestions when conversation is selected
   const { suggestions: mergeSuggestions } = useMergeSuggestion(
@@ -99,6 +109,43 @@ const Dashboard = () => {
   // Refs for resizable panel
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
+
+  // Validate API key for embed mode
+  useEffect(() => {
+    if (!apiKey) return;
+
+    const validateApiKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('api-validate-api-key', {
+          body: { apiKey }
+        });
+
+        if (error) throw error;
+
+        if (data.valid) {
+          setIsEmbedMode(true);
+          setEmbedBusinessId(data.business_id);
+        } else {
+          toast({
+            title: "Invalid API Key",
+            description: "The provided API key is not valid.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error validating API key:', error);
+        toast({
+          title: "Error",
+          description: "Failed to validate API key.",
+          variant: "destructive",
+        });
+      } finally {
+        setEmbedLoading(false);
+      }
+    };
+
+    validateApiKey();
+  }, [apiKey]);
 
   // Set panel size once on mount and clear any old saved sizes
   useLayoutEffect(() => {
@@ -612,7 +659,8 @@ const Dashboard = () => {
     navigate('/app/settings');
   };
 
-  if (authLoading) {
+  // Show loading for both auth and embed mode
+  if (authLoading || embedLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -620,9 +668,19 @@ const Dashboard = () => {
     );
   }
 
-  if (!profile) {
+  // Allow access in embed mode OR with normal auth
+  if (!isEmbedMode && !profile) {
     navigate("/auth");
     return null;
+  }
+
+  // If in embed mode, ensure we have a valid business ID
+  if (isEmbedMode && !embedBusinessId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-destructive">Invalid embed configuration</div>
+      </div>
+    );
   }
 
   const conversationSidebar = (
