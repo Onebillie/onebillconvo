@@ -71,6 +71,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
     const { data } = await supabase
       .from("conversation_status_tags")
       .select("*")
+      .order("priority_score", { ascending: false, nullsFirst: false })
       .order("name");
     
     setStatusTags(data || []);
@@ -127,7 +128,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
     { value: 'sms', label: 'SMS' },
   ];
 
-  const sortOptions = [
+  const sortOptions: Array<{ value: FilterType['sortBy'], label: string }> = [
     { value: 'newest', label: 'Newest first' },
     { value: 'oldest', label: 'Oldest first' },
     { value: 'unread', label: 'Most unread' },
@@ -387,16 +388,32 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
           Unread
         </Button>
 
-        {/* Status filter */}
+        {/* Top 5 Status Quick Filters */}
+        {statusTags.slice(0, 5).map((status) => (
+          <Button
+            key={status.id}
+            variant={currentFilters.statusIds.includes(status.id) ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleStatus(status.id)}
+            style={currentFilters.statusIds.includes(status.id) ? {
+              backgroundColor: status.color,
+              borderColor: status.color,
+            } : undefined}
+          >
+            {status.name}
+          </Button>
+        ))}
+
+        {/* All Status filter dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
               <Filter className="h-4 w-4 mr-2" />
-              Status {currentFilters.statusIds.length > 0 && `(${currentFilters.statusIds.length})`}
+              More Status {currentFilters.statusIds.length > 0 && `(${currentFilters.statusIds.length})`}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56 bg-popover">
-            <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+          <DropdownMenuContent align="start" className="w-56 bg-popover z-50">
+            <DropdownMenuLabel>All Statuses</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {statusTags.map((status) => (
               <DropdownMenuItem
@@ -416,6 +433,34 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
                     {status.name}
                   </Badge>
                   {currentFilters.statusIds.includes(status.id) && (
+                    <span className="text-primary">✓</span>
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Sort dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              Sort
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 bg-popover z-50">
+            <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {sortOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => onFilterChange({ ...currentFilters, sortBy: option.value })}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span>{option.label}</span>
+                  {currentFilters.sortBy === option.value && (
                     <span className="text-primary">✓</span>
                   )}
                 </div>
