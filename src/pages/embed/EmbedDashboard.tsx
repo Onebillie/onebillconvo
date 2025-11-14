@@ -325,9 +325,9 @@ export default function EmbedDashboard() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background" style={{ fontFamily: customization.font_family }}>
+    <div className="h-screen w-full flex flex-col bg-background m-0 p-0" style={{ fontFamily: customization.font_family }}>
       {/* Header */}
-      <div className="border-b border-border bg-background px-4 py-2 flex items-center justify-between">
+      <div className="border-b border-border bg-background px-2 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-semibold text-lg">Dashboard</h1>
           <Badge variant="secondary" className="text-xs">
@@ -355,7 +355,7 @@ export default function EmbedDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="border-b border-border bg-background px-4 py-3 space-y-3">
+      <div className="border-b border-border bg-background px-2 py-3 space-y-3">
         {/* Search and Sort */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
