@@ -64,9 +64,30 @@ serve(async (req) => {
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Determine site identifier (prefer metadata, then Origin/Referer, fallback)
+    // Helper function to extract safe site_id from origin/referer
+    const extractSiteId = (origin: string): string => {
+      if (!origin) return 'direct-access';
+      if (origin.startsWith('file://')) return 'local-testing';
+      
+      try {
+        const url = new URL(origin);
+        let hostname = url.hostname || 'unknown-origin';
+        
+        // Truncate if too long (keep last 50 chars to preserve domain)
+        if (hostname.length > 50) {
+          hostname = hostname.slice(-50);
+        }
+        
+        return hostname || 'unknown-origin';
+      } catch {
+        // If URL parsing fails, use a safe fallback
+        return 'unknown-origin';
+      }
+    };
+
+    // Determine site identifier (prefer metadata, then extract from Origin/Referer, fallback)
     const origin = req.headers.get("origin") || req.headers.get("referer") || "";
-    const siteId = (metadata && (metadata.site_id || metadata.site || metadata.siteId)) || origin || 'embed_dashboard';
+    const siteId = (metadata && (metadata.site_id || metadata.site || metadata.siteId)) || extractSiteId(origin);
 
     console.log('Creating embed session', {
       business_id: keyRow.business_id,
