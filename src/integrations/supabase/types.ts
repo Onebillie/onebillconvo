@@ -1131,6 +1131,10 @@ export type Database = {
           message_webhook_enabled: boolean | null
           message_webhook_secret: string | null
           message_webhook_url: string | null
+          notification_events: Json | null
+          notification_webhook_enabled: boolean | null
+          notification_webhook_secret: string | null
+          notification_webhook_url: string | null
           reply_to_email: string | null
           support_email: string | null
           updated_at: string
@@ -1154,6 +1158,10 @@ export type Database = {
           message_webhook_enabled?: boolean | null
           message_webhook_secret?: string | null
           message_webhook_url?: string | null
+          notification_events?: Json | null
+          notification_webhook_enabled?: boolean | null
+          notification_webhook_secret?: string | null
+          notification_webhook_url?: string | null
           reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
@@ -1177,6 +1185,10 @@ export type Database = {
           message_webhook_enabled?: boolean | null
           message_webhook_secret?: string | null
           message_webhook_url?: string | null
+          notification_events?: Json | null
+          notification_webhook_enabled?: boolean | null
+          notification_webhook_secret?: string | null
+          notification_webhook_url?: string | null
           reply_to_email?: string | null
           support_email?: string | null
           updated_at?: string
