@@ -264,10 +264,7 @@ const Dashboard = () => {
       query = query.lte('updated_at', filters.dateRange.to.toISOString());
     }
 
-    // Apply search filter on customer name, email, phone, and message content
-    if (filters.search) {
-      query = query.or(`customers.name.ilike.%${filters.search}%,customers.phone.ilike.%${filters.search}%,customers.email.ilike.%${filters.search}%,messages.content.ilike.%${filters.search}%,messages.subject.ilike.%${filters.search}%`);
-    }
+    // Search filtering now done client-side in applyFilters for better reliability
 
     const { data, error } = await query
       .order('updated_at', { ascending: filters.sortBy === 'oldest' })
@@ -329,6 +326,29 @@ const Dashboard = () => {
       filtered = filtered.filter(conv => 
         conv.unread_count && conv.unread_count > 0
       );
+    }
+
+    // Filter by search term
+    if (currentFilters.search) {
+      const searchLower = currentFilters.search.toLowerCase();
+      filtered = filtered.filter(conv => {
+        const customer = conv.customer;
+        const lastMessage = conv.last_message;
+        
+        // Search in customer details
+        const matchesCustomer = 
+          customer.name?.toLowerCase().includes(searchLower) ||
+          customer.email?.toLowerCase().includes(searchLower) ||
+          customer.phone?.includes(searchLower) ||
+          customer.whatsapp_phone?.includes(searchLower);
+        
+        // Search in last message content
+        const matchesMessage = lastMessage &&
+          (lastMessage.content?.toLowerCase().includes(searchLower) ||
+           lastMessage.subject?.toLowerCase().includes(searchLower));
+        
+        return matchesCustomer || matchesMessage;
+      });
     }
 
     // Filter by platforms
