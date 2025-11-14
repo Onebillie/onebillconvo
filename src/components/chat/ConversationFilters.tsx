@@ -382,8 +382,8 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
       <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant={currentFilters.unread ? "default" : "outline"}
-          size="sm"
           onClick={() => onFilterChange({ ...currentFilters, unread: !currentFilters.unread })}
+          className="h-4 px-1.5 py-0 text-[10px]"
         >
           Unread
         </Button>
@@ -398,8 +398,8 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
               <Button
                 key={status.id}
                 variant="outline"
-                size="sm"
                 onClick={() => toggleStatus(status.id)}
+                className="h-4 px-1.5 py-0 text-[10px]"
                 style={{
                   backgroundColor: isActive ? status.color : `${status.color}15`,
                   borderColor: status.color,
@@ -414,8 +414,8 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
         {/* All Status filter dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="h-4 px-1.5 py-0 text-[10px]">
+              <Filter className="h-3 w-3 mr-1" />
               More Status {currentFilters.statusIds.length > 0 && `(${currentFilters.statusIds.length})`}
             </Button>
           </DropdownMenuTrigger>
@@ -451,8 +451,8 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
         {/* Sort dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="h-4 px-1.5 py-0 text-[10px]">
+              <ArrowUpDown className="h-3 w-3 mr-1" />
               Sort
             </Button>
           </DropdownMenuTrigger>
@@ -479,7 +479,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
         {/* Platform filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" className="h-4 px-1.5 py-0 text-[10px]">
               Channel {currentFilters.platforms.length > 0 && `(${currentFilters.platforms.length})`}
             </Button>
           </DropdownMenuTrigger>
@@ -510,7 +510,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
             onFilterChange({ ...currentFilters, assignedTo: value === 'all' ? null : value })
           }
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-[140px] h-4 text-[10px]">
             <SelectValue placeholder="Assigned" />
           </SelectTrigger>
           <SelectContent className="bg-popover">
@@ -528,11 +528,10 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
         {hasActiveFilters && (
           <Button
             variant="ghost"
-            size="sm"
             onClick={clearFilters}
-            className="text-muted-foreground"
+            className="h-4 px-1.5 py-0 text-[10px] text-muted-foreground"
           >
-            <X className="h-4 w-4 mr-1" />
+            <X className="h-3 w-3 mr-1" />
             Clear all
           </Button>
         )}
