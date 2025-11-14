@@ -388,26 +388,29 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
           Unread
         </Button>
 
-        {/* Top 5 Status Quick Filters */}
-        {statusTags.slice(0, 5).map((status) => {
-          const isActive = currentFilters.statusIds.includes(status.id);
-          return (
-            <Button
-              key={status.id}
-              variant="outline"
-              size="sm"
-              onClick={() => toggleStatus(status.id)}
-              className="h-5 px-2 py-0 text-[10px]"
-              style={{
-                backgroundColor: isActive ? status.color : `${status.color}15`,
-                borderColor: status.color,
-                color: isActive ? '#fff' : status.color,
-              }}
-            >
-              {status.name}
-            </Button>
-          );
-        })}
+        {/* Top 5 Status Quick Filters (excluding "Unread" status to avoid confusion) */}
+        {statusTags
+          .filter(status => status.name.toLowerCase() !== 'unread')
+          .slice(0, 5)
+          .map((status) => {
+            const isActive = currentFilters.statusIds.includes(status.id);
+            return (
+              <Button
+                key={status.id}
+                variant="outline"
+                size="sm"
+                onClick={() => toggleStatus(status.id)}
+                className="h-5 px-2 py-0 text-[10px]"
+                style={{
+                  backgroundColor: isActive ? status.color : `${status.color}15`,
+                  borderColor: status.color,
+                  color: isActive ? '#fff' : status.color,
+                }}
+              >
+                {status.name}
+              </Button>
+            );
+          })}
 
         {/* All Status filter dropdown */}
         <DropdownMenu>
