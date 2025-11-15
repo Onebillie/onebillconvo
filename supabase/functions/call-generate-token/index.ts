@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
+import { ClientCapability } from 'https://esm.sh/twilio@5.3.4/lib/jwt/ClientCapability.js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,15 +113,7 @@ Deno.serve(async (req) => {
     const tokenType = url.searchParams.get('type');
     const useAccessToken = tokenType === 'access';
 
-    // Helper function to convert to Base64URL encoding (required for JWT)
-    const base64UrlEncode = (str: string): string => {
-      return btoa(str)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-    };
-
-    // Helper to convert Uint8Array to Base64URL
+    // Helper to convert Uint8Array to Base64URL (only needed for Access Token)
     const arrayBufferToBase64Url = (buffer: ArrayBuffer): string => {
       const bytes = new Uint8Array(buffer);
       let binary = '';
@@ -128,6 +121,14 @@ Deno.serve(async (req) => {
         binary += String.fromCharCode(bytes[i]);
       }
       return btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+
+    // Helper function to convert to Base64URL encoding (only needed for Access Token)
+    const base64UrlEncode = (str: string): string => {
+      return btoa(str)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
@@ -178,35 +179,33 @@ Deno.serve(async (req) => {
       token = `${header}.${payload}.${signatureBase64}`;
     } else {
       // Capability Token path (for SDK v1.x - default)
-      console.log('Generating Capability Token for SDK v1.x');
+      console.log('Generating Capability Token for SDK v1.x using Twilio helper library');
       
-      // Build scope string for capability token
-      const scope = [
-        `scope:client:incoming?clientName=${identity}`,
-        `scope:client:outgoing?appSid=${twimlAppSid}&clientName=${identity}`
-      ].join(' ');
+      try {
+        const capability = new ClientCapability({
+          accountSid: accountSid,
+          authToken: authToken,
+        });
 
-      const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
-      const payload = base64UrlEncode(JSON.stringify({
-        iss: accountSid,
-        exp: exp,
-        scope: scope
-      }));
+        // Add incoming scope
+        capability.addScope(
+          new ClientCapability.IncomingClientScope(identity)
+        );
 
-      const signature = await crypto.subtle.sign(
-        { name: 'HMAC', hash: 'SHA-256' },
-        await crypto.subtle.importKey(
-          'raw',
-          new TextEncoder().encode(authToken),
-          { name: 'HMAC', hash: 'SHA-256' },
-          false,
-          ['sign']
-        ),
-        new TextEncoder().encode(`${header}.${payload}`)
-      );
+        // Add outgoing scope
+        capability.addScope(
+          new ClientCapability.OutgoingClientScope({
+            applicationSid: twimlAppSid,
+            clientName: identity,
+          })
+        );
 
-      const signatureBase64 = arrayBufferToBase64Url(signature);
-      token = `${header}.${payload}.${signatureBase64}`;
+        // Generate the properly formatted JWT
+        token = capability.toJwt();
+      } catch (err) {
+        console.error('Error generating capability token with Twilio library:', err);
+        throw new Error('Failed to generate capability token: ' + err.message);
+      }
     }
 
     console.log('Generated token for user:', user.id, 'type:', useAccessToken ? 'access' : 'capability');
