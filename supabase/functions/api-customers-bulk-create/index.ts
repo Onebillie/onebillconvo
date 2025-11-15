@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatPhone } from "../_shared/phoneUtils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,17 +45,7 @@ serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', keyData.id);
 
-    // Normalize phone number helper
-    const normalizePhone = (phoneNum: string): string => {
-      if (!phoneNum) return phoneNum;
-      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
-      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
-      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
-      if (cleaned.startsWith('353')) return cleaned;
-      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
-      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
-      return cleaned;
-    };
+    // Use shared phone formatting utility
 
     const { customers } = await req.json();
 
@@ -101,7 +92,7 @@ serve(async (req) => {
 
         // Check if customer already exists (by email or normalized phone)
         let existingCustomer = null;
-        const normalizedPhone = customer.phone ? normalizePhone(customer.phone) : null;
+        const normalizedPhone = customer.phone ? formatPhone(customer.phone) : null;
         
         if (customer.email) {
           const { data } = await supabase

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { formatPhone } from '../_shared/phoneUtils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,18 +83,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Phone normalization function
-    const normalizePhone = (phone: string): string => {
-      let cleaned = phone.replace(/[^\d+]/g, '');
-      if (cleaned.startsWith('00')) {
-        cleaned = '+' + cleaned.substring(2);
-      } else if (cleaned.startsWith('0') && !cleaned.startsWith('00')) {
-        cleaned = '+353' + cleaned.substring(1);
-      } else if (!cleaned.startsWith('+')) {
-        cleaned = '+353' + cleaned;
-      }
-      return cleaned;
-    };
+    // Use shared phone formatting utility
 
     // Process each customer
     const results: SyncResult[] = [];
@@ -110,7 +100,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const normalizedPhone = customer.phone ? normalizePhone(customer.phone) : null;
+        const normalizedPhone = customer.phone ? formatPhone(customer.phone) : null;
         
         // Try to find existing customer
         let existingCustomer = null;

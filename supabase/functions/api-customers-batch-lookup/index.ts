@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatPhone } from "../_shared/phoneUtils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,17 +46,7 @@ serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', apiKeyData.id);
 
-    // Normalize phone number helper
-    const normalizePhone = (phoneNum: string): string => {
-      if (!phoneNum) return phoneNum;
-      let cleaned = phoneNum.replace(/[\s\-\(\)\.]/g, '');
-      if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
-      if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
-      if (cleaned.startsWith('353')) return cleaned;
-      if (cleaned.startsWith('0')) return '353' + cleaned.substring(1);
-      if (cleaned.length === 9 && /^[1-9]/.test(cleaned)) return '353' + cleaned;
-      return cleaned;
-    };
+    // Use shared phone formatting utility
 
     const { identifiers } = await req.json();
 
@@ -82,7 +73,7 @@ serve(async (req) => {
 
     // Build OR conditions for all identifiers with normalized phones
     const emails = identifiers.filter(i => i.email).map(i => i.email);
-    const phones = identifiers.filter(i => i.phone).map(i => normalizePhone(i.phone));
+    const phones = identifiers.filter(i => i.phone).map(i => formatPhone(i.phone));
     const ids = identifiers.filter(i => i.id).map(i => i.id);
     const externalIds = identifiers.filter(i => i.external_id).map(i => i.external_id);
 

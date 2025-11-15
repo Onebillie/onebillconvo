@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { formatPhone } from "../_shared/phoneUtils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,14 +64,18 @@ serve(async (req) => {
       });
     }
 
+    // Normalize phone numbers to E.164 format
+    const normalizedPhone = phone ? formatPhone(phone) : null;
+    const normalizedWhatsapp = whatsapp_phone ? formatPhone(whatsapp_phone) : (normalizedPhone || null);
+
     const customerData = {
       business_id: keyData.business_id,
       name: name || `${first_name || ''} ${last_name || ''}`.trim(),
       first_name,
       last_name,
       email,
-      phone,
-      whatsapp_phone: whatsapp_phone || phone,
+      phone: normalizedPhone,
+      whatsapp_phone: normalizedWhatsapp,
       address,
       notes,
       external_id,

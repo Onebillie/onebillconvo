@@ -5,6 +5,7 @@ import { format, isToday, isYesterday } from "date-fns";
 import { Conversation } from "@/types/chat";
 import { Mail, MessageSquare, Edit3, AlertCircle } from "lucide-react";
 import DOMPurify from 'dompurify';
+import { toDisplay } from "@/lib/phoneUtils";
 
 interface ConversationListItemProps {
   conversation: Conversation;
@@ -105,7 +106,7 @@ export const ConversationListItem = memo(({
             
           <div className="flex items-center gap-1 md:gap-2 mb-1">
             <p className="text-[10px] md:text-xs text-muted-foreground truncate flex-1">
-              {conversation.customer.phone}
+              {toDisplay(conversation.customer.phone)}
             </p>
             {conversation.assigned_to && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">
