@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, Mic, MicOff, Pause, Play, PhoneForwarded, Grid3x3 } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Pause, Play, PhoneForwarded, Grid3x3, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -8,14 +8,24 @@ import { AudioDeviceSettings } from './AudioDeviceSettings';
 
 interface CallWidgetProps {
   onClose?: () => void;
+  mode?: 'idle' | 'incoming' | 'outgoing';
+  customerInfo?: {
+    name: string;
+    phone: string;
+    customerId?: string;
+  };
 }
 
-export const CallWidget = ({ onClose }: CallWidgetProps) => {
-  const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'on-hold'>('idle');
+export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetProps) => {
+  const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'on-hold' | 'dialing'>(
+    mode === 'outgoing' ? 'dialing' : 'idle'
+  );
   const [isMuted, setIsMuted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [callerInfo, setCallerInfo] = useState<{ name?: string; number: string } | null>(null);
+  const [callerInfo, setCallerInfo] = useState<{ name?: string; number: string } | null>(
+    customerInfo ? { name: customerInfo.name, number: customerInfo.phone } : null
+  );
   const [device, setDevice] = useState<any>(null);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const timerRef = useRef<number>();
@@ -26,7 +36,7 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (device) device.destroy();
     };
-  }, []);
+  }, [mode, customerInfo]);
 
   const initializeTwilioDevice = async () => {
     try {
@@ -59,6 +69,10 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
 
         newDevice.on('ready', () => {
           console.log('Twilio device ready');
+          // If mode is outgoing, initiate the call
+          if (mode === 'outgoing' && customerInfo?.phone) {
+            handleDial(customerInfo.phone);
+          }
           toast.success('Call system ready');
         });
 
@@ -67,12 +81,29 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
           toast.error(`Call system error: ${error.message || 'Unknown error'}`);
         });
 
-        newDevice.on('incoming', (conn: any) => {
+        newDevice.on('incoming', async (conn: any) => {
           setActiveConnection(conn);
           setCallStatus('ringing');
-          setCallerInfo({ number: conn.parameters.From });
+          
+          const callerNumber = conn.parameters.From;
+          
+          // Look up customer info
+          const { data: lookupData } = await supabase.functions.invoke(
+            'call-incoming-lookup',
+            { body: { phoneNumber: callerNumber } }
+          );
+          
+          if (lookupData?.found && lookupData.customer) {
+            setCallerInfo({
+              name: lookupData.customer.name,
+              number: callerNumber
+            });
+          } else {
+            setCallerInfo({ number: callerNumber });
+          }
+          
           toast('Incoming call', {
-            description: conn.parameters.From,
+            description: lookupData?.customer?.name || callerNumber,
             action: {
               label: 'Answer',
               onClick: () => handleAnswer(conn)
@@ -216,7 +247,7 @@ export const CallWidget = ({ onClose }: CallWidgetProps) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (callStatus === 'idle') {
+  if (callStatus === 'idle' && mode === 'idle') {
     return null;
   }
 
