@@ -126,6 +126,8 @@ Deno.serve(async (req) => {
       jti: `${apiKey}-${now}`,
       iss: apiKey,
       sub: accountSid,
+      iat: now,
+      nbf: now - 5,
       exp: exp,
       grants: {
         identity: user.id,
