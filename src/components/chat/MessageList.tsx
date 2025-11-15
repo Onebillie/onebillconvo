@@ -62,6 +62,12 @@ interface MessageListProps {
 }
 
 export const MessageList = memo(({ messages, showSearch = false, onSearchClose, onCreateTask, onMessageUpdate, isEmbedActive, hasMoreMessages, onLoadMore, isLoadingMore }: MessageListProps) => {
+  console.log('💬 [MessageList] Received messages prop:', messages.length, 'messages');
+  console.log('💬 [MessageList] Direction breakdown:',
+    messages.filter(m => m.direction === 'inbound').length, 'inbound,',
+    messages.filter(m => m.direction === 'outbound').length, 'outbound'
+  );
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
