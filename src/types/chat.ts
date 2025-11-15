@@ -81,10 +81,12 @@ export interface Message {
   template_name?: string;
   template_content?: string;
   template_variables?: any;
+  call_record_id?: string;
   metadata?: {
     button_clicked?: boolean;
     button_text?: string;
     button_payload?: string;
+    duration_seconds?: number;
   };
   message_attachments?: Array<{
     id: string;
