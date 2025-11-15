@@ -129,6 +129,7 @@ export const ConversationFilters = ({ onFilterChange, currentFilters }: Conversa
   ];
 
   const sortOptions: Array<{ value: FilterType['sortBy'], label: string }> = [
+    { value: 'priority', label: 'Priority' },
     { value: 'newest', label: 'Newest first' },
     { value: 'oldest', label: 'Oldest first' },
     { value: 'unread', label: 'Most unread' },

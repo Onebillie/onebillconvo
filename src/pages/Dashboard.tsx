@@ -377,52 +377,56 @@ const Dashboard = () => {
     };
 
     switch (currentFilters.sortBy) {
+      case 'priority':
+        // Pure priority sorting (default)
+        filtered.sort((a, b) => {
+          const priorityA = getPriority(a);
+          const priorityB = getPriority(b);
+          return priorityB - priorityA; // Higher priority first
+        });
+        break;
+        
       case 'oldest':
-        filtered.sort((a, b) => {
-          const priorityA = getPriority(a);
-          const priorityB = getPriority(b);
-          // Sort by priority descending (higher priority first)
-          if (priorityB !== priorityA) return priorityB - priorityA;
-          // Within same priority, oldest first
-          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
-        });
+        // Sort by date only (oldest first)
+        filtered.sort((a, b) => 
+          new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+        );
         break;
-      case 'unread':
-        filtered.sort((a, b) => {
-          const priorityA = getPriority(a);
-          const priorityB = getPriority(b);
-          if (priorityB !== priorityA) return priorityB - priorityA;
-          // Then by unread count
-          return (b.unread_count || 0) - (a.unread_count || 0);
-        });
-        break;
-      case 'name_asc':
-        filtered.sort((a, b) => {
-          const priorityA = getPriority(a);
-          const priorityB = getPriority(b);
-          if (priorityB !== priorityA) return priorityB - priorityA;
-          // Then by name
-          return a.customer.name.localeCompare(b.customer.name);
-        });
-        break;
-      case 'name_desc':
-        filtered.sort((a, b) => {
-          const priorityA = getPriority(a);
-          const priorityB = getPriority(b);
-          if (priorityB !== priorityA) return priorityB - priorityA;
-          // Then by name
-          return b.customer.name.localeCompare(a.customer.name);
-        });
-        break;
+        
       case 'newest':
+        // Sort by date only (newest first)
+        filtered.sort((a, b) => 
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+        break;
+        
+      case 'unread':
+        // Sort by unread count only
+        filtered.sort((a, b) => 
+          (b.unread_count || 0) - (a.unread_count || 0)
+        );
+        break;
+        
+      case 'name_asc':
+        // Sort by name ascending only
+        filtered.sort((a, b) => 
+          a.customer.name.localeCompare(b.customer.name)
+        );
+        break;
+        
+      case 'name_desc':
+        // Sort by name descending only
+        filtered.sort((a, b) => 
+          b.customer.name.localeCompare(a.customer.name)
+        );
+        break;
+        
       default:
+        // Fallback to priority
         filtered.sort((a, b) => {
           const priorityA = getPriority(a);
           const priorityB = getPriority(b);
-          // Sort by priority descending (higher priority first)
-          if (priorityB !== priorityA) return priorityB - priorityA;
-          // Within same priority, oldest first for same priority conversations
-          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+          return priorityB - priorityA;
         });
     }
 
