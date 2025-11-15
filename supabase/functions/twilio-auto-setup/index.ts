@@ -273,11 +273,8 @@ Deno.serve(async (req) => {
         twilio_api_secret: apiKey.secret,
         twilio_twiml_app_sid: twimlApp.sid,
         recording_enabled: true,
-        require_consent: true,
+        require_recording_consent: true,
         transcription_enabled: true,
-        business_hours_start: '09:00',
-        business_hours_end: '17:00',
-        voicemail_greeting: 'Thank you for calling. Please leave a message after the beep.',
         retention_days: 90
       });
 
