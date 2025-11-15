@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw, Search } from "lucide-react";
+import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw, Search, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Conversation, Message, Customer } from "@/types/chat";
@@ -28,6 +28,7 @@ import { GlobalNotificationCenter } from "@/components/notifications/GlobalNotif
 import { ConversationContextMenu } from "@/components/conversations/ConversationContextMenu";
 import { AssignDialog } from "@/components/conversations/AssignDialog";
 import { PersistentHeader } from "@/components/PersistentHeader";
+import { CallWidget } from "@/components/calls/CallWidget";
 import { MultiStatusDialog } from "@/components/conversations/MultiStatusDialog";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { ConversationFilters } from "@/components/chat/ConversationFilters";
@@ -88,6 +89,8 @@ const Dashboard = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [contextMenuConversation, setContextMenuConversation] = useState<Conversation | null>(null);
+  const [showCallWidget, setShowCallWidget] = useState(false);
+  const [callCustomerInfo, setCallCustomerInfo] = useState<{ name: string; phone: string; customerId?: string } | undefined>();
   const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
   const [showAISuggestions, setShowAISuggestions] = useState(false);
@@ -869,6 +872,25 @@ const Dashboard = () => {
               {/* Desktop: All controls in one row */}
               {!isMobile && (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {selectedConversation.customer.phone && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setCallCustomerInfo({
+                          name: selectedConversation.customer.name,
+                          phone: selectedConversation.customer.phone!,
+                          customerId: selectedConversation.customer.id
+                        });
+                        setShowCallWidget(true);
+                      }}
+                      className="h-8 w-8"
+                      title="Call customer"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                  )}
+                  
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1376,6 +1398,17 @@ const Dashboard = () => {
             });
           }}
         />
+
+        {showCallWidget && callCustomerInfo && (
+          <CallWidget
+            mode="outgoing"
+            customerInfo={callCustomerInfo}
+            onClose={() => {
+              setShowCallWidget(false);
+              setCallCustomerInfo(undefined);
+            }}
+          />
+        )}
       </div>
     </>
   );
