@@ -117,6 +117,19 @@ Deno.serve(async (req) => {
         .replace(/=+$/, '');
     };
 
+    // Helper to convert Uint8Array to Base64URL
+    const arrayBufferToBase64Url = (buffer: ArrayBuffer): string => {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+
     // Create JWT token for Twilio Voice
     const now = Math.floor(Date.now() / 1000);
     const exp = now + 3600; // 1 hour
@@ -153,8 +166,7 @@ Deno.serve(async (req) => {
     );
 
     // Convert signature to Base64URL
-    const signatureArray = new Uint8Array(signature);
-    const signatureBase64 = base64UrlEncode(String.fromCharCode(...signatureArray));
+    const signatureBase64 = arrayBufferToBase64Url(signature);
     const token = `${header}.${payload}.${signatureBase64}`;
 
     console.log('Generated JWT token for user:', user.id);
