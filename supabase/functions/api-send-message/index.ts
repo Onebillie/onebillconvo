@@ -41,16 +41,17 @@ serve(async (req) => {
 
     const { customerId, channel, content, subject } = await req.json();
 
-    // Get customer details
+    // Get customer details and verify it belongs to this business
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .select('*')
       .eq('id', customerId)
+      .eq('business_id', keyData.business_id)
       .maybeSingle();
 
     if (customerError || !customer) {
       return new Response(
-        JSON.stringify({ error: 'Customer not found' }),
+        JSON.stringify({ error: 'Customer not found or access denied' }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

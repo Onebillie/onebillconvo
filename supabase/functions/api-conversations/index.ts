@@ -43,7 +43,7 @@ serve(async (req) => {
     const conversationId = url.searchParams.get('id');
 
     if (conversationId) {
-      // Fetch single conversation with messages and attachments
+      // Fetch single conversation with messages and attachments - verify business_id
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .select(`
@@ -55,16 +55,25 @@ serve(async (req) => {
           )
         `)
         .eq('id', conversationId)
+        .eq('business_id', keyData.business_id)
         .single();
 
-      if (convError) throw convError;
+      if (convError || !conversation) {
+        return new Response(
+          JSON.stringify({ error: 'Conversation not found or access denied' }), 
+          {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
 
       return new Response(JSON.stringify(conversation), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      // Fetch all conversations
+      // Fetch all conversations for this business only
       const { data: conversations, error: convsError } = await supabase
         .from('conversations')
         .select(`
@@ -75,6 +84,7 @@ serve(async (req) => {
             message_attachments(*)
           )
         `)
+        .eq('business_id', keyData.business_id)
         .order('updated_at', { ascending: false });
 
       if (convsError) throw convsError;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface EmailMessageRendererProps {
   content: string;
@@ -55,11 +56,17 @@ export const EmailMessageRenderer = ({ content, subject, compact = false }: Emai
     let quotedText = "";
 
     if (isHtml) {
-      // Parse HTML content
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = text;
+      // Parse HTML content with sanitization
+      const sanitizedHtml = DOMPurify.sanitize(text, {
+        ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'u', 'a', 'blockquote', 'div', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+        ALLOWED_ATTR: ['href', 'class', 'id', 'style'],
+        ALLOW_DATA_ATTR: false
+      });
       
-      // Remove script and style tags
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = sanitizedHtml;
+      
+      // Remove script and style tags (additional safety layer)
       tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
       
       // Find and extract signature blocks (common in HTML emails)
