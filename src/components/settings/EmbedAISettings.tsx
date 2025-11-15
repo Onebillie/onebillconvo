@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
+import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 interface Department {
   name: string;
@@ -23,12 +25,26 @@ export function EmbedAISettings({ businessId }: { businessId: string }) {
     departments: [] as Department[],
     system_prompt: 'Hello! How can we help you today?'
   });
+  const [initialData, setInitialData] = useState<any>(null);
+
+  const hasUnsavedChanges = initialData 
+    ? JSON.stringify(settings) !== JSON.stringify(initialData)
+    : false;
+
+  const { loadSavedData, clearSavedData } = useFormAutosave({
+    key: `embed-ai-settings-${businessId}`,
+    values: settings,
+    enabled: !loading,
+    debounceMs: 1000
+  });
 
   useEffect(() => {
     loadSettings();
   }, [businessId]);
 
   const loadSettings = async () => {
+    const draft = loadSavedData();
+    
     const { data } = await supabase
       .from('embed_ai_settings')
       .select('*')
@@ -36,12 +52,20 @@ export function EmbedAISettings({ businessId }: { businessId: string }) {
       .single();
     
     if (data) {
-      setSettings({
+      const loadedData = {
         ai_triage_enabled: data.ai_triage_enabled,
         ai_first_response_enabled: data.ai_first_response_enabled,
         departments: (data.departments as any) || [],
         system_prompt: data.system_prompt
-      });
+      };
+      
+      if (draft && 'ai_triage_enabled' in draft) {
+        setSettings(draft as typeof settings);
+        toast({ title: 'Draft restored' });
+      } else {
+        setSettings(loadedData);
+      }
+      setInitialData(loadedData);
     }
   };
 
@@ -60,6 +84,8 @@ export function EmbedAISettings({ businessId }: { businessId: string }) {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      clearSavedData();
+      setInitialData(settings);
       toast({ title: "Success", description: "AI settings saved" });
     }
     setLoading(false);
@@ -85,7 +111,9 @@ export function EmbedAISettings({ businessId }: { businessId: string }) {
   };
 
   return (
-    <Card className="p-6 space-y-6">
+    <>
+      <UnsavedChangesGuard hasUnsavedChanges={hasUnsavedChanges} />
+      <Card className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <Label htmlFor="ai-triage" className="text-base">Enable AI Triage</Label>
@@ -164,5 +192,6 @@ export function EmbedAISettings({ businessId }: { businessId: string }) {
         {loading ? "Saving..." : "Save AI Settings"}
       </Button>
     </Card>
+    </>
   );
 }
