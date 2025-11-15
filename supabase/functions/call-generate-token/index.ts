@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     // Try to get credentials from call_settings first
     const { data: settings } = await supabase
       .from('call_settings')
-      .select('twilio_account_sid, twilio_auth_token, twilio_twiml_app_sid')
+      .select('twilio_account_sid, twilio_auth_token, twilio_twiml_app_sid, twilio_api_key, twilio_api_secret')
       .eq('business_id', businessUser.business_id)
       .single();
 
@@ -88,6 +88,8 @@ Deno.serve(async (req) => {
       accountSid = settings.twilio_account_sid;
       authToken = settings.twilio_auth_token;
       twimlAppSid = settings.twilio_twiml_app_sid;
+      apiKeySid = settings.twilio_api_key;
+      apiKeySecret = settings.twilio_api_secret;
     }
 
     // Fallback to environment variables
@@ -163,13 +165,25 @@ Deno.serve(async (req) => {
     let token: string;
 
     if (useAccessToken) {
-      // Access Token path (for future SDK v2 migration)
+      // Access Token path (for SDK v2 - requires API Key)
       console.log('Generating Access Token for SDK v2');
+      
+      if (!apiKeySid || !apiKeySecret) {
+        return new Response(JSON.stringify({ 
+          error: 'Access Token generation requires Twilio API Key and Secret. Please run Auto Setup or configure these in Voice Settings.',
+          token: null,
+          identity: user.id 
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
       const payload = base64UrlEncode(JSON.stringify({
-        jti: `${accountSid}-${now}`,
-        iss: accountSid,
-        sub: accountSid,
+        jti: `${apiKeySid}-${now}`,
+        iss: apiKeySid,  // API Key SID (SK...)
+        sub: accountSid,  // Account SID (AC...)
         iat: now,
         nbf: now - 5,
         exp: exp,
@@ -188,7 +202,7 @@ Deno.serve(async (req) => {
         { name: 'HMAC', hash: 'SHA-256' },
         await crypto.subtle.importKey(
           'raw',
-          new TextEncoder().encode(authToken),
+          new TextEncoder().encode(apiKeySecret),  // Sign with API Secret
           { name: 'HMAC', hash: 'SHA-256' },
           false,
           ['sign']
