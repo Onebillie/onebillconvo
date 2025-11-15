@@ -8,7 +8,16 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, LogOut, Settings as SettingsIcon, Bell, ArrowLeft, RefreshCw, Search, Phone } from "lucide-react";
+import { 
+  MessageSquare, 
+  LogOut, 
+  Settings as SettingsIcon, 
+  Bell, 
+  ArrowLeft, 
+  RefreshCw, 
+  Search, 
+  Phone 
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Conversation, Message, Customer } from "@/types/chat";
