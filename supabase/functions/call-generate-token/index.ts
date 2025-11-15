@@ -74,33 +74,31 @@ Deno.serve(async (req) => {
         });
     }
 
-    let accountSid, apiKey, apiSecret, twimlAppSid;
+    let accountSid, authToken, twimlAppSid;
 
     // Try to get credentials from call_settings first
     const { data: settings } = await supabase
       .from('call_settings')
-      .select('twilio_account_sid, twilio_api_key, twilio_api_secret, twilio_twiml_app_sid')
+      .select('twilio_account_sid, twilio_auth_token, twilio_twiml_app_sid')
       .eq('business_id', businessUser.business_id)
       .single();
 
     if (settings?.twilio_account_sid) {
       accountSid = settings.twilio_account_sid;
-      apiKey = settings.twilio_api_key;
-      apiSecret = settings.twilio_api_secret;
+      authToken = settings.twilio_auth_token;
       twimlAppSid = settings.twilio_twiml_app_sid;
     }
 
     // Fallback to environment variables
     if (!accountSid) {
       accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      apiKey = Deno.env.get('TWILIO_API_KEY');
-      apiSecret = Deno.env.get('TWILIO_API_SECRET');
+      authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
       twimlAppSid = Deno.env.get('TWILIO_TWIML_APP_SID');
     }
 
-    if (!accountSid || !apiKey || !apiSecret || !twimlAppSid) {
+    if (!accountSid || !authToken || !twimlAppSid) {
       return new Response(JSON.stringify({ 
-        error: 'Twilio credentials not configured',
+        error: 'Twilio credentials not configured. Please ensure Account SID, Auth Token, and TwiML App SID are set.',
         token: null,
         identity: user.id 
       }), {
@@ -108,6 +106,11 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Check if access token type is requested (for future SDK v2 compatibility)
+    const url = new URL(req.url);
+    const tokenType = url.searchParams.get('type');
+    const useAccessToken = tokenType === 'access';
 
     // Helper function to convert to Base64URL encoding (required for JWT)
     const base64UrlEncode = (str: string): string => {
@@ -130,50 +133,87 @@ Deno.serve(async (req) => {
         .replace(/=+$/, '');
     };
 
-    // Create JWT token for Twilio Voice
+    // Create JWT token for Twilio
     const now = Math.floor(Date.now() / 1000);
     const exp = now + 3600; // 1 hour
+    const identity = user.id;
 
-    const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
-    const payload = base64UrlEncode(JSON.stringify({
-      jti: `${apiKey}-${now}`,
-      iss: apiKey,
-      sub: accountSid,
-      iat: now,
-      nbf: now - 5,
-      exp: exp,
-      grants: {
-        identity: user.id,
-        voice: {
-          incoming: { allow: true },
-          outgoing: {
-            application_sid: twimlAppSid
+    let token: string;
+
+    if (useAccessToken) {
+      // Access Token path (for future SDK v2 migration)
+      console.log('Generating Access Token for SDK v2');
+      const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
+      const payload = base64UrlEncode(JSON.stringify({
+        jti: `${accountSid}-${now}`,
+        iss: accountSid,
+        sub: accountSid,
+        iat: now,
+        nbf: now - 5,
+        exp: exp,
+        grants: {
+          identity: identity,
+          voice: {
+            incoming: { allow: true },
+            outgoing: {
+              application_sid: twimlAppSid
+            }
           }
         }
-      }
-    }));
+      }));
 
-    const signature = await crypto.subtle.sign(
-      { name: 'HMAC', hash: 'SHA-256' },
-      await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(apiSecret),
+      const signature = await crypto.subtle.sign(
         { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      ),
-      new TextEncoder().encode(`${header}.${payload}`)
-    );
+        await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(authToken),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        ),
+        new TextEncoder().encode(`${header}.${payload}`)
+      );
 
-    // Convert signature to Base64URL
-    const signatureBase64 = arrayBufferToBase64Url(signature);
-    const token = `${header}.${payload}.${signatureBase64}`;
+      const signatureBase64 = arrayBufferToBase64Url(signature);
+      token = `${header}.${payload}.${signatureBase64}`;
+    } else {
+      // Capability Token path (for SDK v1.x - default)
+      console.log('Generating Capability Token for SDK v1.x');
+      
+      // Build scope string for capability token
+      const scope = [
+        `scope:client:incoming?clientName=${identity}`,
+        `scope:client:outgoing?appSid=${twimlAppSid}&clientName=${identity}`
+      ].join(' ');
 
-    console.log('Generated JWT token for user:', user.id);
+      const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
+      const payload = base64UrlEncode(JSON.stringify({
+        iss: accountSid,
+        exp: exp,
+        scope: scope
+      }));
+
+      const signature = await crypto.subtle.sign(
+        { name: 'HMAC', hash: 'SHA-256' },
+        await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(authToken),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        ),
+        new TextEncoder().encode(`${header}.${payload}`)
+      );
+
+      const signatureBase64 = arrayBufferToBase64Url(signature);
+      token = `${header}.${payload}.${signatureBase64}`;
+    }
+
+    console.log('Generated token for user:', user.id, 'type:', useAccessToken ? 'access' : 'capability');
 
     return new Response(JSON.stringify({ 
       token,
-      identity: user.id,
+      identity: identity,
       accountSid
     }), {
       status: 200,
