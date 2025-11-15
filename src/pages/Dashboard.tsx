@@ -461,6 +461,12 @@ const Dashboard = () => {
       return;
     }
 
+    console.log('📥 [fetchMessages] RAW data from DB:', data?.length, 'messages');
+    console.log('📥 [fetchMessages] Direction breakdown:', 
+      data?.filter((m: any) => m.direction === 'inbound').length, 'inbound,',
+      data?.filter((m: any) => m.direction === 'outbound').length, 'outbound'
+    );
+
     // Map database fields to expected structure
     const fetchedMessages = (data || []).reverse().map(msg => ({
       ...msg,
@@ -474,6 +480,9 @@ const Dashboard = () => {
         duration_seconds: att.duration_seconds
       }))
     }));
+    
+    console.log('📥 [fetchMessages] Mapped messages:', fetchedMessages.length);
+    console.log('📥 [fetchMessages] Setting state with:', append ? 'APPEND' : 'REPLACE');
     
     if (append) {
       setMessages(prev => [...fetchedMessages, ...prev]);
@@ -504,7 +513,16 @@ const Dashboard = () => {
 
   // Real-time message handlers with deduplication
   const handleNewMessage = useCallback((newMessage: Message) => {
+    console.log('🔔 [handleNewMessage] New message arrived:', {
+      id: newMessage.id,
+      direction: newMessage.direction,
+      platform: newMessage.platform,
+      content: newMessage.content?.substring(0, 50)
+    });
+    
     setMessages(prev => {
+      console.log('🔔 [handleNewMessage] Current messages count:', prev.length);
+      
       // Replace matching optimistic temp message if present (same content/platform, recent)
       if (newMessage.direction === 'outbound') {
         const tempIndex = prev.findIndex(m =>
@@ -538,9 +556,17 @@ const Dashboard = () => {
   }, [selectedConversation, markAsRead]);
 
   const handleMessageUpdate = useCallback((updatedMessage: Message) => {
+    console.log('🔄 [handleMessageUpdate] Message updated:', {
+      id: updatedMessage.id,
+      direction: updatedMessage.direction
+    });
+    
     setMessages(prev => {
       const existingIndex = prev.findIndex(msg => msg.id === updatedMessage.id);
-      if (existingIndex === -1) return prev;
+      if (existingIndex === -1) {
+        console.log('🔄 [handleMessageUpdate] Message not found in state');
+        return prev;
+      }
       const newMessages = [...prev];
       newMessages[existingIndex] = updatedMessage;
       return newMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
