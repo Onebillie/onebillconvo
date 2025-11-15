@@ -13,7 +13,14 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: req.headers.get('Authorization') || '',
+          },
+        },
+      }
     );
 
     const authHeader = req.headers.get('Authorization');
@@ -60,7 +67,7 @@ Deno.serve(async (req) => {
       await supabase
         .from('agent_availability')
         .insert({
-          user_id: user.id,
+          agent_id: user.id,
           business_id: businessUser.business_id,
           status: 'offline',
           device_type: 'browser'
