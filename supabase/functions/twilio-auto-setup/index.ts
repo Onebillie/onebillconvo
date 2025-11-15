@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    // First authenticate the user with anon key
+    const supabaseAnon = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
@@ -56,14 +57,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Use service role key for database operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Get business for user
-    const { data: businessUser } = await supabase
+    const { data: businessUser, error: businessError } = await supabase
       .from('business_users')
       .select('business_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!businessUser) {
+    if (businessError || !businessUser) {
+      console.error('Business lookup failed:', businessError);
       return new Response(JSON.stringify({ error: 'No business found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
