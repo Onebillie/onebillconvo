@@ -29,11 +29,15 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
   const [device, setDevice] = useState<any>(null);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const timerRef = useRef<number>();
+  const ringOutTimerRef = useRef<number>();
+
+  const RING_OUT_MS = 25000; // 25 seconds ring-out timeout
 
   useEffect(() => {
     initializeTwilioDevice();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (ringOutTimerRef.current) clearTimeout(ringOutTimerRef.current);
       if (device) device.destroy();
     };
   }, [mode, customerInfo]);
@@ -126,6 +130,12 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
   const handleAnswer = (conn: any) => {
     try {
+      // Clear ring-out timer if it's running
+      if (ringOutTimerRef.current) {
+        clearTimeout(ringOutTimerRef.current);
+        ringOutTimerRef.current = undefined;
+      }
+      
       conn.accept();
       setActiveConnection(conn);
       setCallStatus('connected');
@@ -149,18 +159,48 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       setCallStatus('ringing');
       setCallerInfo({ number });
       
+      // Start ring-out timer
+      ringOutTimerRef.current = window.setTimeout(() => {
+        if (callStatus === 'ringing') {
+          console.log('Ring-out timeout reached, ending call');
+          const conn = activeConnection || device?.activeConnection();
+          if (conn) {
+            conn.disconnect();
+          }
+          setCallStatus('idle');
+          setActiveConnection(null);
+          setCallerInfo(null);
+          toast.error('No answer - call timed out');
+        }
+      }, RING_OUT_MS);
+      
       connection.on('accept', () => {
+        // Clear ring-out timer when call is accepted
+        if (ringOutTimerRef.current) {
+          clearTimeout(ringOutTimerRef.current);
+          ringOutTimerRef.current = undefined;
+        }
         setCallStatus('connected');
         startTimer();
         toast.success('Call connected');
       });
 
       connection.on('disconnect', () => {
+        // Clear ring-out timer on disconnect
+        if (ringOutTimerRef.current) {
+          clearTimeout(ringOutTimerRef.current);
+          ringOutTimerRef.current = undefined;
+        }
         handleEndCall();
       });
 
       connection.on('error', (error: any) => {
         console.error('Connection error:', error);
+        // Clear ring-out timer on error
+        if (ringOutTimerRef.current) {
+          clearTimeout(ringOutTimerRef.current);
+          ringOutTimerRef.current = undefined;
+        }
         toast.error('Call failed');
         handleEndCall();
       });
@@ -181,12 +221,18 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       console.error('Error ending call:', error);
     }
     
+    // Clear all timers
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (ringOutTimerRef.current) {
+      clearTimeout(ringOutTimerRef.current);
+      ringOutTimerRef.current = undefined;
+    }
+    
     setActiveConnection(null);
     setCallStatus('idle');
     setCallerInfo(null);
     setDuration(0);
     setIsMuted(false);
-    if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const toggleMute = () => {
