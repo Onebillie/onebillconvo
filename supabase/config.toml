@@ -1,5 +1,8 @@
 project_id = "jrtlrnfdqfkjlkpfirzr"
 
+[functions.call-bridge]
+verify_jwt = false
+
 [functions.onebill-classify-document]
 verify_jwt = false
 
