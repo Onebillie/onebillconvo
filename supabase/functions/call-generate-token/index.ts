@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import { ClientCapability } from 'https://esm.sh/twilio@5.3.4/lib/jwt/ClientCapability.js';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -179,33 +179,35 @@ Deno.serve(async (req) => {
       token = `${header}.${payload}.${signatureBase64}`;
     } else {
       // Capability Token path (for SDK v1.x - default)
-      console.log('Generating Capability Token for SDK v1.x using Twilio helper library');
+      console.log('Generating Capability Token for SDK v1.x');
       
-      try {
-        const capability = new ClientCapability({
-          accountSid: accountSid,
-          authToken: authToken,
-        });
+      // Build scope string for capability token
+      const scope = [
+        `scope:client:incoming?clientName=${identity}`,
+        `scope:client:outgoing?appSid=${twimlAppSid}&clientName=${identity}`
+      ].join(' ');
 
-        // Add incoming scope
-        capability.addScope(
-          new ClientCapability.IncomingClientScope(identity)
-        );
+      const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
+      const payload = base64UrlEncode(JSON.stringify({
+        iss: accountSid,
+        exp: exp,
+        scope: scope
+      }));
 
-        // Add outgoing scope
-        capability.addScope(
-          new ClientCapability.OutgoingClientScope({
-            applicationSid: twimlAppSid,
-            clientName: identity,
-          })
-        );
+      const signature = await crypto.subtle.sign(
+        { name: 'HMAC', hash: 'SHA-256' },
+        await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(authToken),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        ),
+        new TextEncoder().encode(`${header}.${payload}`)
+      );
 
-        // Generate the properly formatted JWT
-        token = capability.toJwt();
-      } catch (err) {
-        console.error('Error generating capability token with Twilio library:', err);
-        throw new Error('Failed to generate capability token: ' + err.message);
-      }
+      const signatureBase64 = arrayBufferToBase64Url(signature);
+      token = `${header}.${payload}.${signatureBase64}`;
     }
 
     console.log('Generated token for user:', user.id, 'type:', useAccessToken ? 'access' : 'capability');
