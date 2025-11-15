@@ -27,10 +27,16 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
   const [callerInfo, setCallerInfo] = useState<{ name?: string; number: string } | null>(
     customerInfo ? { name: customerInfo.name, number: customerInfo.phone } : null
   );
+  const [eventLog, setEventLog] = useState<string[]>([]);
   const [device, setDevice] = useState<any>(null);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const timerRef = useRef<number>();
   const ringOutTimerRef = useRef<number>();
+
+  const addLogEvent = (event: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setEventLog(prev => [...prev, `[${timestamp}] ${event}`]);
+  };
 
   const RING_OUT_MS = 25000; // 25 seconds ring-out timeout
 
@@ -74,6 +80,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
         newDevice.on('ready', () => {
           console.log('Twilio device ready');
+          addLogEvent('Device ready');
           // If mode is outgoing, initiate the call
           if (mode === 'outgoing' && customerInfo?.phone) {
             handleDial(customerInfo.phone);
@@ -83,6 +90,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
         newDevice.on('error', (error: any) => {
           console.error('Twilio device error:', error);
+          addLogEvent(`Device error: ${error.message || 'Unknown error'}`);
           toast.error(`Call system error: ${error.message || 'Unknown error'}`);
         });
 
@@ -91,6 +99,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
           setCallStatus('ringing');
           
           const callerNumber = conn.parameters.From;
+          addLogEvent(`Incoming call from: ${callerNumber}`);
           
           // Look up customer info
           const { data: lookupData } = await supabase.functions.invoke(
@@ -117,6 +126,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
         });
 
         newDevice.on('disconnect', () => {
+          addLogEvent('Device disconnected');
           handleEndCall();
         });
 
@@ -131,6 +141,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
   const handleAnswer = (conn: any) => {
     try {
+      addLogEvent('Call answered');
       // Clear ring-out timer if it's running
       if (ringOutTimerRef.current) {
         clearTimeout(ringOutTimerRef.current);
@@ -158,6 +169,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       // Convert to E.164 format for Twilio
       const e164Number = toE164(number);
       console.log('Dialing:', { original: number, e164: e164Number });
+      addLogEvent(`Dialing: ${e164Number}`);
       
       const connection = device.connect({ To: e164Number });
       setActiveConnection(connection);
@@ -168,6 +180,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       ringOutTimerRef.current = window.setTimeout(() => {
         if (callStatus === 'ringing') {
           console.log('Ring-out timeout reached, ending call');
+          addLogEvent('Ring timeout - call not answered');
           const conn = activeConnection || device?.activeConnection();
           if (conn) {
             conn.disconnect();
@@ -180,6 +193,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       }, RING_OUT_MS);
       
       connection.on('accept', () => {
+        addLogEvent('Call connected');
         // Clear ring-out timer when call is accepted
         if (ringOutTimerRef.current) {
           clearTimeout(ringOutTimerRef.current);
@@ -191,6 +205,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
       });
 
       connection.on('disconnect', () => {
+        addLogEvent('Call ended');
         // Clear ring-out timer on disconnect
         if (ringOutTimerRef.current) {
           clearTimeout(ringOutTimerRef.current);
@@ -201,6 +216,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
       connection.on('error', (error: any) => {
         console.error('Connection error:', error);
+        addLogEvent(`Connection error: ${error.message}`);
         // Clear ring-out timer on error
         if (ringOutTimerRef.current) {
           clearTimeout(ringOutTimerRef.current);
@@ -352,6 +368,18 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
           <div className="text-center py-3 px-4">
             <p className="text-lg font-semibold">{callerInfo.name || 'Unknown'}</p>
             <p className="text-sm text-muted-foreground">{callerInfo.number}</p>
+          </div>
+        )}
+
+        {/* Event Log */}
+        {eventLog.length > 0 && (
+          <div className="mx-4 mb-2 p-2 bg-muted/50 rounded-md max-h-24 overflow-y-auto">
+            <p className="text-xs font-medium mb-1">Call Events:</p>
+            {eventLog.slice(-5).map((log, idx) => (
+              <p key={idx} className="text-xs text-muted-foreground font-mono">
+                {log}
+              </p>
+            ))}
           </div>
         )}
 

@@ -29,10 +29,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Normalize the number (remove spaces, ensure proper format)
+    // Normalize the number to E.164 format
     toNumber = toNumber.trim().replace(/\s+/g, '');
     
-    console.log('Bridging call to:', toNumber);
+    // Ensure E.164 format: +353...
+    if (!toNumber.startsWith('+')) {
+      if (toNumber.startsWith('353')) {
+        toNumber = '+' + toNumber;
+      } else if (toNumber.startsWith('0')) {
+        toNumber = '+353' + toNumber.substring(1);
+      } else {
+        toNumber = '+353' + toNumber;
+      }
+    }
+    
+    console.log('Bridging call to (E.164):', toNumber);
 
     // Get Twilio settings for caller ID
     const supabase = createClient(
