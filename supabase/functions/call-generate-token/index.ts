@@ -35,10 +35,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if user belongs to OneBillChat
-    const { data: isOneBill } = await supabase.rpc('is_onebillchat_user');
-    if (!isOneBill) {
-      return new Response(JSON.stringify({ error: 'Access denied' }), {
+    // Get business for user to verify they have access
+    const { data: businessUser, error: businessError } = await supabase
+      .from('business_users')
+      .select('business_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (businessError || !businessUser) {
+      return new Response(JSON.stringify({ error: 'No business found for user' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -56,34 +61,26 @@ Deno.serve(async (req) => {
         .from('agent_availability')
         .insert({
           user_id: user.id,
+          business_id: businessUser.business_id,
           status: 'offline',
           device_type: 'browser'
         });
     }
 
-    // Get business for user
-    const { data: businessUser } = await supabase
-      .from('business_users')
-      .select('business_id')
-      .eq('user_id', user.id)
-      .single();
-
     let accountSid, apiKey, apiSecret, twimlAppSid;
 
     // Try to get credentials from call_settings first
-    if (businessUser) {
-      const { data: settings } = await supabase
-        .from('call_settings')
-        .select('twilio_account_sid, twilio_api_key, twilio_api_secret, twilio_twiml_app_sid')
-        .eq('business_id', businessUser.business_id)
-        .single();
+    const { data: settings } = await supabase
+      .from('call_settings')
+      .select('twilio_account_sid, twilio_api_key, twilio_api_secret, twilio_twiml_app_sid')
+      .eq('business_id', businessUser.business_id)
+      .single();
 
-      if (settings?.twilio_account_sid) {
-        accountSid = settings.twilio_account_sid;
-        apiKey = settings.twilio_api_key;
-        apiSecret = settings.twilio_api_secret;
-        twimlAppSid = settings.twilio_twiml_app_sid;
-      }
+    if (settings?.twilio_account_sid) {
+      accountSid = settings.twilio_account_sid;
+      apiKey = settings.twilio_api_key;
+      apiSecret = settings.twilio_api_secret;
+      twimlAppSid = settings.twilio_twiml_app_sid;
     }
 
     // Fallback to environment variables
