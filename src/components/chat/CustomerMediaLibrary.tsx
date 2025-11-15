@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, Search, FileText, Image as ImageIcon, Video, Music, File } from "lucide-react";
+import { Download, Search, FileText, Image as ImageIcon, Video, Music, File, Phone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -15,7 +16,12 @@ interface MediaItem {
   type: string;
   size: number;
   created_at: string;
-  message_id: string;
+  message_id?: string;
+  call_record_id?: string;
+  source: 'attachment' | 'call_recording' | 'voicemail';
+  duration_seconds?: number;
+  direction?: 'inbound' | 'outbound';
+  call_status?: string;
 }
 
 interface CustomerMediaLibraryProps {
@@ -44,9 +50,9 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
   const fetchMedia = async () => {
     setLoading(true);
     try {
-      // Fetch all message attachments for this customer
-      const { data, error } = await supabase
-        .from('message_attachments')
+      // 1. Fetch message attachments
+      const { data: attachments, error: attachError } = await supabase
+        .from("message_attachments")
         .select(`
           id,
           filename,
@@ -55,14 +61,47 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
           size,
           created_at,
           message_id,
-          messages!inner(customer_id)
+          messages!inner(
+            customer_id
+          )
         `)
-        .eq('messages.customer_id', customerId)
-        .order('created_at', { ascending: false });
+        .eq("messages.customer_id", customerId)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (attachError) {
+        console.error("Error fetching attachments:", attachError);
+      }
 
-      const mapped = (data || []).map((att: any) => ({
+      // 2. Get customer phone numbers for call matching
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('phone, whatsapp_phone')
+        .eq('id', customerId)
+        .single();
+
+      const customerPhones = [
+        customer?.phone,
+        customer?.whatsapp_phone
+      ].filter(Boolean);
+
+      // 3. Fetch call recordings and voicemails
+      let calls: any[] = [];
+      if (customerPhones.length > 0) {
+        const { data: callData, error: callError } = await supabase
+          .from('call_records')
+          .select('id, recording_url, voicemail_url, direction, status, started_at, duration_seconds, from_number, to_number, caller_name')
+          .or(customerPhones.map(phone => `from_number.eq.${phone},to_number.eq.${phone}`).join(','))
+          .order('started_at', { ascending: false });
+
+        if (callError) {
+          console.error('Error fetching calls:', callError);
+        } else {
+          calls = callData || [];
+        }
+      }
+
+      // 4. Map attachments
+      const mappedAttachments: MediaItem[] = (attachments || []).map(att => ({
         id: att.id,
         filename: att.filename,
         url: att.url,
@@ -70,13 +109,53 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
         size: att.size,
         created_at: att.created_at,
         message_id: att.message_id,
+        source: 'attachment' as const
       }));
 
-      setMedia(mapped);
+      // 5. Map call recordings and voicemails
+      const mappedCalls: MediaItem[] = [];
+      calls.forEach(call => {
+        if (call.recording_url) {
+          mappedCalls.push({
+            id: `rec_${call.id}`,
+            filename: `Call Recording - ${format(new Date(call.started_at), 'MMM d, yyyy h:mm a')}`,
+            url: call.recording_url,
+            type: 'audio/mpeg',
+            size: 0,
+            created_at: call.started_at,
+            call_record_id: call.id,
+            source: 'call_recording',
+            duration_seconds: call.duration_seconds,
+            direction: call.direction,
+            call_status: call.status
+          });
+        }
+        if (call.voicemail_url) {
+          mappedCalls.push({
+            id: `vm_${call.id}`,
+            filename: `Voicemail - ${format(new Date(call.started_at), 'MMM d, yyyy h:mm a')}`,
+            url: call.voicemail_url,
+            type: 'audio/mpeg',
+            size: 0,
+            created_at: call.started_at,
+            call_record_id: call.id,
+            source: 'voicemail',
+            duration_seconds: call.duration_seconds,
+            direction: call.direction
+          });
+        }
+      });
+
+      // 6. Combine and sort by date
+      const allMedia = [...mappedAttachments, ...mappedCalls]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setMedia(allMedia);
     } catch (error: any) {
+      console.error("Error in fetchMedia:", error);
       toast({
         title: "Error",
-        description: "Failed to load media",
+        description: error.message || "Failed to load media",
         variant: "destructive",
       });
     } finally {
@@ -100,6 +179,7 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
         if (selectedType === "video") return item.type.startsWith("video/");
         if (selectedType === "audio") return item.type.startsWith("audio/");
         if (selectedType === "document") return item.type.startsWith("application/");
+        if (selectedType === "calls") return item.source === 'call_recording' || item.source === 'voicemail';
         return true;
       });
     }
@@ -169,14 +249,15 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
               />
             </div>
             <div className="flex gap-1">
-              {["all", "image", "video", "audio", "document"].map((type) => (
+              {["all", "image", "video", "audio", "document", "calls"].map((type) => (
                 <Button
                   key={type}
                   variant={selectedType === type ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedType(type)}
                 >
-                  {type}
+                  {type === "calls" ? <Phone className="w-4 h-4 mr-1" /> : null}
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
                 </Button>
               ))}
             </div>
@@ -223,6 +304,14 @@ export const CustomerMediaLibrary = ({ customerId, open, onOpenChange }: Custome
                         <span>{formatFileSize(item.size)}</span>
                         <span>{format(new Date(item.created_at), 'MMM d')}</span>
                       </div>
+                      {item.source === 'call_recording' && (
+                        <Badge variant="secondary" className="text-xs">
+                          📞 {item.direction === 'inbound' ? 'Inbound' : 'Outbound'} Recording
+                        </Badge>
+                      )}
+                      {item.source === 'voicemail' && (
+                        <Badge variant="secondary" className="text-xs">🎙️ Voicemail</Badge>
+                      )}
                     </div>
 
                     {/* Actions */}

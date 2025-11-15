@@ -16,6 +16,7 @@ import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageInfoDialog } from "./MessageInfoDialog";
 import { EmojiPicker } from "./EmojiPicker";
 import { MessageContent } from "./MessageContent";
+import { CallLogMessage } from "./CallLogMessage";
 import { Pencil, Reply, Search, Paperclip, Star, Pin, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -591,24 +592,34 @@ export const MessageList = memo(({ messages, showSearch = false, onSearchClose, 
                                  </div>
                                </div>
                              </div>
-                           ) : (
-                             <>
-                           {/* Email content with smart formatting */}
-                           {message.platform === 'email' ? (
-                              <>
-                                <EmailMessageRenderer 
-                                  content={message.content} 
-                                  subject={message.subject}
-                                  compact={false}
-                                />
-                                {message.message_attachments && message.message_attachments.length > 0 && (
-                                  <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
-                                    <Paperclip className="w-3 h-3" />
-                                    <span>{message.message_attachments.length} attachment{message.message_attachments.length > 1 ? 's' : ''}</span>
-                                  </div>
-                                )}
-                              </>
                             ) : (
+                              <>
+                            {/* Call log messages */}
+                            {message.platform === 'call' && message.call_record_id ? (
+                              <CallLogMessage
+                                call_record_id={message.call_record_id}
+                                direction={message.direction as "inbound" | "outbound"}
+                                created_at={message.created_at}
+                                duration_seconds={message.metadata?.duration_seconds as number}
+                              />
+                            ) : (
+                              <>
+                            {/* Email content with smart formatting */}
+                            {message.platform === 'email' ? (
+                               <>
+                                 <EmailMessageRenderer 
+                                   content={message.content} 
+                                   subject={message.subject}
+                                   compact={false}
+                                 />
+                                 {message.message_attachments && message.message_attachments.length > 0 && (
+                                   <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
+                                     <Paperclip className="w-3 h-3" />
+                                     <span>{message.message_attachments.length} attachment{message.message_attachments.length > 1 ? 's' : ''}</span>
+                                   </div>
+                                 )}
+                               </>
+                             ) : (
                             <>
                                {message.metadata?.button_clicked ? (
                                 <div className="inline-flex items-center gap-2 text-sm mb-1">
@@ -634,10 +645,12 @@ export const MessageList = memo(({ messages, showSearch = false, onSearchClose, 
                                     {renderAttachment(attachment, message.id)}
                                   </div>
                                 ))}
-                               </>
-                           )}
-                           </>
-                           )}
+                                </>
+                            )}
+                            </>
+                            )}
+                            </>
+                            )}
                            
                              <div className="flex items-center gap-2 mt-1 flex-wrap">
                                <span className="text-xs opacity-70">

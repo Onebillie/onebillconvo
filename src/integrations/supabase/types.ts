@@ -4534,6 +4534,7 @@ export type Database = {
           ai_confidence: number | null
           bounce_reason: string | null
           business_id: string | null
+          call_record_id: string | null
           category: string | null
           channel: string | null
           clicked_at: string | null
@@ -4581,6 +4582,7 @@ export type Database = {
           ai_confidence?: number | null
           bounce_reason?: string | null
           business_id?: string | null
+          call_record_id?: string | null
           category?: string | null
           channel?: string | null
           clicked_at?: string | null
@@ -4628,6 +4630,7 @@ export type Database = {
           ai_confidence?: number | null
           bounce_reason?: string | null
           business_id?: string | null
+          call_record_id?: string | null
           category?: string | null
           channel?: string | null
           clicked_at?: string | null
@@ -4677,6 +4680,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_call_record_id_fkey"
+            columns: ["call_record_id"]
+            isOneToOne: false
+            referencedRelation: "call_records"
             referencedColumns: ["id"]
           },
           {
