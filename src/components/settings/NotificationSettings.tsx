@@ -10,6 +10,8 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { useFormAutosave } from "@/hooks/useFormAutosave";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 interface NotificationPreferences {
   browser_enabled?: boolean;
@@ -37,10 +39,22 @@ interface Status {
 export const NotificationSettings = () => {
   const { isSupported, permission, subscribeToPush, unsubscribeFromPush } = usePushNotifications();
   const [preferences, setPreferences] = useState<any>({});
+  const [initialData, setInitialData] = useState<any>(null);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+
+  const hasUnsavedChanges = initialData 
+    ? JSON.stringify(preferences) !== JSON.stringify(initialData)
+    : false;
+
+  const { loadSavedData, clearSavedData } = useFormAutosave({
+    key: 'notification-settings',
+    values: preferences,
+    enabled: !loading,
+    debounceMs: 1000
+  });
 
   useEffect(() => {
     loadPreferences();
@@ -49,6 +63,9 @@ export const NotificationSettings = () => {
 
   const loadPreferences = async () => {
     try {
+      // Try loading draft first
+      const draft = loadSavedData();
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -69,11 +86,12 @@ export const NotificationSettings = () => {
 
       if (error && error.code !== 'PGRST116') throw error;
 
+      let loadedData;
       if (data) {
-        setPreferences(data as NotificationPreferences);
+        loadedData = data as NotificationPreferences;
       } else {
         // Create default preferences
-        const defaultPrefs: NotificationPreferences = {
+        loadedData = {
           browser_enabled: false,
           email_enabled: true,
           email_address: user.email || '',
@@ -90,8 +108,16 @@ export const NotificationSettings = () => {
           auto_status_on_priority: false,
           priority_status_id: null,
         };
-        setPreferences(defaultPrefs);
       }
+
+      // Use draft if it exists, otherwise use loaded data
+      if (draft) {
+        setPreferences(draft);
+        toast.info('Draft restored');
+      } else {
+        setPreferences(loadedData);
+      }
+      setInitialData(loadedData);
     } catch (error) {
       console.error('Error loading preferences:', error);
       toast.error('Failed to load notification preferences');
@@ -152,6 +178,8 @@ export const NotificationSettings = () => {
 
       if (error) throw error;
 
+      clearSavedData();
+      setInitialData(preferences);
       toast.success('Notification preferences saved');
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -198,7 +226,9 @@ export const NotificationSettings = () => {
   const isEnabled = permission === 'granted';
 
   return (
-    <div className="space-y-6">
+    <>
+      <UnsavedChangesGuard hasUnsavedChanges={hasUnsavedChanges} />
+      <div className="space-y-6">
       {/* Browser/PWA Notifications */}
       <Card>
         <CardHeader>
@@ -447,5 +477,6 @@ export const NotificationSettings = () => {
         </Button>
       </div>
     </div>
+    </>
   );
 };

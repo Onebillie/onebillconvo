@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/contexts/AuthContext";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 interface BusinessInfo {
   id: string;
@@ -53,6 +54,11 @@ export const BusinessSettings = () => {
     "settings:business",
     initialFormData
   );
+  const [initialData, setInitialData] = useState<BusinessInfo | null>(null);
+
+  const hasUnsavedChanges = initialData 
+    ? JSON.stringify(formData) !== JSON.stringify(initialData)
+    : false;
 
   const mounts = useRef(0);
   useEffect(() => {
@@ -102,6 +108,7 @@ export const BusinessSettings = () => {
 
       if (data) {
         setFormData((prev) => ({ ...prev, ...data }));
+        setInitialData(data);
       } else {
         // No settings exist for this business yet - create default record
         const { data: insertData, error: insertError } = await supabase
@@ -118,6 +125,7 @@ export const BusinessSettings = () => {
           console.error("Error creating default settings:", insertError);
         } else if (insertData) {
           setFormData((prev) => ({ ...prev, ...insertData }));
+          setInitialData(insertData);
         }
       }
     } finally {
@@ -256,8 +264,9 @@ export const BusinessSettings = () => {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Business settings updated successfully" });
       clearDraft();
+      setInitialData(formData);
+      toast({ title: "Success", description: "Business settings updated successfully" });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -270,7 +279,9 @@ export const BusinessSettings = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <>
+      <UnsavedChangesGuard hasUnsavedChanges={hasUnsavedChanges} />
+      <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Mobile App Features</CardTitle>
@@ -495,5 +506,6 @@ export const BusinessSettings = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
