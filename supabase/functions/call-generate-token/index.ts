@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    let accountSid, authToken, twimlAppSid;
+    let accountSid, authToken, twimlAppSid, apiKeySid, apiKeySecret;
 
     // Try to get credentials from call_settings first
     const { data: settings } = await supabase
@@ -109,8 +109,29 @@ Deno.serve(async (req) => {
     }
 
     // Check if access token type is requested (for future SDK v2 compatibility)
-    const url = new URL(req.url);
-    const tokenType = url.searchParams.get('type');
+    let tokenType: string | null = null;
+    try {
+      const url = new URL(req.url);
+      tokenType = url.searchParams.get('type');
+    } catch (_) {}
+
+    // Fallback to header
+    if (!tokenType) {
+      const headerType = req.headers.get('x-token-type');
+      if (headerType) tokenType = headerType;
+    }
+
+    // Fallback to JSON body
+    if (!tokenType && req.method !== 'GET') {
+      try {
+        const contentType = req.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const body = await req.json();
+          if (body?.type) tokenType = String(body.type);
+        }
+      } catch (_) {}
+    }
+
     const useAccessToken = tokenType === 'access';
 
     // Helper to convert Uint8Array to Base64URL (only needed for Access Token)

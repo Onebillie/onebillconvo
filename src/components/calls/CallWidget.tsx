@@ -60,7 +60,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('call-generate-token');
+      const { data, error } = await supabase.functions.invoke('call-generate-token', { body: { type: 'access' } });
       
       if (error || !data.token) {
         toast.error('Call system not configured yet');
@@ -69,13 +69,21 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
       // Load Twilio Device SDK dynamically
       const script = document.createElement('script');
-      script.src = 'https://sdk.twilio.com/js/client/v1.14/twilio.min.js';
+      script.src = 'https://sdk.twilio.com/js/voice/releases/2.0.0/twilio-voice.min.js';
       script.onload = () => {
         const Device = (window as any).Twilio.Device;
         const newDevice = new Device(data.token, {
           codecPreferences: ['opus', 'pcmu'],
           enableRingingState: true,
           closeProtection: true
+        });
+
+        // Voice SDK v2 requires explicit registration
+        try { newDevice.register(); } catch (_) {}
+
+        newDevice.on('registered', () => {
+          console.log('Twilio device registered');
+          addLogEvent('Device registered');
         });
 
         newDevice.on('ready', () => {
