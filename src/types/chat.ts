@@ -118,7 +118,7 @@ export interface ConversationFilters {
     from: Date | null;
     to: Date | null;
   };
-  sortBy: 'newest' | 'oldest' | 'unread' | 'name_asc' | 'name_desc';
+  sortBy: 'priority' | 'newest' | 'oldest' | 'unread' | 'name_asc' | 'name_desc';
   platforms: string[];
   assignedTo: string | null;
 }

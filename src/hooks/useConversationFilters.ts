@@ -8,7 +8,7 @@ export interface ConversationFilters {
     from: Date | null;
     to: Date | null;
   };
-  sortBy: 'newest' | 'oldest' | 'unread' | 'name_asc' | 'name_desc';
+  sortBy: 'priority' | 'newest' | 'oldest' | 'unread' | 'name_asc' | 'name_desc';
   platforms: string[];
   assignedTo: string | null;
 }
@@ -18,7 +18,7 @@ const INITIAL_FILTERS: ConversationFilters = {
   unread: false,
   statusIds: [],
   dateRange: { from: null, to: null },
-  sortBy: 'newest',
+  sortBy: 'priority',
   platforms: [],
   assignedTo: null,
 };
@@ -32,6 +32,7 @@ export const useConversationFilters = () => {
         return {
           ...INITIAL_FILTERS,
           ...parsed,
+          sortBy: INITIAL_FILTERS.sortBy, // Always use default sortBy (priority)
           dateRange: {
             from: parsed.dateRange?.from ? new Date(parsed.dateRange.from) : null,
             to: parsed.dateRange?.to ? new Date(parsed.dateRange.to) : null,
@@ -45,8 +46,9 @@ export const useConversationFilters = () => {
   });
 
   useEffect(() => {
+    const { sortBy, ...filtersToSave } = filters; // Exclude sortBy from persistence
     const toSave = {
-      ...filters,
+      ...filtersToSave,
       dateRange: {
         from: filters.dateRange.from?.toISOString() || null,
         to: filters.dateRange.to?.toISOString() || null,
