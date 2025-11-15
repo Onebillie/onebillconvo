@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, Mic, MicOff, Pause, Play, PhoneForwarded, Grid3x3, PhoneCall } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Pause, Play, PhoneForwarded, Grid3x3, PhoneCall, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioDeviceSettings } from './AudioDeviceSettings';
+import { toE164, toDisplay } from '@/lib/phoneUtils';
 
 interface CallWidgetProps {
   onClose?: () => void;
@@ -154,10 +155,14 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
     }
 
     try {
-      const connection = device.connect({ To: number });
+      // Convert to E.164 format for Twilio
+      const e164Number = toE164(number);
+      console.log('Dialing:', { original: number, e164: e164Number });
+      
+      const connection = device.connect({ To: e164Number });
       setActiveConnection(connection);
       setCallStatus('ringing');
-      setCallerInfo({ number });
+      setCallerInfo({ number: toDisplay(number) });
       
       // Start ring-out timer
       ringOutTimerRef.current = window.setTimeout(() => {
@@ -298,33 +303,60 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-80 p-4 shadow-lg z-50">
+    <Card className="fixed bottom-4 right-4 w-80 shadow-2xl z-50 border-2">
       <div className="space-y-4">
-        {/* Status indicator */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
+        {/* Header with status and close button */}
+        <div className="flex items-center justify-between p-4 pb-2">
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${
               callStatus === 'connected' ? 'bg-green-500' : 
-              callStatus === 'ringing' ? 'bg-yellow-500 animate-pulse' : 
+              callStatus === 'ringing' || callStatus === 'dialing' ? 'bg-yellow-500 animate-pulse' : 
+              callStatus === 'on-hold' ? 'bg-orange-500' :
               'bg-gray-500'
             }`} />
-            <span className="text-sm font-medium capitalize">{callStatus}</span>
+            <div>
+              <span className="text-sm font-semibold capitalize block">
+                {callStatus === 'dialing' ? 'Calling...' : 
+                 callStatus === 'ringing' ? 'Ringing...' :
+                 callStatus === 'connected' ? 'In Call' :
+                 callStatus === 'on-hold' ? 'On Hold' : 
+                 'Idle'}
+              </span>
+              {callStatus === 'connected' && (
+                <span className="text-xs text-muted-foreground font-mono">{formatDuration(duration)}</span>
+              )}
+            </div>
           </div>
-          {callStatus === 'connected' && (
-            <span className="text-sm font-mono">{formatDuration(duration)}</span>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              if (callStatus === 'connected' || callStatus === 'ringing' || callStatus === 'on-hold') {
+                if (confirm('Are you sure you want to end this call?')) {
+                  handleEndCall();
+                  onClose?.();
+                }
+              } else {
+                onClose?.();
+              }
+            }}
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Caller info */}
         {callerInfo && (
-          <div className="text-center py-2">
+          <div className="text-center py-3 px-4">
             <p className="text-lg font-semibold">{callerInfo.name || 'Unknown'}</p>
             <p className="text-sm text-muted-foreground">{callerInfo.number}</p>
           </div>
         )}
 
         {/* Controls */}
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-2 justify-center px-4 pb-4">
           {callStatus === 'ringing' && (
             <Button
               size="lg"
@@ -391,7 +423,7 @@ export const CallWidget = ({ onClose, mode = 'idle', customerInfo }: CallWidgetP
 
         {/* Recording indicator */}
         {isRecording && (
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground px-4 pb-2">
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             Recording
           </div>
