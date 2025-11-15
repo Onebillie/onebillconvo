@@ -56,6 +56,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { WhatsAppAnalyticsWidget } from "@/components/dashboard/WhatsAppAnalyticsWidget";
 import { useThemePreferences } from "@/hooks/useThemePreferences";
 import { useMergeSuggestion } from "@/hooks/useMergeSuggestion";
+import { toDisplay } from "@/lib/phoneUtils";
 
 const Dashboard = () => {
   const { profile, loading: authLoading, isAdmin, signOut, currentBusinessId } = useAuth();
@@ -918,7 +919,7 @@ const Dashboard = () => {
                     {selectedConversation.customer.name}
                   </h2>
                   <p className="text-sm text-muted-foreground truncate">
-                    {selectedConversation.customer.phone}
+                    {toDisplay(selectedConversation.customer.phone)}
                   </p>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { UserPlus } from "lucide-react";
@@ -195,31 +196,29 @@ export const CreateContactDialog = ({
             <h4 className="text-sm font-semibold">Contact Methods</h4>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone / SMS *</Label>
-              <Input
+              <PhoneInput
                 id="phone"
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, phone: value })
                 }
-                placeholder="353871234567"
               />
               <p className="text-xs text-muted-foreground">
-                Enter full number with country code (also used for SMS)
+                Irish format: +353 85 800 7335
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="whatsappPhone">WhatsApp Phone (Optional)</Label>
-              <Input
+              <PhoneInput
                 id="whatsappPhone"
                 value={formData.whatsappPhone}
-                onChange={(e) =>
-                  setFormData({ ...formData, whatsappPhone: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, whatsappPhone: value })
                 }
-                placeholder="353871234567"
               />
               <p className="text-xs text-muted-foreground">
-                If different from phone number above
+                Leave empty to use phone number
               </p>
             </div>
 

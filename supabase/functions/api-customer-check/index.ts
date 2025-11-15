@@ -1,20 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatPhone } from "../_shared/phoneUtils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
-function normalizePhone(phone: string): string {
-  if (!phone) return '';
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('00353')) return cleaned.substring(2);
-  if (cleaned.startsWith('353')) return cleaned;
-  if (cleaned.startsWith('0') && cleaned.length === 10) return '353' + cleaned.substring(1);
-  if (cleaned.length === 9) return '353' + cleaned;
-  return cleaned;
-}
+// Use shared phone formatting utility
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -76,7 +69,7 @@ serve(async (req) => {
     
     let phoneConditions: string[] = [];
     if (phone) {
-      const normalized = normalizePhone(phone);
+      const normalized = formatPhone(phone);
       phoneConditions = [
         `phone.eq.${phone}`,
         `phone.eq.${normalized}`,
