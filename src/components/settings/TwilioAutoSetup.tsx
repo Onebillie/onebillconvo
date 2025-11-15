@@ -336,10 +336,23 @@ export const TwilioAutoSetup = ({ onSuccess }: TwilioAutoSetupProps) => {
         {step === 'processing' && (
           <div className="space-y-4 py-8">
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <>
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={() => {
+                      resetTwilioSetup();
+                      setTwilioSetupState({ step: 'method' });
+                    }}
+                    variant="outline"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </>
             )}
 
             <div className="space-y-3">
