@@ -109,12 +109,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Helper function to convert to Base64URL encoding (required for JWT)
+    const base64UrlEncode = (str: string): string => {
+      return btoa(str)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+
     // Create JWT token for Twilio Voice
     const now = Math.floor(Date.now() / 1000);
     const exp = now + 3600; // 1 hour
 
-    const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
-    const payload = btoa(JSON.stringify({
+    const header = base64UrlEncode(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
+    const payload = base64UrlEncode(JSON.stringify({
       jti: `${apiKey}-${now}`,
       iss: apiKey,
       sub: accountSid,
@@ -142,7 +150,12 @@ Deno.serve(async (req) => {
       new TextEncoder().encode(`${header}.${payload}`)
     );
 
-    const token = `${header}.${payload}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
+    // Convert signature to Base64URL
+    const signatureArray = new Uint8Array(signature);
+    const signatureBase64 = base64UrlEncode(String.fromCharCode(...signatureArray));
+    const token = `${header}.${payload}.${signatureBase64}`;
+
+    console.log('Generated JWT token for user:', user.id);
 
     return new Response(JSON.stringify({ 
       token,
